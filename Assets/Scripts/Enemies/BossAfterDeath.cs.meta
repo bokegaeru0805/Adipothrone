@@ -1,0 +1,14 @@
+fileFormatVersion: 2
+guid: efe2748743b84d14d87e57d538feeb89
+MonoImporter:
+  externalObjects: {}
+  serializedVersion: 2
+  defaultReferences:
+  - flowchart: {instanceID: 0}
+  - FlashPanel: {instanceID: 0}
+  - BossDefeatParticle: {fileID: 2635044792594520520, guid: 9a53aae6360addd4688d33195ad3ca78, type: 3}
+  executionOrder: 0
+  icon: {instanceID: 0}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 

@@ -1,0 +1,19 @@
+# Get latest from https://github.com/github/gitignore/blob/main/Unity.gitignore
+/[Ll]ibrary/
+/[Tt]emp/
+/[Oo]bj/
+/[Bb]uild/
+/[Bb]uilds/
+/[Ll]ogs/
+/[Uu]ser[Ss]ettings/
+/[Mm]emoryCaptures/
+/[Rr]ecordings/
+.vs/
+.vscode/
+.DS_Store
+*.log
+*.csproj
+*.sln
+*.suo
+*.userprefs
+# ...その他、以前の回答で完成させたテンプレートの内容

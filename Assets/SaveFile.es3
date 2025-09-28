@@ -1,0 +1,52 @@
+{
+	"2611511b-dfc6-4aaf-92ac-b8f709784b5a" : {
+		"__type" : "UnityEngine.GameObject[],UnityEngine.CoreModule",
+		"value" : [
+			{
+				"_ES3Ref" : "2422535714798993922",
+				"transformID" : "6286748531128741919",
+				"components" : [
+					{
+						"__type" : "GameManager,Assembly-CSharp",
+						"_ES3Ref" : "5609961333835117837",
+						"goID" : "2422535714798993922",
+						"timeFlow" : 1,
+						"isstart" : false,
+						"isRobotencounter" : false,
+						"isRobotmove" : false,
+						"isFirstArmed" : true,
+						"isLastArmed" : true
+					}
+				]
+			},{
+				"_ES3Ref" : "1595867870828778664",
+				"transformID" : "474158829547123933",
+				"components" : [
+					{
+						"__type" : "Transform",
+						"_ES3Ref" : "474158829547123933",
+						"goID" : "1595867870828778664",
+						"parent" : null,
+						"localPosition" : {
+							"x" : 2.680372,
+							"y" : -0.115000069,
+							"z" : 0
+						},
+						"localRotation" : {
+							"x" : 0,
+							"y" : 0,
+							"z" : 0,
+							"w" : 1
+						},
+						"localScale" : {
+							"x" : 4,
+							"y" : 4,
+							"z" : 1
+						},
+						"siblingIndex" : 9
+					}
+				]
+			}
+		]
+	}
+}

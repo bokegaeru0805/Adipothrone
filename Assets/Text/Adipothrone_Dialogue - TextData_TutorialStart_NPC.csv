@@ -1,0 +1,30 @@
+セリフ,ChracterName,BlockName,FileName
+よくわからない内容が書かれた紙が散らばっている。,narrative,MessyPaper_Prologue_Default,
+「遺跡から採取した液体によって高脂肪状態となった生体個体は、高密度のエネルギーを保持することが確認されている。」,narrative,MessyPaper_Prologue_Default,
+「特に、特定条件下で肥大化させた女性被験体において、組織から放出される未知の波動が観測された。」,narrative,MessyPaper_Prologue_Default,
+「この波動は周りの物質にも影響を及ぼすらしい。この現象を何か他のものに応用できないのだろか。」,narrative,MessyPaper_Prologue_Default,
+……これって、なに？　すごく大きな容器……中には……黄色い液体が、たぷたぷって……いっぱい、入ってる……,narrative,Tank_Stage1_Default,
+なんだろう……ジュース、じゃないよね。でも、どこか……甘い匂いがするような、気がする……気のせい……かな……,narrative,Tank_Stage1_Default,
+こんなところに、こんなもの……どうしてあるんだろ……なんだか……見てるだけで、体が、ざわざわする……,narrative,Tank_Stage1_Default,
+よくわからない内容が書かれた紙が散らばっている。,narrative,MessyPaper_Stage2_Default,
+「この施設は、元来この地の地下に存在していた古代の“遺跡”を基盤として建造されている。」,narrative,MessyPaper_Stage2_Default,
+「当該遺跡の構造は複雑かつ堅牢であり、エネルギー反応を内部に閉じ込めるよう設計されていた可能性が高い。」,narrative,MessyPaper_Stage2_Default,
+「これにより、いかなる“吸収対象”であっても、その力を使って内部より脱出することは極めて困難であると予測される。」,narrative,MessyPaper_Stage2_Default,
+「もっとも、それでも彼女たちが逃げ出す可能性は0とは言い切れない。」,narrative,MessyPaper_Stage2_Default,
+「従って、いくつかの遺物を“改良”し、自律的に周囲を巡回・警備させるよう措置を講じた。」,narrative,MessyPaper_Stage2_Default,
+えっと…この扉、開かない…？ うーん……押しても、引いても……だめ、みたい……,Heroin,,Heroin_flexible_normal
+扉の構造を分析しました。通常の施錠とは異なる仕組みのようです。物理的な解錠は困難です,Fabo,,
+そっか……じゃあ、他に開ける方法を探さなきゃ、だよね……,Heroin,,Heroin_flexible_normal
+"ふと、扉の上に目をやると、なにかの絵が貼ってある。　女性の絵……？　でも、すごく……太ってる……？",narrative,,
+……え、なにこれ……？,Heroin,,Heroin_flexible_normal
+私は思わずつぶやいた。絵の女性は普通の人の何倍もぶよぶよに太っている。,narrative,,
+この人……なのかな……関係あるのかな……？　でも……わからないや……,Heroin,,Heroin_flexible_normal
+現時点では、情報が不足しています。この絵が扉の解錠に関係するかは判断できません。,Fabo,,
+うん……だよね……じゃあ、今は……先に進もう。,Heroin,,Heroin_flexible_normal
+ふぅっ……はぁ……んしょっ……,Heroin,,Heroin_flexible_normal
+私は、自分の身体をゆっくりと揺らしながら、扉の前に近づく。,narrative,,
+げぷっ……ん、うぅ……ちょっと、苦しい……,Heroin,,Heroin_flexible_normal
+さっきまではびくともしなかった扉が、今は少しだけ開いているようだった。,narrative,,
+え……あれ……？　いままでは開かなかったのに……どうして……？,Heroin,,Heroin_flexible_normal
+私は扉の前で立ち止まり、ゆっくりと手を伸ばす。あの絵——まるまると太った女性の絵は、まだ貼られている。,narrative,,
+……ううん、やっぱり、なにか……わかんないや……なんであんな絵が……,Heroin,,Heroin_flexible_normal

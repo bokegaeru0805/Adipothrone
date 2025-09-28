@@ -1,0 +1,382 @@
+セリフ,ChracterName,BlockName,FileName
+フェードアウト:0.01秒,,PrologueStartField,
+0.1秒待機,,PrologueStartField,
+BodyState = BodyState_Armed2,,PrologueStartField,
+……あれ…？ わ、わたし…落ちて…？,Heroin,PrologueStartField,Heroin_flexible_troubled
+わ、わたし…戻ってる…？ で、でも…はぁ…っ、はぁ…っ、やっぱり重い…っ…,Heroin,PrologueStartField,Heroin_flexible_troubled
+ふぁ、ファボ…？ どこ…？,Heroin,PrologueStartField,Heroin_flexible_troubled
+……わたし、ひとり…？ そ、そんな…っ…,Heroin,PrologueStartField,Heroin_flexible_troubled
+はぁ…っ、でも...先に進まなきゃ…げぷっ…！,Heroin,PrologueStartField,Heroin_flexible_troubled
+フェードイン:1秒,,PrologueStartField,
+"<sprite name=""Gear_Icon"">移動の操作を説明します。",narrative,PrologueStartField,
+"<sprite name=""Gear_Icon"">{$KeyColor}{$LeftMoveKey}{$ColorTagClose}を押すと、{$CharacterActionColor}{$PlayerName}は左に移動します。\n{$ColorTagClose} {$KeyColor}{$RIghtMoveKey}{$ColorTagClose}を押すと、{$CharacterActionColor}{$PlayerName}は右に移動します。{$ColorTagClose}",narrative,PrologueStartField,
+"<sprite name=""Gear_Icon"">移動中に{$KeyColor}{$DashKey}{$ColorTagClose}を押し続けると、{$CharacterActionColor}ダッシュが可能です。{$ColorTagClose}",narrative,PrologueStartField,
+はぁ…っ、はぁ…っ、 ど、どこまで進めば…っ、げぷっ…いいの…？,Heroin,PrologueEndField,Heroin_flexible_troubled
+ふぅ…っ、げぷっ…っ、な、なにか…柔らかい…？,Heroin,PrologueEndField,Heroin_flexible_troubled
+不意に肌色の、ぶよぶよとした何かにぶつかった。何これ…？ 壁…？でも、こんなに弾力があるなんて——。,narrative,PrologueEndField,
+私は、顔を上げると...,narrative,PrologueEndField,
+"CameraMove:(-63.5, 6) 1.5秒",,PrologueEndField,
+ふぅ…ぅぅ……ぷ、ぶふぅぅ～～……,???,PrologueEndField,
+えっ…！？ 何、こ、これ…！！,Heroin,PrologueEndField,Heroin_flexible_surprised
+セーブ不可能にする,,PrologueEndField,
+BGM停止,,PrologueEndField,
+フェードアウト:1秒,,PrologueEndField,
+"PlayerMove:(0,0)",,PrologueEndField,
+CameraReset,,PrologueEndField,
+BodyState = BodyState_Normal,,StartField,
+ん…っ…,Heroin,StartField,Heroin_flexible_normal
+まぶたが重い。意識がゆっくりと戻ってくる。,narrative,StartField,
+ここ…どこ…？,Heroin,StartField,Heroin_flexible_normal
+フェードイン:1秒,,StartField,
+ぼんやりとした視界の先に、見慣れない天井が広がっていた。,narrative,StartField,
+わたし…何をしてたんだっけ…？,Heroin,StartField,Heroin_flexible_normal
+記憶をたどろうとする。しかし、頭の奥に霧がかかったように、何も思い出せない。,narrative,StartField,
+……と、とにかく…動かなきゃ…,Heroin,StartField,Heroin_flexible_normal
+"<sprite name=""Gear_Icon"">ゲーム進行状況とTipsの確認方法について説明します。",narrative,StartField,
+"<sprite name=""Gear_Icon"">メニュー画面の「Quest」から、現在のゲーム進行状況や各種Tipsを確認することができます。",narrative,StartField,
+"<sprite name=""Gear_Icon"">情報は複数のタブに分かれているため、{$KeyColor}{$TabRightKey}{$ColorTagClose}と{$KeyColor}{$TabLeftKey}{$ColorTagClose}を使ってタブを切り替えてください。",narrative,StartField,
+セーブ可能にする,,StartField,
+演出,,StartField,
+えっと…これは…？,Heroin,RobotEncounterField,Heroin_flexible_normal
+私は転がっている何かを見つけ、恐る恐る近づく,narrative,RobotEncounterField,
+SE:Boot1,,RobotEncounterField,
+ピィー…ブウゥゥン…,narrative,RobotEncounterField,
+……起動プロセス開始。環境スキャン中……完了。,???,RobotEncounterField,
+わっ…！？,Heroin,RobotEncounterField,Heroin_flexible_surprised
+突然、その球体が震え、赤い光がふわっと灯る。私は思わず数歩後ずさる。,narrative,RobotEncounterField,
+起動完了。認証中……対象確認……ノエリ。,???,RobotEncounterField,
+えっ！？ なんで私の名前を知ってるの！？,Heroin,RobotEncounterField,Heroin_flexible_surprised
+データベース確認……ノエリ、識別完了。,???,RobotEncounterField,
+あ、あなたは…ここがどこか分かるの？,Heroin,RobotEncounterField,Heroin_flexible_normal
+現在の状況を分析。施設内での脱出行動を検討していますか？,???,RobotEncounterField,
+私は小さく息をのむ。なぜそれを…？でも、確かに…ここから出ないといけない。,narrative,RobotEncounterField,
+う、うん…そう…,Heroin,RobotEncounterField,Heroin_flexible_normal
+協力可能です。ノエリ、共に進みましょう。,???,RobotEncounterField,
+私は目の前の不思議な球体を見つめる。助けてくれる…？ でも、本当に…？,narrative,RobotEncounterField,
+そ、そうなんだ… えっと、じゃあ…あなたの名前は？,Heroin,RobotEncounterField,Heroin_flexible_normal
+識別コード、F-a-b-o。簡易名、ファボ。,???,RobotEncounterField,
+ファボ… ふふ、なんだかかわいい名前…,Heroin,RobotEncounterField,Heroin_flexible_smile
+小さな白い球体がわずかに動いた。私は少し迷ったけれど、やがて小さく頷いた。,narrative,RobotEncounterField,
+うん…よろしくね、ファボ…,Heroin,RobotEncounterField,Heroin_flexible_smile
+isRobotMove = true,,RobotEncounterField,
+isRobotAttack = true,,RobotEncounterField,
+RobotEnconterフラグ = true,,RobotEncounterField,
+BGM「Fied_Tutorial」を再生,,RobotEncounterField,
+えっと…この扉、開かないみたい…,Heroin,JumpTutorialField,Heroin_flexible_normal
+扉の隙間から奥を覗くと、壁の中にスイッチが見える。私の手では、どうしても届きそうにない。,narrative,JumpTutorialField,
+うーん…どうしよう…？,Heroin,JumpTutorialField,Heroin_flexible_normal
+ノエリ、ご指示があれば、私のビーム機能を使用することが可能です。,Fabo,JumpTutorialField,
+ええっ...！？　攻撃なんて出来るの！？,Heroin,JumpTutorialField,Heroin_flexible_surprised
+はい。主に障害物の破壊や遠隔操作が必要な場面で活用できます。,Fabo,JumpTutorialField,
+それなら…あのスイッチにも届くかも…？,Heroin,JumpTutorialField,Heroin_flexible_normal
+可能性は高いです。試してみますか？,Fabo,JumpTutorialField,
+うん、お願いファボ！　やってみよう！,Heroin,JumpTutorialField,Heroin_flexible_serious
+"<sprite name=""Gear_Icon"">ジャンプの操作を説明します。",narrative,JumpTutorialField,
+"<sprite name=""Gear_Icon"">{$KeyColor}{$JumpKey}{$ColorTagClose}を押すと、{$CharacterActionColor}{$PlayerName}がジャンプします。{$ColorTagClose}",narrative,JumpTutorialField,
+"<sprite name=""Gear_Icon"">この動作には、{$PartnerName}も付随します。",narrative,JumpTutorialField,
+"<sprite name=""Gear_Icon"">攻撃の操作を説明します。",narrative,JumpTutorialField,
+"<sprite name=""Gear_Icon"">{$KeyColor}{$AttackKey}{$ColorTagClose}を押すと、{$CharacterActionColor}{$PartnerName}が弾を発射して攻撃を行います。{$ColorTagClose}",narrative,JumpTutorialField,
+"<sprite name=""Gear_Icon"">攻撃はジャンプ中でも可能です。",narrative,JumpTutorialField,
+"<sprite name=""Gear_Icon"">この攻撃は敵に対して有効であるほか、一部のギミックにも作用する場合があります。",narrative,JumpTutorialField,
+SE「Warning1」を再生,,EnemyTutorialField,
+ピィィィーーーン……ピィィィーーーン……,narrative,EnemyTutorialField,
+緊急事態発生。対象の確保を優先せよ。全ユニット、速やかに捕獲を開始。,???,EnemyTutorialField,
+ひっ…！？,Heroin,EnemyTutorialField,Heroin_flexible_anxious
+警告音の分析を開始。……解析完了。『対象』とは、あなたを指している可能性が高いです。,Fabo,EnemyTutorialField,
+えっ…わ、わたし…？,Heroin,EnemyTutorialField,Heroin_flexible_troubled
+頭が真っ白になる。私が、捕まえられる…？ どうして…？,narrative,EnemyTutorialField,
+その時、目の前で何かが動き始める。一定の間隔で移動しながら、周囲を警備しているみたい。,narrative,EnemyTutorialField,
+ノエリ、気をつけてください。その機械の液体に触れると、あなたはダメージを受けます。,Fabo,EnemyTutorialField,
+えっ…！？,Heroin,EnemyTutorialField,Heroin_flexible_troubled
+思わず一歩後ずさる。…そんなに危険なの…！？,narrative,EnemyTutorialField,
+この施設には似た機械が多く、触れ続ければ致命傷を負う恐れがあります。,Fabo,EnemyTutorialField,
+う、うそ…そ、そんな…の……,Heroin,EnemyTutorialField,Heroin_flexible_troubled
+手足が震える。でも、ここで立ち止まっていたら、本当に捕まる…！,narrative,EnemyTutorialField,
+大丈夫です、ノエリ。先ほどのビームを使えば、これらの機械を無力化できます。,Fabo,EnemyTutorialField,
+そ、そうだね…！ ファボ、お願い…！,Heroin,EnemyTutorialField,Heroin_flexible_normal
+"<sprite name=""Gear_Icon"">ダメージとHPに関する説明をします。",narrative,EnemyTutorialField,
+"<sprite name=""Gear_Icon"">{$PlayerName}が赤枠で囲まれている敵の攻撃を受けた場合、{$CharacterActionColor}ダメージを受けます。{$ColorTagClose}",narrative,EnemyTutorialField,
+"<sprite name=""Gear_Icon"">{$PlayerName}のHPは、{$CharacterActionColor}画面左下に表示されている赤いHPバーで確認できます。{$ColorTagClose}",narrative,EnemyTutorialField,
+"CameraMove:(-110,6) 0.7秒",,CrystalTutorialField,
+遠くに大きな扉がある。でも、スイッチは見当たらない。,narrative,CrystalTutorialField,
+開ける方法がわからないね…ファボ？,Heroin,CrystalTutorialField,Heroin_flexible_normal
+分析が完了しました。この扉の向こうへ進むには、目の前のクリスタルが鍵になるかもしれません。,Fabo,CrystalTutorialField,
+このクリスタルに触れれば…開くの？,Heroin,CrystalTutorialField,Heroin_flexible_normal
+ええ、可能性はあります。ただ、この扉は一つのクリスタルだけでは解除されない仕組みのようです。,Fabo,CrystalTutorialField,
+じゃあ、ほかにも？,Heroin,CrystalTutorialField,Heroin_flexible_normal
+ええ、さらに調査したところ、後方にある二つの扉の先にも同じようなクリスタルがある可能性が高いです。,Fabo,CrystalTutorialField,
+計３つすべてを起動させることで、扉が解除される仕組みになっていると思われます。,Fabo,CrystalTutorialField,
+つまり、全部のクリスタルを見つけなきゃいけないってこと？,Heroin,CrystalTutorialField,Heroin_flexible_normal
+はい、その通りです。ノエリ、準備ができたら探索を始めましょう。,Fabo,CrystalTutorialField,
+うぅ…わかった…行ってみる…,Heroin,CrystalTutorialField,Heroin_flexible_normal
+CameraReset,,CrystalTutorialField,
+演出,,CrystalTutorialField,
+"<sprite name=""Gear_Icon"">メニューについて説明します。",narrative,CrystalTutorialField,
+"<sprite name=""Gear_Icon"">{$KeyColor}{$OpenMenuKey}{{$ColorTagClose}を押すと、{$CharacterActionColor}メニューが開きます。{$ColorTagClose}",narrative,CrystalTutorialField,
+"<sprite name=""Gear_Icon"">メニュー内では、セーブやロード、タイトルに戻るといった様々な機能が使えます。",narrative,CrystalTutorialField,
+"<sprite name=""Gear_Icon"">{$CharacterActionColor}機能の選択{$ColorTagClose}は、{$KeyColor}ウィンドウ内の左側に配置されたボタンから行ってください。{$ColorTagClose}",narrative,CrystalTutorialField,
+"<sprite name=""Gear_Icon"">セーブ機能以外は、基本的にいつでも開けるようになっています。",narrative,CrystalTutorialField,
+"<sprite name=""Gear_Icon"">セーブ機能は、ボス戦などの特殊な状況では使用出来ないことがあります。",narrative,CrystalTutorialField,
+対象の分析を行います……。,Fabo,Stage1EnterEnemyField,
+表面に有害な液体の付着は未確認。接触によって直接的な被害を受ける心配はないと思われます。,Fabo,Stage1EnterEnemyField,
+ですが、このように見た目は安全な場合も、別の攻撃手段を持っている可能性があります。,Fabo,Stage1EnterEnemyField,
+"<sprite name=""Gear_Icon"">敵の種類について説明します。",narrative,Stage1EnterEnemyField,
+"<sprite name=""Gear_Icon"">赤枠で囲まれている敵やオブジェクトに触れるとダメージを受けます。",narrative,Stage1EnterEnemyField,
+"<sprite name=""Gear_Icon"">緑枠で囲まれている敵は、触れてもダメージを受けることはありません。",narrative,Stage1EnterEnemyField,
+"<sprite name=""Gear_Icon"">ただし、緑枠の敵であっても攻撃してくることがあるため、油断しないようにしてください。",narrative,Stage1EnterEnemyField,
+えっと…あれって…クリスタル…？,Heroin,DonutMountainField,Heroin_flexible_normal
+確認しました。進むために必要なクリスタルですね。でも…その前に大きな問題があります。,Fabo,DonutMountainField,
+障害物…って、これ…ドーナツ…？,Heroin,DonutMountainField,Heroin_flexible_normal
+目の前には、信じられないほど大量のドーナツが積み上がっていた。,narrative,DonutMountainField,
+まるで山のように積み重なり、埋もれてしまっているクリスタルへは手が届きそうもない。,narrative,DonutMountainField,
+うぅ…どうしよう…これ、どかせないと…,Heroin,DonutMountainField,Heroin_flexible_anxious
+方法の一つとして、ビームを使ってドーナツをどかすことも考えられます。,Fabo,DonutMountainField,
+あ、そうだね！ それなら——,Heroin,DonutMountainField,Heroin_flexible_normal
+でも…注意が必要です。ビームを当てると、クリスタルが壊れてしまうかもしれません。,Fabo,DonutMountainField,
+えぇ…じゃあ、どうすれば…,Heroin,DonutMountainField,Heroin_flexible_troubled
+他の方法を検討します。物理的に手作業で処理するのは現実的ではありません。,Fabo,DonutMountainField,
+一番確実なのは……ノエリが食べること、かもしれませんね。,Fabo,DonutMountainField,
+そ、そんな…！ こんなに食べたら…わたし…,Heroin,DonutMountainField,Heroin_flexible_anxious
+確かに負担は大きいですが、現時点でそれ以外の方法は見つかっていません。,Fabo,DonutMountainField,
+視線をドーナツの山に向けると、甘い匂いがふわりと漂ってくる。手を伸ばせば、すぐにでも一口食べられる距離。,narrative,DonutMountainField,
+だけど、一度食べ始めたら止まらない気がして——いや、それ以前に、この量を全部食べ切れるのかという不安が喉を塞ぐ。,narrative,DonutMountainField,
+少し大変かもしれませんが、これをどけないと先へ進めません。ノエリ、どうしますか？,Fabo,DonutMountainField,
+うぅ…し、仕方ないけど…,Heroin,DonutMountainField,Heroin_flexible_anxious
+私は大きく息を吸い込み、目の前のドーナツの山を見つめた。こんなに食べたら、本当に…太っちゃうかも…,narrative,DonutMountainField,
+……ふぅ。た、食べるよ…！,Heroin,DonutMountainField,Heroin_flexible_serious
+もぐもぐ...,narrative,DonutMountainField,
+ん…っ、ごくっ…んぅ…もう…無理…,Heroin,DonutMountainField,Heroin_flexible_anxious
+私は何個目かわからないドーナツを飲み込むと、その場に座り込んだ。お腹がいっぱいすぎて、少し動くだけでも苦しい。,narrative,DonutMountainField,
+お疲れさまでした、ノエリ。これでクリスタルを起動することが出来ます。,Fabo,DonutMountainField,
+うぅ…うん…でも…お腹が…く、苦しくて…,Heroin,DonutMountainField,Heroin_flexible_anxious
+私はお腹をさすりながら、じんわりと込み上げてくるものを感じた。そして——,narrative,DonutMountainField,
+げ、ぷ…っ！？ んっ…ごめ…なさい…！,Heroin,DonutMountainField,Heroin_flexible_anxious
+問題ありません。生理現象ですので、気にする必要はありませんよ。,Fabo,DonutMountainField,
+そ、そんなの…！ うぅ…恥ずかしいよぉ…,Heroin,DonutMountainField,Heroin_flexible_blush
+お腹がドーナツでパンパンで、動くのもつらい。でも、クリスタルがやっと手に届くようになった。,narrative,DonutMountainField,
+ノエリ、クリスタルに触れましょう。先に進む必要があります。,Fabo,DonutMountainField,
+うぅ…い、いまは…ちょっと…む、無理…げぷっ…！,Heroin,DonutMountainField,Heroin_flexible_blush
+私は両手で顔を覆いながら、身を縮める。こんなに苦しいのに、すぐには動けそうにない。,narrative,DonutMountainField,
+現在、これ以上ドーナツを食べる必要はありません。さらに食べると、あなたの行動が著しく制限される可能性があります。,Fabo,DonutMountainField,
+そ、そんなこと言われても…もう十分すぎるくらい…お腹いっぱい…,Heroin,DonutMountainField,Heroin_flexible_anxious
+理解しました。それでは、少し休憩しましょう。,Fabo,DonutMountainField,
+……はぁ…っ、はぁ…っ……も、もう…いいって、わかってるのに……,Heroin,donutMountainBadEnd,Heroin_flexible_normal
+私はファボに言われたはずだった。もう食べすぎてはいけないって。,narrative,donutMountainBadEnd,
+でも、目の前にあるドーナツの山が、まるで私を呼んでいるみたいで。,narrative,donutMountainBadEnd,
+ちょっとだけ…もうひとつだけ…っ,Heroin,donutMountainBadEnd,Heroin_flexible_normal
+フェードアウト:1秒,,donutMountainBadEnd,
+BGMを停止,,donutMountainBadEnd,
+SE「Eat1」を再生,,donutMountainBadEnd,
+BodyState = BodyState_Immobile,,donutMountainBadEnd,
+もぐっ、もぐもぐ…くちゅっ、ごくんっ…。,narrative,donutMountainBadEnd,
+ノエリ、それ以上の摂取は危険です。このドーナツは、繰り返し摂取によって判断力に影響を及ぼす傾向があります。,Fabo,donutMountainBadEnd,
+だ、大丈夫…っ、ふぅ…っ、げぷっ……も、もう…ひとつだけ……っ,Heroin,donutMountainBadEnd,Heroin_flexible_normal
+私は気付かないふりをして、また一つ、そしてまた一つ、手を伸ばす。,narrative,donutMountainBadEnd,
+んっ、んむぅ…っ、ごくっ、ごくんっ……ん、ひゅぅぅ……おいし…っ…,Heroin,donutMountainBadEnd,Heroin_flexible_normal
+どんどんと、お腹が重くなっていく。でも、止まらなかった。苦しいのに、美味しすぎて、やめられない。,narrative,donutMountainBadEnd,
+SE「Bound1」を再生,,donutMountainBadEnd,
+フェードイン:0.5秒,,donutMountainBadEnd,
+ぼふっ…ぼごっ…ぐぐっ…むちぃっ…ぱつんっ…！,narrative,donutMountainBadEnd,
+や…ぁっ、はぁ…っ、私…こんなに…ふっ、ぐぇっぷ…っ…っ……あ、歩け……な、い……っ…,Heroin,donutMountainBadEnd,Heroin_flexible_normal
+お腹は膝を完全に覆い、巨大に膨れ上がった脂肪が床に押し潰れるように広がっていく。,narrative,donutMountainBadEnd,
+腕も太ももも、もはや肉に埋もれてどこにあるのかさえ分からない。,narrative,donutMountainBadEnd,
+んっ…んぐぅ…っ、もっと…もっとぉ…っ……ドーナツ…どこ…？,Heroin,donutMountainBadEnd,Heroin_flexible_normal
+もはや周囲の声も、ファボの警告も耳に入らない。,narrative,donutMountainBadEnd,
+ただただ、目の前のドーナツだけを求めて、短く浅い呼吸を繰り返しながら、脂肪に沈んだ顔を動かそうとする。,narrative,donutMountainBadEnd,
+ノエリ……応答がありません。中毒症状が進行しています。緊急処置が必要です。,Fabo,donutMountainBadEnd,
+や…ぁ…っ…どぉ…ナツ…たべ、たいの……っ……んぐっ…んぐぶっ……！,Heroin,donutMountainBadEnd,Heroin_flexible_normal
+そのとき——,narrative,donutMountainBadEnd,
+SE「Warning1」を再生,,donutMountainBadEnd,
+緊急事態発生。対象の確保を優先せよ。全ユニット、速やかに捕獲を開始。,???,donutMountainBadEnd,
+……ひゅぅ…っ、あ…れ…っ……わ、たし……また……たべ……,Heroin,donutMountainBadEnd,Heroin_flexible_normal
+ノエリ……！,Fabo,donutMountainBadEnd,
+私は周りの状況にも気を留めずに、どんどんとドーナツの山に埋もれていく。,narrative,donutMountainBadEnd,
+……んぶっ……もっと……も、もっとぉ……っ……ドーナツ……たべ、たべたいのぉぉ……っ……んぶぅぅ……！,Heroin,donutMountainBadEnd,Heroin_flexible_normal
+GameOver,,donutMountainBadEnd,
+ファボの言う通り、食べないでおこうかな,Heroin,donutMountaBadEndEscape,Heroin_flexible_normal
+分析開始……完了。,Fabo,BreakableShootTutorialField,
+目の前の液体は、赤い液体と判定されました。先ほどの黄色いものとは異なる特性を持っています。,Fabo,BreakableShootTutorialField,
+赤い物質で構成された水滴や障害物は、私のビームで破壊が可能です。安全のため、接触は避け、遠隔で処理してください。,Fabo,BreakableShootTutorialField,
+私は肩で息をしながら、倒れた敵を見下ろした。,narrative,TutorialGolemDefeat,
+ふぅ…あっ…あそこ…クリスタル…？ あれに触れば…,Heroin,TutorialGolemDefeat,Heroin_flexible_normal
+ノエリ、警告します。この個体の内部に残留反応を確認。離れてください。,Fabo,TutorialGolemDefeat,
+えっ…？,Heroin,TutorialGolemDefeat,Heroin_flexible_troubled
+ファボの言葉を理解する前に、倒れていた敵の身体が震えた。,narrative,TutorialGolemDefeat,
+SE「Impact1」を再生,,TutorialGolemDefeat,
+ボンッ！！,narrative,TutorialGolemDefeat,
+きゃっ！？,Heroin,TutorialGolemDefeat,Heroin_flexible_surprised
+爆発音とともに、黄色く濁った液体が四方に飛び散る。その一部が、私の腕や顔にかかってしまった。,narrative,TutorialGolemDefeat,
+な、なにこれ…！？ うそっ…！ 体が…あつ…い！？,Heroin,TutorialGolemDefeat,Heroin_flexible_anxious
+BodyState+1,,TutorialGolemDefeat,
+SE「MuchiMuchi」を再生,,TutorialGolemDefeat,
+ぼふっ…ぐぐっ…むちっ…ぱつん…！,narrative,TutorialGolemDefeat,
+みるみるうちに、身体に異変が起きた。胸元やお腹、腰回りにどんどん重さが増していくのを感じる。,narrative,TutorialGolemDefeat,
+う、うそ…わたし…太って…る…？,Heroin,TutorialGolemDefeat,Heroin_flexible_anxious
+液体への接触を確認。反応が早いようです。ノエリ、落ち着いてください。,Fabo,TutorialGolemDefeat,
+ど、どうしよう…！ こ、こんな体…っ…,Heroin,TutorialGolemDefeat,Heroin_flexible_anxious
+ノエリ、この個体には一切触れないでください。残留物も危険です。早く先へ進みましょう。,Fabo,TutorialGolemDefeat,
+SE「Impact1」を停止,,TutorialGolemDefeat,
+SE「MuchiMuchi」を停止,,TutorialGolemDefeat,
+だ、大丈夫…ちょっと触れるだけ、だからっ…,Heroin,TutorialGolemBadEnd,Heroin_flexible_normal
+手が触れた、その瞬間だった。,narrative,TutorialGolemBadEnd,
+フェードアウト:0.5秒,,TutorialGolemBadEnd,
+SE「Imapct1」を再生,,TutorialGolemBadEnd,
+ボゴォォンッ！！,narrative,TutorialGolemBadEnd,
+きゃあぁっっ！？？,Heroin,TutorialGolemBadEnd,Heroin_flexible_normal
+ものすごい爆発音とともに、さっきとは比べ物にならないほど大量の黄色い液体が宙を舞った。,narrative,TutorialGolemBadEnd,
+ひっ…あっ…ああああっ！？ や、やだぁっ……！！,Heroin,TutorialGolemBadEnd,Heroin_flexible_normal
+SE「MuchiMuchi」を再生,,TutorialGolemBadEnd,
+BodyState = BodyState_Immobile,,TutorialGolemBadEnd,
+ぶしゅぅっ…ぼふっ…ぼごっ…ぐぐぐぅ…っ！,narrative,TutorialGolemBadEnd,
+液体が頭から全身にかかり、即座に身体が膨れ始めた。服がはじけ、肌がたわんでいく。,narrative,TutorialGolemBadEnd,
+や…ぁっ、はぁ…っ、わたし…こんなに…ふっ、ぐぇっぷ…っ…！も、もう…立て…な…っ…,Heroin,TutorialGolemBadEnd,Heroin_flexible_normal
+膨張したお腹が足を覆い、腕は体に埋もれて動かない。私はただ巨大な肉塊と化して、床に沈み込んだ。,narrative,TutorialGolemBadEnd,
+……ノエリ…っ,Fabo,TutorialGolemBadEnd,
+その時、あの音が再び空間に響いた。,narrative,TutorialGolemBadEnd,
+SE「Warning1」を再生,,TutorialGolemBadEnd,
+ピィィィーーーン……ピィィィーーーン……,narrative,TutorialGolemBadEnd,
+緊急事態発生。対象の確保を優先せよ。全ユニット、速やかに捕獲を開始。,???,TutorialGolemBadEnd,
+うそ…わたし…なんで…っ、もっと、早く…言うこと…聞いてれば…っ…,Heroin,TutorialGolemBadEnd,Heroin_flexible_normal
+遠ざかっていくファボの声、近づいてくる音、そして私は——,narrative,TutorialGolemBadEnd,
+...,narrative,TutorialGolemBadEnd,
+ゲームオーバー,,TutorialGolemBadEnd,
+ファボの言う通り、離れておこうかな,Heroin,TutorialGolemBadEndEscape,
+全てのクリスタルの起動を確認。進行ルートが解放されました。先行可能です。,Fabo,CrystalQuestCompleteField,
+ノエリ、少し待ってください。この先から、強い反応を検知しました。,Fabo,BeforeFirstBossField,
+高エネルギー反応あり。強敵の可能性が高いです。慎重に行動しましょう。,Fabo,BeforeFirstBossField,
+演出,,BeforeFirstBossField,
+BGMフェードアウト:1秒,,FirstBossAppearField,
+はぁ…っ、や、やっと…で、でられた…ぷぅぅ…っ,Heroin,FirstBossAppearField,Heroin_flexible_anxious
+私は自分の身体を支えながら、重たいお腹を揺らして広い空間を見渡した。ここまで歩くだけでも、息が苦しい。,narrative,FirstBossAppearField,
+ノエリ、大丈夫ですか？,Fabo,FirstBossAppearField,
+う、うん…だ、だいじょ…ぶっ…げぷぅ…っ！,Heroin,FirstBossAppearField,Heroin_flexible_anxious
+思わず口元を押さえたが、抑えきれなかった。顔が熱くなる。こんな身体じゃ、まともに動くのも一苦労だ。,narrative,FirstBossAppearField,
+"CameraShake:(2,2),2秒",,FirstBossAppearField,
+SE「Quake」を再生,,FirstBossAppearField,
+突然、前方の空間が歪み、黄色い何かが形を成していく。,narrative,FirstBossAppearField,
+ひっ…！？あれ...って...,Heroin,FirstBossAppearField,Heroin_flexible_surprised
+分析を開始します……完了。あの存在、先ほどの液体と同じ成分で構成されているようです。,Fabo,FirstBossAppearField,
+えっ…そ、そんな…！？,Heroin,FirstBossAppearField,Heroin_flexible_surprised
+さらに、あの魔物を倒さない限り、進むことは難しいと推測されます。,Fabo,FirstBossAppearField,
+そ、そんなの…こんな…ひぃ…はぁ…っ、こんな身体で…,Heroin,FirstBossAppearField,Heroin_flexible_anxious
+私は腹に手を当て、息を整えようとするが、焦りのせいで余計に息が乱れる。こんな状態で動くなんて…,narrative,FirstBossAppearField,
+ノエリ、落ち着いてください。今まで通り、攻撃は私が行います。,Fabo,FirstBossAppearField,
+で、でも…っ、はぁ…っ、げぇっぷ…！ うぅ…,Heroin,FirstBossAppearField,Heroin_flexible_anxious
+選択肢は限られています。前に進むためには、戦うしかありません。,Fabo,FirstBossAppearField,
+私は不安げにファボを見上げた。逃げ道は、もうなかった。,narrative,FirstBossAppearField,
+SE「Quake」を停止,,FirstBossAppearField,
+BGM「Boss_Electric」を再生,,FirstBossAppearField,
+移動制限ゾーンを表示,,FirstBossAppearField,
+ボスを表示,,FirstBossAppearField,
+はぁ…っ、はぁ…っ、や、やっと…倒せた…,Heroin,FirstBossDefeat,Heroin_flexible_anxious
+私は膝に手をつき、大きく息を吸った。体が重くて、まともに立っているのもつらい。,narrative,FirstBossDefeat,
+お疲れさまでした、ノエリ。現在、進行可能です。,Fabo,FirstBossDefeat,
+ま、まって…っ、はぁ…っ、少しだけ…げぷぅ…休ませて…,Heroin,FirstBossDefeat,Heroin_flexible_anxious
+理解しました。体調が落ち着いたら、先へ進みましょう。,Fabo,FirstBossDefeat,
+移動制限ゾーンを非表示,,FirstBossDefeat,
+演出,,FirstBossDefeat,
+はぁ…っ、はぁ…っ、まだ…先があるの…？,Heroin,WomanAppearField,Heroin_flexible_anxious
+その時、視界の端に奇妙なものが映る。,narrative,WomanAppearField,
+…あれは…？,Heroin,WomanAppearField,Heroin_flexible_normal
+EventManager_First_move,,WomanAppearField,
+巨大な容器を確認。内部に何かが封入されています。,Fabo,WomanAppearField,
+私は容器に近づき覗き込む。中は見たことのあるような液体で満たされ、ぼんやりとした影が浮かんでいた。,narrative,WomanAppearField,
+うそ…これ…ひ、ひと…？,Heroin,WomanAppearField,Heroin_flexible_troubled
+液体の中には、丸々と太った女性が静かに眠っていた。膨れ上がった体は液体に沈み、微かに揺れている。,narrative,WomanAppearField,
+な、なに…これ…！？,Heroin,WomanAppearField,Heroin_flexible_troubled
+詳細な分析が必要です。しかし、あの液体は先ほどのものと同じ成分を含んでいる可能性が高いです。,Fabo,WomanAppearField,
+そ、そんな…じゃあ…この人も…！,Heroin,WomanAppearField,Heroin_flexible_troubled
+この容器から目が離せない。背筋がざわつき、喉が強張る。そんな時——,narrative,WomanAppearField,
+ふふ…そんなに興味深そうに見つめなくてもいいのに。,???,WomanAppearField,
+突然の声に心臓が跳ねた。振り向くと、闇の中から鎧に身を包んだ女性が悠然と歩み寄ってくる。,narrative,WomanAppearField,
+ようこそ、私の施設へ。,???,WomanAppearField,
+警戒してください。敵性の可能性が高いです。,Fabo,WomanAppearField,
+私は胸がざわつくのを感じ、思わず足を引いた。何か…嫌な気配がする…！,narrative,WomanAppearField,
+怖がらなくてもいいのよ。おとなしくしてくれれば、手荒なことはしないわ。,???,WomanAppearField,
+う、うそ…っ、げぷっ…ぷぅ…っ、 な、なにを…するつもりなの…？,Heroin,WomanAppearField,Heroin_flexible_troubled
+全身が強ばる。このままでは捕まる——逃げなきゃ。,narrative,WomanAppearField,
+私は重い体を揺らし、全力で駆け出そうとする。しかし——,narrative,WomanAppearField,
+……仕方ないわね。,???,WomanAppearField,
+EventManager_First_womandash,,WomanAppearField,
+"次の瞬間、視界がぶれた。信じられない速度で間合いを詰められ、何かが無理やり口の中へ押し込まれた。",narrative,WomanAppearField,
+んぐっ！？ んぶっ…！！,Heroin,WomanAppearField,Heroin_flexible_anxious
+口の中に押し込まれたのは、小さな塊だった。ただの食べ物ではない…何か、身体の奥底に違和感が広がっていく——,narrative,WomanAppearField,
+ノエリ！！ 危険です！!,Fabo,WomanAppearField,
+EventManager_First_HeroinInflation,,WomanAppearField,
+んぐっ…！？ んぶ…ぅっ…はぁ…っ、はぁ…っ、な、なに…これ…！,Heroin,WomanAppearField,Heroin_flexible_anxious
+私は息を詰まらせ、震える指先で自分の腹に触れた——そこには、ありえないほど膨れ上がった肉の塊があった。,narrative,WomanAppearField,
+や…ぁっ、はぁ…っ、わたし…こんなに…ふっ、ぐぇっぷ…っ…！,Heroin,WomanAppearField,Heroin_flexible_anxious
+息をするだけでお腹が波打ち、重たすぎる自分の体に支えられず、ずるりと床に沈み込む。動こうとしても、腕も足も埋もれてしまい、まったく言うことを聞かない。,narrative,WomanAppearField,
+ノエリ！ 状態異常を確認。あなたの体重が急激に増加しています！,Fabo,WomanAppearField,
+ふふ…素晴らしいわ。とても愛らしい姿になったじゃない。,???,WomanAppearField,
+う、うそ…っ、こんなの…や、やだ…ぷ、ひゅうぅぅ～～…！,Heroin,WomanAppearField,Heroin_flexible_anxious
+喉の奥から、止めようのないげっぷが漏れるが、そんなことを気にする余裕すらない。,narrative,WomanAppearField,
+ふふ…こんなにおデブちゃんになってしまって、もう身動きすら取れないでしょう？ ,???,WomanAppearField,
+そのたっぷりと育った体、私のものにさせてもらうわ。,???,WomanAppearField,
+ノエリに近づけさせるわけにはいきません！,Fabo,WomanAppearField,
+激しい音とともに、ファボのがビームを発射しようとするが——,narrative,WomanAppearField,
+EventManager_First_HeroinFall,,WomanAppearField,
+えっ…？ ひ、ひゃああぁぁっ！？,Heroin,WomanAppearField,Heroin_flexible_troubled
+突如、自分の重みで床が耐えきれず崩壊する。成す術もなく、私は落下した。,narrative,WomanAppearField,
+ノエリ！！,Fabo,WomanAppearField,
+ファボの必死な声が遠ざかる。暗闇が広がり、意識が薄れていく。,narrative,WomanAppearField,
+…地下に落ちたのね。でも、いいわ。あの場所にも、素敵な“お友達”がいるもの。,???,WomanAppearField,
+2秒待機,,WomanAppearField,
+EventManager_First_ToSecondPrologue,,WomanAppearField,
+セーブ不可能にする,,WomanAppearField,
+"フェードアウト:0,01秒",,SecondPrologueStartField,
+う…ん…っ…んぅ…？,Heroin,SecondPrologueStartField,Heroin_flexible_troubled
+意識がぼんやりと戻る。全身が重たく、床に沈み込んでいるような感覚。,narrative,SecondPrologueStartField,
+ゆっくりと目を開くと、そこには見知らぬ地下の空間が広がっていた。,narrative,SecondPrologueStartField,
+……あれ…？ わ、わたし…落ちて…？,Heroin,SecondPrologueStartField,Heroin_flexible_troubled
+ぼんやりとした記憶が戻ってくる。私はあのまま、ぶよぶよの肉塊の姿で落ちて——。,narrative,SecondPrologueStartField,
+フェードイン:1秒,,SecondPrologueStartField,
+え…？ ん、ふぁ…ぁっ…！？ げぷっ…！,Heroin,SecondPrologueStartField,Heroin_flexible_troubled
+驚いて息を吸い込むと、喉の奥から重たいげっぷがこみ上げてきた。,narrative,SecondPrologueStartField,
+自分の体を見下ろすと、確かに大きく膨れたままの腹がそこにある。だけど…あの時よりはずっと動ける。,narrative,SecondPrologueStartField,
+わ、わたし…戻ってる…？ で、でも…はぁ…っ、はぁ…っ、やっぱり重い…っ…,Heroin,SecondPrologueStartField,Heroin_flexible_troubled
+腕を動かすだけで息が上がる。だけど、完全に動けなくなる前の状態には戻っているようだ。,narrative,SecondPrologueStartField,
+ふぁ、ファボ…？ どこ…？,Heroin,SecondPrologueStartField,Heroin_flexible_troubled
+……わたし、ひとり…？ そ、そんな…っ…,Heroin,SecondPrologueStartField,Heroin_flexible_troubled
+思わず胸がぎゅっと締めつけられる。でも、ここで止まっているわけにはいかない。,narrative,SecondPrologueStartField,
+はぁ…っ、でも...先に進まなきゃ…げぷっ…！,Heroin,SecondPrologueStartField,Heroin_flexible_normal
+セーブ可能にする,,SecondPrologueStartField,
+EventManager_second_EventStart,,SecondPrologueEndField,
+はぁ…っ、はぁ…っ、 ど、どこまで進めば…っ、げぷっ…いいの…？,Heroin,SecondPrologueEndField,Heroin_flexible_anxious
+重たい体を揺らしながら、未知の地下空間を進む。視界がぼやけ、息がすぐに切れる。,narrative,SecondPrologueEndField,
+ふぅ…っ、げぷっ…っ、な、なにか…柔らかい…？,Heroin,SecondPrologueEndField,Heroin_flexible_normal
+不意に肌色の、ぶよぶよとした何かにぶつかった。何これ…？ 壁…？でも、こんなに弾力があるなんて——。,narrative,SecondPrologueEndField,
+私は、顔を上げると...,narrative,SecondPrologueEndField,
+EventManager_second_CameraToFresh,,SecondPrologueEndField,
+ふぅ…ぅぅ……ぷ、ぶふぅぅ～～……,???,SecondPrologueEndField,
+えっ…！？ 何、こ、これ…！！,Heroin,SecondPrologueEndField,Heroin_flexible_troubled
+"見上げると、それは信じられないほど巨大な肉塊だった。",narrative,SecondPrologueEndField,
+さっきの自分の姿よりも、はるかに大きく、まるで空間を埋め尽くすように広がっている。,narrative,SecondPrologueEndField,
+きゃあぁっ…！？ な、なにこれ...,Heroin,SecondPrologueEndField,Heroin_flexible_surprised
+私は思わず叫んでしまった。その瞬間——,narrative,SecondPrologueEndField,
+……んぅ…っ、ふぅ…ぅぅ……？,???,SecondPrologueEndField,
+その肉塊がわずかに揺れた。ゆっくりと、重々しく動くその存在が、私の方へと意識を向ける。,narrative,SecondPrologueEndField,
+……ノ、ノエ…りぃ?……ぅぶっ……ぅぅ……ぷ、ぶふぅぅ～～……,???,SecondPrologueEndField,
+えっ…！？ 私をし、知ってるの…！？ でも、どうして…！？,Heroin,SecondPrologueEndField,Heroin_flexible_surprised
+……ぅぶっ……ぐぅ…ぅぅ……に…ぃげ……ぇ……て……ぇぶぅ……っ,???,SecondPrologueEndField,
+に、逃げるって…？ げぷっ…ど、どういう…こと…？,Heroin,SecondPrologueEndField,Heroin_flexible_troubled
+EventManager_second_RobotAppear,,SecondPrologueEndField,
+その時、背後から聞きなれた声が響く。,narrative,SecondPrologueEndField,
+ノエリ！ 無事でしたか！,Fabo,SecondPrologueEndField,
+ふぁ、ファボ…！ よかった…！,Heroin,SecondPrologueEndField,Heroin_flexible_normal
+……ふぁぁ…ぼぉ……ぶ、ぶふぅ……よ、よかっ…あな...たも...ぶぅ……ぷぅぅ……っ……,???,SecondPrologueEndField,
+分析中……識別情報は不明。しかし、私たちを認識しているようです。,Fabo,SecondPrologueEndField,
+……ま、まぁ…ぶぅ……だめぇ……ぅぅぶっ……ここ..に...のこ…っぶぅ……てはぁ……だめ……,???,SecondPrologueEndField,
+えっ…！？,Heroin,SecondPrologueEndField,Heroin_flexible_troubled
+EventManager_second_EffectStart,,SecondPrologueEndField,
+次の瞬間、私とファボの体がふわりと浮き上がる。,narrative,SecondPrologueEndField,
+……い、いまぁ……ぐぶっ……にげ……ぇぇっぶ……てぇ……,???,SecondPrologueEndField,
+えっ…な、なに…！？ う、うそ…！？,Heroin,SecondPrologueEndField,Heroin_flexible_troubled
+周囲の空間が歪み、目の前の景色が揺らぐ。強い力が全身を包み込むような感覚——。,narrative,SecondPrologueEndField,
+……お、おぉ……ねぇ……がぁ……ぶっ……ぅぅ……ぷ、ぶぅぅ……っ……,???,SecondPrologueEndField,
+えっ…！？ ま、まって…！ あなたは…誰なの…！？,Heroin,SecondPrologueEndField,Heroin_flexible_troubled
+そのとき光が急激に広がり、視界が真っ白になった。,narrative,SecondPrologueEndField,
+……おね……がい……ぷぅ……っ……,???,SecondPrologueEndField,
+……ふぁぼ…と……ノエリで……この……せかい…を……す、すくっ……てぇ……ぶぅ……っ……,???,SecondPrologueEndField,
+BodyState = BodyState_Normal,,SecondPrologueEndField,
+EventManager_second_ToChapter1,,SecondPrologueEndField,

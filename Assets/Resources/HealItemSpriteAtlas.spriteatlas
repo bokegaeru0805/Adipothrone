@@ -1,0 +1,95 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!687078895 &4343727234628468602
+SpriteAtlas:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: HealItemSpriteAtlas
+  m_EditorData:
+    serializedVersion: 2
+    textureSettings:
+      serializedVersion: 2
+      anisoLevel: 1
+      compressionQuality: 50
+      maxTextureSize: 2048
+      textureCompression: 0
+      filterMode: 0
+      generateMipMaps: 0
+      readable: 0
+      crunchedCompression: 0
+      sRGB: 1
+    platformSettings:
+    - serializedVersion: 3
+      m_BuildTarget: DefaultTexturePlatform
+      m_MaxTextureSize: 2048
+      m_ResizeAlgorithm: 0
+      m_TextureFormat: -1
+      m_TextureCompression: 0
+      m_CompressionQuality: 50
+      m_CrunchedCompression: 0
+      m_AllowsAlphaSplitting: 0
+      m_Overridden: 0
+      m_IgnorePlatformSupport: 0
+      m_AndroidETC2FallbackOverride: 0
+      m_ForceMaximumCompressionQuality_BC6H_BC7: 0
+    - serializedVersion: 3
+      m_BuildTarget: WebGL
+      m_MaxTextureSize: 2048
+      m_ResizeAlgorithm: 0
+      m_TextureFormat: 4
+      m_TextureCompression: 1
+      m_CompressionQuality: 50
+      m_CrunchedCompression: 0
+      m_AllowsAlphaSplitting: 0
+      m_Overridden: 1
+      m_IgnorePlatformSupport: 0
+      m_AndroidETC2FallbackOverride: 0
+      m_ForceMaximumCompressionQuality_BC6H_BC7: 0
+    packingSettings:
+      serializedVersion: 2
+      padding: 4
+      blockOffset: 1
+      allowAlphaSplitting: 0
+      enableRotation: 1
+      enableTightPacking: 1
+      enableAlphaDilation: 0
+    secondaryTextureSettings: {}
+    variantMultiplier: 1
+    packables:
+    - {fileID: 102900000, guid: ab2c50b7be3a7e04d821f86e81d03837, type: 3}
+    bindAsDefault: 1
+    isAtlasV2: 0
+    cachedData: {fileID: 0}
+    packedSpriteRenderDataKeys:
+    - 652bc943fab9ceb4ca60239bae772b79: 1267147520
+    - 96259aa7da2d9b84fa11796214e34a9f: -1197484545
+    - 90428b98cd0c8a048937eb4baead7343: 21300000
+    - f1e8c5cc28637724a97b8505f4b31c4b: 21300000
+    - 1e8eef1f3a56fe1479b534abf7d6208a: 1143998925
+    - 1e8eef1f3a56fe1479b534abf7d6208a: -1306512704
+    - 1e8eef1f3a56fe1479b534abf7d6208a: 387697142
+    - 1e8eef1f3a56fe1479b534abf7d6208a: 3265239
+  m_MasterAtlas: {fileID: 0}
+  m_PackedSprites:
+  - {fileID: 1267147520, guid: 652bc943fab9ceb4ca60239bae772b79, type: 3}
+  - {fileID: -1197484545, guid: 96259aa7da2d9b84fa11796214e34a9f, type: 3}
+  - {fileID: 21300000, guid: 90428b98cd0c8a048937eb4baead7343, type: 3}
+  - {fileID: 21300000, guid: f1e8c5cc28637724a97b8505f4b31c4b, type: 3}
+  - {fileID: 1143998925, guid: 1e8eef1f3a56fe1479b534abf7d6208a, type: 3}
+  - {fileID: -1306512704, guid: 1e8eef1f3a56fe1479b534abf7d6208a, type: 3}
+  - {fileID: 387697142, guid: 1e8eef1f3a56fe1479b534abf7d6208a, type: 3}
+  - {fileID: 3265239, guid: 1e8eef1f3a56fe1479b534abf7d6208a, type: 3}
+  m_PackedSpriteNamesToIndex:
+  - Herb
+  - Berry
+  - donut_choco
+  - SeleYam
+  - StarHerb
+  - FlameHerb
+  - StoneHerb
+  - WindHerb
+  m_RenderDataMap: {}
+  m_Tag: HealItemSpriteAtlas
+  m_IsVariant: 0

@@ -1,0 +1,253 @@
+セリフ,ChracterName,BlockName,FileName
+ん…っ……こ、ここは……？,Heroin,Chapter1Start,Heroin_flexible_troubled
+……土の上…？ えっ、わたし…出られた…？,Heroin,Chapter1Start,Heroin_flexible_troubled
+演出,,Chapter1Start,
+位置情報の取得中……完了。ここは、先ほどの施設内の座標とは一致しません。,Fabo,Chapter1Start,
+……じゃあ、あの時……ほんとうに外に出られたの…？それに……体も、元に戻ってる……,Heroin,Chapter1Start,Heroin_flexible_normal
+可能性は高いです。ただし、正確な場所は特定できません。,Fabo,Chapter1Start,
+そっか……,Heroin,Chapter1Start,Heroin_flexible_normal
+私は視線を遠くへ向ける。広がる草原の先に、小さな建物がぽつぽつと並んでいた。,narrative,Chapter1Start,
+あれ…あそこ…村…？ ……みたいな建物、見えるよ…！,Heroin,Chapter1Start,Heroin_flexible_serious
+確認しました。居住構造物と思われる施設を遠方に発見。,Fabo,Chapter1Start,
+誰か…いるかもしれない……もしかしたら、ここがどこか、わかるかも…！,Heroin,Chapter1Start,Heroin_flexible_serious
+現時点では、最も有効な探索先と判断されます。,Fabo,Chapter1Start,
+……うん。行ってみよう、ファボ……！,Heroin,Chapter1Start,Heroin_flexible_serious
+演出,,Chapter1Start,
+……ここが、さっき見えた村……だよね……,Heroin,FirstEnteredVillage,Heroin_flexible_normal
+生体反応、複数確認。敵性の兆候は現在のところ認められません。,Fabo,FirstEnteredVillage,
+じゃあ……あの人たちに話を聞ければ、何かわかるかもしれないよね……,Heroin,FirstEnteredVillage,Heroin_flexible_normal
+了解しました。周囲の様子を確認するため、一通り巡回してみましょう。,Fabo,FirstEnteredVillage,
+あっ、おねーちゃん！ こんにちはっ！,Village_ShopGirl,ShopGirlFirstMet,Village_ShopGirl_normal_normal
+えっ、あ……こんにちは……！,Heroin,ShopGirlFirstMet,Heroin_flexible_smile
+私よりずっと小さな子。十歳くらい、かな。,narrative,ShopGirlFirstMet,
+髪はふわふわで、エプロン姿。くりくりした目でこちらを見つめてくる。,narrative,ShopGirlFirstMet,
+えへへー、今日はわたしがこのお店のお当番なんだよっ！,Village_ShopGirl,ShopGirlFirstMet,Village_ShopGirl_normal_normal
+お当番……？ えらいね。こんな小さいのに、すごいなぁ……,Heroin,ShopGirlFirstMet,Heroin_flexible_smile
+うんっ、ママがね、ちょっとだけ風邪で寝てるから……,Village_ShopGirl,ShopGirlFirstMet,Village_ShopGirl_normal_normal
+その間、わたしががんばるの！ お店のこと、ぜんぶ覚えてるんだよ〜！,Village_ShopGirl,ShopGirlFirstMet,
+わぁ……えらいなぁ……。ママの代わりに、ちゃんと頑張ってるんだね……,Heroin,ShopGirlFirstMet,Heroin_flexible_smile
+でもね、今はまだ準備中なの〜。だから……ごめんね？またあとで来てくれる？,Village_ShopGirl,ShopGirlFirstMet,Village_ShopGirl_normal_normal
+うん、大丈夫。あとで、また来るね。,Heroin,ShopGirlFirstMet,Heroin_flexible_smile
+うんっ！ 待ってるよーっ！,Village_ShopGirl,ShopGirlFirstMet,Village_ShopGirl_normal_normal
+おや……見ない顔だな。,Village_Man1,VillageTourComplete,Village_Man1_normal_normal
+あっ……えっと……こんにちは……私は、えっと……,Heroin,VillageTourComplete,Heroin_flexible_normal
+……旅の途中かい？こんな場所まで来るなんて、ちょっと珍しいな。,Village_Man1,VillageTourComplete,Village_Man1_normal_normal
+あ、はい……ちょっと、迷い込んじゃって……。,Heroin,VillageTourComplete,Heroin_flexible_normal
+そうか……それは、心細かっただろうな。本当なら、何か力になってやれりゃいいんだが……,Village_Man1,VillageTourComplete,Village_Man1_normal_normal
+男の人は申し訳なさそうに笑みを浮かべながら、ほんの一瞬だけ視線を村のほうへ向けた。,narrative,VillageTourComplete,
+……すまん、今はちょっと……村のことで、手が離せなくてな。,Village_Man1,VillageTourComplete,Village_Man1_normal_normal
+落ち着いていれば、案内の一つもしてやれるんだが……。,Village_Man1,VillageTourComplete,Village_Man1_normal_normal
+い、いえ……そんな、気にしないでください……！,Heroin,VillageTourComplete,Heroin_flexible_normal
+ありがとうよ、お嬢ちゃん。優しい子だな……,Village_Man1,VillageTourComplete,Village_Man1_normal_normal
+男の人は軽く頭を下げながら、すこし遠くを見つめた。,narrative,VillageTourComplete,
+それと……一つ、気をつけておいてくれ。,Village_Man1,VillageTourComplete,Village_Man1_normal_normal
+この先の道は、川の上流へと続いてるんだが……魔物が出る。だから、近づかないほうがいい。,Village_Man1,VillageTourComplete,Village_Man1_normal_normal
+……わかりました。ご忠告、ありがとうございます。,Heroin,VillageTourComplete,Heroin_flexible_normal
+ああ、気をつけてな。,Village_Man1,VillageTourComplete,Village_Man1_normal_normal
+演出,,VillageTourComplete,
+しかし、どうしたもんか……すぐにでも行きたいが、村のことも放っておけん……,Village_Man1,VillageTourComplete,Village_Man1_normal_normal
+一通り村を見て回った。人の気配は穏やかで、特に危険な様子もなかった。……けれど。,narrative,VillageTourComplete,
+……なんだろう……なんか、ちょっと変だった……気のせい、じゃないよね……,Heroin,VillageTourComplete,Heroin_flexible_troubled
+村のあちこちで見かけた女性たちや女の子たち。,narrative,VillageTourComplete,
+どの人も、顔まわりや腰まわり、腕や脚の輪郭が——妙にふくらんでいた。,narrative,VillageTourComplete,
+みんな……ふ、太ってた……普通の“ぽっちゃり”じゃない……,Heroin,VillageTourComplete,Heroin_flexible_troubled
+元々そういう土地柄なのかな……でも、それにしても……ちょっと多すぎる気がする……,Heroin,VillageTourComplete,Heroin_flexible_troubled
+ノエリ、村の巡回はおおよそ完了したと判断します。,Fabo,VillageTourComplete,
+一度、村の入り口に戻ってみましょう。周囲の環境変化がないか確認しておきたいです。,Fabo,VillageTourComplete,
+……うん。そうだね。……もしかしたら、何か見落としてたかもしれないし……,Heroin,VillageTourComplete,Heroin_flexible_normal
+あっ、お姉ちゃん！ 戻ってきてくれたんだ〜！,Village_ShopGirl,WellQuestReceived,Village_ShopGirl_normal_normal
+うん、また来るって言ったもんね。ちゃんとお店、見張ってたんだね。,Heroin,WellQuestReceived,Heroin_flexible_smile
+えへへ〜、がんばってるよっ！ でもね、ちょっとだけ困ってることがあるの……,Village_ShopGirl,WellQuestReceived,Village_ShopGirl_normal_normal
+困ってること……？,Heroin,WellQuestReceived,Heroin_flexible_troubled
+少女は少しだけ顔を曇らせて、私の後ろをちらりと振り返った。,narrative,WellQuestReceived,
+お店で使ってる井戸があるんだけど、なんか……最近、変な音がするようになっちゃって……,Village_ShopGirl,WellQuestReceived,Village_ShopGirl_normal_normal
+井戸から……音？ それはちょっと気になるね……,Heroin,WellQuestReceived,Heroin_flexible_normal
+うん……ママに頼みたいけど寝ちゃってるし……わたしじゃ怖くて、見に行けなくて……,Village_ShopGirl,WellQuestReceived,Village_ShopGirl_normal_normal
+そっか……うん、それなら、わたしが見に行ってみようか？,Heroin,WellQuestReceived,Heroin_flexible_normal
+えっ！？ ほんとに！？,Village_ShopGirl,WellQuestReceived,Village_ShopGirl_normal_normal
+うん。ちょっと覗くだけなら、平気だよ。何か変だったら、すぐ戻ってくるし。,Heroin,WellQuestReceived,Heroin_flexible_normal
+わぁぁ〜……ありがとう、お姉ちゃん！,Village_ShopGirl,WellQuestReceived,Village_ShopGirl_normal_normal
+井戸は家のすぐ隣にあるの。木の柵の近くにあるから、すぐわかるよ！,Village_ShopGirl,WellQuestReceived,Village_ShopGirl_normal_normal
+わかった、行ってみるね。,Heroin,WellQuestReceived,Heroin_flexible_normal
+うんっ、気をつけてねーっ！,Village_ShopGirl,WellQuestReceived,Village_ShopGirl_normal_normal
+……な、に……あれ……,Heroin,SwordTutorialComplete,Heroin_flexible_surprised
+薄暗がりの中に、ぼんやりと揺れる影が複数——,narrative,SwordTutorialComplete,
+あ……あれ……まさか……！？,Heroin,SwordTutorialComplete,Heroin_flexible_surprised
+前方に複数の魔物を確認。,Fabo,SwordTutorialComplete,
+う、うそ……！,Heroin,SwordTutorialComplete,Heroin_flexible_surprised
+そのとき、足元に転がる何かが目に入った。,narrative,SwordTutorialComplete,
+細く簡素な作りの——木の剣だった。,narrative,SwordTutorialComplete,
+これ……剣……？,Heroin,SwordTutorialComplete,Heroin_flexible_surprised
+簡易近接武装を確認。使用可能です。,Fabo,SwordTutorialComplete,
+武器を剣に変えて、魔物の対処を試みます。,Fabo,SwordTutorialComplete,
+……うん、お願い、ファボ……,Heroin,SwordTutorialComplete,Heroin_flexible_serious
+はぁ…っ、や、やった……倒せたんだね……,Heroin,WellEnemyDefeated,Heroin_flexible_normal
+戦闘完了。被害なし。問題ありません。,Fabo,WellEnemyDefeated,
+……よかった……,Heroin,WellEnemyDefeated,Heroin_flexible_normal
+今後は、距離と状況に応じて、弾と近接武装を使い分ける方針が有効と判断されます。,Fabo,WellEnemyDefeated,
+うん……弾だけじゃ対処できない場面もあるもんね。覚えておくね。,Heroin,WellEnemyDefeated,Heroin_flexible_normal
+とりあえず……もう大丈夫そう。戻って、あの子に報告しなきゃ。,Heroin,WellEnemyDefeated,Heroin_flexible_normal
+"<sprite name=""Gear_Icon"">武器の変更と装備について説明します。",narrative,WellEnemyDefeated,
+"<sprite name=""Gear_Icon"">ゲーム中に{$KeyColor}{$WeaponChangeKey}{$ColorTagClose}を押すことで、「弾」と「剣」の武器を即座に切り替えることができます。",narrative,WellEnemyDefeated,
+"<sprite name=""Gear_Icon"">また、それぞれの武器を別の装備に変更したい場合は、メニュー画面から「Weapon」を選択してください。",narrative,WellEnemyDefeated,
+"<sprite name=""Gear_Icon"">装備画面で、使用したい武器を選んで装備することで、戦い方をカスタマイズできます。",narrative,WellEnemyDefeated,
+あっ、お姉ちゃん！ おかえり〜！,Village_ShopGirl,WellQuestComplete,Village_ShopGirl_armed1_normal
+うん、ただいま。井戸の中、ちゃんと見てきたよ。,Heroin,WellQuestComplete,Heroin_flexible_smile
+……中でね、ちょっと危ないものがいたんだけど、もう大丈夫。ちゃんとやっつけておいたよ。,Heroin,WellQuestComplete,Heroin_flexible_smile
+ほんとにっ！？ わぁぁ〜……すごいすごいっ！ありがとう、お姉ちゃんっ！,Village_ShopGirl,WellQuestComplete,Village_ShopGirl_normal_normal
+少女はぴょんぴょんと嬉しそうに跳ねながら、にこにこと笑っていた。,narrative,WellQuestComplete,
+……その時、ふと私は気づいた,narrative,WellQuestComplete,
+（……あれ……？ さっきより……なんだか……）,Heroin,WellQuestComplete,Heroin_flexible_troubled
+彼女の頬やお腹が、さっきよりもふっくらして見える。,narrative,WellQuestComplete,
+気のせいじゃない——短い間に、少し太ったような……,narrative,WellQuestComplete,
+でも、本人はまるで気にしていない様子で、楽しそうに笑っている。,narrative,WellQuestComplete,
+お水が使えるようになったから、お店も開けられるよっ！ほんとにありがとう、お姉ちゃん！,Village_ShopGirl,WellQuestComplete,Village_ShopGirl_armed1_normal
+うん、よかった……それなら、またあとで寄ってみるね。,Heroin,WellQuestComplete,Heroin_flexible_smile
+うんっ、待ってる〜！,Village_ShopGirl,WellQuestComplete,Village_ShopGirl_armed1_normal
+（……うん、やっぱり……あの体形、ちょっと気になる……）,Heroin,WellQuestComplete,Heroin_flexible_troubled
+演出,,WellQuestComplete,
+おお……お嬢ちゃんか。さっきはすまなかったな。,Village_Man1,RiverQuestReceived,Village_Man1_normal_normal
+それよりも聞いたぞ、魔物をやっつけたって。,Village_Man1,RiverQuestReceived,Village_Man1_normal_normal
+えっ……どこでそれを？,Heroin,RiverQuestReceived,Heroin_flexible_surprised
+ああ、噂は早いんだ。まさか、お嬢ちゃん一人で……いや、すごいもんだ。,Village_Man1,RiverQuestReceived,Village_Man1_normal_normal
+……ううん、私はただ、ちょっと手伝っただけですから……,Heroin,RiverQuestReceived,Heroin_flexible_normal
+……実はな、その腕を見込んで……ちょっと、頼みたいことがあってな……,Village_Man1,RiverQuestReceived,Village_Man1_normal_normal
+最近な……この村の若い娘さんや娘っ子たちの体つきがどうもおかしくなってきててな。,Village_Man1,RiverQuestReceived,Village_Man1_normal_normal
+最初は気にしてなかったが、今じゃ動作にも支障が出ててな。このままじゃ、作業が回らなくなる。,Village_Man1,RiverQuestReceived,Village_Man1_normal_normal
+そんな.......！,Heroin,RiverQuestReceived,Heroin_flexible_troubled
+それで、思い当たるのは一つだけだ。,Village_Man1,RiverQuestReceived,Village_Man1_normal_normal
+このあたりの川の水……最近、妙な味がするって声があってな。,Village_Man1,RiverQuestReceived,Village_Man1_normal_normal
+……じゃあ、その水が原因かもしれないんですね……？,Heroin,RiverQuestReceived,Heroin_flexible_normal
+ああ……だから川の上流まで確かめに行きたいんだが……,Village_Man1,RiverQuestReceived,Village_Man1_normal_normal
+俺は村の作業で手が離せなくてな。しかも、上流への道は魔物も多くて簡単には行けん。,Village_Man1,RiverQuestReceived,Village_Man1_normal_normal
+悪いとは思うが、この村のために、力を貸してくれんか？,Village_Man1,RiverQuestReceived,Village_Man1_normal_normal
+……わかりました。私でよければ、その川の上流、見に行ってみます。,Heroin,RiverQuestReceived,Heroin_flexible_serious
+……！　ほ、ほんとか……？ お嬢ちゃん……,Village_Man1,RiverQuestReceived,Village_Man1_normal_normal
+はい。放っておけないですし……みんなが困ってるのに、見て見ぬふりはできないですから。,Heroin,RiverQuestReceived,Heroin_flexible_serious
+……ありがとう。すまんな、ほんとに……,Village_Man1,RiverQuestReceived,Village_Man1_normal_normal
+俺も、畑仕事がひと段落したら向かうつもりだ。だから……無理はするなよ。,Village_Man1,RiverQuestReceived,Village_Man1_normal_normal
+……うん、気をつけて行ってきます。,Heroin,RiverQuestReceived,Heroin_flexible_serious
+ああ。頼んだぞ、お嬢ちゃん。,Village_Man1,RiverQuestReceived,Village_Man1_normal_normal
+目の前には、崩れた岩のがれきが道をふさいでいた。,narrative,UpperRiverReached,
+こんなの……通れないよ……,Heroin,UpperRiverReached,Heroin_flexible_troubled
+……構造分析完了。岩の質量と密度を考慮すると、私の出力では破壊は困難です。,Fabo,UpperRiverReached,
+このままの状態では進行不能です。,Fabo,UpperRiverReached,
+現時点での最適行動は一度村へ戻り協力を仰ぐことです。,Fabo,UpperRiverReached,
+……そっか。たしかに、一人じゃどうにもならないかも……,Heroin,UpperRiverReached,Heroin_flexible_normal
+……うん。戻ろう、ファボ。おじさんに相談してみよう。,Heroin,UpperRiverReached,Heroin_flexible_normal
+なお、後方に設置済みの転送型クリスタルを確認。即時移動による帰還が可能です。,Fabo,UpperRiverReached,
+演出,,UpperRiverReached,
+"<sprite name=""Gear_Icon"">ファストトラベルについて説明します。",narrative,UpperRiverReached,
+"<sprite name=""Gear_Icon"">青色のクリスタルを起動すると、白色に変化し、その場所がファストトラベルポイントとして登録されます。",narrative,UpperRiverReached,
+"<sprite name=""Gear_Icon"">登録済みのファストトラベルポイントに触れることで、他の登録地点へ移動することができます。",narrative,UpperRiverReached,
+おお、お嬢ちゃん。無事だったか……どうだった、川の上流は。,Village_Man1,RockDestructionRequested,Village_Man1_normal_normal
+はい……行ってみたんですけど、道が岩のがれきでふさがれてて……,Heroin,RockDestructionRequested,Heroin_flexible_normal
+……なに？ がれき、だと……？,Village_Man1,RockDestructionRequested,Village_Man1_normal_normal
+そりゃ初耳だな……最近あの辺りは見に行けてなかったが、そんなことになってたとはな……,Village_Man1,RockDestructionRequested,Village_Man1_normal_normal
+たぶん、誰かが通れるような状態じゃないです……でも、その先に何かありそうで……,Heroin,RockDestructionRequested,Heroin_flexible_normal
+……そうか。わかった。ちょうど作業もひと段落したとこだ。今から俺も向かってみる。,Village_Man1,RockDestructionRequested,Village_Man1_normal_normal
+ほんとですか？,Heroin,RockDestructionRequested,Heroin_flexible_normal
+ああ。ちょっとだけ道具を片付けてからにする。お嬢ちゃんは先に向かっててくれ。,Village_Man1,RockDestructionRequested,Village_Man1_normal_normal
+……わかりました。じゃあ、先に行ってますね。,Heroin,RockDestructionRequested,Heroin_flexible_normal
+……あっ、おじさん……！,Heroin,BeforeRiverBoss,Heroin_flexible_normal
+おお、お嬢ちゃん。来たか……ふぅ……なんとか、どかせたぞ……,Village_Man1,BeforeRiverBoss,Village_Man1_normal_normal
+すごい……,Heroin,BeforeRiverBoss,Heroin_flexible_surprised
+ああ……ちょっと無理しちまったかもしれんがな……,Village_Man1,BeforeRiverBoss,Village_Man1_normal_normal
+はぁ……すまんが、お嬢ちゃん……この先、代わりに見てきてくれんか？,Village_Man1,BeforeRiverBoss,Village_Man1_normal_normal
+えっ……おじさん、大丈夫ですか……？,Heroin,BeforeRiverBoss,Heroin_flexible_troubled
+大丈夫だ……ただ、ちと腰にきちまった……,Village_Man1,BeforeRiverBoss,Village_Man1_normal_normal
+悪いが、一旦村に戻らせてもらう。これ以上ここにいても、足手まといになるだけだ。,Village_Man1,BeforeRiverBoss,Village_Man1_normal_normal
+……わかりました。無理しないでくださいね。,Heroin,BeforeRiverBoss,Heroin_flexible_normal
+ありがとうよ。それと……この先、どうにも嫌な予感がするんだ。空気がぴりついてる。,Village_Man1,BeforeRiverBoss,Village_Man1_normal_normal
+……うん、わかりました。気をつけて行ってきます。,Heroin,BeforeRiverBoss,Heroin_flexible_normal
+演出,,BeforeRiverBoss,
+……っ……あれ……！,Heroin,RiverBossAppear,Heroin_flexible_surprised
+そこには、今まで見たどの魔物よりも大きな影が、じっと佇んでいた。,narrative,RiverBossAppear,
+（……まさか、あれが……川の異常の原因……？）,Heroin,RiverBossAppear,Heroin_flexible_surprised
+高反応エネルギー体を確認。通常個体を大きく上回る危険性があります。,Fabo,RiverBossAppear,
+……でも……ここで逃げたら、村のみんなが……,Heroin,RiverBossAppear,Heroin_flexible_troubled
+ノエリ、あなた一人で背負う必要はありません。私もここにいます。共に戦いましょう。,Fabo,RiverBossAppear,
+……うん……！みんなを守るために……ここで……！,Heroin,RiverBossAppear,Heroin_flexible_serious
+はぁ…っ、はぁ…っ……やった……倒せた、ね……,Heroin,RiverBossDefeat,Heroin_flexible_anxious
+戦闘終了。脅威は排除されました。,Fabo,RiverBossDefeat,
+……ノエリ、魔物の残骸から、異質な植物反応を検出しました。,Fabo,RiverBossDefeat,
+植物……？ ……これ……？,Heroin,RiverBossDefeat,Heroin_flexible_troubled
+演出,,RiverBossDefeat,
+……どこかで見た気がする。けど、どこだったっけ……,narrative,RiverBossDefeat,
+——けど、今はそれよりも。,narrative,RiverBossDefeat,
+……とにかく、村に戻ろう。おじさんに、ちゃんと報告しなきゃ。,Heroin,RiverBossDefeat,Heroin_flexible_normal
+演出,,RiverBossDefeat,
+……おおっ！ お嬢ちゃん、戻ったか！ 無事でよかった……,Village_Man1,HeardRumorAboutShopGirl,Village_Man1_normal_normal
+はい。……あの先に、大きな魔物がいました。でも……なんとか倒しました。,Heroin,HeardRumorAboutShopGirl,Heroin_flexible_normal
+……なんと……あの先に、やっぱりいたのか……それを……嬢ちゃん一人で……,Village_Man1,HeardRumorAboutShopGirl,Village_Man1_normal_normal
+……ありがとう。本当に、ありがとうよ、お嬢ちゃん……,Village_Man1,HeardRumorAboutShopGirl,Village_Man1_normal_normal
+……そんな......ちょっと手伝えただけですから……,Heroin,HeardRumorAboutShopGirl,Heroin_flexible_normal
+……あ、それと……さっき倒した魔物から、これが取れました。,Heroin,HeardRumorAboutShopGirl,Heroin_flexible_normal
+……なんだ、こりゃあ……？見たことねえな……,Village_Man1,HeardRumorAboutShopGirl,Village_Man1_normal_normal
+おじさんが首をかしげていると......,narrative,HeardRumorAboutShopGirl,
+……あれ？ それ……ちょっと見せてもらっていい？,Village_Man2,HeardRumorAboutShopGirl,Village_Man2_normal_normal
+おお、お前か。ちょうどいいとこ来たな。こいつを見たことあるか？,Village_Man1,HeardRumorAboutShopGirl,Village_Man1_normal_normal
+……うん、まさか……,Village_Man2,HeardRumorAboutShopGirl,Village_Man2_normal_normal
+これ、かなり珍しい植物だよ。見かけること自体、めったにない。,Village_Man2,HeardRumorAboutShopGirl,Village_Man2_normal_normal
+……珍しい植物、なんですか？,Heroin,HeardRumorAboutShopGirl,Heroin_flexible_troubled
+うん。実は……すごく美味しいって言われてるんだ。,Village_Man2,HeardRumorAboutShopGirl,Village_Man2_normal_normal
+でも、栄養分がすごく高いんだ。摂取すると体質に急激な影響を与えるって聞いたことがある。,Village_Man2,HeardRumorAboutShopGirl,Village_Man2_normal_normal
+だから、あまり一般には出回らないし、食べることも避けられてる。,Village_Man2,HeardRumorAboutShopGirl,Village_Man2_normal_normal
+……そんな植物が、どうして……,Heroin,HeardRumorAboutShopGirl,Heroin_flexible_troubled
+でも……最近、僕もどこかでこれを見た気がするな……うーん……どこだったかな……,Village_Man2,HeardRumorAboutShopGirl,Village_Man2_normal_normal
+そのときだった。胸の奥に引っかかっていた何かが、ふっとつながった気がした。,narrative,HeardRumorAboutShopGirl,
+（……あっ……そういえば……）,Heroin,HeardRumorAboutShopGirl,Heroin_flexible_troubled
+（……あの店の中に……これとそっくりなものが並んでた気がする……）,Heroin,HeardRumorAboutShopGirl,Heroin_flexible_troubled
+胸の奥がざわつく。まさか......,narrative,HeardRumorAboutShopGirl,
+ご、ごめんなさいっ！ 私、ちょっと行ってきます！,Heroin,HeardRumorAboutShopGirl,Heroin_flexible_serious
+お、おい、お嬢ちゃん！？,Village_Man1,HeardRumorAboutShopGirl,Village_Man1_normal_normal
+私は返事もそこそこに、その場を飛び出した。,narrative,HeardRumorAboutShopGirl,
+私は少女の店の前まで走って戻ってきた。,narrative,ShopGirlMissing,
+けれど——,narrative,ShopGirlMissing,
+あれ……いない……？,Heroin,ShopGirlMissing,Heroin_flexible_troubled
+店頭には、木でできた簡単な看板が立てかけられていた。,narrative,ShopGirlMissing,
+【ちょっとだけ　おうちにもどってるね　すぐかえるよ！】,narrative,ShopGirlMissing,
+……うそ……今、会いたいのに……,Heroin,ShopGirlMissing,Heroin_flexible_troubled
+ノエリ。向かう途中、彼女の家の扉が少し開いているのを確認していました。まだ、中にいる可能性があります。,Fabo,ShopGirlMissing,
+……そっか……なら……,Heroin,ShopGirlMissing,Heroin_flexible_serious
+迷いが胸の奥で揺れたけれど、今は立ち止まっている場合じゃない。,narrative,ShopGirlMissing,
+……行ってみる。きっと……中にいるよね。,Heroin,ShopGirlMissing,Heroin_flexible_serious
+家をひと通り見回してみたけど、少女の姿は見当たらなかった。,narrative,BeforeCaveBoss,
+……どこに行ったんだろ……,Heroin,BeforeCaveBoss,Heroin_flexible_troubled
+そのとき、奥に不自然に開いた床板を見つけた。,narrative,BeforeCaveBoss,
+近づいてみると、床の穴には梯子がかかっていた。下は真っ暗で何も見えない。,narrative,BeforeCaveBoss,
+これ……地下……？,Heroin,BeforeCaveBoss,Heroin_flexible_surprised
+空間の下層をスキャン中......わずかに異常な反応を検知。環境的リスクあり。慎重な行動を推奨します。,Fabo,BeforeCaveBoss,
+……危険かもしれない、ってこと？,Heroin,BeforeCaveBoss,Heroin_flexible_troubled
+はい。高エネルギーを持つ何らかの存在がある可能性があります。,Fabo,BeforeCaveBoss,
+私はしばらく、開いた穴を見下ろしたまま立ち尽くしていた。けれど——,narrative,BeforeCaveBoss,
+あの子が、あの子がもし……そこにいるなら……行くしか、ないよね……,Heroin,BeforeCaveBoss,Heroin_flexible_serious
+演出,,BeforeCaveBoss,
+……暗い……でも、この奥に……,Heroin,CaveBossAppear,Heroin_flexible_troubled
+わずかな明かりの先に、まるで大きなクッションのように、丸く膨らんだ影が見えた。,narrative,CaveBossAppear,
+……ぉ……ね、えちゃん……たす、け……て……,Village_ShopGirl,CaveBossAppear,Village_ShopGirl_immobile_normal
+その先にいたのは、まん丸に膨らんだ少女——床に沈むように動けず、苦しそうに息をしていた。,narrative,CaveBossAppear,
+……っ！ まさか……！,Heroin,CaveBossAppear,Heroin_flexible_surprised
+かすれた声で、少女がこちらに手を伸ばそうとしたその時——,narrative,CaveBossAppear,
+高エネルギー反応、急接近——！,Fabo,CaveBossAppear,
+えっ……！,Heroin,CaveBossAppear,Heroin_flexible_surprised
+演出,,CaveBossAppear,
+闇の中から、巨大な影がゆっくりと姿を現す。,narrative,CaveBossAppear,
+……ま、魔物っ……！,Heroin,CaveBossAppear,Heroin_flexible_surprised
+戦闘態勢に移行します。ノエリ、ここを突破しなければ、彼女を助けることはできません。,Fabo,CaveBossAppear,
+……うん。もう迷ってる場合じゃない……！,Heroin,CaveBossAppear,Heroin_flexible_serious
+行こう、ファボ……！,Heroin,CaveBossAppear,Heroin_flexible_serious
+演出,,CaveBossAppear,
+演出,,CaveBossAppear,
+……終わった、の……？,Heroin,CaveBossDefeat,Heroin_flexible_anxious
+脅威の反応、消失を確認。戦闘完了です。,Fabo,CaveBossDefeat,
+……よかった……！,Heroin,CaveBossDefeat,Heroin_flexible_normal
+あたりは再び静けさを取り戻し、地下には少女の荒い呼吸のような音だけが残っていた。,narrative,CaveBossDefeat,
+今なら……助けられるかもしれない……！,Heroin,CaveBossDefeat,Heroin_flexible_serious
+私は少女のもとへ向かって駆け出した。,narrative,CaveBossDefeat,
+演出,,CaveBossDefeat,
+"<sprite name=""Gear_Icon"">ここまで遊んでいただき、ありがとうございます。",narrative,CaveBossDefeat,
+"<sprite name=""Gear_Icon"">ゲームに関するご感想やご要望がございましたら、ゲーム紹介ページに記載している私のX（旧Twitter）アカウントまでお気軽にお寄せください。",narrative,CaveBossDefeat,
+"<sprite name=""Gear_Icon"">現時点(2025年8月4日)では、本作の続きも制作予定となっております。",narrative,CaveBossDefeat,
+"<sprite name=""Gear_Icon""> もし少しでもご興味をお持ちいただけましたら、感想や提案をいただけると幸いです。",narrative,CaveBossDefeat,
+"<sprite name=""Gear_Icon"">今後とも、どうぞよろしくお願いいたします。",narrative,CaveBossDefeat,
