@@ -1,9 +1,6 @@
 using System.Collections;
-using System.Collections.Generic;
 using Cinemachine;
 using DG.Tweening;
-using Shapes2D;
-using Unity.Mathematics;
 using UnityEngine;
 using UnityEngine.Tilemaps;
 
@@ -170,6 +167,8 @@ public class EventManager_First : MonoBehaviour
     {
         PlayerAnimator.enabled = true;
         PlayerAnimator.SetInteger("BodyState", GameConstants.AnimBodyState_Immobile); //playerの体形をImmobileに設定
+        //WPの数値を体形に応じて設定し、ステータスを更新
+        PlayerBodyManager.instance?.SetWPFromBodyState(GameConstants.BodyStateEnum.BodyState_Immobile);
         SEManager.instance?.PlayPlayerActionSE(SE_PlayerAction.Bound1);
 
         Woman.transform.position = new Vector3(
@@ -181,8 +180,7 @@ public class EventManager_First : MonoBehaviour
 
     public void HeroinFall()
     {
-        if (SEManager.instance != null)
-            SEManager.instance.PlayFieldSE(SE_Field.Collapse1);
+        SEManager.instance?.PlayFieldSE(SE_Field.Collapse1);
 
         isHeroinFall = true;
         for (int x = startPosition.x; x <= endPosition.x; x++)
@@ -195,13 +193,13 @@ public class EventManager_First : MonoBehaviour
         }
 
         Player.transform.DOLocalMoveY(-10, 2.0f).SetEase(Ease.InSine);
-        FadeCanvas.instance.FadeOut(2.0f); //画面を明転させる
+        FadeCanvas.instance.FadeOut(2.0f); //画面を暗転させる
     }
 
     public void ToSecondPrologue()
     {
         TimeManager.instance.RequestPause(); // 時間を停止
-        FadeCanvas.instance.FadeOut(Mathf.Epsilon); //画面を明転させる
+        FadeCanvas.instance.FadeOut(0); //念のため、画面を即座に暗転させる
         Player.SetActive(false);
         Robot.SetActive(false);
         Woman.SetActive(false);
@@ -212,6 +210,8 @@ public class EventManager_First : MonoBehaviour
 
         Camera.main.transform.position = new Vector3(-110, 6, Camera.main.transform.position.z);
         Camera.main.GetComponent<CinemachineBrain>().enabled = true; //カメラの任意移動を可能にする
+
+        PlayerBodyManager.instance?.SetWPFromBodyState(GameConstants.BodyStateEnum.BodyState_Armed2);
 
         SEManager.instance.StopAllSE();
 

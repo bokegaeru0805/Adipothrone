@@ -39,4 +39,7 @@ public class SaveData
 
     // ===== ファストトラベル情報 =====
     public FastTravelData FastTravelData = new FastTravelData();
+
+    // ===== 敵の記録 =====
+    public EnemyRecordData EnemyRecordData = new EnemyRecordData();
 }

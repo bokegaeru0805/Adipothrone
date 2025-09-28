@@ -29,27 +29,27 @@ public class SetBodyState_Fungus : Command
             switch (bodyState)
             {
                 case BodyStateEnum.BodyState_Normal:
-                    playerBodyManager.SetBodyStateFromWP(
+                    playerBodyManager.SetWPFromBodyState(
                         GameConstants.BodyStateEnum.BodyState_Normal
                     );
                     break;
                 case BodyStateEnum.BodyState_Armed1:
-                    playerBodyManager.SetBodyStateFromWP(
+                    playerBodyManager.SetWPFromBodyState(
                         GameConstants.BodyStateEnum.BodyState_Armed1
                     );
                     break;
                 case BodyStateEnum.BodyState_Armed2:
-                    playerBodyManager.SetBodyStateFromWP(
+                    playerBodyManager.SetWPFromBodyState(
                         GameConstants.BodyStateEnum.BodyState_Armed2
                     );
                     break;
                 case BodyStateEnum.BodyState_Armed3:
-                    playerBodyManager.SetBodyStateFromWP(
+                    playerBodyManager.SetWPFromBodyState(
                         GameConstants.BodyStateEnum.BodyState_Armed3
                     );
                     break;
                 case BodyStateEnum.BodyState_Immobile:
-                    playerBodyManager.SetBodyStateFromWP(
+                    playerBodyManager.SetWPFromBodyState(
                         GameConstants.BodyStateEnum.BodyState_Immobile
                     );
                     break;

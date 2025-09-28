@@ -24,9 +24,9 @@ public class GuidePanelActive : MonoBehaviour
     [SerializeField]
     private List<Image> tabButtons;
 
-    [Header("タブごとのスプライト設定")]
+    [Header("全タブ共通のスプライト設定")]
     [SerializeField]
-    private List<TabSpriteSet> tabSprites; // 各タブのスプライトをリストで管理
+    private TabSpriteSet commonTabSprites;
 
     private int currentTabIndex = 0;
 
@@ -38,10 +38,16 @@ public class GuidePanelActive : MonoBehaviour
             return;
         }
 
-        // パネル、ボタン、スプライトの数が一致しているか確認
-        if (tabPanels.Count != tabButtons.Count || tabPanels.Count != tabSprites.Count)
+        // パネルとボタンの数が一致しているか確認
+        if (tabPanels.Count != tabButtons.Count)
         {
-            Debug.LogError("GuidePanelのタブ、パネル、スプライトの数が一致しません。");
+            Debug.LogError("GuidePanelのタブパネルとボタンの数が一致しません。");
+            return;
+        }
+
+        if (commonTabSprites == null || commonTabSprites.selected == null || commonTabSprites.unselected == null)
+        {
+            Debug.LogError("共通タブスプライトが設定されていません。");
             return;
         }
 
@@ -131,12 +137,12 @@ public class GuidePanelActive : MonoBehaviour
         {
             if (i == currentTabIndex)
             {
-                tabButtons[i].sprite = tabSprites[i].selected; // 選択中のタブの画像を変更
+                tabButtons[i].sprite = commonTabSprites.selected; // 選択中のタブの画像を変更
                 tabPanels[i].SetActive(true); // 選択中のタブのパネルを表示
             }
             else
             {
-                tabButtons[i].sprite = tabSprites[i].unselected; // 選択されていないタブの画像を変更
+                tabButtons[i].sprite = commonTabSprites.unselected; // 選択されていないタブの画像を変更
                 tabPanels[i].SetActive(false); // 選択されていないタブのパネルを非表示
             }
         }
@@ -147,7 +153,7 @@ public class GuidePanelActive : MonoBehaviour
         for (int i = 0; i < tabPanels.Count; i++)
         {
             tabPanels[i].SetActive(false);
-            tabButtons[i].sprite = tabSprites[i].unselected; // 選択されていないタブの画像を変更
+            tabButtons[i].sprite = commonTabSprites.unselected; // 選択されていないタブの画像を変更
         }
     }
 }

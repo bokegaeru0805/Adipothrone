@@ -122,12 +122,32 @@ public abstract class CharacterHealth : MonoBehaviour, IDamageable, IDroppable, 
             return;
         IsDefeated = true;
 
+        //討伐記録をセーブデータに反映する処理を呼び出す
+        RecordDefeat();
+
         // 共通の死亡時処理
         this.tag = "Untagged"; // 敵として認識されなくなるようタグを変更
         DropOnDeathHandler.Drop(this); // アイテムドロップ処理を呼び出す
 
         // 固有の死亡演出を呼び出す（中身は継承先クラスで実装）
         OnDeath();
+    }
+
+    /// <summary>
+    /// この敵が討伐されたことをセーブデータに記録します。
+    /// </summary>
+    private void RecordDefeat()
+    {
+        // GameManagerと、この敵のEnemyDataが正しく設定されているかを確認
+        if (GameManager.instance != null && enemyData != null)
+        {
+            // GameManager経由でセーブデータにアクセスし、討伐数を1加算する
+            GameManager.instance.savedata.EnemyRecordData.AddKillCount(enemyData.enemyID);
+        }
+        else
+        {
+            Debug.LogWarning("GameManagerまたはEnemyDataが見つからないため、討伐数を記録できませんでした。");
+        }
     }
 
     /// <summary>

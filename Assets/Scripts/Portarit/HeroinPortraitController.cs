@@ -14,6 +14,8 @@ public class HeroinPortraitController : MonoBehaviour
     public Image bodyImage;
     public Image faceImage;
     public Image expressionImage;
+    [Tooltip("Immobile状態の時に表示する補助的なImage")]
+    public Image immobileAuxImage;
 
     [Header("Sprite Database")]
     [Tooltip("ここにHeroinの胴体・顔・表情のスプライトをすべてドラッグ＆ドロップしてください")]
@@ -76,6 +78,16 @@ public class HeroinPortraitController : MonoBehaviour
         _portraitCanvasGroup = GetComponent<CanvasGroup>();
         _onScreenPosition = _portraitContainerRect.anchoredPosition;
 
+        // immobile用のImageも初期状態では非表示にする
+        if (immobileAuxImage != null)
+        {
+            immobileAuxImage.enabled = false;
+        }
+        else
+        {
+            Debug.LogWarning("immobileAuxImageが設定されていません。");
+        }
+
         // 初期状態では立ち絵を非表示にする
         HidePortrait();
     }
@@ -130,12 +142,15 @@ public class HeroinPortraitController : MonoBehaviour
                 bodyStateString = char.ToLower(bodyStateString[0]) + bodyStateString.Substring(1);
             }
 
+            // --- immobile状態かどうかの判定 ---
+            bool isImmobile = (bodyStateString == "immobile");
+
             string bodySpriteName = $"{characterName}_{bodyStateString}_body";
             string faceSpriteName = $"{characterName}_{bodyStateString}_face";
             string expressionSpriteName = $"{characterName}_expression_{expressionString}";
 
             // 組み立てた名前で自身の表示メソッドを呼び出す
-            ShowPortrait(bodySpriteName, faceSpriteName, expressionSpriteName);
+            ShowPortrait(bodySpriteName, faceSpriteName, expressionSpriteName, isImmobile);
         }
         else
         {
@@ -150,18 +165,24 @@ public class HeroinPortraitController : MonoBehaviour
     public void ShowPortrait(
         string bodySpriteName,
         string faceSpriteName,
-        string expressionSpriteName
-    )
+        string expressionSpriteName,
+        bool isImmobile)
     {
         if (_activeTweenAnimation != null && _activeTweenAnimation.IsActive())
         {
             // Kill()の代わりにComplete()を呼び出すことで、
             // アニメーションを瞬時に完了させ、位置や透明度を最終状態にします。
-            _activeTweenAnimation.Complete(); 
+            _activeTweenAnimation.Complete();
         }
 
         // CanvasGroupの透明度で、元々非表示だったかを判定
         bool wasHidden = _portraitCanvasGroup.alpha == 0;
+
+        // immobile状態に応じて補助Imageの表示/非表示を切り替える
+        if (immobileAuxImage != null)
+        {
+            immobileAuxImage.enabled = isImmobile;
+        }
 
         // まずスプライトを設定し、Imageコンポーネントを有効化
         if (_portraitDictionary.TryGetValue(bodySpriteName, out Sprite bodySprite))
@@ -242,6 +263,11 @@ public class HeroinPortraitController : MonoBehaviour
         bodyImage.enabled = false;
         faceImage.enabled = false;
         expressionImage.enabled = false;
+
+        if (immobileAuxImage != null)
+        {
+            immobileAuxImage.enabled = false;
+        }
     }
 
     private void HandleBlockStart(BlockType blockType)

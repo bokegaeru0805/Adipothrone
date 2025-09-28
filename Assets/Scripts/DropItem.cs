@@ -1,13 +1,24 @@
 using System;
 using DG.Tweening;
 using UnityEngine;
+using System.Collections.Generic;
+
+/// <summary>
+/// アイテムランクに応じた宝箱のスプライト（開閉）を管理するクラス
+/// </summary>
+[System.Serializable]
+public class TreasureSpriteSet
+{
+    public ItemRank rank;       // 対応するアイテムランク
+    public Sprite closeSprite;  // 閉じている状態のスプライト
+    public Sprite openSprite;   // 開いている状態のスプライト
+}
 
 public class DropItem : MonoBehaviour
 {
     private float maxUnitPixel = 2.0f; //スプライトの最大表示サイズ（Unity単位）
     private float originalColliderSize = 2.0f; //元のColliderサイズ（固定）
     private float originalTreasureColliderRadius = 1f; //宝箱のColliderの半径（固定）
-    private float TreasureColliderOffsetY = 1f; //宝箱のColliderのy座標のoffset（固定）
     private float GroundCheckerColliderOffsetY = 0f; //地面判定のcolliderのy座標のoffset (固定)
 
     [HideInInspector]
@@ -18,12 +29,18 @@ public class DropItem : MonoBehaviour
 
     [HideInInspector]
     public bool isTreasureBox = false;
-
+    [Header("宝箱のスプライト設定")]
+    [Tooltip("アイテムランクごとの宝箱の開閉スプライトを設定します")]
     [SerializeField]
-    private Sprite closesprite; //開いている状態のスプライト
+    private List<TreasureSpriteSet> treasureSpritesByRank;
 
+    [Tooltip("どのランクにも一致しない場合の、デフォルトの『閉じている』宝箱スプライト")]
     [SerializeField]
-    private Sprite opensprite; //開いている状態のスプライト
+    private Sprite defaultCloseSprite;
+
+    [Tooltip("どのランクにも一致しない場合の、デフォルトの『開いている』宝箱スプライト")]
+    [SerializeField]
+    private Sprite defaultOpenSprite;
 
     [Header("地面への自動配置設定")]
     [Tooltip("地面として判定するレイヤー")]
@@ -45,6 +62,9 @@ public class DropItem : MonoBehaviour
     private SpriteRenderer spriteRenderer;
     private CircleCollider2D mycollider;
     private CapsuleCollider2D groundCheckerCollider;
+    // 現在の宝箱に適用すべき開閉スプライトを保存しておく変数
+    private Sprite _currentTargetCloseSprite;
+    private Sprite _currentTargetOpenSprite;
 
     private void Awake()
     {
@@ -110,14 +130,39 @@ public class DropItem : MonoBehaviour
         AdjustPositionToGroundSurface();
     }
 
+    /// <summary>
+    /// オブジェクトを宝箱として設定します。
+    /// 画像、表示順、タグ、および当たり判定（コライダー）の半径とオフセットを変更し、宝箱の状態に初期化します。
+    /// このメソッドは、DropIDが設定された後に呼び出されることを想定しています。
+    /// </summary>
     public void SetTreasureSprite()
     {
         isTreasureBox = true; //宝箱かどうかのフラグをON
-        spriteRenderer.sprite = closesprite; //画像を変更
+        ItemRank itemRank = GameManager.instance.GetAllTypeIDtoRank(DropID); //アイテムのレアリティを取得
+
+        // 1. まず、デフォルトのスプライトを変数に設定
+        _currentTargetCloseSprite = defaultCloseSprite;
+        _currentTargetOpenSprite = defaultOpenSprite;
+
+
+        // 2. リストの中から、現在のアイテムランクに一致するスプライト設定を探す
+        foreach (var spriteSet in treasureSpritesByRank)
+        {
+            if (spriteSet.rank == itemRank)
+            {
+                // 一致するものが見つかったら、変数の内容を上書き
+                _currentTargetCloseSprite = spriteSet.closeSprite;
+                _currentTargetOpenSprite = spriteSet.openSprite;
+                break;
+            }
+        }
+
+        // 3. 保存しておいた「閉じている」スプライトを初期表示として適用する
+        spriteRenderer.sprite = _currentTargetCloseSprite;
+
         spriteRenderer.sortingOrder = TreasuresortingOrder; //画像の表示順を設定
         this.tag = GameConstants.InteractableObjectTagName; //タグを変更
         mycollider.radius = originalTreasureColliderRadius; //当たり判定のcolliderの半径を調整
-        mycollider.offset = new Vector2(0, TreasureColliderOffsetY); //当たり判定のcolliderのoffsetを調整
         groundCheckerCollider.offset = new Vector2(0, GroundCheckerColliderOffsetY); //地面当たり判定のcolliderのoffsetを調整
         //  宝箱は手動で配置するため、座標調整は行わない
     }
@@ -199,7 +244,7 @@ public class DropItem : MonoBehaviour
 
                 var baseItemData = GameManager.instance.GetBaseItemDataByID(DropID);
                 this.tag = "Untagged"; //tagを外す
-                spriteRenderer.sprite = opensprite; //spriteを変更
+                spriteRenderer.sprite = _currentTargetOpenSprite; //予め保存しておいた「開いた」スプライトに変更
                 SEManager.instance?.PlaySystemEventSE(SE_SystemEvent.ItemGet2); //効果音を鳴らす
                 GameManager.instance.TreasureFungus(baseItemData, 1); //Fungusを起動
             }

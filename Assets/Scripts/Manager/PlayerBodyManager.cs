@@ -196,8 +196,11 @@ public class PlayerBodyManager : MonoBehaviour
         }
     }
 
-    //体形の状態からWPの数値を設定する関数
-    public void SetBodyStateFromWP(GameConstants.BodyStateEnum bodyState)
+    /// <summary>
+    /// 体の状態(BodyState)に応じてWPの値を設定し、関連するステータスを更新します。
+    /// </summary>
+    /// <param name="bodyState">設定の基準となる体の状態。</param>
+    public void SetWPFromBodyState(GameConstants.BodyStateEnum bodyState)
     {
         int newWP = 0;
         switch (bodyState)

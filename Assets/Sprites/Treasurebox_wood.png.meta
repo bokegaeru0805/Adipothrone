@@ -110,15 +110,15 @@ TextureImporter:
     serializedVersion: 2
     sprites:
     - serializedVersion: 2
-      name: Treasurebox_wood_0
+      name: Treasurebox_wood_close
       rect:
         serializedVersion: 2
-        x: 12
+        x: 6
         y: 2
         width: 29
         height: 27
-      alignment: 7
-      pivot: {x: 0.5, y: 0}
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
       outline: []
       physicsShape: []
@@ -131,15 +131,15 @@ TextureImporter:
       edges: []
       weights: []
     - serializedVersion: 2
-      name: Treasurebox_wood_1
+      name: Treasurebox_wood_open
       rect:
         serializedVersion: 2
-        x: 49
+        x: 43
         y: 2
         width: 29
         height: 29
-      alignment: 7
-      pivot: {x: 0.5, y: 0}
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
       outline: []
       physicsShape: []
@@ -162,8 +162,8 @@ TextureImporter:
     weights: []
     secondaryTextures: []
     nameFileIdTable:
-      Treasurebox_wood_0: 223456342
-      Treasurebox_wood_1: -2001821925
+      Treasurebox_wood_close: 223456342
+      Treasurebox_wood_open: -2001821925
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 

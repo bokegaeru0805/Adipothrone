@@ -7,6 +7,7 @@ public class EnemyData : ScriptableObject
 {
     public EnemyName enemyID; // 敵のID
     public string enemyName; // 敵の名前
+    public Sprite encyclopediaSprite; // 図鑑用のスプライト
 
     [TextArea]
     public string description; // 説明文
@@ -17,6 +18,9 @@ public class EnemyData : ScriptableObject
     public List<DropItemData> dropItems = new List<DropItemData>(); // ドロップアイテムリスト
     public EffekseerEmitter destroyeffect; // 死亡エフェクトのアセット
     public float destroyeffectScale = 1.0f; // 死亡エフェクトの大きさ
+    [Tooltip("この敵を図鑑に表示するかどうか")]
+    public bool isListedInDex = true;
+
 }
 
 [System.Serializable]
