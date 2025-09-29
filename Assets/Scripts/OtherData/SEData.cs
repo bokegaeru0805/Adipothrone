@@ -68,6 +68,7 @@ public enum SE_EnemyAction
     MagicWave1 = 4060,
     SwordSlash1 = 4065,
     SwordThrow1 = 4070,
+    RareEnemyAppear = 4075,
 }
 
 /// <summary>

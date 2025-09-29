@@ -16,6 +16,10 @@ public class RareEnemyMoveController : MonoBehaviour, IEnemyResettable
     [SerializeField]
     private EnemyActivator activator = null; // 親のEnemyActivatorコンポーネント
 
+    [Tooltip("表示時のエフェクト")]
+    [SerializeField]
+    private ParticleSystem spawnEffect = null;
+
     [Header("移動設定")]
     [Tooltip("移動速度")]
     [SerializeField]
@@ -397,6 +401,27 @@ public class RareEnemyMoveController : MonoBehaviour, IEnemyResettable
         {
             // フラグをtrueにして、次回以降はこのDebugログが呼ばれないようにする
             hasBeenSeenByCamera = true;
+
+            // エフェクトが設定されていれば、再生する
+            if (spawnEffect != null)
+            {
+                spawnEffect.Play();
+            }
+
+            SEManager.instance.PlayEnemyActionSE(SE_EnemyAction.RareEnemyAppear);
+        }
+    }
+
+    /// <summary>
+    /// このGameObjectが無効化されたときに呼び出されます。
+    /// </summary>
+    private void OnDisable()
+    {
+        // ParticleSystemが設定されており、かつ現在再生中（isPlayingがtrue）の場合
+        if (spawnEffect != null && spawnEffect.isPlaying)
+        {
+            // 放出を停止し、既に出ている粒子も即座に全て消去します。
+            spawnEffect.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
         }
     }
 

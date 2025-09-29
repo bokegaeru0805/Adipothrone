@@ -70,6 +70,7 @@ public class SEManager : MonoBehaviour
             { SE_EnemyAction.MagicWave1, "MagicWave1" },
             { SE_EnemyAction.SwordSlash1, "SwordSlash1" },
             { SE_EnemyAction.SwordThrow1, "SwordThrow1" },
+            { SE_EnemyAction.RareEnemyAppear, "RareEnemyAppear" },
         };
 
     /// <summary>
