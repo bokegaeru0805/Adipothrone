@@ -7,6 +7,7 @@ public enum EnemyName
     firstBoss = 15004,
     slime_normal = 15005,
     bird_normal = 15006,
+    slime_rare = 15007,
     slime_boss = 15010,
     stone_golem = 15011,
     rock_stone_golem = 15012,

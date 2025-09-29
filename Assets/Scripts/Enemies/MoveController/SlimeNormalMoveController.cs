@@ -1,6 +1,7 @@
 using System.Collections;
 using UnityEngine;
 
+[RequireComponent(typeof(Rigidbody2D))]
 public class SlimeNormalMoveController : MonoBehaviour, IEnemyResettable
 {
     private const float MOVE_RANGE = 10.0f; // ランダムに設定する場合の移動幅
@@ -82,7 +83,7 @@ public class SlimeNormalMoveController : MonoBehaviour, IEnemyResettable
     private AnimatorStateInfo stateInfo;
     private ContactDamageController contactDamageController;
 
-    // スタック検出用の変数を追加
+    // スタック検出用の変数
     private Vector2 lastCheckedPosition;
     private float timeStuck = 0f;
     private const float STUCK_CHECK_INTERVAL = 0.5f; // 位置を確認する間隔（秒）
@@ -119,6 +120,7 @@ public class SlimeNormalMoveController : MonoBehaviour, IEnemyResettable
         {
             Debug.LogError($"{this.name}の地面判定用の設定が正しくありません。");
         }
+
         if (overlapCheckPoint == null)
         {
             Debug.LogError($"{this.name}の埋まり判定用のTransformが設定されていません。");
@@ -137,11 +139,6 @@ public class SlimeNormalMoveController : MonoBehaviour, IEnemyResettable
 
         spriteRenderer = this.GetComponent<SpriteRenderer>();
         rbody = GetComponent<Rigidbody2D>(); //Rigidbody2Dコンポーネントを取得
-        if (rbody == null)
-        {
-            Debug.LogError($"{this.gameObject.name}にRigidbody2Dコンポーネントがありません。");
-            return;
-        }
 
         animator = GetComponent<Animator>();
         if (animator == null)
@@ -223,7 +220,6 @@ public class SlimeNormalMoveController : MonoBehaviour, IEnemyResettable
         StartCoroutine(CheckIfStuckCoroutine());
 
         // leftBoundとrightBoundが共に0の場合、ランダムに範囲を設定
-        // leftBoundとrightBoundが共に0の場合、ランダムに範囲を設定
         if (activator != null)
         {
             if (isUseAutoBounds) // 自動設定モードの場合
@@ -274,7 +270,7 @@ public class SlimeNormalMoveController : MonoBehaviour, IEnemyResettable
         Vector3 startPos = transform.position;
         transform.position = new Vector2(Random.Range(leftBound, rightBound), startPos.y);
 
-        // 追加機能: 配置時に地面に埋まっていないかチェックし、調整
+        // 配置時に地面に埋まっていないかチェックし、調整
         StartCoroutine(CheckAndAdjustPosition());
     }
 
@@ -409,7 +405,7 @@ public class SlimeNormalMoveController : MonoBehaviour, IEnemyResettable
         }
     }
 
-    // 新規追加: ジャンプ前の溜めを行うコルーチン
+    // ジャンプ前の溜めを行うコルーチン
     private IEnumerator JumpChargeCoroutine()
     {
         // 溜め中はダメージを受けない敵の状態に
@@ -514,7 +510,7 @@ public class SlimeNormalMoveController : MonoBehaviour, IEnemyResettable
             Gizmos.DrawWireSphere(groundCheck.position, groundCheckRadius);
         }
 
-        // 追加: 埋まりチェック用のGizmosも表示
+        // 埋まりチェック用のGizmosも表示
         if (overlapCheckPoint != null)
         {
             Gizmos.color = Color.cyan;
