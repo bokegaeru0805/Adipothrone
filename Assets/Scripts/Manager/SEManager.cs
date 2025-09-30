@@ -69,6 +69,7 @@ public class SEManager : MonoBehaviour
             { SE_EnemyAction.Land_enemy1, "Land_enemy1" },
             { SE_EnemyAction.MagicWave1, "MagicWave1" },
             { SE_EnemyAction.SwordSlash1, "SwordSlash1" },
+            { SE_EnemyAction.SwordSlash2, "SwordSlash2" },
             { SE_EnemyAction.SwordThrow1, "SwordThrow1" },
             { SE_EnemyAction.RareEnemyAppear, "RareEnemyAppear" },
         };
@@ -171,6 +172,8 @@ public class SEManager : MonoBehaviour
         {
             Debug.LogWarning($"SE name not found for UI SE: {se}");
         }
+
+        Debug.Log("SE再生: " + seName);
     }
 
     // --- PlayerAction系 ---

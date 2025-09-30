@@ -200,7 +200,12 @@ public class Heroin_move : MonoBehaviour
                 m_animator.SetInteger("AnimState", 0);
             }
 
-            if (inputManager.GetPlayerJump() && isGrounded && move)
+            if (
+                inputManager.GetPlayerJump()
+                && isGrounded
+                && move
+                && !GameManager.IsJumpCooldownActive
+            )
             {
                 jumpRequested = true;
             }

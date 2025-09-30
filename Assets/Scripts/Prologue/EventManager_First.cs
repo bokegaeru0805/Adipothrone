@@ -76,6 +76,7 @@ public class EventManager_First : MonoBehaviour
     public IEnumerator EventStart()
     {
         FadeCanvas.instance.FadeOut(1.0f); //画面を暗転させる
+        BGMManager.instance.Play(BGMCategory.Field_Quiet);
         yield return new WaitForSecondsRealtime(1.0f);
         PlayerObject = GameObject.FindGameObjectWithTag(GameConstants.PlayerTagName); //Playerオブジェクトを取得
         PlayerWalkSpeed = PlayerObject.GetComponent<Heroin_move>().m_defaultSpeed; //Playerの歩行速度を取得

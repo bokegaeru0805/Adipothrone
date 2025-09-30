@@ -29,6 +29,8 @@ public class GameManager : MonoBehaviour
     public static bool isFirstGameSceneOpen = false; //初めてゲームシーンが開かれたか
     private static bool _isTalking = false;
     public static bool IsTalking => _isTalking;
+    public static bool IsJumpCooldownActive { get; private set; } = false; // 会話終了直後、ジャンプ入力を受け付けないクールダウン中かどうか
+    private float jumpCooldownDuration = 0.2f; // ジャンプ入力を受け付けないクールダウン時間（秒）
     private Dictionary<int, int> tipsSortOrderMap; //Tipsの正しい並び順を高速に検索するための辞書（キャッシュ）
     public Vector2? crossScenePlayerSpawnPoint = null; //シーン遷移後の次のプレイヤーのスポーン位置
     private Block TreasureBlock; //宝箱開封時の会話のブロック
@@ -114,7 +116,10 @@ public class GameManager : MonoBehaviour
         crossScenePlayerSpawnPoint = pos;
     }
 
-    //変数を初期化する関数
+    /// <summary>
+    /// ゲームの状態を初期状態に戻します。
+    /// 主にセーブデータをリセットし、セーブ機能を無効化するために使用します。
+    /// </summary>
     public void ResetState()
     {
         savedata = new SaveData(); //セーブデータを初期化する
@@ -163,8 +168,15 @@ public class GameManager : MonoBehaviour
         _isTalking = false;
         // イベントを発行して、会話が終わったことを他のスクリプトに通知する
         OnTalkingStateChanged?.Invoke(false);
+
+        // 会話終了後に入力クールダウンを開始する
+        TriggerJumpCooldown();
     }
 
+    /// <summary>
+    /// 会話終了ボタンが押され続けている間待機し、ボタンが離された後に会話を終了します。
+    /// これにより、会話終了直後のキー入力暴発を防ぎます。
+    /// </summary>
     public IEnumerator DialogEnd()
     {
         if (InputManager.instance.SkipDialogHold())
@@ -176,7 +188,33 @@ public class GameManager : MonoBehaviour
         EndTalk();
     }
 
-    //宝箱開封時の会話を起動する関数
+    /// <summary>
+    /// 外部からジャンプのクールダウンを開始するための公開メソッド
+    /// </summary>
+    public void TriggerJumpCooldown()
+    {
+        // 既存のコルーチンが動いている可能性を考慮し、一度停止してから新しく開始する
+        StopCoroutine(JumpCooldownCoroutine());
+        StartCoroutine(JumpCooldownCoroutine());
+    }
+
+    /// <summary>
+    /// 会話終了後のジャンプ入力クールダウンを処理するコルーチン
+    /// </summary>
+    private IEnumerator JumpCooldownCoroutine()
+    {
+        IsJumpCooldownActive = true;
+        yield return new WaitForSeconds(jumpCooldownDuration);
+        IsJumpCooldownActive = false;
+    }
+
+    /// <summary>
+    /// 宝箱を開けた際のFungus会話ブロックを起動します。
+    /// グローバルFlowchart内の "Treasurebox" ブロックを探し、
+    /// 取得したアイテムの情報を設定してから実行します。
+    /// </summary>
+    /// <param name="itemData">取得したアイテムのデータ</param>
+    /// <param name="itemAmount">取得したアイテムの数</param>
     public void TreasureFungus(BaseItemData itemData, int itemAmount = 1)
     {
         // // アイテム名が指定されていなければ、IDから取得する

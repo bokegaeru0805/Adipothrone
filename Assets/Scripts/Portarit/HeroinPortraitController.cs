@@ -14,6 +14,7 @@ public class HeroinPortraitController : MonoBehaviour
     public Image bodyImage;
     public Image faceImage;
     public Image expressionImage;
+
     [Tooltip("Immobile状態の時に表示する補助的なImage")]
     public Image immobileAuxImage;
 
@@ -28,8 +29,10 @@ public class HeroinPortraitController : MonoBehaviour
     private Ease animationEase = Ease.OutQuad;
 
     //立ち絵が表示される際のアニメーション時間（秒）
+    private float slideInDuration = 1f;
 
-    private float animationDuration = 1f;
+    //体形が変化する際のフェードアニメーション時間（秒）
+    private float bodyChangeFadeDuration = 0.15f;
 
     // 実行中のアニメーションを管理するためのDOTweenのSequence
     private Sequence _activeTweenAnimation;
@@ -43,8 +46,11 @@ public class HeroinPortraitController : MonoBehaviour
     // アニメーション後の最終的な画面上の位置
     private Vector2 _onScreenPosition;
 
-    //現在の会話のBlockTypeを保持する変数
+    // 現在の会話のBlockTypeを保持する変数
     private BlockType currentBlockType = BlockType.Default;
+
+    // 現在表示中の胴体スプライト名を記憶する変数
+    private string _currentBodySpriteName = "";
 
     private void Awake()
     {
@@ -166,7 +172,8 @@ public class HeroinPortraitController : MonoBehaviour
         string bodySpriteName,
         string faceSpriteName,
         string expressionSpriteName,
-        bool isImmobile)
+        bool isImmobile
+    )
     {
         if (_activeTweenAnimation != null && _activeTweenAnimation.IsActive())
         {
@@ -175,16 +182,101 @@ public class HeroinPortraitController : MonoBehaviour
             _activeTweenAnimation.Complete();
         }
 
+        // 状況を判定
         // CanvasGroupの透明度で、元々非表示だったかを判定
         bool wasHidden = _portraitCanvasGroup.alpha == 0;
+        bool isBodyChange = !wasHidden && _currentBodySpriteName != bodySpriteName;
 
-        // immobile状態に応じて補助Imageの表示/非表示を切り替える
-        if (immobileAuxImage != null)
+        // 【ケース1】表示中に体形が変化した場合
+        // 条件：立ち絵が表示中(wasHiddenがfalse)であり、かつ新しく指定された胴体スプライト名(_currentBodySpriteName)が、
+        //      以前表示されていたものと異なる場合。
+        if (isBodyChange)
         {
-            immobileAuxImage.enabled = isImmobile;
+            // --- 処理の流れ ---
+            // アニメーションを順番に実行するため、DOTweenのSequenceを作成します。
+            // 1. フェードアウト → 2. スプライト入れ替え → 3. フェードイン
+            _activeTweenAnimation = DOTween.Sequence();
+            _activeTweenAnimation
+                // 1. フェードアウト：現在の立ち絵を、指定した時間(bodyChangeFadeDuration)をかけて完全に見えなくします。
+                .Append(_portraitCanvasGroup.DOFade(0, bodyChangeFadeDuration))
+                // 2. スプライト入れ替え：フェードアウトが完了した瞬間にこの処理を呼び出します。
+                //    立ち絵が見えなくなっている間に、スプライトを新しいものに瞬時に差し替えます。
+                .AppendCallback(() =>
+                {
+                    SetAllSprites(bodySpriteName, faceSpriteName, expressionSpriteName, isImmobile);
+                })
+                // 3. フェードイン：新しいスプライトに切り替わった状態で、指定時間をかけて再び表示させます。
+                .Append(_portraitCanvasGroup.DOFade(1, bodyChangeFadeDuration))
+                // Time.timeScaleが0（ポーズ中）でもアニメーションが動くように設定します。
+                .SetUpdate(true)
+                // アニメーションが全て完了したら、管理用の変数をリセットします。
+                .OnComplete(() => _activeTweenAnimation = null);
         }
+        // 【ケース2】初めて表示される場合
+        // 条件：立ち絵が完全に非表示(wasHiddenがtrue)の状態から表示される場合。
+        else if (wasHidden)
+        {
+            // --- 処理の流れ ---
+            // 1. 事前準備 → 2. アニメーション開始
 
-        // まずスプライトを設定し、Imageコンポーネントを有効化
+            // 1. 事前準備：
+            //    まず、これから表示するスプライトをImageコンポーネントに設定します。
+            SetAllSprites(bodySpriteName, faceSpriteName, expressionSpriteName, isImmobile);
+
+            //    もしスプライトの設定に失敗してbodyImageが無効なままなら、アニメーションは実行せず処理を終了します。
+            if (!bodyImage.enabled)
+                return;
+
+            //    アニメーションの開始地点（画面外の左側）を計算します。
+            Vector2 offScreenPosition = new Vector2(
+                _onScreenPosition.x - _portraitContainerRect.rect.width,
+                _onScreenPosition.y
+            );
+
+            //    アニメーションが始まる前に、立ち絵を開始地点へ移動させ、完全に見えないようにしておきます。
+            _portraitContainerRect.anchoredPosition = offScreenPosition;
+            _portraitCanvasGroup.alpha = 0f;
+
+            // 2. アニメーション開始：
+            //    スライド移動とフェードインを「同時」に実行するため、Sequenceを作成します。
+            _activeTweenAnimation = DOTween.Sequence();
+            _activeTweenAnimation
+                // 立ち絵の位置を、画面外から本来の位置(_onScreenPosition)へ指定時間(slideInDuration)かけて移動させます。
+                .Append(
+                    _portraitContainerRect
+                        .DOAnchorPos(_onScreenPosition, slideInDuration)
+                        .SetEase(animationEase)
+                )
+                // .Join()を使うことで、前のAppend()のアニメーションと「同時」に、透明度を0から1へ変化させます。
+                .Join(_portraitCanvasGroup.DOFade(1f, slideInDuration))
+                // Time.timeScaleが0でもアニメーションが動くようにします。
+                .SetUpdate(true)
+                // アニメーション完了後に管理変数をリセットします。
+                .OnComplete(() => _activeTweenAnimation = null);
+        }
+        // 【ケース3】表示中に表情だけが変わった場合
+        // 条件：上記以外のすべての場合。つまり、立ち絵は表示中で、体形も変わらない（表情や補助画像だけが変わる）場合。
+        else
+        {
+            // この場合は特別なアニメーションは不要なため、
+            // 新しいスプライトを瞬時に設定するだけで処理を完了します。
+            SetAllSprites(bodySpriteName, faceSpriteName, expressionSpriteName, isImmobile);
+        }
+    }
+
+    /// <summary>
+    ///  全てのスプライトを設定するヘルパーメソッド
+    /// </summary>
+    private void SetAllSprites(
+        string bodySpriteName,
+        string faceSpriteName,
+        string expressionSpriteName,
+        bool isImmobile
+    )
+    {
+        _currentBodySpriteName = bodySpriteName;
+
+        // 胴体の設定
         if (_portraitDictionary.TryGetValue(bodySpriteName, out Sprite bodySprite))
         {
             bodyImage.sprite = bodySprite;
@@ -196,6 +288,7 @@ public class HeroinPortraitController : MonoBehaviour
             bodyImage.enabled = false;
         }
 
+        // 顔の設定
         if (_portraitDictionary.TryGetValue(faceSpriteName, out Sprite faceSprite))
         {
             faceImage.sprite = faceSprite;
@@ -207,6 +300,7 @@ public class HeroinPortraitController : MonoBehaviour
             faceImage.enabled = false;
         }
 
+        // 表情エフェクトの設定
         if (_portraitDictionary.TryGetValue(expressionSpriteName, out Sprite expressionSprite))
         {
             expressionImage.sprite = expressionSprite;
@@ -214,36 +308,13 @@ public class HeroinPortraitController : MonoBehaviour
         }
         else
         {
-            Debug.LogError($"表情スプライトが見つかりません: {expressionSpriteName}");
             expressionImage.enabled = false;
         }
 
-        // もし元々非表示だったら、DOTweenでアニメーションを開始する
-        if (wasHidden && bodyImage.enabled)
+        // Immobile状態の補助Imageの設定
+        if (immobileAuxImage != null)
         {
-            // 1. アニメーションの初期状態を設定
-            Vector2 offScreenPosition = new Vector2(
-                _onScreenPosition.x - _portraitContainerRect.rect.width,
-                _onScreenPosition.y
-            );
-            _portraitContainerRect.anchoredPosition = offScreenPosition;
-            _portraitCanvasGroup.alpha = 0f;
-
-            // 2. DOTweenのシーケンスを作成
-            _activeTweenAnimation = DOTween.Sequence();
-            _activeTweenAnimation
-                // anchoredPositionを_onScreenPositionへアニメーションさせる
-                .Append(
-                    _portraitContainerRect
-                        .DOAnchorPos(_onScreenPosition, animationDuration)
-                        .SetEase(animationEase)
-                )
-                // alphaを1へアニメーションさせる（Appendと同時に実行）
-                .Join(_portraitCanvasGroup.DOFade(1f, animationDuration))
-                //Time.timeScaleを無視してアニメーションを更新する
-                .SetUpdate(true)
-                // アニメーション完了時に管理変数をクリア
-                .OnComplete(() => _activeTweenAnimation = null);
+            immobileAuxImage.enabled = isImmobile;
         }
     }
 

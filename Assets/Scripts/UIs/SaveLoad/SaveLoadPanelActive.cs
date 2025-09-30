@@ -339,7 +339,7 @@ public class SaveLoadPanelActive : MonoBehaviour
 
     private void WritePlayTime(GameObject fileObject, int fileNumber)
     {
-        // ★ 追加: 表示範囲外のファイル番号を持つボタンは非表示にする
+        // 表示範囲外のファイル番号を持つボタンは非表示にする
         if (fileNumber > _maxFileNumber)
         {
             fileObject.SetActive(false);

@@ -98,7 +98,7 @@ public class AddItem_Fungus : Command
         // // アイテム表示の際はキャラクター名を消すため、キャラクターをnullに設定
         // sayDialog.SetCharacter(null);
         // SayDialogのキャラクター画像の位置に、アイテムのスプライトを設定
-        sayDialog.SetItemImage(itemData.itemSprite);
+        sayDialog.SetCharacterImage(itemData.itemSprite);
 
         // ④ SayDialogにテキスト表示を命令
         // SayDialog.Say()は非同期処理。完了後（プレイヤーがクリック後）にContinue()を呼ぶ

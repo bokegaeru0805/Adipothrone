@@ -1,8 +1,20 @@
 using System.Collections;
 using System.Collections.Generic;
 using AIE2D;
+using DG.Tweening;
 using UnityEngine;
 
+/// <summary>
+/// 背景オブジェクトとその目標色を格納するクラス
+/// </summary>
+[System.Serializable]
+public class BackgroundTint
+{
+    public GameObject backgroundObject;
+    public Color targetColor = Color.white;
+}
+
+[RequireComponent(typeof(Rigidbody2D))]
 public class NightBorneMoveController : MonoBehaviour, IEnemyResettable
 {
     [Header("剣の子オブジェクトの設定")]
@@ -21,12 +33,34 @@ public class NightBorneMoveController : MonoBehaviour, IEnemyResettable
         public Vector2 swordColliderSize = Vector2.one; // 剣のコライダーのサイズ
     }
 
+    /// <summary>
+    /// ファンネルの攻撃パターンごとの設定を管理するクラス
+    /// </summary>
+    [System.Serializable]
+    public class FunnelAttackSetting
+    {
+        public FunnelAttackPattern attackPattern;
+
+        [Tooltip("このファンネル攻撃が連携で発動可能になるまでの待機時間（秒）")]
+        public float readyTime = 2.0f;
+    }
+
     [Header("基本設定")]
     [SerializeField]
     private Transform playerTransform; // プレイヤーのTransform
 
     [SerializeField]
     private Sprite defaultSprite;
+
+    [SerializeField, Tooltip("敵のタイプ")]
+    private EnemyVariant variantType = EnemyVariant.None;
+
+    [Header("Chapter1 背景色変更の設定")]
+    [SerializeField, Tooltip("このリストは 'variantType' が 'Chapter1' の時のみ使用されます")]
+    private List<BackgroundTint> chapter1Backgrounds = new List<BackgroundTint>();
+
+    [SerializeField, Tooltip("背景色が変化するのにかかる時間（秒）")]
+    private float backgroundColorChangeDuration = 2.0f;
 
     [Header("ダメージ数値")]
     [SerializeField, Tooltip("近距離攻撃のダメージ量")]
@@ -115,8 +149,18 @@ public class NightBorneMoveController : MonoBehaviour, IEnemyResettable
     [SerializeField, Tooltip("ファンネルが定位置へ戻る速度")]
     private float funnelReturnSpeed = 30f;
 
-    [SerializeField, Tooltip("ファンネル連携攻撃が可能になるまでの待機時間")]
-    private float funnelAttackReadyTime = 2.0f;
+    [Range(0f, 1f), Tooltip("StraightDown攻撃時、ファンネルがプレイヤーの近くに配置される確率")]
+    [SerializeField]
+    private float chanceToSpawnNearPlayer = 0.3f;
+
+    [Tooltip(
+        "↑の確率抽選に成功した際、プレイヤーの左右どれくらいの範囲にファンネルを配置するかの距離"
+    )]
+    [SerializeField]
+    private float spawnNearPlayerRange = 3.0f;
+
+    [SerializeField, Tooltip("各ファンネル攻撃の連携準備時間の設定")]
+    private List<FunnelAttackSetting> funnelAttackSettings = new List<FunnelAttackSetting>();
 
     [SerializeField, Tooltip("このスプライトに切り替わった時にファンネル攻撃を開始します")]
     private Sprite funnelTriggerSprite;
@@ -173,7 +217,7 @@ public class NightBorneMoveController : MonoBehaviour, IEnemyResettable
     private List<float> funnelTargetRadii = new List<float>(); // 各ファンネルの目標半径
     private List<Vector2> funnelTargetPositions = new List<Vector2>(); // StartPositioningMode内でローカル変数からメンバー変数に変更
 
-    private enum FunnelAttackPattern
+    public enum FunnelAttackPattern
     {
         StraightDown, // 真下
         Cross, // 交差
@@ -201,6 +245,18 @@ public class NightBorneMoveController : MonoBehaviour, IEnemyResettable
         new List<ContactDamageController>();
     private List<FunnelProjectile> funnelProjectiles = new List<FunnelProjectile>();
     private float timeSinceFunnelsReturned = 0f; // ファンネルが全て戻ってきてからの経過時間
+    private float _currentFunnelReadyTime = 2.0f; //現在の攻撃パターンに対応する準備時間を保持する変数
+
+    // 敵の種類を定義
+    private enum EnemyVariant
+    {
+        None = 0,
+        Chapter1 = 1,
+    }
+
+    // 背景のスプライトレンダラーとその初期色をキャッシュするための辞書
+    private Dictionary<SpriteRenderer, Color> originalBackgroundColors =
+        new Dictionary<SpriteRenderer, Color>();
 
     private void RegisterLinkedObject(GameObject obj)
     {
@@ -232,11 +288,7 @@ public class NightBorneMoveController : MonoBehaviour, IEnemyResettable
     private void Awake()
     {
         spriteRenderer = this.GetComponent<SpriteRenderer>();
-        if (spriteRenderer == null)
-        {
-            Debug.LogError($" {gameObject.name} にSpriteRendererが見つかりません。");
-        }
-        else
+        if (spriteRenderer != null)
         {
             sortingLayerID = spriteRenderer.sortingLayerID;
             sortingOrder = spriteRenderer.sortingOrder;
@@ -247,11 +299,7 @@ public class NightBorneMoveController : MonoBehaviour, IEnemyResettable
         }
 
         rbody = this.GetComponent<Rigidbody2D>();
-        if (rbody == null)
-        {
-            Debug.LogError($" {gameObject.name} にRigidbody2Dが見つかりません。");
-        }
-        else
+        if (rbody != null)
         {
             rbody.constraints = RigidbodyConstraints2D.FreezeRotation;
             rbody.velocity = Vector2.zero; // 初期速度をゼロに設定
@@ -352,6 +400,29 @@ public class NightBorneMoveController : MonoBehaviour, IEnemyResettable
                 }
             }
         }
+
+        // Chapter1の場合のみ、背景の初期色をキャッシュする
+        if (variantType == EnemyVariant.Chapter1)
+        {
+            foreach (var bg in chapter1Backgrounds)
+            {
+                if (bg.backgroundObject != null)
+                {
+                    var renderer = bg.backgroundObject.GetComponent<SpriteRenderer>();
+                    if (renderer != null)
+                    {
+                        // 辞書にレンダラーと現在の色を保存
+                        originalBackgroundColors[renderer] = renderer.color;
+                    }
+                    else
+                    {
+                        Debug.LogWarning(
+                            $"{bg.backgroundObject.name} に SpriteRenderer が見つかりません。"
+                        );
+                    }
+                }
+            }
+        }
     }
 
     private void Start()
@@ -416,6 +487,12 @@ public class NightBorneMoveController : MonoBehaviour, IEnemyResettable
         {
             spriteRenderer.sprite = defaultSprite; // デフォルトのスプライトに設定
         }
+
+        // Chapter1の場合、背景色を即座に元に戻す
+        if (variantType == EnemyVariant.Chapter1)
+        {
+            RevertBackgroundColorsInstantly();
+        }
     }
 
     private void FixedUpdate()
@@ -461,7 +538,7 @@ public class NightBorneMoveController : MonoBehaviour, IEnemyResettable
                 StartCoroutine(PerformMeleeAttack());
             }
             // 条件B: プレイヤーは近くにいないが、ファンネルの連携攻撃準備が完了しているか
-            else if (timeSinceFunnelsReturned >= funnelAttackReadyTime)
+            else if (timeSinceFunnelsReturned >= _currentFunnelReadyTime)
             {
                 StartCoroutine(PerformMeleeAttack());
             }
@@ -529,6 +606,12 @@ public class NightBorneMoveController : MonoBehaviour, IEnemyResettable
             bossHealth?.ActivateBattle(); // ボス戦を開始する
             // ファンネルをアニメーションに同期してフェードインさせるコルーチンを開始
             StartCoroutine(FadeInFunnels());
+
+            // Chapter1の場合、背景色の変更を開始
+            if (variantType == EnemyVariant.Chapter1)
+            {
+                StartCoroutine(ChangeBackgroundsCoroutine(true)); // true: 目標の色へ
+            }
         }
     }
 
@@ -640,14 +723,49 @@ public class NightBorneMoveController : MonoBehaviour, IEnemyResettable
         }
 
         // --- 事前計算 ---
-        // 1. まずは最終的な目標「座標」を計算する
-        float availableWidth = (rightBound - leftBound) - (funnelWidth * 2f);
-        float spacing = (count > 1) ? availableWidth / (count - 1) : 0f;
         float targetY = transform.position.y + funnelWaitHeight;
-        for (int i = 0; i < count; i++)
+
+        // 1. 攻撃パターンに応じて、最終的な目標「座標」の計算方法を分岐
+        if (currentAttackPattern == FunnelAttackPattern.StraightDown)
         {
-            float targetX = leftBound + funnelWidth + (i * spacing);
-            funnelTargetPositions.Add(new Vector2(targetX, targetY));
+            // --- 【StraightDown攻撃の場合】ランダムなX座標を計算 ---
+            float minX = leftBound + funnelWidth;
+            float maxX = rightBound - funnelWidth;
+
+            // 確率の判定（プレイヤーの近くに配置するかどうか）
+            if (playerTransform != null && Random.value < chanceToSpawnNearPlayer)
+            {
+                // プレイヤーの近くに配置する場合
+                float playerX = playerTransform.position.x;
+                for (int i = 0; i < count; i++)
+                {
+                    // プレイヤーのX座標を中心に、一定範囲内にランダムなX座標を生成
+                    // 範囲を-3fから3fとしていますが、この値は適宜調整してください
+                    float randomOffset = Random.Range(-spawnNearPlayerRange, spawnNearPlayerRange);
+                    float targetX = Mathf.Clamp(playerX + randomOffset, minX, maxX);
+                    funnelTargetPositions.Add(new Vector2(targetX, targetY));
+                }
+            }
+            else
+            {
+                // 通常通り、範囲内で完全にランダムに配置する場合
+                for (int i = 0; i < count; i++)
+                {
+                    float targetX = Random.Range(minX, maxX);
+                    funnelTargetPositions.Add(new Vector2(targetX, targetY));
+                }
+            }
+        }
+        else
+        {
+            // --- 【それ以外の攻撃の場合】等間隔に配置 ---
+            float availableWidth = (rightBound - leftBound) - (funnelWidth * 2f);
+            float spacing = (count > 1) ? availableWidth / (count - 1) : 0f;
+            for (int i = 0; i < count; i++)
+            {
+                float targetX = leftBound + funnelWidth + (i * spacing);
+                funnelTargetPositions.Add(new Vector2(targetX, targetY));
+            }
         }
 
         // 2. 各ファンネルの初期状態と目標状態を計算して保存
@@ -681,6 +799,8 @@ public class NightBorneMoveController : MonoBehaviour, IEnemyResettable
                 SEManager.instance?.PlayEnemyActionSEPitch(SE_EnemyAction.MagicWave1, 1.0f);
                 break;
         }
+
+        SEManager.instance?.PlayEnemyActionSE(SE_EnemyAction.SwordSlash2);
 
         // 状態を移行
         currentFunnelState = FunnelState.Positioning;
@@ -911,9 +1031,11 @@ public class NightBorneMoveController : MonoBehaviour, IEnemyResettable
     /// </summary>
     private IEnumerator Attack_Cross()
     {
-        float centerX = (leftBound + rightBound) / 2f;
-        float centerY = this.transform.position.y + funnelWaitHeight / 2f;
-        Vector2 center = new Vector2(centerX, centerY);
+        //全てのファンネルが狙う、単一の目標座標をランダムに決定する
+        float randomX = Random.Range(leftBound + funnelWidth, rightBound - funnelWidth);
+        float targetY = this.transform.position.y;
+        Vector2 randomTargetPoint = new Vector2(randomX, targetY);
+
         for (int i = 0; i < funnelPrefabs.Count; i++)
         {
             GameObject funnel = funnelPrefabs[i];
@@ -939,7 +1061,9 @@ public class NightBorneMoveController : MonoBehaviour, IEnemyResettable
                 funnelStates[i] = IndividualFunnelState.Attacking;
 
                 // 中心に向かう方向ベクトルを計算
-                Vector2 direction = (center - (Vector2)funnel.transform.position).normalized;
+                Vector2 direction = (
+                    randomTargetPoint - (Vector2)funnel.transform.position
+                ).normalized;
 
                 // FunnelProjectileに発射命令
                 projectile.Launch(this, direction, targetAttackSpeed);
@@ -1180,26 +1304,26 @@ public class NightBorneMoveController : MonoBehaviour, IEnemyResettable
 
         if (isHPbelowHalf)
         {
-            if (randomValue < 0.33f)
+            if (randomValue < 0.3f) // 30%の確率
             {
                 currentAttackPattern = FunnelAttackPattern.Cross;
             }
-            else if (randomValue < 0.66f)
+            else if (randomValue < 0.65f) // 35%の確率
             {
                 currentAttackPattern = FunnelAttackPattern.TargetPlayer;
             }
-            else
+            else // 残り35%の確率
             {
                 currentAttackPattern = FunnelAttackPattern.Random;
             }
         }
         else
         {
-            if (randomValue < 0.4f) // 40%の確率
+            if (randomValue < 0.5f) // 50%の確率
             {
                 currentAttackPattern = FunnelAttackPattern.StraightDown;
             }
-            else if (randomValue < 0.8f) // 40%の確率 (0.4 + 0.4)
+            else if (randomValue < 0.8f) // 30%の確率
             {
                 currentAttackPattern = FunnelAttackPattern.Cross;
             }
@@ -1207,6 +1331,22 @@ public class NightBorneMoveController : MonoBehaviour, IEnemyResettable
             {
                 currentAttackPattern = FunnelAttackPattern.TargetPlayer;
             }
+        }
+
+        // 決定した攻撃パターンに対応する準備時間をリストから検索して取得する
+        var setting = funnelAttackSettings.Find(s => s.attackPattern == currentAttackPattern);
+        if (setting != null)
+        {
+            // 設定が見つかれば、その準備時間を変数に保存
+            _currentFunnelReadyTime = setting.readyTime;
+        }
+        else
+        {
+            // もし設定リストに該当するパターンがなければ、デフォルト値を使用し、警告を出す
+            _currentFunnelReadyTime = 2.0f;
+            Debug.LogWarning(
+                $"ファンネル攻撃パターン '{currentAttackPattern}' の準備時間設定が見つかりません。デフォルト値({_currentFunnelReadyTime}秒)を使用します。"
+            );
         }
 
         animator.SetTrigger("attack"); // 近距離攻撃アニメーションを再生
@@ -1240,78 +1380,78 @@ public class NightBorneMoveController : MonoBehaviour, IEnemyResettable
 
         while (true)
         {
-            if (spriteRenderer == null || spriteRenderer.sprite == previousBodySprite)
+            // --- 1. 剣の見た目を同期する処理（スプライトが変化した時だけ実行） ---
+            if (spriteRenderer != null && spriteRenderer.sprite != previousBodySprite)
             {
-                yield return null;
-                continue;
-            }
-
-            bool foundMatch = false;
-
-            foreach (var config in configs)
-            {
-                if (spriteRenderer.sprite == config.bodySprite)
+                bool foundMatch = false;
+                foreach (var config in configs)
                 {
-                    // 剣の見た目と位置を一時的に同期
-                    if (swordRenderer != null)
+                    if (spriteRenderer.sprite == config.bodySprite)
                     {
-                        swordRenderer.sprite = config.swordSprite;
-
-                        // 右向きか否かに応じて剣の向きを調整
-                        if (!rightFlag)
-                            swordRenderer.flipX = true;
-                        else
-                            swordRenderer.flipX = false;
-                    }
-
-                    if (swordTransform != null)
-                    {
-                        Vector3 localPos = config.swordLocalPosition;
-
-                        // 右向きか否かに応じて剣の向きを調整
-                        if (!rightFlag)
-                            localPos.x *= -1f;
-
-                        swordTransform.localPosition = localPos;
-
-                        // --- コライダーの形状と角度を同期 ---
-                        if (swordCollider != null)
+                        // 剣の見た目と位置を一時的に同期
+                        if (swordRenderer != null)
                         {
-                            swordCollider.offset = config.swordColliderOffset;
-                            swordCollider.size = config.swordColliderSize;
+                            swordRenderer.sprite = config.swordSprite;
+
+                            // 右向きか否かに応じて剣の向きを調整
+                            if (!rightFlag)
+                                swordRenderer.flipX = true;
+                            else
+                                swordRenderer.flipX = false;
                         }
+
+                        if (swordTransform != null)
+                        {
+                            Vector3 localPos = config.swordLocalPosition;
+
+                            // 右向きか否かに応じて剣の向きを調整
+                            if (!rightFlag)
+                                localPos.x *= -1f;
+
+                            swordTransform.localPosition = localPos;
+
+                            // --- コライダーの形状と角度を同期 ---
+                            if (swordCollider != null)
+                            {
+                                swordCollider.offset = config.swordColliderOffset;
+                                swordCollider.size = config.swordColliderSize;
+                            }
+                        }
+
+                        previousBodySprite = config.bodySprite;
+
+                        foundMatch = true;
+                        break;
                     }
-
-                    previousBodySprite = config.bodySprite;
-
-                    foundMatch = true;
-                    break;
                 }
+
+                if (swordObject.activeSelf != foundMatch)
+                {
+                    swordObject.SetActive(foundMatch);
+                }
+
+                // 同期が終わった後に、前のスプライト情報を更新
+                previousBodySprite = spriteRenderer.sprite;
             }
 
-            if (swordObject.activeSelf != foundMatch)
-            {
-                swordObject.SetActive(foundMatch);
-            }
-
-            // まだ連携攻撃がトリガーされておらず、トリガースプライトが設定されていて、
-            // 現在のスプライトがそのトリガースプライトと一致した場合
+            // --- 2. ファンネル攻撃のトリガー判定（毎フレーム実行） ---
+            // この判定は、スプライトが「切り替わった瞬間」である必要はなく、
+            // 「現在そのスプライトである」限り、毎フレームチェックされるようになります。
             if (
                 !hasTriggeredFunnelAttack
                 && funnelTriggerSprite != null
                 && spriteRenderer.sprite == funnelTriggerSprite
             )
             {
-                // ファンネルが攻撃可能な状態かもチェックする (元の条件と同じ)
-                if (AreAllFunnelsInCircle() && timeSinceFunnelsReturned >= funnelAttackReadyTime)
+                // 時間経過やファンネルの状態など、他の条件をチェック
+                if (AreAllFunnelsInCircle() && timeSinceFunnelsReturned >= _currentFunnelReadyTime)
                 {
                     StartPositioningMode(); // ファンネル攻撃のシーケンスを開始
-                    hasTriggeredFunnelAttack = true; // フラグを立て、この攻撃中は二度と実行しないようにする
+                    hasTriggeredFunnelAttack = true; // この攻撃中は二度と発動しないようにフラグを立てる
                 }
             }
 
-            previousBodySprite = spriteRenderer.sprite;
-            yield return null;
+            yield return null; // 次のフレームまで待機
         }
     }
 
@@ -1408,12 +1548,63 @@ public class NightBorneMoveController : MonoBehaviour, IEnemyResettable
         // 2. 実行中の全てのアクション（コルーチン）を停止
         StopAllCoroutines();
 
+        // Chapter1の場合、背景色を元に戻す処理を開始
+        if (variantType == EnemyVariant.Chapter1)
+        {
+            StartCoroutine(ChangeBackgroundsCoroutine(false)); // false: 元の色へ
+        }
+
         // 3. 残像などを完全に停止
         if (afterImage != null)
             afterImage.SetActive(false);
 
         // 4. 関連オブジェクト（ファンネルなど）を全て破棄
         DestroyLinkedObjects();
+    }
+
+    /// <summary>
+    /// 背景色を滑らかに変更するコルーチン
+    /// </summary>
+    /// <param name="toTargetColor">trueなら目標の色へ、falseなら元の色へ変更</param>
+    private IEnumerator ChangeBackgroundsCoroutine(bool toTargetColor)
+    {
+        // 変更対象となる背景オブジェクトがなければ処理を終了
+        if (originalBackgroundColors.Count == 0)
+            yield break;
+
+        // 各背景オブジェクトに対して色の変更を行う
+        foreach (var entry in chapter1Backgrounds)
+        {
+            if (entry.backgroundObject != null)
+            {
+                var renderer = entry.backgroundObject.GetComponent<SpriteRenderer>();
+                if (renderer != null)
+                {
+                    // 変更先の色を決定
+                    Color finalColor = toTargetColor
+                        ? entry.targetColor
+                        : originalBackgroundColors[renderer];
+
+                    // DOTweenを使用して滑らかに色を変化させる
+                    renderer.DOColor(finalColor, backgroundColorChangeDuration);
+                }
+            }
+        }
+        yield return null;
+    }
+
+    /// <summary>
+    /// 背景色を即座に元の色に戻す
+    /// </summary>
+    private void RevertBackgroundColorsInstantly()
+    {
+        // 辞書に保存された元の色に即座に戻す
+        foreach (var pair in originalBackgroundColors)
+        {
+            // DOTweenのアニメーションが実行中であれば停止する
+            pair.Key.DOKill();
+            pair.Key.color = pair.Value;
+        }
     }
 
     /// <summary>

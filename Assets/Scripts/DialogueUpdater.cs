@@ -1,10 +1,13 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using Fungus;
-using UnityEditor;
-using UnityEngine;
 using System.Text.RegularExpressions;
+using Fungus;
+using UnityEngine;
+#if UNITY_EDITOR
+using UnityEditor;
+#endif
+
 
 /// <summary>
 /// CSVの1行分のデータを格納するためのクラス。
@@ -34,9 +37,9 @@ public class DialogueUpdater : MonoBehaviour
 
     // 「地の文」として扱うキーワード
     private const string NARRATIVE_TEXT_KEYWORD = "narrative";
+
     //　「ヒロイン」として扱うキーワード
     private const string HEROIN_KEYWORD = "Heroin";
-
 
     // [ContextMenu("Update Dialogue Sequentially by BlockName")]
     public void UpdateDialogue()
@@ -172,9 +175,11 @@ public class DialogueUpdater : MonoBehaviour
                         string newPortraitString = csvLine.expression;
 
                         // 差分チェック：テキスト、キャラクター、または表情文字列が異なれば更新
-                        if (sayCommand.GetStandardText() != csvLine.dialogue ||
-                            sayCommand._Character != newCharacter ||
-                            sayCommand.PortraitString != newPortraitString)
+                        if (
+                            sayCommand.GetStandardText() != csvLine.dialogue
+                            || sayCommand._Character != newCharacter
+                            || sayCommand.PortraitString != newPortraitString
+                        )
                         {
                             sayCommand.SetStandardText(csvLine.dialogue);
                             sayCommand.SetCharacter(newCharacter);
@@ -190,9 +195,11 @@ public class DialogueUpdater : MonoBehaviour
                         Sprite newPortrait = FindPortrait(newCharacter, csvLine.expression);
 
                         // 差分チェック：テキスト、キャラクター、または立ち絵Spriteが異なれば更新
-                        if (sayCommand.GetStandardText() != csvLine.dialogue ||
-                            sayCommand._Character != newCharacter ||
-                            sayCommand.Portrait != newPortrait)
+                        if (
+                            sayCommand.GetStandardText() != csvLine.dialogue
+                            || sayCommand._Character != newCharacter
+                            || sayCommand.Portrait != newPortrait
+                        )
                         {
                             sayCommand.SetStandardText(csvLine.dialogue);
                             sayCommand.SetCharacter(newCharacter);
@@ -208,7 +215,10 @@ public class DialogueUpdater : MonoBehaviour
 
         if (hasChanged)
         {
+            // #if UNITY_EDITOR で囲む
+#if UNITY_EDITOR
             EditorUtility.SetDirty(targetFlowchart);
+#endif
         }
 
         Debug.Log($"チェック完了: {totalUpdatedCount}個のSayコマンドを更新しました。");
@@ -267,7 +277,6 @@ public class DialogueUpdater : MonoBehaviour
             // 4. 内部でエスケープされている "" を " に置換
             sanitized = sanitized.Replace("\"\"", "\"");
         }
-
 
         return sanitized;
     }

@@ -48,19 +48,19 @@ public class GameUIManager : MonoBehaviour
 
             if (
                 uiRefs.BossHealthBarImage == null
-                || uiRefs.BossHealthBarBack == null
+                || uiRefs.BossHealthUIPanel == null
                 || uiRefs.BossLevelNumberText == null
             )
             {
                 Debug.LogError(
-                    "GameUIRefsにボスのHPバー、背景、レベル番号テキストが設定されていません"
+                    "GameUIRefsにボスのHPバー、背景、、レベルUI、レベル番号テキストが設定されていません"
                 );
                 return;
             }
             else
             {
-                uiRefs.BossHealthBarImage.gameObject.SetActive(false); //ボスのHPバーを非表示
-                uiRefs.BossHealthBarBack.SetActive(false); //ボスのHPバーの背景を非表示
+                SetBossUIVisibility(false);; //ボスのHPバーのパネルを非表示
+                uiRefs.BossLevelNumberText.text = $"???"; //ボスのレベルテキストをリセット
             }
 
             if (uiRefs.SkillNameDisplay == null)
@@ -287,8 +287,7 @@ public class GameUIManager : MonoBehaviour
         if (currentBossHPScript == null)
         {
             // スクリプトがない場合でもUIを非表示にするなどの処理は行う
-            uiRefs.BossHealthBarImage.gameObject.SetActive(false);
-            uiRefs.BossHealthBarBack.SetActive(false);
+            SetBossUIVisibility(false);;
             Debug.LogWarning("ボスオブジェクトにboss_HPスクリプトが見つかりません。", gameObject);
             return;
         }
@@ -307,10 +306,9 @@ public class GameUIManager : MonoBehaviour
 
         currentBossHPScript.OnHPChanged += GetBossData; //イベントの購読
 
-        // ボスのHPバーと背景を表示
+        // ボスのHP関係UIを表示
         //GameManager.IsTalkingがtrue、つまり会話中はUIを非表示にする
-        uiRefs.BossHealthBarImage.gameObject.SetActive(!GameManager.IsTalking);
-        uiRefs.BossHealthBarBack.SetActive(!GameManager.IsTalking);
+        SetBossUIVisibility(!GameManager.IsTalking);
     }
 
     //ボスのUIデータを削除するメソッド
@@ -328,8 +326,7 @@ public class GameUIManager : MonoBehaviour
             currentBossHPScript = null; // 参照をクリア
         }
 
-        uiRefs.BossHealthBarImage.gameObject.SetActive(false); //ボスのHPバーを非表示
-        uiRefs.BossHealthBarBack.SetActive(false); //ボスのHPバーの背景を非表示
+        SetBossUIVisibility(false); //ボスのHPバーのパネルを非表示
         if (uiRefs.BossLevelNumberText != null)
         {
             uiRefs.BossLevelNumberText.text = $"???"; //ボスのレベルテキストをリセット
@@ -345,14 +342,32 @@ public class GameUIManager : MonoBehaviour
             return; // ボスオブジェクトが存在しない場合は何もしない
         }
 
-        if (uiRefs.BossHealthBarImage != null)
+        SetBossUIVisibility(!isActive);
+    }
+
+    /// <summary>
+    /// CanvasGroupを使用してボスのUI全体の表示/非表示を制御します。
+    /// </summary>
+    /// <param name="isVisible">表示する場合はtrue、非表示にする場合はfalse</param>
+    private void SetBossUIVisibility(bool isVisible)
+    {
+        if (uiRefs.BossHealthUIPanel == null)
         {
-            uiRefs.BossHealthBarImage.gameObject.SetActive(!isActive);
+            Debug.LogError("BossHealthUIPanelが設定されていません！");
+            return;
         }
 
-        if (uiRefs.BossHealthBarBack != null)
+        if (isVisible)
         {
-            uiRefs.BossHealthBarBack.SetActive(!isActive);
+            uiRefs.BossHealthUIPanel.alpha = 1f; // 透明度を1にして表示
+            // uiRefs.BossHealthUIPanel.interactable = true; // 操作を有効化
+            // uiRefs.BossHealthUIPanel.blocksRaycasts = true; // マウスイベントなどをブロック
+        }
+        else
+        {
+            uiRefs.BossHealthUIPanel.alpha = 0f; // 透明度を0にして非表示
+            // uiRefs.BossHealthUIPanel.interactable = false; // 操作を無効化
+            // uiRefs.BossHealthUIPanel.blocksRaycasts = false; // マウスイベントなどを透過
         }
     }
 

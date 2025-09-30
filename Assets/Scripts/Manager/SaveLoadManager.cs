@@ -140,6 +140,31 @@ public class SaveLoadManager : MonoBehaviour
             GameManager.instance?.ResetState(); //ゲーム内の変数を初期化
             GameManager.isFirstGameOpen = true; //初回起動フラグを立てる
             SetToLoadMode(); //ロード状態にする
+
+            if (Settings == null)
+            {
+                Debug.LogWarning("SaveLoadManagerのSettingsがnullです。");
+            }
+            else
+            {
+                if (BGMManager.instance == null)
+                {
+                    Debug.LogWarning("BGMManagerが存在しません");
+                }
+                else
+                {
+                    BGMManager.instance.AdjustAllVolume(Settings.bgmVolume); //BGM音量を設定
+                }
+
+                if (SEManager.instance == null)
+                {
+                    Debug.LogWarning("SEManagerが存在しません");
+                }
+                else
+                {
+                    SEManager.instance.AdjustAllSEVolume(Settings.seVolume); //SE音量を設定
+                }
+            }
         }
     }
 

@@ -556,23 +556,25 @@ namespace Fungus
             }
         }
 
-        /// <summary>
-        /// SayDialogに表示するアイテム画像を設定します。
-        /// </summary>
-        public virtual void SetItemImage(Sprite image)
-        {
-            if (image != null)
-            {
-                displayImage.overrideSprite = image;
-                SetSpriteFitToSquare(displayImage, image, baseSize);
-                imageContainer.gameObject.SetActive(true);
-            }
-            else
-            {
-                // 画像がnullなら非表示にし、テキストボックスの幅を元に戻す
-                imageContainer.gameObject.SetActive(false);
-            }
-        }
+        //SetItemImageは削除し、代わりにSetCharacterImageを使用するように変更
+        // これにより、アイテム画像もキャラクター画像と同じ位置に表示されるようになる
+        // /// <summary>
+        // /// SayDialogに表示するアイテム画像を設定します。
+        // /// </summary>
+        // public virtual void SetItemImage(Sprite image)
+        // {
+        //     if (image != null)
+        //     {
+        //         displayImage.overrideSprite = image;
+        //         SetSpriteFitToSquare(displayImage, image, baseSize);
+        //         imageContainer.gameObject.SetActive(true);
+        //     }
+        //     else
+        //     {
+        //         // 画像がnullなら非表示にし、テキストボックスの幅を元に戻す
+        //         imageContainer.gameObject.SetActive(false);
+        //     }
+        // }
 
         /// <summary>
         /// 指定されたImageにSpriteを設定し、Spriteの縦横比を維持しつつ、

@@ -83,6 +83,8 @@ public class FastTravelManager : MonoBehaviour
             ); // 死亡ファストトラベルチュートリアルを実行
             shouldRunDeathFastTravelTutorial = false; // チュートリアル実行フラグをリセット
         }
+
+        GameManager.instance.TriggerJumpCooldown(); // 会話終了後のジャンプ入力クールダウンを開始
     }
 
     public void ExecuteDeathFastTravel()

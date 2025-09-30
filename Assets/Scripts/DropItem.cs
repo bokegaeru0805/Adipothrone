@@ -1,7 +1,7 @@
 using System;
+using System.Collections.Generic;
 using DG.Tweening;
 using UnityEngine;
-using System.Collections.Generic;
 
 /// <summary>
 /// アイテムランクに応じた宝箱のスプライト（開閉）を管理するクラス
@@ -9,11 +9,27 @@ using System.Collections.Generic;
 [System.Serializable]
 public class TreasureSpriteSet
 {
-    public ItemRank rank;       // 対応するアイテムランク
-    public Sprite closeSprite;  // 閉じている状態のスプライト
-    public Sprite openSprite;   // 開いている状態のスプライト
+    public ItemRank rank; // 対応するアイテムランク
+    public Sprite closeSprite; // 閉じている状態のスプライト
+    public Sprite openSprite; // 開いている状態のスプライト
 }
 
+/// <summary>
+/// ドロップアイテム、お金、宝箱の表示と基本的な動作を管理するクラス。
+/// アイテムの種類に応じてスプライトを設定し、地面への自動配置やホバーアニメーション、宝箱の開閉処理などを担当します。
+/// </summary>
+/// <remarks>
+/// ■ 前提条件:
+/// 1. Rigidbody2D: このコンポーネントがアタッチされている場合、Body Typeは「Kinematic」に設定してください。
+///    「Dynamic」だと物理演算が働き、自動配置やアニメーションが正しく動作しません。
+/// 2. Pivot設定:
+///    - 自動配置されるアイテムやお金のスプライト: Pivotは「Center」を想定しています。
+///    - 手動配置される宝箱のスプライト: Pivotは「Bottom」に設定することを推奨します。
+///
+/// ■ 注意事項:
+/// このスクリプトは、宝箱(isTreasureBox = true)の場合は地面への自動配置を行いません。
+/// 宝箱はシーンに直接、手動で配置されることを前提としています。
+/// </remarks>
 public class DropItem : MonoBehaviour
 {
     private float maxUnitPixel = 2.0f; //スプライトの最大表示サイズ（Unity単位）
@@ -29,6 +45,7 @@ public class DropItem : MonoBehaviour
 
     [HideInInspector]
     public bool isTreasureBox = false;
+
     [Header("宝箱のスプライト設定")]
     [Tooltip("アイテムランクごとの宝箱の開閉スプライトを設定します")]
     [SerializeField]
@@ -62,6 +79,7 @@ public class DropItem : MonoBehaviour
     private SpriteRenderer spriteRenderer;
     private CircleCollider2D mycollider;
     private CapsuleCollider2D groundCheckerCollider;
+
     // 現在の宝箱に適用すべき開閉スプライトを保存しておく変数
     private Sprite _currentTargetCloseSprite;
     private Sprite _currentTargetOpenSprite;
@@ -144,7 +162,6 @@ public class DropItem : MonoBehaviour
         _currentTargetCloseSprite = defaultCloseSprite;
         _currentTargetOpenSprite = defaultOpenSprite;
 
-
         // 2. リストの中から、現在のアイテムランクに一致するスプライト設定を探す
         foreach (var spriteSet in treasureSpritesByRank)
         {
@@ -178,8 +195,11 @@ public class DropItem : MonoBehaviour
             return;
         }
 
-        // オブジェクトの真下に向けてRaycastを発射
-        RaycastHit2D hit = Physics2D.Raycast(transform.position, Vector2.down, 10f, groundLayer);
+        // Raycastの開始位置を、オブジェクトの現在位置より少し高い場所（上空）に設定する
+        Vector2 rayStartPosition = new Vector2(transform.position.x, transform.position.y + 5f);
+
+        // 上空から真下に向けてRaycastを発射（距離を長めに設定）
+        RaycastHit2D hit = Physics2D.Raycast(rayStartPosition, Vector2.down, 20f, groundLayer);
 
         // Rayが地面レイヤーに衝突した場合
         if (hit.collider != null)
@@ -192,6 +212,11 @@ public class DropItem : MonoBehaviour
 
             // 新しい座標を設定
             transform.position = new Vector3(transform.position.x, newY, transform.position.z);
+        }
+        else
+        {
+            // もし下に地面が見つからなかった場合（落下中など）は、ホバーアニメーションを開始しない
+            return;
         }
 
         //地面への配置が完了した後にアニメーションを開始

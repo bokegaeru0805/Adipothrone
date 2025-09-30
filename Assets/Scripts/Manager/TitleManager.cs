@@ -12,10 +12,13 @@ public class TitleManager : MonoBehaviour
     {
         if (BGMManager.instance != null)
         {
-            while (!BGMManager.instance.IsPlayingCategory(BGMCategory.Title))
+            for (int i = 0; i < 10; i++)
             {
-                BGMManager.instance.Play(BGMCategory.Title);
-                yield return null; // BGMが再生されるまで待機
+                if (!BGMManager.instance.IsPlayingCategory(BGMCategory.Title))
+                {
+                    BGMManager.instance.Play(BGMCategory.Title);
+                    yield return null; // BGMが再生されるまで待機
+                }
             }
         }
     }

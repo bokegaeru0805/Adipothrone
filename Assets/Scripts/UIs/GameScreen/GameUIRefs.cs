@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using Shapes2D;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -32,16 +33,15 @@ public class GameUIRefs : MonoBehaviour
     private TextMeshProUGUI _playerMaxWPText;
     public TextMeshProUGUI PlayerMaxWPText => _playerMaxWPText;
 
-    [Header("ボスHPのUI")]
+    [Header("ボスHPとLvのUI")]
+    [SerializeField]
+    private CanvasGroup _bossHealthUIPanel;
+    public CanvasGroup BossHealthUIPanel => _bossHealthUIPanel;
+
     [SerializeField]
     private Image _bossHealthBarImage;
     public Image BossHealthBarImage => _bossHealthBarImage;
 
-    [SerializeField]
-    private GameObject _bossHealthBarBack;
-    public GameObject BossHealthBarBack => _bossHealthBarBack;
-
-    [Header("ボスのLvのUI")]
     [SerializeField]
     private TextMeshProUGUI _bossLevelNumberText;
     public TextMeshProUGUI BossLevelNumberText => _bossLevelNumberText;

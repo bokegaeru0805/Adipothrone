@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using CriWare;
+using CriWare.Assets;
 using UnityEngine;
 
 /// <summary>
@@ -10,16 +11,17 @@ using UnityEngine;
 public class BGMManager : MonoBehaviour
 {
     // --- シングルトンインスタンス ---
+    [Header("BGMのACBアセット")]
+    [SerializeField]
+    private CriAtomAcbAsset bgmAcbAsset;
     public static BGMManager instance { get; private set; }
     private CriAtomExPlayer player1; // AudioSourceの代わりにCriAtomExPlayerを2つ使用
     private CriAtomExPlayer player2;
     private CriAtomExPlayer currentPlayer; // 現在メインで再生しているプレイヤー
     private BGMCategory currentCategory = BGMCategory.None;
-    private const string defaultCueSheetName = "BGMSheet"; // デフォルトのCueSheet名
     private const string duckingAisacName = "DuckingControl"; // ダッキング用のAISAC名
     private const string BGMCategoryName = "BGM"; // BGMカテゴリのパラメータ名
     private float duckingLevel = 0.5f; // ダッキング時に下げる音量レベル (0.0 - 1.0)
-    private CriAtomExAcb bgmAcb;
     private Coroutine activeFadeCoroutine = null; // 現在実行中のフェードコルーチンを追跡するための変数
 
     /// <summary>
@@ -43,27 +45,13 @@ public class BGMManager : MonoBehaviour
         { BGMCategory.Env_Water_Stream1, "WaterStream1" },
         { BGMCategory.Env_Birds, "PlainsField_Amb1" },
         { BGMCategory.Field_FirstVillage, "FirstVillage" },
-        { BGMCategory.Field_Cave1, "CaveField1" },
+        { BGMCategory.Field_Cave1, "CaveField_Amb1" },
         {
             BGMCategory.None,
             ""
         } // Noneは空文字列で扱う
         ,
     };
-
-    // 実行中のフェード処理を安全に停止し、プレイヤーの状態をリセットする
-    private void StopActiveFade()
-    {
-        if (activeFadeCoroutine != null)
-        {
-            StopCoroutine(activeFadeCoroutine);
-            activeFadeCoroutine = null;
-
-            // 中途半端な状態で残っている可能性のあるプレイヤーを両方停止
-            player1.Stop();
-            player2.Stop();
-        }
-    }
 
     private void Awake()
     {
@@ -77,20 +65,20 @@ public class BGMManager : MonoBehaviour
         {
             Destroy(this.gameObject);
         }
+
+        if (bgmAcbAsset == null)
+        {
+            Debug.LogError("BGMManager: BGMのACBアセットが設定されていません。");
+        }
     }
 
     private void Start()
     {
         // 初期化
         // プレイヤーは最初に一度だけ生成し、使い回す
-        //Awakeで行うと、CRIWAREのシステム自体がまだ起動準備を完了していない場合があるため、Startで行う
+        // Awakeで行うと、CRIWAREのシステム自体がまだ起動準備を完了していない場合があるため、Startで行う
         player1 = new CriAtomExPlayer();
         player2 = new CriAtomExPlayer();
-        bgmAcb = CriAtomExAcb.LoadAcbFile(
-            null,
-            defaultCueSheetName + ".acb",
-            defaultCueSheetName + ".awb"
-        );
     }
 
     private void OnDestroy()
@@ -106,11 +94,6 @@ public class BGMManager : MonoBehaviour
             player2.Dispose();
             player2 = null;
         }
-        if (bgmAcb != null)
-        {
-            bgmAcb.Dispose();
-            bgmAcb = null;
-        }
     }
 
     /// <summary>
@@ -119,8 +102,12 @@ public class BGMManager : MonoBehaviour
     /// <param name="category">再生したいBGMのカテゴリ</param>
     public void Play(BGMCategory category)
     {
-        // 同じ曲が再生中の場合は何もしない
-        if (currentCategory == category)
+        // 再生中の曲が同じでも、再生されていなければ再開させる
+        if (
+            currentCategory == category
+            && currentPlayer != null
+            && currentPlayer.GetStatus() == CriAtomExPlayer.Status.Playing
+        )
         {
             return;
         }
@@ -131,22 +118,19 @@ public class BGMManager : MonoBehaviour
             return;
         }
 
-        //常にクリーンな状態から始める
-        StopActiveFade();
-
         // 停止中の場合は、最初のプレイヤーで再生開始
         if (currentPlayer == null || currentPlayer.GetStatus() != CriAtomExPlayer.Status.Playing)
         {
             currentPlayer = player1;
-            currentPlayer.SetCue(bgmAcb, bgmName);
+            currentPlayer.SetVolume(1.0f);
+            currentPlayer.SetCue(bgmAcbAsset.Handle, bgmName);
             currentPlayer.Start();
             currentCategory = category;
         }
         else
         {
-            // 再生中の場合はクロスフェードを開始
-            StopAllCoroutines(); // 既に実行中のフェード処理があれば中断
-            Crossfade(category);
+            // 再生中の場合は安全なクロスフェード処理を呼び出す
+            StartCrossfadeInternal(category, 1.0f);
         }
     }
 
@@ -155,13 +139,17 @@ public class BGMManager : MonoBehaviour
     /// </summary>
     public void Stop()
     {
-        if (currentPlayer != null)
+        // 実行中のコルーチンを停止
+        if (activeFadeCoroutine != null)
         {
-            //常にクリーンな状態から始める
-            StopActiveFade();
-
-            currentPlayer.Stop();
+            StopCoroutine(activeFadeCoroutine);
+            activeFadeCoroutine = null;
         }
+
+        // 全てのプレイヤーを停止
+        player1.Stop();
+        player2.Stop();
+        currentPlayer = null;
         currentCategory = BGMCategory.None;
     }
 
@@ -173,23 +161,23 @@ public class BGMManager : MonoBehaviour
     /// <param name="duration">フェードインにかける時間（秒）</param>
     public void FadeIn(BGMCategory category, float duration)
     {
-        // 同じ曲が再生中の場合は何もしない
-        if (currentCategory == category)
-        {
+        if (currentCategory == category && activeFadeCoroutine == null)
             return;
-        }
 
-        //常にクリーンな状態から始める
-        StopActiveFade();
-
-        // すでに何らかのBGMが再生されている場合は、クロスフェードを呼び出す
         if (currentPlayer != null && currentPlayer.GetStatus() == CriAtomExPlayer.Status.Playing)
         {
-            Crossfade(category, duration);
+            // 安全なクロスフェード処理を呼び出す
+            StartCrossfadeInternal(category, duration);
         }
         else
         {
-            // BGMが停止している場合は、フェードインコルーチンを開始
+            // 停止からのフェードイン処理を強化
+            if (activeFadeCoroutine != null)
+            {
+                StopCoroutine(activeFadeCoroutine);
+            }
+            player1.Stop();
+            player2.Stop();
             activeFadeCoroutine = StartCoroutine(FadeInCoroutine(category, duration));
         }
     }
@@ -209,7 +197,7 @@ public class BGMManager : MonoBehaviour
         currentPlayer = player1;
 
         // 2. 新しい曲を準備し、ボリューム0で再生を開始
-        currentPlayer.SetCue(bgmAcb, bgmName);
+        currentPlayer.SetCue(bgmAcbAsset.Handle, bgmName);
         currentPlayer.SetVolume(0.0f);
         currentPlayer.Start();
 
@@ -243,8 +231,13 @@ public class BGMManager : MonoBehaviour
     {
         if (currentPlayer != null && currentPlayer.GetStatus() == CriAtomExPlayer.Status.Playing)
         {
-            // 常にクリーンな状態から始める
-            StopActiveFade();
+            if (activeFadeCoroutine != null)
+            {
+                StopCoroutine(activeFadeCoroutine);
+            }
+            // フェードアウト中に使われていない方のプレイヤーを確実に止める
+            CriAtomExPlayer otherPlayer = (currentPlayer == player1) ? player2 : player1;
+            otherPlayer.Stop();
 
             activeFadeCoroutine = StartCoroutine(FadeOutCoroutine(duration));
         }
@@ -281,24 +274,48 @@ public class BGMManager : MonoBehaviour
     /// <param name="crossfadeDuration">クロスフェードにかける時間（秒）</param>
     public void Crossfade(BGMCategory newCategory, float crossfadeDuration = 1.0f)
     {
-        if (!bgmNameTable.TryGetValue(newCategory, out string bgmName))
-        {
-            Debug.LogWarning($"指定されたBGMカテゴリ {newCategory} は登録されていません。");
+        if (currentCategory == newCategory && activeFadeCoroutine == null)
             return;
-        }
 
-        //常にクリーンな状態から始める
-        StopActiveFade();
-
-        // 停止中の場合は、Playを呼び出すだけで良い
+        // 停止中ならFadeInとして扱う
         if (currentPlayer == null || currentPlayer.GetStatus() != CriAtomExPlayer.Status.Playing)
         {
-            Play(newCategory);
+            FadeIn(newCategory, crossfadeDuration);
+        }
+        else
+        {
+            // 再生中なら安全なクロスフェード処理を呼び出す
+            StartCrossfadeInternal(newCategory, crossfadeDuration);
+        }
+    }
+
+    /// <summary>
+    /// クロスフェードを開始するための安全な内部メソッド
+    /// </summary>
+    private void StartCrossfadeInternal(BGMCategory newCategory, float duration)
+    {
+        if (!bgmNameTable.ContainsKey(newCategory))
+        {
+            Debug.LogWarning($"BGMカテゴリ {newCategory} は登録されていません。");
             return;
         }
 
-        // クロスフェード処理を開始
-        activeFadeCoroutine = StartCoroutine(CrossfadeCoroutine(newCategory, crossfadeDuration));
+        // 1. 実行中の古いフェードコルーチンがあれば、まず停止する
+        if (activeFadeCoroutine != null)
+        {
+            StopCoroutine(activeFadeCoroutine);
+        }
+
+        // 2. 現在再生を担当していない方のプレイヤー（古いフェードイン担当）を特定して停止する
+        // これにより、中途半端にフェードインしていた曲が確実に止まる
+        if (currentPlayer != null && currentPlayer.GetStatus() == CriAtomExPlayer.Status.Playing)
+        {
+            CriAtomExPlayer playerToStop = (currentPlayer == player1) ? player2 : player1;
+            playerToStop.Stop();
+        }
+
+        // 3. 新しいクロスフェードコルーチンを開始する
+        activeFadeCoroutine = StartCoroutine(CrossfadeCoroutine(newCategory, duration));
     }
 
     /// <summary>
@@ -311,7 +328,7 @@ public class BGMManager : MonoBehaviour
         CriAtomExPlayer fadeOutPlayer = currentPlayer;
 
         // 2. 新しい曲を再生準備し、ボリューム0で再生開始
-        fadeInPlayer.SetCue(bgmAcb, bgmNameTable[newCategory]);
+        fadeInPlayer.SetCue(bgmAcbAsset.Handle, bgmNameTable[newCategory]);
         fadeInPlayer.SetVolume(0.0f);
         fadeInPlayer.Start();
 
@@ -388,20 +405,4 @@ public class BGMManager : MonoBehaviour
         currentPlayer.SetAisacControl(duckingAisacName, targetValue);
         currentPlayer.UpdateAll(); // 変更を即座に反映
     }
-
-    // /// <summary>
-    // /// 必要であればACBファイルをロードし、キャッシュする
-    // /// </summary>
-    // private void LoadAcbIfNeeded(string cueSheetName)
-    // {
-    //     // 既にロード済みの場合は何もしない
-    //     if (loadedAcbs.ContainsKey(cueSheetName))
-    //     {
-    //         return;
-    //     }
-
-    //     // 未ロードの場合はロードして辞書に登録
-    //     var acb = CriAtomExAcb.LoadAcbFile(null, cueSheetName + ".acb", cueSheetName + ".awb");
-    //     loadedAcbs.Add(cueSheetName, acb);
-    // }
 }

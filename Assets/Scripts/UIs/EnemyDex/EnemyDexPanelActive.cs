@@ -11,19 +11,32 @@ using UnityEngine.UI;
 public class EnemyDexPanelActive : MonoBehaviour, IPanelActive
 {
     [Header("敵リスト関連")]
-    [SerializeField] private GameObject[] enemyButtons; // 敵を選択するためのボタン配列
-    [SerializeField] private EnemyDatabase enemyDatabase; // 敵のマスターデータ
+    [SerializeField]
+    private GameObject[] enemyButtons; // 敵を選択するためのボタン配列
+
+    [SerializeField]
+    private EnemyDatabase enemyDatabase; // 敵のマスターデータ
 
     [Header("敵詳細表示エリア")]
-    [SerializeField] private TextMeshProUGUI enemyNameText;
-    [SerializeField] private Image enemyImage;
+    [SerializeField]
+    private TextMeshProUGUI enemyNameText;
+
+    [SerializeField]
+    private Image enemyImage;
+
     // [SerializeField] private TextMeshProUGUI descriptionText;
-    [SerializeField] private TextMeshProUGUI statsText; // レベル, HP, EXP, Moneyなどを表示
-    [SerializeField] private TextMeshProUGUI dropItemsText; // ドロップアイテム一覧
+    [SerializeField]
+    private TextMeshProUGUI statsText; // レベル, HP, EXP, Moneyなどを表示
+
+    [SerializeField]
+    private TextMeshProUGUI dropItemsText; // ドロップアイテム一覧
 
     [Header("空の状態の表示")]
-    [SerializeField] private GameObject detailGroup; // 詳細表示エリアの親オブジェクト
-    [SerializeField] private GameObject emptyPanel;  // 何も登録されていない時に表示するパネル
+    [SerializeField]
+    private GameObject detailGroup; // 詳細表示エリアの親オブジェクト
+
+    [SerializeField]
+    private GameObject emptyPanel; // 何も登録されていない時に表示するパネル
 
     /// <summary>
     /// ページめくりがどの入力で行われたかを判別するための種類
@@ -59,7 +72,9 @@ public class EnemyDexPanelActive : MonoBehaviour, IPanelActive
         buttonHelpers = new List<EnemyDexButtonHelper>();
         foreach (var button in enemyButtons)
         {
-            var helper = button.GetComponent<EnemyDexButtonHelper>() ?? button.AddComponent<EnemyDexButtonHelper>();
+            var helper =
+                button.GetComponent<EnemyDexButtonHelper>()
+                ?? button.AddComponent<EnemyDexButtonHelper>();
             buttonHelpers.Add(helper);
         }
 
@@ -90,10 +105,12 @@ public class EnemyDexPanelActive : MonoBehaviour, IPanelActive
 
     private void Update()
     {
-        if (inputManager == null) return;
+        if (inputManager == null)
+            return;
 
         GameObject selectedObject = EventSystem.current.currentSelectedGameObject;
-        if (selectedObject == null) return;
+        if (selectedObject == null)
+            return;
 
         // 選択が前回と変わったフレームは、入力処理をスキップ
         if (selectedObject != previousSelected)
@@ -117,7 +134,8 @@ public class EnemyDexPanelActive : MonoBehaviour, IPanelActive
 
         // --- 上下キーでのページ循環 ---
         int visibleItemCount = Mathf.Min(itemsPerPage, allUnlockedEnemies.Count - currentTopIndex);
-        if (visibleItemCount <= 0) return;
+        if (visibleItemCount <= 0)
+            return;
 
         GameObject lastVisibleButton = enemyButtons[visibleItemCount - 1];
 
@@ -130,8 +148,6 @@ public class EnemyDexPanelActive : MonoBehaviour, IPanelActive
             ChangePage(-1, PageChangeType.VerticalUp);
         }
     }
-
-
 
     public void SelectFirstButton()
     {
@@ -154,16 +170,21 @@ public class EnemyDexPanelActive : MonoBehaviour, IPanelActive
                 if (masterData.isListedInDex)
                 {
                     // 討伐数などのセーブデータも取得
-                    var saveEntry = enemyRecordData.enemyRecords.Find(e => e.enemyIdValue == (int)masterData.enemyID);
+                    var saveEntry = enemyRecordData.enemyRecords.Find(e =>
+                        e.enemyIdValue == (int)masterData.enemyID
+                    );
 
                     // 表示用のリストに追加
-                    allUnlockedEnemies.Add(new UnlockedEnemy { MasterData = masterData, SaveEntry = saveEntry });
+                    allUnlockedEnemies.Add(
+                        new UnlockedEnemy { MasterData = masterData, SaveEntry = saveEntry }
+                    );
                 }
             }
         }
 
         // 総ページ数を計算
-        totalPages = (allUnlockedEnemies.Count > 0) ? (allUnlockedEnemies.Count - 1) / itemsPerPage + 1 : 1;
+        totalPages =
+            (allUnlockedEnemies.Count > 0) ? (allUnlockedEnemies.Count - 1) / itemsPerPage + 1 : 1;
     }
 
     private void UpdateEnemyListPage()
@@ -177,8 +198,11 @@ public class EnemyDexPanelActive : MonoBehaviour, IPanelActive
                 int enemyIndex = currentTopIndex + i;
                 UnlockedEnemy unlockedEnemy = allUnlockedEnemies[enemyIndex];
 
-                enemyButtons[i].GetComponentInChildren<TextMeshProUGUI>().text = unlockedEnemy.MasterData.enemyName;
-                buttonHelpers[i].Initialize(this, unlockedEnemy.MasterData, unlockedEnemy.SaveEntry);
+                enemyButtons[i].GetComponentInChildren<TextMeshProUGUI>().text = unlockedEnemy
+                    .MasterData
+                    .enemyName;
+                buttonHelpers[i]
+                    .Initialize(this, unlockedEnemy.MasterData, unlockedEnemy.SaveEntry);
                 enemyButtons[i].SetActive(true);
             }
             else
@@ -196,7 +220,6 @@ public class EnemyDexPanelActive : MonoBehaviour, IPanelActive
             // ページ更新時にも討伐数データを渡す
             UnlockedEnemy firstEnemy = allUnlockedEnemies[currentTopIndex];
             DisplayEnemyDetails(firstEnemy.MasterData, firstEnemy.SaveEntry);
-
         }
         else
         {
@@ -210,10 +233,12 @@ public class EnemyDexPanelActive : MonoBehaviour, IPanelActive
     /// </summary>
     private void ChangePage(int direction, PageChangeType changeType)
     {
-        if (totalPages <= 1) return;
+        if (totalPages <= 1)
+            return;
 
         GameObject lastSelected = EventSystem.current.currentSelectedGameObject;
-        int lastSelectedIndex = (lastSelected != null) ? System.Array.IndexOf(enemyButtons, lastSelected) : -1;
+        int lastSelectedIndex =
+            (lastSelected != null) ? System.Array.IndexOf(enemyButtons, lastSelected) : -1;
 
         currentTopIndex += itemsPerPage * direction;
 
@@ -235,7 +260,10 @@ public class EnemyDexPanelActive : MonoBehaviour, IPanelActive
             case PageChangeType.Horizontal:
                 if (lastSelectedIndex != -1)
                 {
-                    int newVisibleCount = Mathf.Min(itemsPerPage, allUnlockedEnemies.Count - currentTopIndex);
+                    int newVisibleCount = Mathf.Min(
+                        itemsPerPage,
+                        allUnlockedEnemies.Count - currentTopIndex
+                    );
                     if (lastSelectedIndex < newVisibleCount)
                     {
                         EventSystem.current.SetSelectedGameObject(enemyButtons[lastSelectedIndex]);
@@ -246,7 +274,10 @@ public class EnemyDexPanelActive : MonoBehaviour, IPanelActive
                 EventSystem.current.SetSelectedGameObject(topButton);
                 break;
             case PageChangeType.VerticalUp:
-                int visibleCount = Mathf.Min(itemsPerPage, allUnlockedEnemies.Count - currentTopIndex);
+                int visibleCount = Mathf.Min(
+                    itemsPerPage,
+                    allUnlockedEnemies.Count - currentTopIndex
+                );
                 EventSystem.current.SetSelectedGameObject(enemyButtons[visibleCount - 1]);
                 break;
         }
@@ -254,7 +285,8 @@ public class EnemyDexPanelActive : MonoBehaviour, IPanelActive
 
     public void DisplayEnemyDetails(EnemyData enemyData, EnemyRecordEntry saveEntry)
     {
-        if (enemyData == null) return;
+        if (enemyData == null)
+            return;
 
         // --- 基本情報の表示 ---
         enemyNameText.text = enemyData.enemyName;
@@ -282,8 +314,16 @@ public class EnemyDexPanelActive : MonoBehaviour, IPanelActive
                 // maxDropCountが1より大きいかどうかで表示を分岐させる
                 if (item.maxDropCount > 1)
                 {
-                    // 1より大きい場合：個数を表示に追加する
-                    dropsBuilder.AppendLine($"・{itemName} (1〜{item.maxDropCount}個) (各{item.dropChance}%)");
+                    // 1. 実質確率を計算
+                    float singleChance = item.dropChance / 100.0f; // 確率を0.0～1.0の範囲に変換
+                    float noDropChance = 1.0f - singleChance; // 1回でドロップしない確率
+                    float allFailChance = Mathf.Pow(noDropChance, item.maxDropCount); // 全ての回でドロップしない確率
+                    float effectiveChance = 1.0f - allFailChance; // 少なくとも1個以上ドロップする実質確率
+                    float effectiveChancePercent = effectiveChance * 100f; // パーセントに変換
+
+                    // 2. 表示を更新
+                    // F1は小数点以下1桁まで表示する書式指定子
+                    dropsBuilder.AppendLine($"・{itemName}  ({effectiveChancePercent:F1}%)");
                 }
                 else
                 {

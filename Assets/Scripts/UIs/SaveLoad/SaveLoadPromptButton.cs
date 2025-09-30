@@ -192,14 +192,12 @@ public class SaveLoadPromptButton : MonoBehaviour
             //ファイルにプレイ時間を書き込む
             var tmp = fileText.GetComponent<TextMeshProUGUI>();
             if (tmp != null)
-            {
-                tmp.text =
-                    "File"
-                    + fileNumber
-                    + "\nプレイ時間 "
-                    + Mathf.FloorToInt(SaveLoadManager.FilePlaytime[fileNumber] / 3600)
-                    + ":"
-                    + Mathf.FloorToInt((SaveLoadManager.FilePlaytime[fileNumber] % 3600) / 60);
+            {                
+                string fileNameText = "File" + fileNumber;;
+                float playTime = SaveLoadManager.FilePlaytime[fileNumber];
+                int hours = Mathf.FloorToInt(playTime / 3600);
+                int minutes = Mathf.FloorToInt((playTime % 3600) / 60);
+                tmp.text = $"{fileNameText}\nプレイ時間 {hours}:{minutes:D2}"; // D2で分を2桁表示
             }
         }
         else

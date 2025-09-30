@@ -8,7 +8,7 @@ public class SlimeNormalMoveController : MonoBehaviour, IEnemyResettable
 
     [Header("敵のタイプ")]
     [SerializeField]
-    private EnemyVariant variantType = EnemyVariant.None; //敵の種類を設定
+    private EnemyVariant variantType = EnemyVariant.None;
 
     [Header("設定項目")]
     [SerializeField]
