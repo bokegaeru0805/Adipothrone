@@ -100,6 +100,7 @@ public class Robot_move : MonoBehaviour
     private bool isEnable = false; // 表示されているかどうかのフラグ
     private bool isAttackInputWindowOpen = false; // 剣の連続攻撃の入力受付中か
     private bool isEnableNextAttack = true; // 次の攻撃が出来るかどうか
+    private bool isTalking = false; // 会話状態を保存するローカル変数
 
     // 現在装備している武器のデータをキャッシュ
     private BladeWeaponData currentBladeData;
@@ -136,7 +137,7 @@ public class Robot_move : MonoBehaviour
 
     private void Update()
     {
-        if (Time.timeScale > 0 && isRobotmove && GameManager.IsTalking == false)
+        if (Time.timeScale > 0 && isRobotmove && !isTalking)
         { //ゲームが進行中で、ロボットが動ける状態で、会話中ではないとき
             if (!isEnable)
             {
@@ -645,6 +646,7 @@ public class Robot_move : MonoBehaviour
         playerManager.OnChangeAttackType += OnChangeAttackType;
         playerManager.OnChangeWP += OnChangeWP;
         weaponManager.OnWeaponReplaced += OnChangeWeapon;
+        GameManager.OnTalkingStateChanged += HandleTalkingStateChanged;
 
         // 各状態の初期化
         OnAnyBoolStatusChanged(
@@ -687,6 +689,8 @@ public class Robot_move : MonoBehaviour
         {
             weaponManager.OnWeaponReplaced -= OnChangeWeapon;
         }
+
+        GameManager.OnTalkingStateChanged -= HandleTalkingStateChanged;
 
         // その他のリセット処理
         isEnable = false;
@@ -797,6 +801,14 @@ public class Robot_move : MonoBehaviour
             Debug.LogWarning($"{weaponID}は対応していない武器タイプです。");
             return; // 対応していない武器タイプの場合は何もしない
         }
+    }
+
+    /// <summary>
+    /// GameManagerから会話状態の変更通知を受け取る
+    /// </summary>
+    private void HandleTalkingStateChanged(bool talkState)
+    {
+        isTalking = talkState;
     }
 
     /// <summary>

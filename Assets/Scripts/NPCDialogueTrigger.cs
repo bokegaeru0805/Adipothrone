@@ -1,7 +1,7 @@
+using System.Collections;
 using System.Collections.Generic;
 using Fungus;
 using UnityEngine;
-using UnityEngine.Events;
 
 /// <summary>
 /// 【最適化版】NPCとの会話をトリガーする汎用コンポーネント。
@@ -25,6 +25,7 @@ public class NPCDialogueTrigger : MonoBehaviour
 
     private ShopInteractionTrigger shopInteractionTrigger = null;
     private bool isShopTrigger = false;
+    private bool isTalking = false; // 会話状態を保存するローカル変数
 
     private void Awake()
     {
@@ -43,7 +44,7 @@ public class NPCDialogueTrigger : MonoBehaviour
         // ゲームが動作中、他の会話が実行中でなく、プレイヤーがインタラクトした場合に会話を試みる
         if (
             Time.timeScale > 0
-            && !GameManager.IsTalking
+            && !isTalking
             && InputManager.instance.GetInteract()
             && collision.gameObject.CompareTag(GameConstants.PlayerTagName)
         )
@@ -96,5 +97,37 @@ public class NPCDialogueTrigger : MonoBehaviour
         {
             FungusHelper.ExecuteBlock(targetFlowchart, defaultBlockName);
         }
+    }
+
+    private void OnEnable()
+    {
+        StartCoroutine(DelayedInitialization());
+    }
+
+    /// <summary>
+    /// 全てのAwake/Startが完了するのを待ってから、初期化処理を実行するコルーチン
+    /// </summary>
+    private IEnumerator DelayedInitialization()
+    {
+        // 最初のフレームの描画が終わるまで待つ
+        // これにより、全てのシングルトンが確実に初期化されている状態になる
+        yield return new WaitForEndOfFrame();
+
+        // イベントを購読する
+        GameManager.OnTalkingStateChanged += HandleTalkingStateChanged;
+    }
+
+    private void OnDisable()
+    {
+        // オブジェクトが非アクティブになったら、購読を解除（メモリリーク防止）
+        GameManager.OnTalkingStateChanged -= HandleTalkingStateChanged;
+    }
+
+    /// <summary>
+    /// GameManagerから会話状態の変更通知を受け取る
+    /// </summary>
+    private void HandleTalkingStateChanged(bool talkState)
+    {
+        isTalking = talkState;
     }
 }

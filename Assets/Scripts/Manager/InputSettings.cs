@@ -24,8 +24,10 @@ public class InputSettings : ScriptableObject
     public KeyCode Skip = KeyCode.Escape;
     public KeyCode QuickItemLeft = KeyCode.J;
     public KeyCode QuickItemRight = KeyCode.K;
-    public KeyCode QuickItemUpDown = KeyCode.U;
+    public KeyCode QuickItemUp = KeyCode.UpArrow;
+    public KeyCode QuickItemDown = KeyCode.DownArrow;
     public KeyCode QuickItemSelect = KeyCode.H;
+    public KeyCode QuickItemHighlight = KeyCode.LeftControl;
     public KeyCode TabLeft = KeyCode.Q;
     public KeyCode TabRight = KeyCode.E;
 }

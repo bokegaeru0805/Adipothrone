@@ -3,17 +3,26 @@ using UnityEngine;
 
 /// <summary>
 /// プレイヤーの状態変化イベントを受け取り、操作ガイドUIの表示・非表示を切り替えるコンポーネント。
-/// Update()を使わないイベント駆動設計により、パフォーマンスと拡張性を高めています。
 /// </summary>
 public class ControlGuideUIImageSwitcher : MonoBehaviour
 {
     private PlayerManager playerManager;
+    private SpotlightQuickItemController spotlightController;
 
-    [Header("UIの表示切り替えを行うオブジェクトを設定")]
+    [Header("UIのフォルダオブジェクト")]
     [Tooltip("操作方法パネル")]
     [SerializeField]
     private GameObject controlGuidePanel;
 
+    [Tooltip("通常時の操作ガイドUI")]
+    [SerializeField]
+    private GameObject normalControlGuide;
+
+    [Tooltip("クィックアイテムリストがハイライト時の操作ガイドUI")]
+    [SerializeField]
+    private GameObject quickItemHighlightControlGuide;
+
+    [Header("各操作ガイドUIのゲームオブジェクト")]
     [Tooltip("「左移動」のガイドUI")]
     [SerializeField]
     private GameObject moveleftGuide;
@@ -42,13 +51,9 @@ public class ControlGuideUIImageSwitcher : MonoBehaviour
     [SerializeField]
     private GameObject changeWeaponGuide;
 
-    [Tooltip("「クイックアイテム使用」のガイドUI")]
+    [Tooltip("「クイックアイテムを開く」のガイドUI")]
     [SerializeField]
-    private GameObject quickItemUseGuide;
-
-    [Tooltip("「クイックアイテム移動」のガイドUI")]
-    [SerializeField]
-    private GameObject quickItemMoveGuide;
+    private GameObject quickItemOpenGuide;
 
     [Tooltip("「メニュー」のガイドUI")]
     [SerializeField]
@@ -58,6 +63,7 @@ public class ControlGuideUIImageSwitcher : MonoBehaviour
     private bool canRobotAttack = false;
     private bool canChangeAttackType = false;
     private bool isRobotVisible = false;
+    private bool previousQuickItemHighlightState = false;
 
     private void Start()
     {
@@ -82,7 +88,10 @@ public class ControlGuideUIImageSwitcher : MonoBehaviour
         }
         else
         {
-            Debug.LogWarning("SaveLoadManagerが見つかりません。操作ガイドの表示設定を読み込めませんでした。", this);
+            Debug.LogWarning(
+                "SaveLoadManagerが見つかりません。操作ガイドの表示設定を読み込めませんでした。",
+                this
+            );
             // SaveLoadManagerが見つからない場合は、デフォルトで表示する前提で処理を続行
         }
 
@@ -99,6 +108,15 @@ public class ControlGuideUIImageSwitcher : MonoBehaviour
         else
         {
             playerManager.OnBoolStatusChanged += OnAnyBoolStatusChanged;
+        }
+
+        spotlightController = SpotlightQuickItemController.instance;
+        if (spotlightController == null)
+        {
+            Debug.LogError(
+                "SpotlightQuickItemControllerが見つかりません。ControlGuideUIImageSwitcherは機能しません。"
+            );
+            return;
         }
 
         GameObject playerObject = GameObject.FindGameObjectWithTag(GameConstants.PlayerTagName);
@@ -175,6 +193,30 @@ public class ControlGuideUIImageSwitcher : MonoBehaviour
         }
     }
 
+    private void Update()
+    {
+        if (spotlightController == null)
+        {
+            return;
+        }
+
+        // 現在のハイライト状態を取得
+        bool currentHighlightState = spotlightController.IsHighlighting;
+
+        // 前のフレームから状態が変化していない場合は、何もしない
+        if (currentHighlightState == previousQuickItemHighlightState)
+        {
+            return;
+        }
+
+        // 状態が変化した場合のみ、オブジェクトの表示/非表示を更新する
+        normalControlGuide?.SetActive(!currentHighlightState);
+        quickItemHighlightControlGuide?.SetActive(currentHighlightState);
+
+        // 現在の状態を「前の状態」として保存し、次のフレームに備える
+        previousQuickItemHighlightState = currentHighlightState;
+    }
+
     // --- イベントハンドラ（イベント発生時に呼び出されるメソッド） ---
 
     /// <summary>
@@ -209,8 +251,7 @@ public class ControlGuideUIImageSwitcher : MonoBehaviour
         dashGuide.SetActive(isVisible);
         jumpGuide.SetActive(isVisible);
         interactGuide.SetActive(isVisible);
-        quickItemUseGuide.SetActive(isVisible);
-        quickItemMoveGuide.SetActive(isVisible);
+        quickItemOpenGuide.SetActive(isVisible);
     }
 
     private void OnRobotVisibilityChanged(bool isVisible)
@@ -264,5 +305,16 @@ public class ControlGuideUIImageSwitcher : MonoBehaviour
             PlayerStatusBoolName.isChangeAttackType,
             playerManager.GetPlayerBoolStatus(PlayerStatusBoolName.isChangeAttackType)
         );
+
+        if (normalControlGuide == null || quickItemHighlightControlGuide == null)
+        {
+            Debug.LogError("ControlGuideUIImageSwitcherのUIオブジェクトが設定されていません！");
+            return;
+        }
+        else
+        {
+            normalControlGuide.SetActive(true);
+            quickItemHighlightControlGuide.SetActive(false);
+        }
     }
 }

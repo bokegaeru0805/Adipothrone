@@ -27,6 +27,7 @@ public class PlayerInteractionBubble : MonoBehaviour
 
     // 接触中の「Collider2D」を直接保持するリスト
     private List<Collider2D> activeColliders = new List<Collider2D>();
+    private bool isTalking = false; // 会話状態を保存するローカル変数
 
     private void Awake()
     {
@@ -102,7 +103,7 @@ public class PlayerInteractionBubble : MonoBehaviour
     private void UpdateBubbleState()
     {
         // もし会話中なら、他の条件に関わらず吹き出しを非表示にする
-        if (GameManager.IsTalking)
+        if (isTalking)
         {
             bubbleSpriteRenderer.enabled = false;
             return;
@@ -141,8 +142,10 @@ public class PlayerInteractionBubble : MonoBehaviour
     /// <summary>
     /// GameManagerの会話状態が変化したときに呼び出される処理
     /// </summary>
-    private void HandleTalkingStateChanged(bool isTalking)
+    private void HandleTalkingStateChanged(bool talkState)
     {
+        isTalking = talkState;
+
         // 会話状態が変わったので、吹き出しの表示を再評価する
         UpdateBubbleState();
     }

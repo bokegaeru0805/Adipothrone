@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using AIE2D;
 using DG.Tweening;
 using UnityEngine;
+using UnityEngine.Rendering;
 
 /// <summary>
 /// 背景オブジェクトとその目標色を格納するクラス
@@ -58,6 +59,9 @@ public class NightBorneMoveController : MonoBehaviour, IEnemyResettable
     [Header("Chapter1 背景色変更の設定")]
     [SerializeField, Tooltip("このリストは 'variantType' が 'Chapter1' の時のみ使用されます")]
     private List<BackgroundTint> chapter1Backgrounds = new List<BackgroundTint>();
+
+    [SerializeField, Tooltip("Chapter1のボリューム")]
+    private Volume chapter1Volume;
 
     [SerializeField, Tooltip("背景色が変化するのにかかる時間（秒）")]
     private float backgroundColorChangeDuration = 2.0f;
@@ -422,6 +426,14 @@ public class NightBorneMoveController : MonoBehaviour, IEnemyResettable
                     }
                 }
             }
+            if (chapter1Volume == null)
+            {
+                Debug.LogWarning($"{this.name} の Chapter1 のボリュームが設定されていません。");
+            }
+            else
+            {
+                chapter1Volume.weight = 0f; // 初期状態ではエフェクトを無効化
+            }
         }
     }
 
@@ -472,6 +484,8 @@ public class NightBorneMoveController : MonoBehaviour, IEnemyResettable
         isDefeated = false; // ボスが倒されたフラグをリセット
         animator.enabled = false; // Animatorを無効にする
         spriteRenderer.sprite = defaultSprite; // デフォルトのスプライトに設定
+        swordObject.tag = GameConstants.DamageableEnemyTagName; // 剣のタグを設定
+        swordObject.SetActive(false); // 初期状態では剣オブジェクトを非表示にする
 
         //攻撃関係のフラグをリセット
         currentFunnelState = FunnelState.Circling;
@@ -1304,15 +1318,15 @@ public class NightBorneMoveController : MonoBehaviour, IEnemyResettable
 
         if (isHPbelowHalf)
         {
-            if (randomValue < 0.3f) // 30%の確率
+            if (randomValue < 0.4f) // 40%の確率
             {
                 currentAttackPattern = FunnelAttackPattern.Cross;
             }
-            else if (randomValue < 0.65f) // 35%の確率
+            else if (randomValue < 0.8f) // 40%の確率
             {
                 currentAttackPattern = FunnelAttackPattern.TargetPlayer;
             }
-            else // 残り35%の確率
+            else // 残り20%の確率
             {
                 currentAttackPattern = FunnelAttackPattern.Random;
             }
@@ -1568,6 +1582,21 @@ public class NightBorneMoveController : MonoBehaviour, IEnemyResettable
     /// <param name="toTargetColor">trueなら目標の色へ、falseなら元の色へ変更</param>
     private IEnumerator ChangeBackgroundsCoroutine(bool toTargetColor)
     {
+        // 制御対象のVolumeが設定されているか確認
+        if (chapter1Volume != null)
+        {
+            // 変更先のWeightを決定 (trueなら1、falseなら0)
+            float targetWeight = toTargetColor ? 1f : 0f;
+
+            // DOTweenの汎用Tween機能「DOTween.To」を使い、VolumeのWeightを滑らかに変化させる
+            DOTween.To(
+                () => chapter1Volume.weight, // 第1引数: 現在の値を取得するラムダ式
+                x => chapter1Volume.weight = x, // 第2引数: 取得した値を設定するラムダ式
+                targetWeight, // 第3引数: 最終的な目標値
+                backgroundColorChangeDuration // 第4引数: 変化にかかる時間
+            );
+        }
+
         // 変更対象となる背景オブジェクトがなければ処理を終了
         if (originalBackgroundColors.Count == 0)
             yield break;
@@ -1590,7 +1619,10 @@ public class NightBorneMoveController : MonoBehaviour, IEnemyResettable
                 }
             }
         }
-        yield return null;
+
+        // nullを返すのではなく、Tweenの完了を待つように変更
+        // これにより、このコルーチンを呼び出した側で色の変更完了を待つことができます。
+        yield return new WaitForSeconds(backgroundColorChangeDuration);
     }
 
     /// <summary>
@@ -1605,6 +1637,12 @@ public class NightBorneMoveController : MonoBehaviour, IEnemyResettable
             pair.Key.DOKill();
             pair.Key.color = pair.Value;
         }
+
+        // VolumeのWeightも即座に元に戻す
+        if (chapter1Volume != null)
+        {
+            chapter1Volume.weight = 0f;
+        }
     }
 
     /// <summary>
@@ -1616,6 +1654,8 @@ public class NightBorneMoveController : MonoBehaviour, IEnemyResettable
         {
             bossHealth.OnDefeated -= HandleBossDefeat;
         }
+
+        RevertBackgroundColorsInstantly();
     }
 
     private void OnEnable()
@@ -1632,6 +1672,8 @@ public class NightBorneMoveController : MonoBehaviour, IEnemyResettable
         {
             bossHealth.OnHPChanged -= CheckHP;
         }
+
+        RevertBackgroundColorsInstantly();
     }
 
     private void CheckHP(int _hp)

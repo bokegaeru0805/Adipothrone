@@ -149,7 +149,11 @@ public class InputManager : MonoBehaviour
 
     public bool GetQuickItemUpDown()
     {
-        return InputAllowed() && Input.GetKeyDown(inputSettings.QuickItemUpDown);
+        return InputAllowed()
+            && (
+                Input.GetKeyDown(inputSettings.QuickItemUp)
+                || Input.GetKeyDown(inputSettings.QuickItemDown)
+            );
     }
 
     public bool GetQuickItemSelect()
@@ -160,6 +164,11 @@ public class InputManager : MonoBehaviour
     public bool GetTabRight()
     {
         return InputAllowed() && Input.GetKeyDown(inputSettings.TabRight);
+    }
+
+    public bool QuickItemHighlightHold()
+    {
+        return InputAllowed() && Input.GetKey(inputSettings.QuickItemHighlight);
     }
 
     public bool GetTabLeft()

@@ -6,6 +6,7 @@ using UnityEngine.EventSystems;
 
 public class UIManager : MonoBehaviour
 {
+    public static event System.Action<bool> OnMenuStateChanged; // メニューの表示状態が変化したときに発行されるイベント
     public bool IsQuickItemRegistering { get; private set; } = false; //クイックアイテム登録中かどうかのフラグ
 
     public void SetQuickItemRegistering(bool isRegistering)
@@ -24,6 +25,8 @@ public class UIManager : MonoBehaviour
     private const float menuOpenInputCooldown = 0.1f; //メニューを開いた直後、誤操作で閉じるのを防ぐためのクールダウン時間（秒）
     public bool isMenuOpen { get; private set; } = false; //MenuCanvasが開いているかどうかのフラグ
     private bool isOpeningCanvas; //MenuCanvasを開いている途中かどうかのフラグ
+    private bool isTalking = false; // 会話状態を保存するローカル変数
+
     private GameObject lastSelected; //最後に選ばれていたボタンを保存する変数
     private Stack<GameObject> panelStack = new Stack<GameObject>();
 
@@ -69,6 +72,15 @@ public class UIManager : MonoBehaviour
             Debug.LogError("InputManagerが見つかりません。UIManagerは正常に動作しません。");
             return;
         }
+
+        // イベントを購読する
+        GameManager.OnTalkingStateChanged += HandleTalkingStateChanged;
+    }
+
+    private void OnDisable()
+    {
+        // オブジェクトが非アクティブになったら、購読を解除（メモリリーク防止）
+        GameManager.OnTalkingStateChanged -= HandleTalkingStateChanged;
     }
 
     private void Update()
@@ -79,7 +91,7 @@ public class UIManager : MonoBehaviour
 
         // メニューを開ける条件を全て満たすときのみ、メニュー画面を開く
         bool canOpenMenu =
-            !GameManager.IsTalking
+            !isTalking
             && // 会話中でない
             !uiRefs.MenuCanvas.activeSelf
             && // 既にメニューが開いていない
@@ -93,6 +105,7 @@ public class UIManager : MonoBehaviour
         {
             isOpeningCanvas = true; // CloseTopPanel()などが誤作動しないように先にフラグをON
             isMenuOpen = true; // メニューが開かれているフラグをON
+            OnMenuStateChanged?.Invoke(true); // イベントを発行
             TimeManager.instance.RequestPause(); // ゲーム時間を止める
             OpenMenuCanvas(); // メニューUIを表示
         }
@@ -168,8 +181,8 @@ public class UIManager : MonoBehaviour
             uiRefs.SaveButton.interactable = true; //SaveButtonの状態を初期化
             TimeManager.instance.ReleasePause(); // 時間を元に戻す
             isMenuOpen = false; //メニュー画面が開いているかどうかのフラグをOFF
-            //所持金が変わったときのイベントを解除
-            playerManager.OnChangePlayerMoney -= SetCoinText;
+            OnMenuStateChanged?.Invoke(false); // イベントを発行
+            playerManager.OnChangePlayerMoney -= SetCoinText; //所持金が変わったときのイベントを解除
         }
         else
         {
@@ -250,5 +263,13 @@ public class UIManager : MonoBehaviour
         int currentMoney = playerManager.GetPlayerIntStatus(PlayerStatusIntName.playerMoney);
         // 所持金をテキストに設定(金色で表示)
         uiRefs.CoinNumberText.text = $"<color=#C6A34C>{currentMoney}</color>";
+    }
+
+    /// <summary>
+    /// GameManagerから会話状態の変更通知を受け取る
+    /// </summary>
+    private void HandleTalkingStateChanged(bool talkState)
+    {
+        isTalking = talkState;
     }
 }

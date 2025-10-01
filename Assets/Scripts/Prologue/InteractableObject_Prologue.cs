@@ -12,10 +12,7 @@ public class InteractableObject_Prologue : MonoBehaviour
 
     [SerializeField, Tooltip("自分のオブジェクトの名前を選択してください")]
     private ObjectName objectname;
-
-    // [SerializeField]
-    // private GameObject ControlObject = null;
-
+    private bool isTalking = false; // 会話状態を保存するローカル変数
     private Sprite sprite1;
     private SpriteRenderer spriteRenderer;
 
@@ -49,11 +46,13 @@ public class InteractableObject_Prologue : MonoBehaviour
     private void OnEnable()
     {
         FlagManager.OnIntFlagChanged += HandleIntFlagChanged;
+        GameManager.OnTalkingStateChanged += HandleTalkingStateChanged;
     }
 
     private void OnDisable()
     {
         FlagManager.OnIntFlagChanged -= HandleIntFlagChanged;
+        GameManager.OnTalkingStateChanged -= HandleTalkingStateChanged;
     }
 
     /// <summary>
@@ -72,6 +71,14 @@ public class InteractableObject_Prologue : MonoBehaviour
     }
 
     /// <summary>
+    /// GameManagerから会話状態の変更通知を受け取る
+    /// </summary>
+    private void HandleTalkingStateChanged(bool talkState)
+    {
+        isTalking = talkState;
+    }
+
+    /// <summary>
     /// カウント数に応じて、オブジェクトの状態（見た目やタグ）を更新する専用メソッド
     /// </summary>
     private void UpdateStateByCount(int count)
@@ -85,7 +92,7 @@ public class InteractableObject_Prologue : MonoBehaviour
     {
         if (
             Time.timeScale > 0
-            && !GameManager.IsTalking
+            && !isTalking
             && InputManager.instance.GetInteract()
             && collision.CompareTag(GameConstants.PlayerTagName)
         )

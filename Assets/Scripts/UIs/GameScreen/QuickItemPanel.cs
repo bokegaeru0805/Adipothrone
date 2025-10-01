@@ -7,7 +7,8 @@ using UnityEngine.UI;
 
 public class QuickItemPanel : MonoBehaviour
 {
-    private PlayerManager playerManager; // PlayerManagerの参照
+    private PlayerManager playerManager;
+    private SpotlightQuickItemController spotlightController;
 
     // QuickSlotUIの機能のために追加
     [System.Serializable]
@@ -95,6 +96,8 @@ public class QuickItemPanel : MonoBehaviour
     private Dictionary<GameObject, (GameObject, Image)> buffUIs;
     private float baseSize = 0; // ボタンのアイテム画像のベースサイズ（初期化時に設定）
     private bool isUiPaused = false; //UIが一時停止中かどうかを管理するフラグ
+    private bool isMenuOpen = false; // UIManagerから通知されたメニューの表示状態を保存する変数
+    private bool isTalking = false; // 会話状態を保存するローカル変数
 
     private void Awake()
     {
@@ -278,7 +281,9 @@ public class QuickItemPanel : MonoBehaviour
         playerManager = PlayerManager.instance;
         if (playerManager == null)
         {
-            Debug.LogError("PlayerManagerが見つかりませんでした");
+            Debug.LogError(
+                "PlayerManagerが見つかりませんでした。QuickItemPanelは正常に動作しません。"
+            );
             return;
         }
         else
@@ -291,6 +296,19 @@ public class QuickItemPanel : MonoBehaviour
             GameManager.instance.savedata.ItemInventoryData.OnItemCountChanged +=
                 ChangeAllCountTextImage;
         }
+
+        spotlightController = SpotlightQuickItemController.instance;
+        if (spotlightController == null)
+        {
+            Debug.LogError(
+                "SpotlightQuickItemControllerが見つかりませんでした。QuickItemPanelは正常に動作しません。"
+            );
+            return;
+        }
+
+        // 他のマネージャーからのイベントを購読する
+        UIManager.OnMenuStateChanged += HandleMenuStateChanged;
+        GameManager.OnTalkingStateChanged += HandleTalkingStateChanged;
 
         HandleQuickSlotAssigned(); //スロットを初期化する(quickListを取得してから行う)
         ChangeAllCountTextImage(); //所持数を初期化する
@@ -328,10 +346,15 @@ public class QuickItemPanel : MonoBehaviour
 
     private void Update()
     {
+        if (spotlightController == null)
+        {
+            return;
+        }
+
         // 1. 一時停止すべきかどうかの条件をチェック
-        // UIが開いている、会話中、または時間が停止している場合は一時停止
-        bool shouldBePaused =
-            UIManager.instance.isMenuOpen || GameManager.IsTalking || Time.timeScale <= 0f;
+        // UIが開いている、会話中である場合は一時停止
+        // この条件を変更する場合は、SpotlightQuickItemControllerのIsHighlightingの条件も変更する必要がある
+        bool shouldBePaused = isMenuOpen || isTalking;
 
         // 2. 状態の切り替わりを検知して、適切な処理を一度だけ呼び出す
         if (shouldBePaused && !isUiPaused)
@@ -347,8 +370,8 @@ public class QuickItemPanel : MonoBehaviour
             ResumeAllAnimations();
         }
 
-        // 3. UIが一時停止中なら、以降の入力処理を行わない
-        if (isUiPaused)
+        // 3. クィックアイテムリストがハイライト中でない場合、以降の入力処理を行わない
+        if (!spotlightController.IsHighlighting)
         {
             return;
         }
@@ -734,5 +757,21 @@ public class QuickItemPanel : MonoBehaviour
         Color newColor = Color.HSVToRGB(h, s, clampedV); //HSV → RGB に変換
         newColor.a = originalColor.a; // alpha値は元のまま保つ
         image.color = newColor;
+    }
+
+    /// <summary>
+    /// UIManagerからイベント通知を受け取ったときに呼ばれるメソッド
+    /// </summary>
+    private void HandleMenuStateChanged(bool menuState)
+    {
+        isMenuOpen = menuState;
+    }
+
+    /// <summary>
+    /// GameManagerから会話状態の変更通知を受け取る
+    /// </summary>
+    private void HandleTalkingStateChanged(bool talkState)
+    {
+        isTalking = talkState;
     }
 }

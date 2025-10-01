@@ -17,11 +17,26 @@ public class Tutorial_Golem_AfterDeath : MonoBehaviour
     [SerializeField]
     private GameObject Drop_prefab;
     private Vector3 PlayerPosition;
+    private bool isTalking = false; // 会話状態を保存するローカル変数
 
     private void Start()
     {
         if (PlayerObject == null)
+        {
             PlayerObject = GameObject.FindGameObjectWithTag(GameConstants.PlayerTagName); // Playerオブジェクトを取得
+        }
+    }
+
+    private void OnEnable()
+    {
+        // イベントを購読する
+        GameManager.OnTalkingStateChanged += HandleTalkingStateChanged;
+    }
+
+    private void OnDisable()
+    {
+        // オブジェクトが非アクティブになったら、購読を解除（メモリリーク防止）
+        GameManager.OnTalkingStateChanged -= HandleTalkingStateChanged;
     }
 
     public void Explosion()
@@ -84,7 +99,7 @@ public class Tutorial_Golem_AfterDeath : MonoBehaviour
 
     private void OnTriggerStay2D(Collider2D collision)
     {
-        if (Time.timeScale > 0 && !GameManager.IsTalking)
+        if (Time.timeScale > 0 && !isTalking)
         {
             if (
                 InputManager.instance.GetInteract()
@@ -94,5 +109,13 @@ public class Tutorial_Golem_AfterDeath : MonoBehaviour
                 FungusHelper.ExecuteBlock(flowchart, "TutorialGolemBadEndStart");
             }
         }
+    }
+
+    /// <summary>
+    /// GameManagerから会話状態の変更通知を受け取る
+    /// </summary>
+    private void HandleTalkingStateChanged(bool talkState)
+    {
+        isTalking = talkState;
     }
 }

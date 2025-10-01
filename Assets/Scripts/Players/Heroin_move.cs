@@ -60,6 +60,7 @@ public class Heroin_move : MonoBehaviour
     private bool isGrounded = false; //接地しているかどうかのフラグ
     private bool wasGroundedLastFrame = true; //前のフレームで接地していたかどうかのフラグ
     private bool jumpRequested = false;
+    private bool isTalking = false; // 会話状態を保存するローカル変数
     private Rigidbody2D rbody; // Rigidbody2Dコンポーネント
     private Animator m_animator; // アニメータコンポーネント
     private SpriteRenderer spriteRenderer; //SpriteRendererをキャッシュするための変数
@@ -116,7 +117,7 @@ public class Heroin_move : MonoBehaviour
 
         vx = 0; //x方向の速度を初期化
 
-        if (Time.timeScale > 0f && !GameManager.IsTalking)
+        if (Time.timeScale > 0f && !isTalking)
         {
             if (isFirstGetKey)
             { //向きの初期化の処理
@@ -470,6 +471,7 @@ public class Heroin_move : MonoBehaviour
         playerManager.OnBoolStatusChanged += OnAnyBoolStatusChanged;
         playerEffectManager.OnSpeedEffectChanged += CalculateMoveSpeed;
         playerBodyManager.OnChangeBodyState += GetBodyStateData;
+        GameManager.OnTalkingStateChanged += HandleTalkingStateChanged;
 
         // 各状態の初期化
         GetBodyStateData();
@@ -502,6 +504,8 @@ public class Heroin_move : MonoBehaviour
             playerEffectManager.OnSpeedEffectChanged -= CalculateMoveSpeed;
         if (playerBodyManager != null)
             playerBodyManager.OnChangeBodyState -= GetBodyStateData;
+
+        GameManager.OnTalkingStateChanged -= HandleTalkingStateChanged;
 
         // その他のリセット処理
         move = true; // 操作可能状態に戻す
@@ -544,6 +548,14 @@ public class Heroin_move : MonoBehaviour
                 isRobotmove = isEnabled; //Robotが動けるかどうかを取得する
                 break;
         }
+    }
+
+    /// <summary>
+    /// GameManagerから会話状態の変更通知を受け取る
+    /// </summary>
+    private void HandleTalkingStateChanged(bool talkState)
+    {
+        isTalking = talkState;
     }
 
     private void OnDrawGizmosSelected()

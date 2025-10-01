@@ -27,8 +27,7 @@ public class GameManager : MonoBehaviour
     public GameObject DropItemPrefab;
     public static bool isFirstGameOpen = false; //初めてゲームが起動されたか
     public static bool isFirstGameSceneOpen = false; //初めてゲームシーンが開かれたか
-    private static bool _isTalking = false;
-    public static bool IsTalking => _isTalking;
+    private bool isTalking = false;
     public static bool IsJumpCooldownActive { get; private set; } = false; // 会話終了直後、ジャンプ入力を受け付けないクールダウン中かどうか
     private float jumpCooldownDuration = 0.2f; // ジャンプ入力を受け付けないクールダウン時間（秒）
     private Dictionary<int, int> tipsSortOrderMap; //Tipsの正しい並び順を高速に検索するための辞書（キャッシュ）
@@ -148,10 +147,10 @@ public class GameManager : MonoBehaviour
     public void StartTalk()
     {
         // 既に会話中なら何もしない
-        if (_isTalking)
+        if (isTalking)
             return;
 
-        _isTalking = true;
+        isTalking = true;
         // イベントを発行して、会話が始まったことを他のスクリプトに通知する
         OnTalkingStateChanged?.Invoke(true);
     }
@@ -162,10 +161,10 @@ public class GameManager : MonoBehaviour
     public void EndTalk()
     {
         // 会話中でなければ何もしない
-        if (!_isTalking)
+        if (!isTalking)
             return;
 
-        _isTalking = false;
+        isTalking = false;
         // イベントを発行して、会話が終わったことを他のスクリプトに通知する
         OnTalkingStateChanged?.Invoke(false);
 

@@ -34,6 +34,8 @@ public class GameUIManager : MonoBehaviour
     private float _bossCurrentVelocity = 0f;
     private GameObject bossObject = null;
     private CharacterHealth currentBossHPScript = null; // 現在のボスHPスクリプト
+    private bool isTalking = false; // 会話状態を保存するローカル変数
+
 
     private void Awake()
     {
@@ -59,7 +61,7 @@ public class GameUIManager : MonoBehaviour
             }
             else
             {
-                SetBossUIVisibility(false);; //ボスのHPバーのパネルを非表示
+                SetBossUIVisibility(false); ; //ボスのHPバーのパネルを非表示
                 uiRefs.BossLevelNumberText.text = $"???"; //ボスのレベルテキストをリセット
             }
 
@@ -287,7 +289,7 @@ public class GameUIManager : MonoBehaviour
         if (currentBossHPScript == null)
         {
             // スクリプトがない場合でもUIを非表示にするなどの処理は行う
-            SetBossUIVisibility(false);;
+            SetBossUIVisibility(false);
             Debug.LogWarning("ボスオブジェクトにboss_HPスクリプトが見つかりません。", gameObject);
             return;
         }
@@ -307,8 +309,8 @@ public class GameUIManager : MonoBehaviour
         currentBossHPScript.OnHPChanged += GetBossData; //イベントの購読
 
         // ボスのHP関係UIを表示
-        //GameManager.IsTalkingがtrue、つまり会話中はUIを非表示にする
-        SetBossUIVisibility(!GameManager.IsTalking);
+        //GameManager.IsTalkingがtrue、つまり会話中はUIを非表示(false)にする
+        SetBossUIVisibility(!isTalking);
     }
 
     //ボスのUIデータを削除するメソッド
@@ -335,14 +337,16 @@ public class GameUIManager : MonoBehaviour
     }
 
     // ボスのUIをアクティブにするメソッド
-    private void SetActiveBossUI(bool isActive)
+    private void SetActiveBossUI(bool talkState)
     {
+        isTalking = talkState; // ローカル変数に会話状態を保存
+
         if (bossObject == null)
         {
             return; // ボスオブジェクトが存在しない場合は何もしない
         }
 
-        SetBossUIVisibility(!isActive);
+        SetBossUIVisibility(!talkState);
     }
 
     /// <summary>

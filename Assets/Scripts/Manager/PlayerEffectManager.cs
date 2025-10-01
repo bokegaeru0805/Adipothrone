@@ -41,20 +41,10 @@ public class PlayerEffectManager : MonoBehaviour
     public event Action OnSpeedEffectChanged; // スピードエフェクトが変化したときに呼び出されるイベント
     #endregion
 
-    /// <summary>
-    /// プレイヤーの基本ステータスを管理するPlayerManagerへの参照。
-    /// </summary>
     private PlayerManager playerManager;
-
-    /// <summary>
-    /// プレイヤーのレベルと経験値を管理するPlayerLevelManagerへの参照。
-    /// </summary>
     private PlayerLevelManager playerLevelManager;
-
-    /// <summary>
-    /// プレイヤーの体形とWPに基づくステータス倍率を管理するPlayerBodyManagerへの参照。
-    /// </summary>
     private PlayerBodyManager playerBodyManager;
+    private bool isTalking = false; // 会話状態を保存するローカル変数
 
     private void Awake()
     {
@@ -91,16 +81,21 @@ public class PlayerEffectManager : MonoBehaviour
     private void Start()
     {
         RefreshBuffLimit();
+
+        // イベントを購読する
+        GameManager.OnTalkingStateChanged += HandleTalkingStateChanged;
+    }
+
+    private void OnDisable()
+    {
+        // オブジェクトが非アクティブになったら、購読を解除（メモリリーク防止）
+        GameManager.OnTalkingStateChanged -= HandleTalkingStateChanged;
     }
 
     private void Update()
     {
         // ゲームがポーズ中でなく、メニューも開いていない場合のみ効果を更新
-        if (
-            Time.timeScale > 0
-            && (!UIManager.instance?.isMenuOpen ?? false)
-            && !GameManager.IsTalking
-        )
+        if (Time.timeScale > 0 && (!UIManager.instance?.isMenuOpen ?? false) && !isTalking)
         {
             UpdatePlayerEffects();
 
@@ -396,4 +391,12 @@ public class PlayerEffectManager : MonoBehaviour
         return Mathf.Max(finalSpeed, GameConstants.PlayerBladeMinSpeed); // 最小速度を下回らないようにする
     }
     #endregion
+
+    /// <summary>
+    /// GameManagerから会話状態の変更通知を受け取る
+    /// </summary>
+    private void HandleTalkingStateChanged(bool talkState)
+    {
+        isTalking = talkState;
+    }
 }

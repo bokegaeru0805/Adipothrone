@@ -34,6 +34,7 @@ public class FrontDoor_Event : MonoBehaviour
     }
 
     private FlagManager flagManager = null;
+    private bool isTalking = false; // 会話状態を保存するローカル変数
 
     private void Awake()
     {
@@ -83,6 +84,9 @@ public class FrontDoor_Event : MonoBehaviour
         // FlagManagerのboolフラグ変更イベントに、自分のUpdateDoorTagメソッドを登録
         FlagManager.OnBoolFlagChanged += HandleFlagChange;
 
+        GameManager.OnTalkingStateChanged += HandleTalkingStateChanged;
+
+
         // パネルが有効になった際に、一度現在の状態でタグを更新する
         UpdateDoorTag();
     }
@@ -94,6 +98,8 @@ public class FrontDoor_Event : MonoBehaviour
 
         // オブジェクトが無効になる際に、イベントの登録を解除（メモリリーク防止）
         FlagManager.OnBoolFlagChanged -= HandleFlagChange;
+        GameManager.OnTalkingStateChanged -= HandleTalkingStateChanged;
+
     }
 
     /// <summary>
@@ -213,7 +219,7 @@ public class FrontDoor_Event : MonoBehaviour
 
     private void OnTriggerStay2D(Collider2D collision)
     {
-        if (Time.timeScale > 0 && GameManager.IsTalking == false)
+        if (Time.timeScale > 0 && isTalking == false)
         { // ゲームが一時停止していない、かつトーク中でない場合
             if (
                 InputManager.instance.GetInteract()
@@ -289,6 +295,14 @@ public class FrontDoor_Event : MonoBehaviour
                 DoorOpener.OpenDoor(movepos, this, DoorOpener.DoorType.WoodenDoor);
             }
         }
+    }
+
+    /// <summary>
+    /// GameManagerから会話状態の変更通知を受け取る
+    /// </summary>
+    private void HandleTalkingStateChanged(bool talkState)
+    {
+        isTalking = talkState;
     }
 
     // Gizmosを描画するためのメソッド
