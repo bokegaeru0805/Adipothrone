@@ -5,6 +5,7 @@ using Fungus;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
+using System.Linq;
 
 public class ShopUIManager : MonoBehaviour
 {
@@ -83,7 +84,7 @@ public class ShopUIManager : MonoBehaviour
                             page = instance.healItemPage;
                             break;
                         default:
-                            Debug.LogError("Unknown item type for SellItemEntry.");
+                            Debug.LogError(" 売却アイテムの種類が設定されていません。");
                             return;
                     }
 
@@ -527,10 +528,32 @@ public class ShopUIManager : MonoBehaviour
             InventoryItemData.ItemType.HealItem
         );
 
+        // それぞれのアイテムリストを取得し、フィルタリングする
         // 各リストから所持数が0以下のアイテムを除外する
-        bladeWeaponList?.RemoveAll(item => item.count <= 0);
-        shootWeaponList?.RemoveAll(item => item.count <= 0);
-        healItemList?.RemoveAll(item => item.count <= 0);
+        // 売却不可のアイテムも除外する
+        bladeWeaponList = savedata
+            ?.WeaponInventoryData?.GetAllItemByType(InventoryWeaponData.WeaponType.blade)
+            .Where(item =>
+                item.count > 0
+                && GameManager.instance.IsItemSellable(EnumIDUtility.FromID(item.itemID))
+            )
+            .ToList();
+
+        shootWeaponList = savedata
+            ?.WeaponInventoryData?.GetAllItemByType(InventoryWeaponData.WeaponType.shoot)
+            .Where(item =>
+                item.count > 0
+                && GameManager.instance.IsItemSellable(EnumIDUtility.FromID(item.itemID))
+            )
+            .ToList();
+
+        healItemList = savedata
+            ?.ItemInventoryData?.GetAllItemByType(InventoryItemData.ItemType.HealItem)
+            .Where(item =>
+                item.count > 0
+                && GameManager.instance.IsItemSellable(EnumIDUtility.FromID(item.itemID))
+            )
+            .ToList();
 
         //ページを全て初期化
         bladeWeaponPage = 0;

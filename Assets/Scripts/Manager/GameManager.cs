@@ -578,6 +578,26 @@ public class GameManager : MonoBehaviour
         return sellPrice;
     }
 
+    /// <summary>
+    /// 指定されたIDのアイテムが売却可能かどうかを判定します。
+    /// </summary>
+    /// <param name="ID">判定したいアイテムのID (Enum)</param>
+    /// <returns>売却可能であればtrueを返します。</returns>
+    public bool IsItemSellable(Enum ID)
+    {
+        // 既存のメソッドを使ってアイテムの基本データを取得
+        BaseItemData itemData = GetBaseItemDataByID(ID);
+
+        // アイテムデータが存在し、かつisSellableフラグがtrueの場合のみ売却可能
+        if (itemData != null && itemData.isSellable)
+        {
+            return true;
+        }
+
+        // それ以外の場合は売却不可
+        return false;
+    }
+
     #region Tips Management
 
     /// <summary>

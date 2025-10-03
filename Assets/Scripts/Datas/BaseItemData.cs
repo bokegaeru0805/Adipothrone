@@ -7,6 +7,7 @@ public abstract class BaseItemData : ScriptableObject
     public ItemRank itemRank; // アイテムのランク(レア度)
     public int buyPrice; // 購入価格
     public int sellPrice; // 売却価格
+    public bool isSellable = true; // 売却可能かどうかのフラグ (デフォルトはtrue)
 
     [TextArea]
     public string description;

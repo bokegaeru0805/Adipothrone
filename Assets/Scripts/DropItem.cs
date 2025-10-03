@@ -73,12 +73,14 @@ public class DropItem : MonoBehaviour
     [Tooltip("揺れアニメーションの片道にかかる時間（秒）")]
     [SerializeField]
     private float hoverDuration = 1.5f;
+    private float groundCheckRaycastDistance = 5f; //地面を探すために真下に飛ばすRaycastの最大距離
     private int TreasuresortingOrder = 20;
     private int CoinsortingOrder = 30;
     private int DropItemsortingOrder = 40;
     private SpriteRenderer spriteRenderer;
     private CircleCollider2D mycollider;
     private CapsuleCollider2D groundCheckerCollider;
+    private Rigidbody2D rbody;
 
     // 現在の宝箱に適用すべき開閉スプライトを保存しておく変数
     private Sprite _currentTargetCloseSprite;
@@ -91,6 +93,7 @@ public class DropItem : MonoBehaviour
         groundCheckerCollider = this
             .gameObject.transform.GetChild(0)
             .gameObject.GetComponent<CapsuleCollider2D>();
+        rbody = GetComponent<Rigidbody2D>();
     }
 
     public void SetDropItemSprite()
@@ -181,7 +184,10 @@ public class DropItem : MonoBehaviour
         this.tag = GameConstants.InteractableObjectTagName; //タグを変更
         mycollider.radius = originalTreasureColliderRadius; //当たり判定のcolliderの半径を調整
         groundCheckerCollider.offset = new Vector2(0, GroundCheckerColliderOffsetY); //地面当たり判定のcolliderのoffsetを調整
-        //  宝箱は手動で配置するため、座標調整は行わない
+        // //  宝箱は手動で配置するため、座標調整は行わない
+
+        // 宝箱も地面に配置、または落下させるために座標調整を呼び出す
+        AdjustPositionToGroundSurface();
     }
 
     /// <summary>
@@ -199,11 +205,20 @@ public class DropItem : MonoBehaviour
         Vector2 rayStartPosition = new Vector2(transform.position.x, transform.position.y + 5f);
 
         // 上空から真下に向けてRaycastを発射（距離を長めに設定）
-        RaycastHit2D hit = Physics2D.Raycast(rayStartPosition, Vector2.down, 20f, groundLayer);
+        RaycastHit2D hit = Physics2D.Raycast(
+            rayStartPosition,
+            Vector2.down,
+            groundCheckRaycastDistance,
+            groundLayer
+        );
 
         // Rayが地面レイヤーに衝突した場合
         if (hit.collider != null)
         {
+            // 物理演算を停止し、手動で座標を制御できるようにする
+            rbody.bodyType = RigidbodyType2D.Kinematic;
+            rbody.velocity = Vector2.zero; // 念のため速度をリセット
+
             // スプライトの高さの半分（中心から下端までの距離）を取得
             float halfHeight = spriteRenderer.bounds.extents.y;
 
@@ -212,15 +227,15 @@ public class DropItem : MonoBehaviour
 
             // 新しい座標を設定
             transform.position = new Vector3(transform.position.x, newY, transform.position.z);
+
+            // ホバーアニメーションは宝箱以外で開始
+            StartHoverAnimation();
         }
         else
         {
-            // もし下に地面が見つからなかった場合（落下中など）は、ホバーアニメーションを開始しない
-            return;
+            // 重力で落下させるために物理演算を有効にする
+            rbody.bodyType = RigidbodyType2D.Dynamic;
         }
-
-        //地面への配置が完了した後にアニメーションを開始
-        StartHoverAnimation();
     }
 
     /// <summary>
@@ -273,6 +288,26 @@ public class DropItem : MonoBehaviour
                 SEManager.instance?.PlaySystemEventSE(SE_SystemEvent.ItemGet2); //効果音を鳴らす
                 GameManager.instance.TreasureFungus(baseItemData, 1); //Fungusを起動
             }
+        }
+    }
+
+    /// <summary>
+    /// オブジェクトが他のコライダーと衝突したときに呼び出される
+    /// </summary>
+    private void OnCollisionEnter2D(Collision2D collision)
+    {
+        // 落下中(Dynamic)でなければ何もしない
+        if (rbody == null || rbody.bodyType != RigidbodyType2D.Dynamic)
+        {
+            return;
+        }
+
+        // 衝突した相手が地面レイヤーかどうかを判定
+        if ((groundLayer.value & (1 << collision.gameObject.layer)) > 0)
+        {
+            // 地面に着地したら、物理演算を停止してその場に固定する
+            rbody.bodyType = RigidbodyType2D.Kinematic;
+            rbody.velocity = Vector2.zero; // 完全に静止させる
         }
     }
 

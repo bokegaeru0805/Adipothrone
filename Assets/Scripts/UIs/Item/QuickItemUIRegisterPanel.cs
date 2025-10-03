@@ -112,13 +112,12 @@ public class QuickItemRegisterPanel : MonoBehaviour
 
     private void OnEnable()
     {
-        quickItemPanel.currentIndex = 0; //カーソルの位置を初期化
+        quickItemPanel.ResetSelectionToIndexZero(); //カーソルの位置を初期化
         UIManager.instance.SetQuickItemRegistering(true); //クイックアイテム登録画面が開いているフラグを立てる
     }
 
     private void OnDisable()
     {
         UIManager.instance.SetQuickItemRegistering(false); //クイックアイテム登録画面が開いているフラグを下げる
-        // quickItemPanel.currentIndex = 0; //カーソルの位置を初期化
     }
 }

@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
+using Shapes2D;
 using UnityEngine;
 
 /// <summary>
@@ -216,7 +217,7 @@ public class MovingPlatform : MonoBehaviour
     private void OnTriggerEnter2D(Collider2D other)
     {
         // プレイヤーに"Player"タグが設定されていることを前提とします。
-        if (other.CompareTag("Player"))
+        if (other.CompareTag(GameConstants.PlayerTagName))
         {
             // プレイヤーをリフトの子オブジェクトにする
             other.transform.SetParent(this.transform);
@@ -229,7 +230,7 @@ public class MovingPlatform : MonoBehaviour
     /// <param name="other">衝突が終了したCollider2D</param>
     private void OnTriggerExit2D(Collider2D other)
     {
-        if (other.CompareTag("Player"))
+        if (other.CompareTag(GameConstants.PlayerTagName))
         {
             // プレイヤーの親オブジェクトを解除
             other.transform.SetParent(null);

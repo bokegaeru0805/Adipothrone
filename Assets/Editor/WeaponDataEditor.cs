@@ -22,6 +22,7 @@ public class ShootWeaponDataEditor : Editor
     SerializedProperty itemRank;
     SerializedProperty buyPrice;
     SerializedProperty sellPrice;
+    SerializedProperty isSellable;
     SerializedProperty description;
     SerializedProperty wpCost;
 
@@ -46,6 +47,7 @@ public class ShootWeaponDataEditor : Editor
         itemRank = serializedObject.FindProperty("itemRank");
         buyPrice = serializedObject.FindProperty("buyPrice");
         sellPrice = serializedObject.FindProperty("sellPrice");
+        isSellable = serializedObject.FindProperty("isSellable");
         description = serializedObject.FindProperty("description");
         wpCost = serializedObject.FindProperty("wpCost");
     }
@@ -64,6 +66,7 @@ public class ShootWeaponDataEditor : Editor
         EditorGUILayout.PropertyField(itemRank, new GUIContent("レア度"));
         EditorGUILayout.PropertyField(buyPrice, new GUIContent("購入価格"));
         EditorGUILayout.PropertyField(sellPrice, new GUIContent("売却価格"));
+        EditorGUILayout.PropertyField(isSellable, new GUIContent("売却可能"));
         EditorGUILayout.PropertyField(description, new GUIContent("説明文"));
 
         EditorGUILayout.Space();
@@ -100,6 +103,7 @@ public class BladeWeaponDataEditor : Editor
     SerializedProperty itemRank;
     SerializedProperty buyPrice;
     SerializedProperty sellPrice;
+    SerializedProperty isSellable;
     SerializedProperty description;
     SerializedProperty wpCost;
 
@@ -119,6 +123,7 @@ public class BladeWeaponDataEditor : Editor
         itemRank = serializedObject.FindProperty("itemRank");
         buyPrice = serializedObject.FindProperty("buyPrice");
         sellPrice = serializedObject.FindProperty("sellPrice");
+        isSellable = serializedObject.FindProperty("isSellable");
         description = serializedObject.FindProperty("description");
         wpCost = serializedObject.FindProperty("wpCost");
     }
@@ -137,6 +142,7 @@ public class BladeWeaponDataEditor : Editor
         EditorGUILayout.PropertyField(itemRank, new GUIContent("レア度"));
         EditorGUILayout.PropertyField(buyPrice, new GUIContent("購入価格"));
         EditorGUILayout.PropertyField(sellPrice, new GUIContent("売却価格"));
+        EditorGUILayout.PropertyField(isSellable, new GUIContent("売却可能"));
         EditorGUILayout.PropertyField(description, new GUIContent("説明文"));
 
         EditorGUILayout.Space();

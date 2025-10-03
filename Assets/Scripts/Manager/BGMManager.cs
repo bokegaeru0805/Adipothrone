@@ -32,7 +32,7 @@ public class BGMManager : MonoBehaviour
         string
     >
     {
-        { BGMCategory.Title, "Title" },
+        { BGMCategory.Title, "bgm0" },//仮Title
         { BGMCategory.GameOver, "GameOver" },
         { BGMCategory.Field_Quiet, "QuietField" },
         { BGMCategory.Field_Tutorial, "TutorialField" },
@@ -41,10 +41,10 @@ public class BGMManager : MonoBehaviour
         { BGMCategory.Boss_Chapter, "ChapterBoss" },
         { BGMCategory.Boss_Unique, "UniqueBoss" },
         { BGMCategory.Boss_Mid, "MidBoss" },
-        { BGMCategory.Field_Plains, "PlainsField1" },
+        { BGMCategory.Field_Plains, "bgm1" }, //仮PlainsField1
         { BGMCategory.Env_Water_Stream1, "WaterStream1" },
         { BGMCategory.Env_Birds, "PlainsField_Amb1" },
-        { BGMCategory.Field_FirstVillage, "FirstVillage" },
+        { BGMCategory.Field_FirstVillage, "bgm1" },  //仮FirstVillage
         { BGMCategory.Field_Cave1, "CaveField_Amb1" },
         {
             BGMCategory.None,

@@ -18,4 +18,7 @@ public enum BGMCategory
     Boss_Mid = 410,
     Env_Water_Stream1 = 600,
     Env_Birds = 605,
+
+    bgm0 = 1000, // デバッグ用
+    bgm1 = 1001, // デバッグ用
 }

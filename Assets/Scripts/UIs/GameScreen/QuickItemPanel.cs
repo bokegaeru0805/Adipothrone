@@ -62,9 +62,6 @@ public class QuickItemPanel : MonoBehaviour
     [SerializeField]
     private Sprite transparentSquare;
 
-    [HideInInspector]
-    public int currentIndex = 0;
-
     private List<HealItemData> healItemData = new List<HealItemData>(); //アイテムの情報
     private List<ItemEntry> quickList = new List<ItemEntry>(); //セーブデータから参照する
 
@@ -92,6 +89,8 @@ public class QuickItemPanel : MonoBehaviour
         public GameObject barObject;
         public Image barFillImage;
     }
+
+    public int currentIndex { get; private set; } = 0;// 現在選択されているクイックスロットのインデックス。
 
     private Dictionary<GameObject, (GameObject, Image)> buffUIs;
     private float baseSize = 0; // ボタンのアイテム画像のベースサイズ（初期化時に設定）
@@ -315,6 +314,13 @@ public class QuickItemPanel : MonoBehaviour
         StartCoroutine(InitialChangeSelection()); //最初のボタンを選択する(フレームの終わりまで待つ)
     }
 
+    /// <summary>
+    /// ゲーム開始時に最初のボタンを選択状態にするための初期化コルーチン。
+    /// </summary>
+    /// <remarks>
+    /// Start()直後だとUI要素のレイアウト計算が完了していない場合があるため、
+    /// 最初のフレームの描画が終わるまで待機してから選択処理を呼び出します。
+    /// </remarks>
     private IEnumerator InitialChangeSelection()
     {
         yield return new WaitForEndOfFrame(); //フレームの終わりまで待つ
@@ -434,7 +440,18 @@ public class QuickItemPanel : MonoBehaviour
         }
     }
 
-    //選択されるボタンを変更
+    /// <summary>
+    /// クイックスロットの選択状態を最初のスロット（インデックス0）にリセットします。
+    /// </summary>
+    public void ResetSelectionToIndexZero()
+    {
+        ChangeSelection(0);
+    }
+
+    /// <summary>
+    /// 選択対象のボタンを新しいインデックスに変更し、UIの見た目やプレビューを更新します。
+    /// </summary>
+    /// <param name="newIndex">新たに選択するボタンのインデックス。</param>
     private void ChangeSelection(int newIndex)
     {
         // 前の選択を解除
@@ -549,6 +566,9 @@ public class QuickItemPanel : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// 現在選択されているボタンを、スクリプトから擬似的にクリックします。
+    /// </summary>
     private void PressCurrentButton()
     {
         if (quickSlotButtons[currentIndex].button != null)
@@ -590,7 +610,10 @@ public class QuickItemPanel : MonoBehaviour
         }
     }
 
-    //即座に使用できるアイテムが入れ替えられたときに呼び出す関数
+    /// <summary>
+    /// インベントリ画面でクイックスロットのアイテム割り当てが変更された際に呼び出されるイベントハンドラ。
+    /// 全てのスロットのアイコンと情報を更新します。
+    /// </summary>
     private void HandleQuickSlotAssigned()
     {
         if (GameManager.instance.savedata != null)
@@ -644,7 +667,10 @@ public class QuickItemPanel : MonoBehaviour
         }
     }
 
-    //アイテムの所持数が変化したときに呼び出す関数
+    /// <summary>
+    /// いずれかのアイテムの所持数が変化した際に呼び出されるイベントハンドラ。
+    /// 全てのスロットの所持数テキストと、使用可否の見た目を更新します。
+    /// </summary>
     private void ChangeAllCountTextImage()
     {
         for (int i = 0; i < quickList.Count; i++)
@@ -684,7 +710,9 @@ public class QuickItemPanel : MonoBehaviour
         }
     }
 
-    //すべてのアニメーションを停止し、デフォルト状態に戻すメソッド
+    /// <summary>
+    /// メニュー画面を開いた際などに、選択中のボタンのアニメーションを全て停止し、見た目を通常状態に戻します。
+    /// </summary>
     private void PauseAllAnimations()
     {
         // すべてのスロットをループ
@@ -717,7 +745,10 @@ public class QuickItemPanel : MonoBehaviour
         }
     }
 
-    //アニメーションを再開するメソッド
+    /// <summary>
+    /// 一時停止したアニメーションを再開します。
+    /// 現在選択中のボタンに対して、再度選択アニメーションを適用します。
+    /// </summary>
     private void ResumeAllAnimations()
     {
         // 現在選択されているボタンのアニメーションを再開するために、
@@ -725,7 +756,13 @@ public class QuickItemPanel : MonoBehaviour
         ChangeSelection(currentIndex);
     }
 
-    //ボタンの画像と文章を使えるようにする
+    /// <summary>
+    /// 指定されたIDのアイテムアイコンの明度を上げて、使用可能な状態に見せます。
+    /// </summary>
+    /// <remarks>
+    /// 色のHSV値を取得し、V(明度)を最大値にすることで、元の色合いを保ったまま明るくします。
+    /// </remarks>
+    /// <param name="id">対象スロットのID</param>
     private void EnableButtonImage(int id)
     {
         if (id < 0 || id >= quickSlotButtons.Length)
@@ -742,7 +779,13 @@ public class QuickItemPanel : MonoBehaviour
         image.color = newColor;
     }
 
-    //ボタンの画像と文章を使えないように黒くする
+    /// <summary>
+    /// 指定されたIDのアイテムアイコンの明度を下げて、使用不可能な状態（暗い表示）にします。
+    /// </summary>
+    /// <remarks>
+    /// 色のHSV値を取得し、V(明度)を低い値にすることで、元の色合いを保ったまま暗くします。
+    /// </remarks>
+    /// <param name="id">対象スロットのID</param>
     private void DisableButtonImage(int id)
     {
         if (id < 0 || id >= quickSlotButtons.Length)

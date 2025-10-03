@@ -76,7 +76,7 @@ public class SaveLoadManager : MonoBehaviour
             {
                 for (
                     int i = GameConstants.AUTO_SAVE_FILE_NUMBER;
-                    i < GameConstants.MaxSaveLoadFiles;
+                    i < GameConstants.MaxSaveLoadFiles + GameConstants.MAX_AUTOSAVE_FOLDERS;
                     i++
                 )
                 {

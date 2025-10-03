@@ -8,6 +8,7 @@ public static class GameConstants
     public static readonly int PIXELS_PER_UNIT = 16;
     public static readonly int MaxSaveLoadFiles = 12; // 最大セーブデータ数
     public const int AUTO_SAVE_FILE_NUMBER = 0; // オートセーブ用のファイル番号
+    public const int MAX_AUTOSAVE_FOLDERS = 1; //オートセーブ用のフォルダの個数
     public const int NEW_GAME_FILE_NUMBER = 10000; // 新規ゲーム用のファイル番号
     public const float AUTO_SAVE_INTERVAL = 300f; // オートセーブを実行する間隔（秒）
     public static readonly Dictionary<int, int> LevelExpRequirements = new Dictionary<int, int>

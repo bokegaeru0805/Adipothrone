@@ -98,7 +98,7 @@ public class NightBorneMoveController : MonoBehaviour, IEnemyResettable
 
     [Header("時間パラメータ")]
     [SerializeField]
-    private float meleeAttackCooldown = 2.0f; // 近距離攻撃後の待機時間
+    private float meleeAttackCooldown = 1.5f; // 近距離攻撃後の待機時間
 
     [Header("ゲームオブジェクト設定")]
     [SerializeField, Tooltip("剣のゲームオブジェクト")]
