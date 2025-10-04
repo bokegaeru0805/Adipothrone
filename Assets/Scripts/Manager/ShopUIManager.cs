@@ -535,7 +535,7 @@ public class ShopUIManager : MonoBehaviour
             ?.WeaponInventoryData?.GetAllItemByType(InventoryWeaponData.WeaponType.blade)
             .Where(item =>
                 item.count > 0
-                && GameManager.instance.IsItemSellable(EnumIDUtility.FromID(item.itemID))
+                && ItemDataManager.instance.IsItemSellable(EnumIDUtility.FromID(item.itemID))
             )
             .ToList();
 
@@ -543,7 +543,7 @@ public class ShopUIManager : MonoBehaviour
             ?.WeaponInventoryData?.GetAllItemByType(InventoryWeaponData.WeaponType.shoot)
             .Where(item =>
                 item.count > 0
-                && GameManager.instance.IsItemSellable(EnumIDUtility.FromID(item.itemID))
+                && ItemDataManager.instance.IsItemSellable(EnumIDUtility.FromID(item.itemID))
             )
             .ToList();
 
@@ -551,7 +551,7 @@ public class ShopUIManager : MonoBehaviour
             ?.ItemInventoryData?.GetAllItemByType(InventoryItemData.ItemType.HealItem)
             .Where(item =>
                 item.count > 0
-                && GameManager.instance.IsItemSellable(EnumIDUtility.FromID(item.itemID))
+                && ItemDataManager.instance.IsItemSellable(EnumIDUtility.FromID(item.itemID))
             )
             .ToList();
 

@@ -23,6 +23,13 @@ public class SpotlightQuickItemController : MonoBehaviour
 
     private void Awake()
     {
+
+        //ゲームがまだ開始されていない場合は何もしない
+        if (!GameManager.isFirstGameSceneOpen)
+        {
+            return;
+        }
+        
         if (instance == null)
         {
             instance = this;

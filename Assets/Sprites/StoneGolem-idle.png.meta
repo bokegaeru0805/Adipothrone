@@ -114,7 +114,7 @@ TextureImporter:
       rect:
         serializedVersion: 2
         x: 9
-        y: 2
+        y: 0
         width: 31
         height: 59
       alignment: 7
@@ -135,9 +135,9 @@ TextureImporter:
       rect:
         serializedVersion: 2
         x: 57
-        y: 2
+        y: 0
         width: 31
-        height: 56
+        height: 58
       alignment: 7
       pivot: {x: 0.5, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -156,9 +156,9 @@ TextureImporter:
       rect:
         serializedVersion: 2
         x: 105
-        y: 2
+        y: 0
         width: 31
-        height: 58
+        height: 57
       alignment: 7
       pivot: {x: 0.5, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -168,6 +168,69 @@ TextureImporter:
       bones: []
       spriteID: 2131c7a11bbc34e4687c6a6147493820
       internalID: 1300572721
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: StoneGolem-idle_3
+      rect:
+        serializedVersion: 2
+        x: 153
+        y: 0
+        width: 31
+        height: 57
+      alignment: 7
+      pivot: {x: 0.5, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 54493109f914e2541bc0b8191eb4fd5d
+      internalID: -348914390
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: StoneGolem-idle_4
+      rect:
+        serializedVersion: 2
+        x: 201
+        y: 0
+        width: 31
+        height: 57
+      alignment: 7
+      pivot: {x: 0.5, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 57c54ebbbff172643ae8a8d924a20bdf
+      internalID: -529585681
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: StoneGolem-idle_5
+      rect:
+        serializedVersion: 2
+        x: 249
+        y: 0
+        width: 31
+        height: 58
+      alignment: 7
+      pivot: {x: 0.5, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 8e07771669da6c749a482806cf0229f3
+      internalID: 258418655
       vertices: []
       indices: 
       edges: []
@@ -186,6 +249,9 @@ TextureImporter:
       StoneGolem-idle_0: 1319053515
       StoneGolem-idle_1: -762348987
       StoneGolem-idle_2: 1300572721
+      StoneGolem-idle_3: -348914390
+      StoneGolem-idle_4: -529585681
+      StoneGolem-idle_5: 258418655
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 

@@ -8,7 +8,7 @@ using UnityEngine;
 /// </summary>
 public class PersistentManagers : MonoBehaviour
 {
-    private static PersistentManagers instance;
+    public static PersistentManagers instance { get; private set; } //シングルトン用のインスタンス
 
     private void Awake()
     {

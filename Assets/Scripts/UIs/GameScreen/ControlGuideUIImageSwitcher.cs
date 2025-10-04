@@ -69,10 +69,12 @@ public class ControlGuideUIImageSwitcher : MonoBehaviour
     {
         //ゲームがまだ開始されていない場合は何もしない
         if (!GameManager.isFirstGameSceneOpen)
+        {
             return;
+        }
 
         // SaveLoadManagerから設定を読み込む
-        SaveLoadManager saveLoadManager = SaveLoadManager.instance;
+            SaveLoadManager saveLoadManager = SaveLoadManager.instance;
         if (saveLoadManager != null)
         {
             //「操作方法UIを表示する」設定がオフ（false）の場合

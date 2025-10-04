@@ -9,18 +9,13 @@ using UnityEngine;
 public class GameManager : MonoBehaviour
 {
     public static GameManager instance { get; private set; } //シングルトン用のインスタンス
+    private ItemDataManager itemDataManager; //アイテムデータベースマネージャーの参照
 
     [HideInInspector]
     public SaveData savedata = new SaveData(); //セーブデータを保存する変数
 
     [HideInInspector]
     public Fungus.Flowchart globalFlowchart; //ゲーム全体のflowchart
-
-    [SerializeField]
-    private WeaponItemDatabase weaponItemDatabase;
-
-    [SerializeField]
-    private HealItemDatabase healItemDatabase;
 
     [SerializeField]
     private TipsInfoDatabase tipsInfoDatabase;
@@ -46,62 +41,64 @@ public class GameManager : MonoBehaviour
         {
             instance = this;
             //DontDestroyOnLoad(gameObject); //親オブジェクトがシーンが変わっても廃棄されないので不要
+        }
+        else
+        {
+            Destroy(gameObject);
+            return;
+        }
+
+        if (globalFlowchart == null)
+        {
+            foreach (var fc in FindObjectsOfType<Fungus.Flowchart>())
+            {
+                if (fc.name == "GlobalFlowchart") //GameObject名で比較
+                {
+                    globalFlowchart = fc;
+                    break;
+                }
+            }
 
             if (globalFlowchart == null)
             {
-                foreach (var fc in FindObjectsOfType<Fungus.Flowchart>())
+                Debug.LogWarning("GlobalFlowChart が Scene 上に存在しません！");
+            }
+            else
+            {
+                TreasureBlock = globalFlowchart.FindBlock("Treasurebox");
+                if (TreasureBlock == null)
                 {
-                    if (fc.name == "GlobalFlowchart") //GameObject名で比較
-                    {
-                        globalFlowchart = fc;
-                        break;
-                    }
-                }
-
-                if (globalFlowchart == null)
-                {
-                    Debug.LogWarning("GlobalFlowChart が Scene 上に存在しません！");
-                }
-                else
-                {
-                    TreasureBlock = globalFlowchart.FindBlock("Treasurebox");
-                    if (TreasureBlock == null)
-                    {
-                        Debug.LogWarning("TreasureBlock が GlobalFlowchart 上に存在しません！");
-                        return;
-                    }
+                    Debug.LogWarning("TreasureBlock が GlobalFlowchart 上に存在しません！");
+                    return;
                 }
             }
-
-            if (weaponItemDatabase == null)
-            {
-                Debug.LogError("GameManagerにWeaponItemDatabaseが設定されていません");
-            }
-
-            if (healItemDatabase == null)
-            {
-                Debug.LogError("GameManagerにHealItemDatabaseが設定されていません");
-            }
-
-            if (tipsInfoDatabase == null)
-            {
-                Debug.LogError("GameManagerにTipsInfoDatabaseが設定されていません");
-            }
-
-            if (DropItemPrefab == null)
-            {
-                Debug.LogError("GameManagerにDropItemPrefabが設定されていません");
-            }
-
-            isFirstGameOpen = false; // 初回ゲームオープンフラグを初期化
-            isFirstGameSceneOpen = false; // 初回ゲームシーンオープンフラグを初期化
-            EndTalk(); // 会話中フラグをfalseで初期化
-            //ゲーム開始時に、データベースから正しい並び順を一度だけ生成してキャッシュする
-            InitializeTipsSortOrderMap();
         }
-        else if (instance != this)
+
+        if (DropItemPrefab == null)
         {
-            Destroy(gameObject); //他のインスタンスが存在する場合はこのオブジェクトを破棄
+            Debug.LogError("GameManagerにDropItemPrefabが設定されていません");
+        }
+
+        if (tipsInfoDatabase == null)
+        {
+            Debug.LogError("GameManagerにTipsInfoDatabaseが設定されていません");
+            return;
+        }
+
+        isFirstGameOpen = false; // 初回ゲームオープンフラグを初期化
+        isFirstGameSceneOpen = false; // 初回ゲームシーンオープンフラグを初期化
+        EndTalk(); // 会話中フラグをfalseで初期化
+        //ゲーム開始時に、データベースから正しい並び順を一度だけ生成してキャッシュする
+        InitializeTipsSortOrderMap();
+    }
+
+    private void Start()
+    {
+        itemDataManager = ItemDataManager.instance;
+        if (itemDataManager == null)
+        {
+            Debug.LogError("GameManagerがItemDataManagerを見つけられません");
+            return;
         }
     }
 
@@ -320,7 +317,7 @@ public class GameManager : MonoBehaviour
             OnAnyItemAddedToInventory?.Invoke(); // 任意のアイテムが追加されたときのイベントを発火
         }
 
-        string itemName = GetAllTypeIDtoName(ID);
+        string itemName = itemDataManager.GetItemNameByID(ID);
         if (itemName != "null")
         {
             GameUIManager.instance?.AddGetItemLog(itemName); // アイテムログに追加
@@ -370,104 +367,6 @@ public class GameManager : MonoBehaviour
     }
 
     /// <summary>
-    /// 指定されたIDに対応するBaseItemDataを取得します。
-    /// /// </summary>
-    /// <remarks>
-    /// このメソッドは、IDに基づいてアイテムのタイプを判別し、対応するデータベースからアイテムデータを取得します。
-    /// </remarks>
-    /// <param name="ID">アイテムのID</param>
-    public BaseItemData GetBaseItemDataByID(Enum ID)
-    {
-        // Enumから、タイプを判別する数に変更
-        int typeNumber = EnumIDUtility.ExtractTypeID(EnumIDUtility.ToID(ID));
-        BaseItemData itemData = null;
-
-        switch (typeNumber)
-        {
-            case (int)TypeID.Blade:
-                itemData = weaponItemDatabase.GetBladeByID(ID);
-                break;
-            case (int)TypeID.Shoot:
-                itemData = weaponItemDatabase.GetShootByID(ID);
-                break;
-            case (int)TypeID.HealItem:
-                itemData = healItemDatabase.GetItemByID(ID);
-                break;
-            default:
-                Debug.LogWarning($"このID{ID}はBaseItemDataを持ちません");
-                break;
-        }
-
-        return itemData;
-    }
-
-    /// <summary>
-    /// 指定されたIDに対応するアイテムのスプライトを取得します。
-    /// </summary>
-    public Sprite GetAllTypeIDtoSprite(Enum ID)
-    {
-        int typeNumber = EnumIDUtility.ExtractTypeID(EnumIDUtility.ToID(ID));
-        Sprite sprite = null;
-
-        switch (typeNumber)
-        {
-            case (int)TypeID.Blade:
-                BladeWeaponData blade = weaponItemDatabase.GetBladeByID(ID);
-                sprite = blade.itemSprite;
-                break;
-            case (int)TypeID.Shoot:
-                ShootWeaponData shoot = weaponItemDatabase.GetShootByID(ID);
-                sprite = shoot.itemSprite;
-                break;
-            case (int)TypeID.HealItem:
-                var item = healItemDatabase.GetItemByID(ID);
-                sprite = item.itemSprite;
-                break;
-            default:
-                Debug.LogWarning($"このID{ID}はスプライトを持ちません");
-                break;
-        }
-
-        return sprite;
-    }
-
-    /// <summary>
-    /// 指定されたIDに対応するアイテムの名前を取得します。
-    /// </summary>
-    public string GetAllTypeIDtoName(Enum ID)
-    {
-        int typeIDNumber = EnumIDUtility.ExtractTypeID(EnumIDUtility.ToID(ID));
-        string name = "null";
-
-        switch (typeIDNumber)
-        {
-            case (int)TypeID.Blade:
-                BladeWeaponData blade = weaponItemDatabase.GetBladeByID(ID);
-                if (blade == null)
-                    break;
-                name = blade.itemName;
-                break;
-            case (int)TypeID.Shoot:
-                ShootWeaponData shoot = weaponItemDatabase.GetShootByID(ID);
-                if (shoot == null)
-                    break;
-                name = shoot.itemName;
-                break;
-            case (int)TypeID.HealItem:
-                var item = healItemDatabase.GetItemByID(ID);
-                if (item == null)
-                    break;
-                name = item.itemName;
-                break;
-            default:
-                Debug.LogWarning($"このID{ID}は名前を持ちません");
-                break;
-        }
-
-        return name;
-    }
-
-    /// <summary>
     /// 指定されたIDに対応するアイテムの所持数を取得します。
     /// </summary>
     public int GetAllTypeIDToAmount(Enum ID)
@@ -504,98 +403,6 @@ public class GameManager : MonoBehaviour
         }
 
         return amount;
-    }
-
-    /// <summary>
-    /// 指定されたIDに対応するアイテムのランクを取得します。
-    /// </summary>
-    public ItemRank GetAllTypeIDtoRank(Enum ID)
-    {
-        int typeIDNumber = EnumIDUtility.ExtractTypeID(EnumIDUtility.ToID(ID));
-        ItemRank rank = ItemRank.None; // デフォルトはランクなし
-
-        switch (typeIDNumber)
-        {
-            case (int)TypeID.Blade:
-                BladeWeaponData blade = weaponItemDatabase.GetBladeByID(ID);
-                if (blade == null)
-                    break;
-                rank = blade.itemRank;
-                break;
-            case (int)TypeID.Shoot:
-                ShootWeaponData shoot = weaponItemDatabase.GetShootByID(ID);
-                if (shoot == null)
-                    break;
-                rank = shoot.itemRank;
-                break;
-            case (int)TypeID.HealItem:
-                var item = healItemDatabase.GetItemByID(ID);
-                if (item == null)
-                    break;
-                rank = item.itemRank;
-                break;
-            default:
-                Debug.LogWarning($"このID{ID}はランクを持ちません");
-                break;
-        }
-
-        return rank;
-    }
-
-    /// <summary>
-    /// 指定されたIDに対応するアイテムの売却価格を取得します。
-    /// </summary>
-    public int GetAllTypeIDtoSellPrice(Enum ID)
-    {
-        int typeIDNumber = EnumIDUtility.ExtractTypeID(EnumIDUtility.ToID(ID));
-        int sellPrice = 0;
-
-        switch (typeIDNumber)
-        {
-            case (int)TypeID.Blade:
-                BladeWeaponData blade = weaponItemDatabase.GetBladeByID(ID);
-                if (blade == null)
-                    break;
-                sellPrice = blade.sellPrice;
-                break;
-            case (int)TypeID.Shoot:
-                ShootWeaponData shoot = weaponItemDatabase.GetShootByID(ID);
-                if (shoot == null)
-                    break;
-                sellPrice = shoot.sellPrice;
-                break;
-            case (int)TypeID.HealItem:
-                var item = healItemDatabase.GetItemByID(ID);
-                if (item == null)
-                    break;
-                sellPrice = item.sellPrice;
-                break;
-            default:
-                Debug.LogWarning($"このID{ID}は名前を持ちません");
-                break;
-        }
-
-        return sellPrice;
-    }
-
-    /// <summary>
-    /// 指定されたIDのアイテムが売却可能かどうかを判定します。
-    /// </summary>
-    /// <param name="ID">判定したいアイテムのID (Enum)</param>
-    /// <returns>売却可能であればtrueを返します。</returns>
-    public bool IsItemSellable(Enum ID)
-    {
-        // 既存のメソッドを使ってアイテムの基本データを取得
-        BaseItemData itemData = GetBaseItemDataByID(ID);
-
-        // アイテムデータが存在し、かつisSellableフラグがtrueの場合のみ売却可能
-        if (itemData != null && itemData.isSellable)
-        {
-            return true;
-        }
-
-        // それ以外の場合は売却不可
-        return false;
     }
 
     #region Tips Management

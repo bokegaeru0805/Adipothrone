@@ -124,11 +124,11 @@ public class EquipCheckImage : MonoBehaviour
         if (weaponID != null)
         {
             //IDからスプライトを取得
-            Sprite weaponSprite = GameManager.instance.GetAllTypeIDtoSprite(weaponID);
+            Sprite weaponSprite = ItemDataManager.instance.GetItemSpriteByID(weaponID);
             //武器の画像スプライトを取得
             if (weaponSprite == null)
             {
-                Debug.LogWarning($"WeaponData not found for ID: {weaponID}");
+                Debug.LogWarning($"{weaponID}のスプライトが見つかりません");
                 return;
             }
 

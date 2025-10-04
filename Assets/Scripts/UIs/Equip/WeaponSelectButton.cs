@@ -89,7 +89,7 @@ public class WeaponSelectButton : MonoBehaviour, IItemAssignable
         }
 
         //武器の画像スプライトを取得
-        Sprite weaponSprite = GameManager.instance.GetAllTypeIDtoSprite(assignedItemID);
+        Sprite weaponSprite = ItemDataManager.instance.GetItemSpriteByID(assignedItemID);
 
         if (myImage != null)
         {
@@ -118,7 +118,7 @@ public class WeaponSelectButton : MonoBehaviour, IItemAssignable
         }
 
         //武器のランクを取得
-        ItemRank itemRank = GameManager.instance.GetAllTypeIDtoRank(assignedItemID);
+        ItemRank itemRank = ItemDataManager.instance.GetItemRankByID(assignedItemID);
         //武器のランクを表示
         if (itemRank != ItemRank.None)
         {

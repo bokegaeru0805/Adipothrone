@@ -61,7 +61,14 @@ public class SaveLoadManager : MonoBehaviour
         {
             instance = this;
             //DontDestroyOnLoad(this.gameObject); //他のManagerがStartで必要とするため、Awakeで取得する
-            LoadSettings(); // ゲーム起動時に必ず設定ファイルを読み込む
+        }
+        else
+        {
+            Destroy(this.gameObject);
+            return;
+        }
+
+        LoadSettings(); // ゲーム起動時に必ず設定ファイルを読み込む
 
             string currentGameVersion = Application.version; //現在のゲームのバージョンを取得
             FilePlaytime = new Dictionary<int, float>(); //ゲームのプレイ時間を保存する変数を初期化
@@ -125,11 +132,6 @@ public class SaveLoadManager : MonoBehaviour
                     }
                 }
             }
-        }
-        else
-        {
-            Destroy(this.gameObject);
-        }
     }
 
     private void Start()

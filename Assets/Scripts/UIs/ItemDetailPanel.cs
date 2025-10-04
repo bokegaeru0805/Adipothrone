@@ -127,7 +127,7 @@ public class ItemDetailPanel : MonoBehaviour
     /// </summary>
     public void DisplayItemDetails(Enum itemID)
     {
-        var itemData = GameManager.instance.GetBaseItemDataByID(itemID);
+        var itemData = ItemDataManager.instance.GetBaseItemDataByID(itemID);
 
         if (itemData is HealItemData healItem)
         {

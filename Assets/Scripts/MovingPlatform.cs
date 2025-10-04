@@ -42,18 +42,11 @@ public class MovingPlatform : MonoBehaviour
     private int platformWidthUnits = 5;
     private string sortingLayerName = "Ground";
     private int orderInLayer = 0;
-
-    // リフトの現在の目標位置（ワールド座標）
-    private Vector2 targetWorldPosition;
-
-    // 現在の移動方向 (始点→終点: true, 終点→始点: false)
-    private bool movingToEnd = true;
-
-    // 終点に到達した後の待機時間を計測するタイマー
-    private float waitTimer = 0.0f;
-
-    // リフトが待機状態かどうかのフラグ
-    private bool isWaiting = false;
+    private Vector2 targetWorldPosition; // リフトの現在の目標位置（ワールド座標）
+    private bool movingToEnd = true; // 現在の移動方向 (始点→終点: true, 終点→始点: false)
+    private float waitTimer = 0.0f; // 終点に到達した後の待機時間を計測するタイマー
+    private bool isWaiting = false; // リフトが待機状態かどうかのフラグ
+    private Rigidbody2D rbody;
 
     private void Awake()
     {
@@ -70,6 +63,8 @@ public class MovingPlatform : MonoBehaviour
                 $"{this.name}のリフトスプライトが設定されていません。Middle SpriteとEnd SpriteをInspectorで設定してください。"
             );
         }
+
+        rbody = GetComponent<Rigidbody2D>();
 
         // リフトのスプライトを動的に生成
         GeneratePlatformSprites();
@@ -124,8 +119,8 @@ public class MovingPlatform : MonoBehaviour
         Vector2 direction = (targetWorldPosition - (Vector2)transform.position).normalized;
         Vector2 moveStep = direction * speed * Time.fixedDeltaTime;
 
-        // 新しい位置にリフトを移動
-        transform.Translate(moveStep, Space.World);
+        // Rigidbody2Dを使って物理的に移動させる
+        rbody.MovePosition((Vector2)transform.position + moveStep);
     }
 
     /// <summary>

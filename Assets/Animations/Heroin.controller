@@ -721,7 +721,7 @@ AnimatorState:
   m_TimeParameterActive: 0
   m_Motion: {fileID: 7400000, guid: c960db39a489f4342be61a25fe5306c2, type: 2}
   m_Tag: 
-  m_SpeedParameter: 
+  m_SpeedParameter: WalkSpeed
   m_MirrorParameter: 
   m_CycleOffsetParameter: 
   m_TimeParameter: 
@@ -1388,13 +1388,13 @@ AnimatorStateMachine:
   - {fileID: -9033489384707646178}
   m_EntryTransitions: []
   m_StateMachineTransitions:
-  - first: {fileID: -2934797629574559904}
-    second:
-    - {fileID: 9222446696393229249}
   - first: {fileID: -5063445596371924121}
     second:
     - {fileID: 2742279252229393836}
     - {fileID: -7898971252538689533}
+  - first: {fileID: -2934797629574559904}
+    second:
+    - {fileID: 9222446696393229249}
   - first: {fileID: 8637543413702425972}
     second:
     - {fileID: -1155240662376585826}

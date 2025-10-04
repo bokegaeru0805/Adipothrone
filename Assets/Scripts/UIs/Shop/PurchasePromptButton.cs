@@ -11,6 +11,7 @@ public class PurchasePromptButton : MonoBehaviour, ISelectHandler, IDeselectHand
     private PlayerManager playerManager;
     private ShopUIManager shopUIManager;
     private GameManager gameManager;
+    private ItemDataManager itemDataManager;
     private InputManager inputManager;
     private Enum itemID; // 購入するアイテムのID
     private int buyPrice; // 購入価格
@@ -137,12 +138,14 @@ public class PurchasePromptButton : MonoBehaviour, ISelectHandler, IDeselectHand
         shopUIManager = ShopUIManager.instance;
         gameManager = GameManager.instance;
         inputManager = InputManager.instance;
+        itemDataManager = ItemDataManager.instance;
 
         if (
             playerManager == null
             || shopUIManager == null
             || gameManager == null
             || inputManager == null
+            || itemDataManager == null
         )
         {
             Debug.LogError(
@@ -193,7 +196,7 @@ public class PurchasePromptButton : MonoBehaviour, ISelectHandler, IDeselectHand
                 //売却時の個数を初期化
                 itemSellQuantity = 1;
                 //購入時の価格を取得
-                sellPricePerItem = gameManager.GetAllTypeIDtoSellPrice(itemID);
+                sellPricePerItem = itemDataManager.GetItemSellPriceByID(itemID);
                 //売却するアイテムの所持数を取得
                 itemSellMaxQuantity = gameManager.GetAllTypeIDToAmount(itemID);
                 // //売却時のYesボタンのテキストを設定

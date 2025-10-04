@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using Effekseer;
+using Shapes2D;
 using UnityEngine;
 
 public class StoneGolemMoveController : MonoBehaviour
@@ -308,6 +309,8 @@ public class StoneGolemMoveController : MonoBehaviour
         {
             Debug.LogError($" {gameObject.name} にAnimatorが見つかりません。");
         }
+
+        this.tag = "Untagged"; // タグを一時的に未設定にする
     }
 
     private void Start()
@@ -345,7 +348,7 @@ public class StoneGolemMoveController : MonoBehaviour
         // 破棄するオブジェクトのリストを初期化
         DestroyLinkedObjects();
 
-        this.tag = GameConstants.ImmuneEnemyTagName; // タグをダメージを受けない敵のタグに設定
+        this.tag = "Untagged"; // タグを一時的に未設定にする
         rightFlag = false; // 初期は左向き
 
         if (useAppearanceEffect)
@@ -376,6 +379,7 @@ public class StoneGolemMoveController : MonoBehaviour
         if (!isMoveStarted)
         {
             this.GetComponent<BossHealth>().enabled = true; // BossHealthスクリプトを有効化
+            this.tag = GameConstants.ImmuneEnemyTagName; // タグをダメージを受けない敵のタグに変更
             isMoveStarted = true;
         }
 
@@ -524,7 +528,7 @@ public class StoneGolemMoveController : MonoBehaviour
         animator.SetTrigger("attackTrigger"); // 攻撃アニメーションをトリガー
         StartCoroutine(UpdateArmForDuration(attackAnimationTime)); // アームの見た目を更新
         yield return new WaitForSeconds(attackAnimationTime * 0.7f); // 攻撃アニメーションの時間を待機1
-        SEManager.instance?.PlayEnemyActionSE(SE_EnemyAction.Kick1); // 攻撃の効果音を鳴らす
+        SEManager.instance?.PlayEnemyActionSEPitch(SE_EnemyAction.Kick1,Random.Range(1.0f, 1.2f)); // 攻撃の効果音を鳴らす
         yield return new WaitForSeconds(attackAnimationTime * 0.3f); // 攻撃アニメーションの時間を待機2
         yield return new WaitForSeconds(meleeAttackCooldown); // 攻撃後の待機時間
 
@@ -541,7 +545,7 @@ public class StoneGolemMoveController : MonoBehaviour
         animator.SetTrigger("attackTrigger"); // 攻撃アニメーションをトリガー
         StartCoroutine(UpdateArmForDuration(attackAnimationTime)); // アームの見た目を更新
         yield return new WaitForSeconds(attackAnimationTime * 0.7f); // 攻撃アニメーションの時間を待機1
-        SEManager.instance?.PlayEnemyActionSE(SE_EnemyAction.Kick1); // 攻撃の効果音を鳴らす
+        SEManager.instance?.PlayEnemyActionSEPitch(SE_EnemyAction.Kick1,Random.Range(0.8f, 1.0f)); // 攻撃の効果音を鳴らす
         yield return new WaitForSeconds(attackAnimationTime * 0.3f); // 攻撃アニメーションの時間を待機2
 
         GameObject crawlingRock = ObjectPooler.instance.SpawnFromPool(

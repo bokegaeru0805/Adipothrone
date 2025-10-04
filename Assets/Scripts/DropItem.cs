@@ -98,7 +98,7 @@ public class DropItem : MonoBehaviour
 
     public void SetDropItemSprite()
     {
-        Sprite dropSprite = GameManager.instance.GetAllTypeIDtoSprite(DropID); // アイテムの見た目（スプライト）を取得
+        Sprite dropSprite = ItemDataManager.instance.GetItemSpriteByID(DropID); // アイテムの見た目（スプライト）を取得
         spriteRenderer.sprite = dropSprite; //スプライトを設定
         spriteRenderer.sortingOrder = DropItemsortingOrder; //画像の表示順を設定
         if (dropSprite != null)
@@ -159,7 +159,7 @@ public class DropItem : MonoBehaviour
     public void SetTreasureSprite()
     {
         isTreasureBox = true; //宝箱かどうかのフラグをON
-        ItemRank itemRank = GameManager.instance.GetAllTypeIDtoRank(DropID); //アイテムのレアリティを取得
+        ItemRank itemRank = ItemDataManager.instance.GetItemRankByID(DropID); //アイテムのランクを取得
 
         // 1. まず、デフォルトのスプライトを変数に設定
         _currentTargetCloseSprite = defaultCloseSprite;
@@ -282,7 +282,7 @@ public class DropItem : MonoBehaviour
                 //インベントリにアイテムを保存はFungusのFlowchartで行います
                 // GameManager.instance.AddAllTypeIDToInventory(DropID); //インベントにアイテムを保存
 
-                var baseItemData = GameManager.instance.GetBaseItemDataByID(DropID);
+                var baseItemData = ItemDataManager.instance.GetBaseItemDataByID(DropID); //アイテムのデータを取得
                 this.tag = "Untagged"; //tagを外す
                 spriteRenderer.sprite = _currentTargetOpenSprite; //予め保存しておいた「開いた」スプライトに変更
                 SEManager.instance?.PlaySystemEventSE(SE_SystemEvent.ItemGet2); //効果音を鳴らす

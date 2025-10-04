@@ -113,8 +113,8 @@ TextureImporter:
       name: Heroin-Standing1 Armed_0
       rect:
         serializedVersion: 2
-        x: 1
-        y: 1
+        x: 0
+        y: 0
         width: 26
         height: 48
       alignment: 7
@@ -134,8 +134,8 @@ TextureImporter:
       name: Heroin-Standing1 Armed_1
       rect:
         serializedVersion: 2
-        x: 32
-        y: 1
+        x: 26
+        y: 0
         width: 26
         height: 48
       alignment: 7
@@ -147,6 +147,48 @@ TextureImporter:
       bones: []
       spriteID: 87ce67a38b43d434da759331e768dc74
       internalID: -664412713
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Heroin-Standing1 Armed_2
+      rect:
+        serializedVersion: 2
+        x: 52
+        y: 0
+        width: 26
+        height: 48
+      alignment: 7
+      pivot: {x: 0.5, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: c24f3d73cd67b8847b305506405f3e13
+      internalID: 811692655
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Heroin-Standing1 Armed_3
+      rect:
+        serializedVersion: 2
+        x: 78
+        y: 0
+        width: 26
+        height: 48
+      alignment: 7
+      pivot: {x: 0.5, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 216ab6162787e0542ad295cf25dd068a
+      internalID: 837792768
       vertices: []
       indices: 
       edges: []
@@ -164,6 +206,8 @@ TextureImporter:
     nameFileIdTable:
       Heroin-Standing1 Armed_0: -971145982
       Heroin-Standing1 Armed_1: -664412713
+      Heroin-Standing1 Armed_2: 811692655
+      Heroin-Standing1 Armed_3: 837792768
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 

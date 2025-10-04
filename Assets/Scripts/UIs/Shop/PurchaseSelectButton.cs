@@ -9,6 +9,7 @@ public class PurchaseSelectButton : MonoBehaviour, IItemAssignable, ISelectHandl
 {
     private PlayerManager playerManager;
     private ShopUIManager shopUIManager;
+    private ItemDataManager itemDataManager;
     private GameManager gameManager;
 
     [Header("アニメーション対象")]
@@ -118,6 +119,16 @@ public class PurchaseSelectButton : MonoBehaviour, IItemAssignable, ISelectHandl
             }
         }
 
+        if (itemDataManager == null)
+        {
+            itemDataManager = ItemDataManager.instance;
+            if (itemDataManager == null)
+            {
+                Debug.LogError("ItemDataManagerが見つかりません。");
+                return;
+            }
+        }
+
         if (gameManager == null)
         {
             gameManager = GameManager.instance;
@@ -178,30 +189,30 @@ public class PurchaseSelectButton : MonoBehaviour, IItemAssignable, ISelectHandl
     //売却選択ボタンを初期化するメソッド
     private void InitializeSellSelectButton()
     {
-        // gameManagerが未初期化の場合に備えて、ここで取得を試みる
-        if (gameManager == null)
+        // itemDataManagerが未初期化の場合に備えて、ここで取得を試みる
+        if (itemDataManager == null)
         {
-            gameManager = GameManager.instance;
-            if (gameManager == null)
+            itemDataManager = ItemDataManager.instance;
+            if (itemDataManager == null)
             {
-                Debug.LogError("GameManagerのインスタンスが見つかりません。");
+                Debug.LogError("ItemDataManagerのインスタンスが見つかりません。");
                 return; // 処理を中断
             }
         }
 
         if (assignedItemID == null)
-        {
-            Debug.LogWarning("AssignedItemIDがnullです。");
-            return;
-        }
+            {
+                Debug.LogWarning("AssignedItemIDがnullです。");
+                return;
+            }
 
         baseItemData = null; //購入時に必要なアイテムデータを初期化
         //アイテムIDからアイテムアイコンを取得
-        Sprite itemSprite = gameManager.GetAllTypeIDtoSprite(assignedItemID);
+        Sprite itemSprite = itemDataManager.GetItemSpriteByID(assignedItemID);
         //アイテムIDから名前を取得
-        string itemName = gameManager.GetAllTypeIDtoName(assignedItemID);
+        string itemName = itemDataManager.GetItemNameByID(assignedItemID);
         //アイテムIDから売却価格を取得
-        itemPrice = gameManager.GetAllTypeIDtoSellPrice(assignedItemID);
+        itemPrice = itemDataManager.GetItemSellPriceByID(assignedItemID);
 
         // アイテムのアイコン画像を設定
         UIUtility.SetSpriteFitToSquare(itemIconImage, itemSprite, baseSize);
