@@ -15,6 +15,9 @@ public class Heroin_move : MonoBehaviour
     [Header("必須の子オブジェクト")]
     [SerializeField]
     private GameObject RobotObject;
+    
+    [SerializeField]
+    private Sprite deathSprite; // 死亡時に表示するスプライト
 
     // public float CameraOffsetY { get; private set; } = 6; //プレイヤーに対してのカメラのy座標の差分
     public bool rightFlag { get; private set; } = false; // 右向きかどうかのフラグ
@@ -429,6 +432,80 @@ public class Heroin_move : MonoBehaviour
         SetColorWithFixedBrightness(m_col); // ヘルパーメソッドを使って色を設定
     }
 
+    /// <summary>
+    /// PlayerManagerから死亡通知を受け取った際の処理
+    /// </summary>
+    private void HandlePlayerDeath()
+    {
+        EnterDeathState(); // 死亡状態に移行する関数を呼び出す
+    }
+
+    // [追加] プレイヤーを死亡状態にするための公開メソッド
+    /// <summary>
+    /// プレイヤーを死亡状態に設定します。
+    /// 操作不能にし、アニメーションを停止して死亡スプライトに切り替えます。
+    /// </summary>
+    public void EnterDeathState()
+    {
+        // プレイヤーの操作を不能にする
+        move = false;
+
+        // 物理的な挙動を完全に停止させる
+        if (rbody != null)
+        {
+            rbody.velocity = Vector2.zero;
+            rbody.isKinematic = true; // 物理演算の影響を受けなくする
+        }
+
+        // アニメーションを停止させる
+        if (m_animator != null)
+        {
+            m_animator.enabled = false;
+        }
+
+        // 死亡時のスプライトがインスペクターで設定されていれば、それに差し替える
+        if (spriteRenderer != null && deathSprite != null)
+        {
+            spriteRenderer.sprite = deathSprite;
+        }
+
+        // ダメージ点滅などの視覚効果をリセットし、通常の色に戻す
+        immunity = false;
+        if (spriteRenderer != null)
+        {
+            spriteRenderer.color = Color.white;
+        }
+    }
+
+    /// <summary>
+    /// プレイヤーの状態を死亡状態から元の活動状態に戻します。
+    /// 主にリトライやシーンの再読み込み時に呼び出すことを想定しています。
+    /// </summary>
+    public void ResetToLiveState()
+    {
+        // プレイヤーの操作を可能にする
+        move = true;
+
+        // 物理演算を再度有効にする
+        if (rbody != null)
+        {
+            rbody.isKinematic = false;
+        }
+
+        // アニメーションを再度有効にする
+        // これにより、スプライトはAnimatorによって自動的に更新されます
+        if (m_animator != null)
+        {
+            m_animator.enabled = true;
+        }
+
+        // 念のため色を元に戻す
+        if (spriteRenderer != null)
+        {
+            spriteRenderer.color = Color.white;
+        }
+    }
+
     private void OnEnable()
     {
         StartCoroutine(DelayedInitialization());
@@ -468,6 +545,7 @@ public class Heroin_move : MonoBehaviour
         }
 
         // イベントの購読
+        playerManager.OnPlayerDied += HandlePlayerDeath;
         playerManager.OnBoolStatusChanged += OnAnyBoolStatusChanged;
         playerEffectManager.OnSpeedEffectChanged += CalculateMoveSpeed;
         playerBodyManager.OnChangeBodyState += GetBodyStateData;
@@ -499,7 +577,10 @@ public class Heroin_move : MonoBehaviour
 
         // イベントを安全に解除
         if (playerManager != null)
+        {
             playerManager.OnBoolStatusChanged -= OnAnyBoolStatusChanged;
+            playerManager.OnPlayerDied -= HandlePlayerDeath;
+        }
         if (playerEffectManager != null)
             playerEffectManager.OnSpeedEffectChanged -= CalculateMoveSpeed;
         if (playerBodyManager != null)

@@ -187,11 +187,48 @@ public class FlagDrivenStatePro : MonoBehaviour
             }
         }
 
-        // // 【アニメーショントリガー】
-        // if (state.changeAnimation && targetAnimator != null && !string.IsNullOrEmpty(state.animationTrigger))
-        // {
-        //     targetAnimator.SetTrigger(state.animationTrigger);
-        // }
+        // 【アニメーションステートの再生】
+        // changeAnimationフラグがtrueの場合のみ、アニメーション関連の処理を行う
+        if (state.changeAnimation)
+        {
+            // アニメーションステート名が指定されている場合のみ、チェックと再生処理に進む
+            if (!string.IsNullOrEmpty(state.animationStateName))
+            {
+                //エラーチェック1: Animatorコンポーネントの存在を確認 
+                if (targetAnimator == null)
+                {
+                    // Animatorがないのにアニメーションを再生しようとした場合は、エラーを出す
+                    Debug.LogError(
+                        $"アニメーションステート '{state.animationStateName}' を再生しようとしましたが、"
+                            + $"ターゲットオブジェクト '{targetObject.name}' にAnimatorコンポーネントがアタッチされていません。",
+                        targetObject
+                    );
+                }
+                else
+                {
+                    //エラーチェック2: 指定されたアニメーションステートがAnimator内に存在するかを確認
+                    // Animator.HasStateはパフォーマンスのために文字列ではなくハッシュ値で比較するため、文字列をハッシュ値に変換する
+                    int stateHash = Animator.StringToHash(state.animationStateName);
+
+                    // HasState(レイヤー番号, ステートのハッシュ値) で存在をチェック
+                    if (targetAnimator.HasState(0, stateHash))
+                    {
+                        // 全てのチェックを通過した場合：アニメーションを再生
+                        targetAnimator.Play(state.animationStateName);
+                    }
+                    else
+                    {
+                        // Animator内に指定された名前のステートが存在しない場合は、エラーを出す
+                        Debug.LogError(
+                            $"Animator Controllerに '{state.animationStateName}' という名前のアニメーションステートが見つかりません。"
+                                + $"ターゲットオブジェクト '{targetObject.name}' のAnimator設定を確認してください。",
+                            targetObject
+                        );
+                    }
+                }
+            }
+            // animationStateNameが空の場合は、再生するものがないので何もしない（これはエラーではない）
+        }
 
         // // 【コライダーの状態】
         // if (state.changeColliderState && targetCollider != null && targetCollider.enabled != state.isColliderEnabled)

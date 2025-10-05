@@ -116,7 +116,7 @@ public class GameUIManager : MonoBehaviour
 
         if (playerManager != null)
         {
-            playerManager.OnChangeHP += GetPlayerHPData;
+            playerManager.OnChangeHP += OnChangeHP;
             playerManager.OnChangeWP += OnChangeWP;
             playerManager.OnChangeMaxHP += InitializePlayerHPData;
             InitializePlayerHPData(playerManager.playerMaxHP); //プレイヤーのHPの初期値を取得
@@ -137,7 +137,7 @@ public class GameUIManager : MonoBehaviour
         // オブジェクトが破棄される際などにも呼ばれるため、playerManagerが存在するか確認
         if (playerManager != null)
         {
-            playerManager.OnChangeHP -= GetPlayerHPData;
+            playerManager.OnChangeHP -= OnChangeHP;
             playerManager.OnChangeWP -= OnChangeWP;
             playerManager.OnChangeMaxHP -= InitializePlayerHPData;
         }
@@ -259,13 +259,11 @@ public class GameUIManager : MonoBehaviour
     }
 
     //プレイヤーのHPデータを取得するメソッド
-    private void GetPlayerHPData()
+    private void OnChangeHP(int newHP)
     {
-        playerHP = playerManager.GetPlayerIntStatus(PlayerStatusIntName.playerCurrentHP);
-
         if (uiRefs.PlayerHPText != null)
         {
-            uiRefs.PlayerHPText.text = playerHP.ToString();
+            uiRefs.PlayerHPText.text = newHP.ToString();
         }
     }
 

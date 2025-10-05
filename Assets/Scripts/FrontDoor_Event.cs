@@ -56,6 +56,12 @@ public class FrontDoor_Event : MonoBehaviour
 
     private void OnEnable()
     {
+        if (!GameManager.isFirstGameSceneOpen)
+        {
+            //ゲームシーンがまだ開かれていない場合は何もしない
+            return;
+        }
+        
         // 他のコンポーネントの初期化を待ってから処理を開始する
         StartCoroutine(DelayedInitialization());
     }
@@ -94,7 +100,10 @@ public class FrontDoor_Event : MonoBehaviour
     private void OnDisable()
     {
         if (!GameManager.isFirstGameSceneOpen)
+        {
+            //ゲームシーンがまだ開かれていない場合は何もしない
             return;
+        }
 
         // オブジェクトが無効になる際に、イベントの登録を解除（メモリリーク防止）
         FlagManager.OnBoolFlagChanged -= HandleFlagChange;

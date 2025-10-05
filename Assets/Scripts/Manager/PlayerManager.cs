@@ -28,12 +28,13 @@ public class PlayerManager : MonoBehaviour
     public int playerMaxWP { get; private set; } = GameConstants.GetMaxWP(1); // プレイヤーの最大WP
     #region Events
     public event Action OnQuickSlotAssigned; // クイックスロットが割り当てられたときに呼び出されるイベント
-    public event Action OnChangeHP; // HPが変化したときに呼び出されるイベント
+    public event Action<int> OnChangeHP; // HPが変化したときに呼び出されるイベント
     public event Action<int> OnChangeMaxHP; // 最大HPが変化したときに呼び出されるイベント
     public event Action<int> OnChangeMaxWP; // 最大WPが変化したときに呼び出されるイベント
     public event Action<int> OnChangeWP; // WPが変化したときに呼び出されるイベント
     public event Action<PlayerAttackType> OnChangeAttackType; // 攻撃方法が変化したときに呼び出されるイベント
     public event Action OnChangePlayerMoney; // プレイヤーの所持金が変化したときに呼び出されるイベント
+    public event Action OnPlayerDied; // プレイヤーが死亡したときに呼び出されるイベント
     public event Action<PlayerStatusBoolName, bool> OnBoolStatusChanged; // Boolステータスが変化したときに呼び出されるイベント
     #endregion
 
@@ -287,9 +288,11 @@ public class PlayerManager : MonoBehaviour
                     GameOverUIManager.instance.StartGameOver(); //ゲームオーバーの関数を呼び出す
                     return; // ゲームオーバーなのでここで処理を終了
                 }
+
+                OnPlayerDied?.Invoke(); // プレイヤーが死亡したときに呼び出されるイベントを発火
             }
         }
-        OnChangeHP?.Invoke(); // HPが変化したときに呼び出されるイベントを発火
+        OnChangeHP?.Invoke(hpAfterDamage); // HPが変化したときに呼び出されるイベントを発火
     }
 
     public void HealHP(int heal)
@@ -306,7 +309,7 @@ public class PlayerManager : MonoBehaviour
         {
             SetPlayerIntStatus(PlayerStatusIntName.playerCurrentHP, maxHP); //HPを最大HPに戻す
         }
-        OnChangeHP?.Invoke(); // HPが変化したときに呼び出されるイベントを発火
+        OnChangeHP?.Invoke(HP); // HPが変化したときに呼び出されるイベントを発火
     }
 
     public void RestoreFullHP()

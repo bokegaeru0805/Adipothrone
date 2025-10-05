@@ -2,59 +2,51 @@ using UnityEngine;
 using UnityEngine.SceneManagement;
 
 /// <summary>
-/// ゲーム起動時に初期シーンをロードし、シーンロード後に一度だけ初期化処理を実行するクラス
+/// ゲーム起動時に初期シーンをロードし、シーンロード後に一度だけ初期化処理を実行するクラス。
+/// Resourcesフォルダ内の'GameInitializeSettings'アセットから設定を読み込みます。
 /// </summary>
 public static class GameInitializer
 {
-    /// <summary>
-    /// 初期化処理が完了したか
-    /// </summary>
     public static bool IsInitialized { get; private set; } = false;
-
-    // 最初にロードしたいシーン名。
-    // 元のスクリプトの GameConstants.SceneName_Title に相当します。
-    // ご自身のプロジェクトのシーン名に合わせて変更してください。
     private const string FirstSceneName = GameConstants.SceneName_Title;
+    
+    // 設定ファイルのパス
+    private const string SETTINGS_PATH = "GameInitializeSettings";
 
-    //=================================================================================
-    // 起動時処理
-    //=================================================================================
-
-    /// <summary>
-    /// ゲーム開始時(シーン読み込み前)に実行される。
-    /// 主に、どのシーンから再生しても必ず初期シーンから始まるようにする役割を持つ。
-    /// </summary>
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
     private static void LoadStartScene()
     {
-        // 現在のシーンが目的のシーンでなければロードする
+        // 設定ファイルを読み込む処理を追加
+        var settings = Resources.Load<GameInitializeSettings>(SETTINGS_PATH);
+        // 設定ファイルが存在し、かつ有効になっている場合のみ処理を実行
+        if (settings == null || !settings.isEnabled)
+        {
+            Debug.Log("GameInitializerは無効です。現在のシーンから直接開始します。");
+            return;
+        }
+
         if (SceneManager.GetActiveScene().name != FirstSceneName)
         {
             SceneManager.LoadScene(FirstSceneName);
         }
     }
 
-    /// <summary>
-    /// シーンがロードされた後に実行される。
-    /// ゲーム全体の初期化処理をここで行う。
-    /// </summary>
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
     private static void InitializeAfterSceneLoad()
     {
-        // すでに初期化が完了している場合は、何もしない
-        if (IsInitialized)
+        // ここでも設定をチェック
+        var settings = Resources.Load<GameInitializeSettings>(SETTINGS_PATH);
+        if (settings == null || !settings.isEnabled)
         {
+            // 初期化機能が無効な場合は、IsInitializedフラグも立てない
             return;
         }
-
-        // 現在のシーンが初期シーンの場合にのみ、初期化処理を実行する
+        
+        if (IsInitialized) return;
+        
         if (SceneManager.GetActiveScene().name == FirstSceneName)
         {
-            // --- ここから初期化処理 ---
-            // 元のStartupInitializerのStart()にあった処理です。
             SaveLoadManager.instance.DisableSave();
-
-            // 初期化完了フラグを立てる
             IsInitialized = true;
         }
     }

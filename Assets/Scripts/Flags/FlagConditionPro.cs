@@ -110,9 +110,11 @@ public class StatePro
     [Tooltip("Trueの場合、次にいずれかのエリアを出るまで位置の変更を遅らせます。")]
     public bool delayPositionUntilAreaExit = false;
 
-    // [Header("アニメーション")]
-    // public bool changeAnimation;
-    // public string animationTrigger;
+    [Header("アニメーション")]
+    [Tooltip("アニメーションの状態を変更するかどうか")]
+    public bool changeAnimation = false;
+    [Tooltip("再生したいアニメーションステートの名前（Animator Controller内のステート名と完全に一致させる）")]
+    public string animationStateName;
 
     // [Header("コライダー")]
     // public bool changeColliderState;
