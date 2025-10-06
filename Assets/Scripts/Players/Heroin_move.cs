@@ -15,7 +15,7 @@ public class Heroin_move : MonoBehaviour
     [Header("必須の子オブジェクト")]
     [SerializeField]
     private GameObject RobotObject;
-    
+
     [SerializeField]
     private Sprite deathSprite; // 死亡時に表示するスプライト
 
@@ -440,7 +440,6 @@ public class Heroin_move : MonoBehaviour
         EnterDeathState(); // 死亡状態に移行する関数を呼び出す
     }
 
-    // [追加] プレイヤーを死亡状態にするための公開メソッド
     /// <summary>
     /// プレイヤーを死亡状態に設定します。
     /// 操作不能にし、アニメーションを停止して死亡スプライトに切り替えます。
@@ -546,6 +545,7 @@ public class Heroin_move : MonoBehaviour
 
         // イベントの購読
         playerManager.OnPlayerDied += HandlePlayerDeath;
+        playerManager.OnPlayerRevived += ResetToLiveState;
         playerManager.OnBoolStatusChanged += OnAnyBoolStatusChanged;
         playerEffectManager.OnSpeedEffectChanged += CalculateMoveSpeed;
         playerBodyManager.OnChangeBodyState += GetBodyStateData;
@@ -580,6 +580,7 @@ public class Heroin_move : MonoBehaviour
         {
             playerManager.OnBoolStatusChanged -= OnAnyBoolStatusChanged;
             playerManager.OnPlayerDied -= HandlePlayerDeath;
+            playerManager.OnPlayerRevived -= ResetToLiveState;
         }
         if (playerEffectManager != null)
             playerEffectManager.OnSpeedEffectChanged -= CalculateMoveSpeed;

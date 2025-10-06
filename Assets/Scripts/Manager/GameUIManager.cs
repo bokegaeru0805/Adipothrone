@@ -261,6 +261,9 @@ public class GameUIManager : MonoBehaviour
     //プレイヤーのHPデータを取得するメソッド
     private void OnChangeHP(int newHP)
     {
+        playerHP = newHP; // プレイヤーの現在のHPを更新
+
+        // HPテキストを更新
         if (uiRefs.PlayerHPText != null)
         {
             uiRefs.PlayerHPText.text = newHP.ToString();

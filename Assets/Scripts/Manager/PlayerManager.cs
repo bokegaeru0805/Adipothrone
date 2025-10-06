@@ -26,6 +26,8 @@ public class PlayerManager : MonoBehaviour
     private GameObject playerGameObject;
     public int playerMaxHP { get; private set; } = GameConstants.GetMaxHP(1); // プレイヤーの最大HP
     public int playerMaxWP { get; private set; } = GameConstants.GetMaxWP(1); // プレイヤーの最大WP
+    private float fadeOutDuration = 2f; // フェードアウトにかかる時間
+    private bool isDying = false; //死亡演出が進行中かどうかのフラグ
     #region Events
     public event Action OnQuickSlotAssigned; // クイックスロットが割り当てられたときに呼び出されるイベント
     public event Action<int> OnChangeHP; // HPが変化したときに呼び出されるイベント
@@ -35,6 +37,7 @@ public class PlayerManager : MonoBehaviour
     public event Action<PlayerAttackType> OnChangeAttackType; // 攻撃方法が変化したときに呼び出されるイベント
     public event Action OnChangePlayerMoney; // プレイヤーの所持金が変化したときに呼び出されるイベント
     public event Action OnPlayerDied; // プレイヤーが死亡したときに呼び出されるイベント
+    public event Action OnPlayerRevived; // プレイヤーが復活したときに呼び出されるイベント
     public event Action<PlayerStatusBoolName, bool> OnBoolStatusChanged; // Boolステータスが変化したときに呼び出されるイベント
     #endregion
 
@@ -254,6 +257,10 @@ public class PlayerManager : MonoBehaviour
 
     public void DamageHP(int damage)
     {
+        // 既に死亡処理が始まっている場合は、重複して実行しない
+        if (isDying)
+            return;
+
         // ダメージを受ける前のHPと最大HPを取得
         int hpBeforeDamage = GetPlayerIntStatus(PlayerStatusIntName.playerCurrentHP);
         int playerCurrentMaxHP = playerMaxHP;
@@ -266,9 +273,12 @@ public class PlayerManager : MonoBehaviour
         SetPlayerIntStatus(PlayerStatusIntName.playerCurrentHP, hpBeforeDamage - damage); //HPを更新
 
         int hpAfterDamage = GetPlayerIntStatus(PlayerStatusIntName.playerCurrentHP);
-        bool isEnableSave = SaveLoadManager.instance?.isEnableSave ?? false;
 
-        if (hpAfterDamage <= 0 && GameOverUIManager.instance != null)
+        // HPが変化したときに呼び出されるイベントを発火
+        // 復活の処理の関係から、OnPlayerDiedイベントの前に発火させる
+        OnChangeHP?.Invoke(hpAfterDamage);
+
+        if (hpAfterDamage <= 0)
         {
             if (hasGutsEffect)
             {
@@ -277,39 +287,92 @@ public class PlayerManager : MonoBehaviour
             }
             else
             {
-                // 90%未満だった場合、通常通りゲームオーバー処理
-                SetPlayerIntStatus(PlayerStatusIntName.playerCurrentHP, 0); // HPが0以下になった場合、HPを0に設定
-                if (isEnableSave)
-                {
-                    fastTravelManager?.ExecuteDeathFastTravel(); // 死亡時のファストトラベルを実行
-                }
-                else
-                {
-                    GameOverUIManager.instance.StartGameOver(); //ゲームオーバーの関数を呼び出す
-                    return; // ゲームオーバーなのでここで処理を終了
-                }
+                // 死亡処理フラグを立て、重複実行を防ぐ
+                isDying = true;
 
-                OnPlayerDied?.Invoke(); // プレイヤーが死亡したときに呼び出されるイベントを発火
+                // HPを0に確定
+                SetPlayerIntStatus(PlayerStatusIntName.playerCurrentHP, 0);
+
+                // 死亡時のSEを再生
+                SEManager.instance.PlayPlayerActionSE(SE_PlayerAction.Death1);
+
+                // プレイヤーが死亡したときに呼び出されるイベントを発火
+                // 復活処理の関係から、ExecuteDeathFastTravelの前に発火させる
+                OnPlayerDied?.Invoke();
+
+                // isEnableSaveの値を取得
+                bool isEnableSave = SaveLoadManager.instance?.isEnableSave ?? false;
+
+                // 死亡演出のコルーチンを開始
+                StartCoroutine(DeathSequenceCoroutine(isEnableSave));
             }
         }
-        OnChangeHP?.Invoke(hpAfterDamage); // HPが変化したときに呼び出されるイベントを発火
+    }
+
+    /// <summary>
+    /// 死亡演出（時間停止、フェード、遅延）を順次実行します。
+    /// </summary>
+    private IEnumerator DeathSequenceCoroutine(bool isSaveEnabled)
+    {
+        // 1. 時間を停止
+        TimeManager.instance?.SetEnemyMovePaused(true); // 敵の動きを停止
+
+        // 2. フェードアウトを開始
+        if (FadeCanvas.instance != null)
+        {
+            FadeCanvas.instance.FadeOut(isSaveEnabled ? fadeOutDuration : fadeOutDuration - 0.5f);
+        }
+        else
+        {
+            Debug.LogWarning("FadeCanvasのインスタンスが見つかりません。");
+        }
+
+        // 3. さらに指定したfadeOutDuration秒数待機
+        yield return new WaitForSecondsRealtime(isSaveEnabled ? fadeOutDuration : fadeOutDuration - 0.5f);
+
+        // 4. 時間の停止を解除し、最終処理を実行
+        TimeManager.instance?.SetEnemyMovePaused(false); // 敵の動きを再開
+
+        if (isSaveEnabled)
+        {
+            fastTravelManager?.ExecuteDeathFastTravel(); // 死亡時のファストトラベルを実行
+        }
+        else
+        {
+            GameOverUIManager.instance.StartGameOver(); //ゲームオーバーの関数を呼び出す
+        }
+
+        // 5. 死亡処理フラグをリセット
+        isDying = false;
     }
 
     public void HealHP(int heal)
     {
+        int currentHP = GetPlayerIntStatus(PlayerStatusIntName.playerCurrentHP);
+        bool wasDead = currentHP <= 0; // 回復前に死亡していたかを記録
         int maxHP = playerMaxHP;
-        int HP = GetPlayerIntStatus(PlayerStatusIntName.playerCurrentHP);
 
-        if (HP < maxHP)
+        //heal分HPを増やす
+        if (currentHP < maxHP)
         {
-            SetPlayerIntStatus(PlayerStatusIntName.playerCurrentHP, HP + heal); //heal分HPを増やす
+            SetPlayerIntStatus(PlayerStatusIntName.playerCurrentHP, currentHP + heal);
         }
-        HP = GetPlayerIntStatus(PlayerStatusIntName.playerCurrentHP);
-        if (HP > maxHP)
+
+        // HPが最大値を超えないように調整
+        int newHP = GetPlayerIntStatus(PlayerStatusIntName.playerCurrentHP);
+        if (newHP > maxHP)
         {
-            SetPlayerIntStatus(PlayerStatusIntName.playerCurrentHP, maxHP); //HPを最大HPに戻す
+            newHP = maxHP;
+            SetPlayerIntStatus(PlayerStatusIntName.playerCurrentHP, newHP);
         }
-        OnChangeHP?.Invoke(HP); // HPが変化したときに呼び出されるイベントを発火
+
+        // もし死亡状態からHPが0より大きくなったら、復活イベントを発行
+        if (wasDead && newHP > 0)
+        {
+            OnPlayerRevived?.Invoke();
+        }
+
+        OnChangeHP?.Invoke(newHP); // HPが変化したときに呼び出されるイベントを発火
     }
 
     public void RestoreFullHP()

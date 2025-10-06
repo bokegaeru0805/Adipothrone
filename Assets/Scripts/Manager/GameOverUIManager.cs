@@ -59,8 +59,8 @@ public class GameOverUIManager : MonoBehaviour
             Debug.LogWarning("GameOver画面で、最初に選ばれるボタンが設定されていません");
         }
 
-        BGMManager.instance!.Play(BGMCategory.GameOver);
         //GameOverBGMをループなしで流す
+        BGMManager.instance!.Play(BGMCategory.GameOver);
 
         // フェードイン処理
         foreach (var img in uiRefs.GameOverPanel.GetComponentsInChildren<Image>())
@@ -68,7 +68,7 @@ public class GameOverUIManager : MonoBehaviour
             if (img != null)
             {
                 img.color = new Color(img.color.r, img.color.g, img.color.b, 0f); // 最初に透明にする
-                img.DOFade(1f, 1f).SetUpdate(true); // 1秒かけてフェードイン
+                img.DOFade(1f, 0.5f).SetUpdate(true); // 0.5秒かけてフェードイン
             }
         }
     }

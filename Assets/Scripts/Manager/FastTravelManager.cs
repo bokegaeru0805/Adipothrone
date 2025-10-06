@@ -100,6 +100,5 @@ public class FastTravelManager : MonoBehaviour
             .LastUsedFastTravelID;
         FastTravelName selectedFastTravelID = (FastTravelName)lastUsedFastTravelID;
         ExecuteFastTravel(selectedFastTravelID);
-        SEManager.instance.PlayPlayerActionSE(SE_PlayerAction.Death1); // 死亡時のSEを再生
     }
 }

@@ -1,4 +1,5 @@
 using UnityEngine;
+using System;
 
 /// <summary>
 /// プレイヤーのレベルと経験値を専門に管理するクラス。
@@ -16,6 +17,7 @@ public class PlayerLevelManager : MonoBehaviour
     public int playerLv { get; private set; } = 1; // プレイヤーのレベル
     public float attackLvActualDeltaValue { get; private set; } = 0; // レベルによる攻撃力の変化値
     public int defenseLvActualDeltaValue { get; private set; } = 0; // レベルによる防御力の変化値
+    public event Action<int> OnLeveledUp; //レベルアップ時に発行されるイベント
 
     private void Awake()
     {
@@ -105,6 +107,7 @@ public class PlayerLevelManager : MonoBehaviour
         if (levelIncreased > 0)
         {
             GameUIManager.instance?.ShowLevelUpUI(newLevel); // レベルアップのメッセージを表示
+            OnLeveledUp?.Invoke(levelIncreased); //レベルアップしたことを通知する
         }
     }
 
