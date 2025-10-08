@@ -349,7 +349,7 @@ public class NightBorneMoveController : MonoBehaviour, IEnemyResettable
             }
             else
             {
-                stateController.SetDamageAmount(meleeAttackDamage); // 剣のダメージ量を設定
+                stateController.SetNormalDamage(meleeAttackDamage); // 剣のダメージ量を設定
             }
 
             swordCollider = swordObject.GetComponent<CapsuleCollider2D>();
@@ -978,7 +978,7 @@ public class NightBorneMoveController : MonoBehaviour, IEnemyResettable
                 var damageController = funnelDamageControllers[i];
                 if (damageController != null)
                 {
-                    damageController.SetDamageAmount(funnelAttackDamage); // 攻撃ダメージを設定
+                    damageController.SetNormalDamage(funnelAttackDamage); // 攻撃ダメージを設定
                 }
 
                 // 個別状態を「攻撃中」に設定
@@ -1017,7 +1017,7 @@ public class NightBorneMoveController : MonoBehaviour, IEnemyResettable
                 var damageController = funnelDamageControllers[i];
                 if (damageController != null)
                 {
-                    damageController.SetDamageAmount(
+                    damageController.SetNormalDamage(
                         isHPbelowHalf
                             ? funnelTargetAttackDamageBelowHalf
                             : funnelTargetAttackDamageAboveHalf
@@ -1068,7 +1068,7 @@ public class NightBorneMoveController : MonoBehaviour, IEnemyResettable
                 var damageController = funnelDamageControllers[i];
                 if (damageController != null)
                 {
-                    damageController.SetDamageAmount(funnelAttackDamage); // 攻撃ダメージを設定
+                    damageController.SetNormalDamage(funnelAttackDamage); // 攻撃ダメージを設定
                 }
 
                 // 個別状態を「攻撃中」に設定
@@ -1120,7 +1120,7 @@ public class NightBorneMoveController : MonoBehaviour, IEnemyResettable
                 var damageController = funnelDamageControllers[i];
                 if (damageController != null)
                 {
-                    damageController.SetDamageAmount(funnelAttackDamage); // 攻撃ダメージを設定
+                    damageController.SetNormalDamage(funnelAttackDamage); // 攻撃ダメージを設定
                 }
 
                 funnelStates[i] = IndividualFunnelState.Attacking;

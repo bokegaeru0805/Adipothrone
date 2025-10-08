@@ -153,7 +153,7 @@ public class BirdNormalMoveController : MonoBehaviour, IEnemyResettable
                 contactDamageObject.GetComponent<ContactDamageController>(); // ContactDamageControllerを子オブジェクトから取得
             if (contactDamageController != null)
             {
-                contactDamageController.SetDamageAmount(damage); //敵の攻撃力を設定
+                contactDamageController.SetNormalDamage(damage); //敵の攻撃力を設定
             }
             else
             {

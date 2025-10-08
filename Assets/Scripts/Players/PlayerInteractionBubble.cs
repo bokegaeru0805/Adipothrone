@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Linq;
+using DG.Tweening;
 using UnityEngine;
 
 /// <summary>
@@ -22,12 +23,20 @@ public class PlayerInteractionBubble : MonoBehaviour
     [SerializeField]
     private Sprite areaTransitionBubbleSprite;
 
+    private Transform bubbleTransform; // 吹き出しのTransformをキャッシュ
+
     // 実行中にタグ名（string）から対応するスプライト（Sprite）を高速に引くための辞書
     private Dictionary<string, Sprite> bubbleDictionary;
 
     // 接触中の「Collider2D」を直接保持するリスト
     private List<Collider2D> activeColliders = new List<Collider2D>();
     private bool isTalking = false; // 会話状態を保存するローカル変数
+    private Collider2D monitoredCollider = null; // タグの変更を監視している対象のコライダー
+    private string monitoredTag = null; // 監視対象のコライダーの前回チェック時のタグ
+
+    private float floatingHeight = 0.3f; //上下に浮遊する移動幅
+    private float floatingDuration = 1.5f; //浮遊アニメーションの片道にかかる時間（秒）
+    private Vector3 initialPosition; // 浮遊アニメーションの基準となる初期座標(ローカル座標)
 
     private void Awake()
     {
@@ -36,6 +45,10 @@ public class PlayerInteractionBubble : MonoBehaviour
             Debug.LogError("吹き出し用のSpriteRendererが設定されていません。", this);
             this.enabled = false;
             return;
+        }
+        else
+        {
+            bubbleTransform = bubbleSpriteRenderer.transform;
         }
 
         // GameConstantsで定義されたタグと、Inspectorで設定されたスプライトを紐付けて辞書を作成
@@ -49,6 +62,8 @@ public class PlayerInteractionBubble : MonoBehaviour
             bubbleDictionary[GameConstants.AreaTransitionTagName] = areaTransitionBubbleSprite;
         }
 
+        // 初期位置を保存
+        initialPosition = bubbleTransform.localPosition;
         // ゲーム開始時は吹き出しを非表示にする
         bubbleSpriteRenderer.enabled = false;
     }
@@ -72,6 +87,26 @@ public class PlayerInteractionBubble : MonoBehaviour
     {
         // メモリリークを防ぐため、必ず購読を解除
         GameManager.OnTalkingStateChanged -= HandleTalkingStateChanged;
+    }
+
+    /// <summary>
+    /// 毎フレーム、監視対象のタグが変更されていないかチェックする
+    /// </summary>
+    private void Update()
+    {
+        // 監視対象のコライダーが存在するかチェック
+        if (monitoredCollider != null)
+        {
+            // 監視対象のコライダーの現在のタグを取得
+            string currentTag = monitoredCollider.tag;
+
+            // 記憶しておいたタグと現在のタグが異なる場合、タグが変更されたと判断
+            if (currentTag != monitoredTag)
+            {
+                // 吹き出しの状態を再評価する
+                UpdateBubbleState();
+            }
+        }
     }
 
     private void OnTriggerEnter2D(Collider2D other)
@@ -105,7 +140,10 @@ public class PlayerInteractionBubble : MonoBehaviour
         // もし会話中なら、他の条件に関わらず吹き出しを非表示にする
         if (isTalking)
         {
-            bubbleSpriteRenderer.enabled = false;
+            SetBubbleDisplayState(false);
+            // 監視対象をクリア
+            monitoredCollider = null;
+            monitoredTag = null;
             return;
         }
 
@@ -117,7 +155,10 @@ public class PlayerInteractionBubble : MonoBehaviour
         // 接触している対象がなければ非表示にする
         if (activeColliders.Count == 0)
         {
-            bubbleSpriteRenderer.enabled = false;
+            SetBubbleDisplayState(false);
+            // 監視対象をクリア
+            monitoredCollider = null;
+            monitoredTag = null;
             return;
         }
 
@@ -125,18 +166,51 @@ public class PlayerInteractionBubble : MonoBehaviour
         Collider2D latestCollider = activeColliders.Last();
         string latestTag = latestCollider.tag;
 
+        // 新しい監視対象として、最後に接触したコライダーとその現在のタグを記録
+        monitoredCollider = latestCollider;
+        monitoredTag = latestTag;
+
         // 最後に接触したコライダーの「現在の」タグが、表示対象のタグであるか再確認
         if (bubbleDictionary.TryGetValue(latestTag, out Sprite bubbleSprite))
         {
             // 対応するスプライトをセットして表示
             bubbleSpriteRenderer.sprite = bubbleSprite;
-            bubbleSpriteRenderer.enabled = true;
+            SetBubbleDisplayState(true);
         }
         else
         {
             // 最新のコライダーのタグが表示対象外（例："Untagged"）に変わっていた場合、非表示にする
-            bubbleSpriteRenderer.enabled = false;
+            SetBubbleDisplayState(false);
         }
+    }
+
+    // <summary>
+    /// 吹き出しの表示・非表示を切り替え、表示する場合は浮遊アニメーションを開始します。
+    /// </summary>
+    /// <param name="shouldShow">trueの場合表示しアニメーション開始、falseの場合非表示にしアニメーション停止。</param>
+    private void SetBubbleDisplayState(bool shouldShow)
+    {
+        // 既存のTweenがあれば停止してから新しいTweenを開始する（安全のため）
+        // このオブジェクトに紐づくDOTweenの動作をすべて停止
+        bubbleTransform.DOKill();
+
+        if (shouldShow)
+        {
+            // DOMoveYを使って、Y軸方向にアニメーションさせる
+            bubbleTransform
+                .DOLocalMoveY(initialPosition.y + floatingHeight, floatingDuration)
+                .SetEase(Ease.InOutSine) // 動きの緩急をサインカーブのように滑らかにする
+                .SetLoops(-1, LoopType.Yoyo) // 無限に（-1）、行って戻ってくる（Yoyo）ループを設定
+                .SetUpdate(UpdateType.Normal); // Time.timeScaleの影響を受けるように設定（デフォルト）
+        }
+        else
+        {
+            // 座標をアニメーション開始前の初期位置に戻す
+            bubbleTransform.localPosition = initialPosition;
+        }
+
+        // 吹き出しの表示状態を更新
+        bubbleSpriteRenderer.enabled = shouldShow;
     }
 
     /// <summary>

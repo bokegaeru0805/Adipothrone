@@ -24,6 +24,7 @@ public class PlayerManager : MonoBehaviour
     private FastTravelManager fastTravelManager; // ファストトラベルマネージャー
 
     private GameObject playerGameObject;
+    private Heroin_move heroinMove;
     public int playerMaxHP { get; private set; } = GameConstants.GetMaxHP(1); // プレイヤーの最大HP
     public int playerMaxWP { get; private set; } = GameConstants.GetMaxWP(1); // プレイヤーの最大WP
     private float fadeOutDuration = 2f; // フェードアウトにかかる時間
@@ -35,6 +36,7 @@ public class PlayerManager : MonoBehaviour
     public event Action<int> OnChangeMaxWP; // 最大WPが変化したときに呼び出されるイベント
     public event Action<int> OnChangeWP; // WPが変化したときに呼び出されるイベント
     public event Action<PlayerAttackType> OnChangeAttackType; // 攻撃方法が変化したときに呼び出されるイベント
+    public event Action OnDamageReaction; // プレイヤーがダメージを受けたときに呼び出されるイベント
     public event Action OnChangePlayerMoney; // プレイヤーの所持金が変化したときに呼び出されるイベント
     public event Action OnPlayerDied; // プレイヤーが死亡したときに呼び出されるイベント
     public event Action OnPlayerRevived; // プレイヤーが復活したときに呼び出されるイベント
@@ -90,6 +92,10 @@ public class PlayerManager : MonoBehaviour
             if (playerGameObject == null)
             {
                 Debug.LogError("PlayerGameObjectが見つかりません");
+            }
+            else
+            {
+                heroinMove = playerGameObject.GetComponent<Heroin_move>();
             }
         }
 
@@ -255,8 +261,78 @@ public class PlayerManager : MonoBehaviour
         }
     }
 
-    public void DamageHP(int damage)
+    /// <summary>
+    /// 【通常ダメージ】を受け付け、防御力を考慮した最終ダメージを計算して適用します。
+    /// 外部（敵の攻撃やプレイヤーの被弾処理）からはこの関数を呼び出します。
+    /// </summary>
+    /// <param name="baseDamage">防御計算前の基本ダメージ量</param>
+    public void TakeNormalDamage(int baseDamage)
     {
+        // PlayerEffectManagerから最終的な防御力を取得
+        int damageReduction = EffectManager.CalculateFinalDefensePower();
+
+        // 最終ダメージを計算（最低でも0ダメージ）
+        int finalDamage = Mathf.Max(0, baseDamage - damageReduction);
+
+        // ダメージが1以上あれば、実際にHPを減らす処理を呼び出す
+        if (finalDamage > 0)
+        {
+            ApplyDamage(finalDamage);
+        }
+    }
+
+    /// <summary>
+    /// 【最大HP】に対する割合でダメージを与えます。
+    /// </summary>
+    /// <param name="damageRatio">最大HPに対するダメージの割合（例: 0.25f = 25%）</param>
+    public void DamageHPByMaxHPRatio(float damageRatio)
+    {
+        // ダメージ割合がマイナスや0の場合は処理を中断
+        if (damageRatio <= 0)
+            return;
+
+        // プレイヤーの最大HPを基準に、実際のダメージ量を計算
+        // 最低でも1ダメージは保証する
+        int damageAmount = Mathf.Max(1, Mathf.RoundToInt(playerMaxHP * damageRatio));
+
+        // 既存のダメージ処理関数を呼び出す
+        ApplyDamage(damageAmount);
+    }
+
+    /// <summary>
+    /// 【現在HP】に対する割合でダメージを与えます。HPが低いほどダメージ量が減るため、この攻撃単体で倒されることはありません。
+    /// </summary>
+    /// <param name="damageRatio">現在HPに対するダメージの割合（例: 0.5f = 50%）</param>
+    public void DamageHPByCurrentHPRatio(float damageRatio)
+    {
+        // ダメージ割合がマイナスや0の場合は処理を中断
+        if (damageRatio <= 0)
+            return;
+
+        // プレイヤーの現在HPを取得
+        int currentHP = GetPlayerIntStatus(PlayerStatusIntName.playerCurrentHP);
+
+        // 現在HPを基準に、実際のダメージ量を計算
+        // 最低でも1ダメージは保証する
+        int damageAmount = Mathf.Max(1, Mathf.RoundToInt(currentHP * damageRatio));
+
+        // 既存のダメージ処理関数を呼び出す
+        ApplyDamage(damageAmount);
+    }
+
+    /// <summary>
+    /// 計算済みの最終ダメージをHPに適用し、死亡判定などを行う内部専用関数。
+    /// </summary>
+    /// <param name="damage">適用する最終ダメージ量</param>
+    private void ApplyDamage(int damage)
+    {
+        // 全てのダメージ処理の入口で、まず無敵状態をチェックする
+        if (heroinMove != null && heroinMove.IsImmune)
+        {
+            // プレイヤーが無敵状態なら、ダメージ処理を一切行わずに終了
+            return; 
+        }
+
         // 既に死亡処理が始まっている場合は、重複して実行しない
         if (isDying)
             return;
@@ -272,7 +348,10 @@ public class PlayerManager : MonoBehaviour
         SEManager.instance?.PlayPlayerActionSE(SE_PlayerAction.Damage1); //ダメージの効果音を鳴らす
         SetPlayerIntStatus(PlayerStatusIntName.playerCurrentHP, hpBeforeDamage - damage); //HPを更新
 
-        int hpAfterDamage = GetPlayerIntStatus(PlayerStatusIntName.playerCurrentHP);
+        // HPを減らした直後に、リアクションを促すイベントを発行する
+        OnDamageReaction?.Invoke();
+
+        int hpAfterDamage = hpBeforeDamage - damage;
 
         // HPが変化したときに呼び出されるイベントを発火
         // 復活の処理の関係から、OnPlayerDiedイベントの前に発火させる
@@ -328,7 +407,9 @@ public class PlayerManager : MonoBehaviour
         }
 
         // 3. さらに指定したfadeOutDuration秒数待機
-        yield return new WaitForSecondsRealtime(isSaveEnabled ? fadeOutDuration : fadeOutDuration - 0.5f);
+        yield return new WaitForSecondsRealtime(
+            isSaveEnabled ? fadeOutDuration : fadeOutDuration - 0.5f
+        );
 
         // 4. 時間の停止を解除し、最終処理を実行
         TimeManager.instance?.SetEnemyMovePaused(false); // 敵の動きを再開

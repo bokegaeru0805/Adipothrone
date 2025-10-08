@@ -297,7 +297,7 @@ public class PlayerEffectManager : MonoBehaviour
         while (true)
         {
             // 毒のダメージを適用
-            playerManager.DamageHP(poisonDamageRate);
+            playerManager.TakeNormalDamage(poisonDamageRate);
             //待機する
             yield return new WaitForSeconds(poisonInterval);
         }

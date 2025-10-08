@@ -56,6 +56,7 @@ public class Heroin_move : MonoBehaviour
     private int AnimBodyState; //アニメーションの体形の状態を保存する変数
     private bool isAttacking = false; // 攻撃中かどうかのフラグ
     private bool immunity = false; //無敵かどうかのフラグ
+    public bool IsImmune => immunity; // 外部から現在の無敵状態を読み取るための公開プロパティ
     private bool isFadingOut = true; //不透明度が減少するかどうかのフラグ
     private bool move = true; //操作できるかどうかのフラグ
     private bool isFirstGetKey = false; //初めてキー入力をしたかどうかのフラグ
@@ -373,36 +374,32 @@ public class Heroin_move : MonoBehaviour
     }
 
     /// <summary>
-    /// プレイヤーがダメージを受けたときの処理
-    /// /// </summary>
-    public void DamageHP(int damageAmount)
+    /// [変更] ダメージを受けたときの物理的なリアクション処理。
+    /// PlayerManagerからのOnDamageReactionイベントによって呼び出される。
+    /// </summary>
+    private void ReactToDamage() // 引数なし、privateに変更
     {
-        if (Time.timeScale > 0)
+        // 時間が止まっているか、プレイヤーが無敵状態なら物理反応も起こさない
+        if (Time.timeScale <= 0 || IsImmune)
         {
-            int damageReduction = playerEffectManager.CalculateFinalDefensePower(); //ダメージ減少効果を取得する
-
-            damageAmount -= damageReduction; //ダメージから防御減少効果を引く
-
-            if (damageAmount > 0 && !immunity)
-            {
-                //ダメージを与える処理
-                playerManager.DamageHP(damageAmount);
-                //自分を動けなくする
-                move = false;
-
-                if (rightFlag)
-                { //右側からあたったとき
-                    rbody.velocity = new Vector2(-damageX, 0); //本来は0の部分にdamageyが入っていた
-                    rbody.velocity = new Vector2(-damageX, rbody.velocity.y);
-                }
-                else
-                {
-                    rbody.velocity = new Vector2(damageX, 0);
-                    rbody.velocity = new Vector2(damageX, rbody.velocity.y);
-                }
-                StartCoroutine(MoveStart());
-            }
+            return;
         }
+
+        // ここは物理的な反応のみに専念する
+        move = false; // 一時的に操作不能にする
+
+        // ノックバック処理
+        if (rightFlag) // 右を向いているとき
+        {
+            rbody.velocity = new Vector2(-damageX, rbody.velocity.y);
+        }
+        else // 左を向いているとき
+        {
+            rbody.velocity = new Vector2(damageX, rbody.velocity.y);
+        }
+
+        // 無敵時間などを開始するコルーチンを呼び出す
+        StartCoroutine(MoveStart());
     }
 
     private IEnumerator MoveStart() //velocity再開
@@ -544,6 +541,7 @@ public class Heroin_move : MonoBehaviour
         }
 
         // イベントの購読
+        playerManager.OnDamageReaction += ReactToDamage;
         playerManager.OnPlayerDied += HandlePlayerDeath;
         playerManager.OnPlayerRevived += ResetToLiveState;
         playerManager.OnBoolStatusChanged += OnAnyBoolStatusChanged;
@@ -579,6 +577,7 @@ public class Heroin_move : MonoBehaviour
         if (playerManager != null)
         {
             playerManager.OnBoolStatusChanged -= OnAnyBoolStatusChanged;
+            playerManager.OnDamageReaction -= ReactToDamage;
             playerManager.OnPlayerDied -= HandlePlayerDeath;
             playerManager.OnPlayerRevived -= ResetToLiveState;
         }

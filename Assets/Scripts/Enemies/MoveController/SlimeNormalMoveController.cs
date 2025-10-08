@@ -166,7 +166,7 @@ public class SlimeNormalMoveController : MonoBehaviour, IEnemyResettable
         IdleHash = Animator.StringToHash("Blue Idle - Animation");
 
         contactDamageController = GetComponent<ContactDamageController>();
-        contactDamageController?.SetDamageAmount(damage);
+        contactDamageController?.SetNormalDamage(damage);
 
         ResetState();
     }

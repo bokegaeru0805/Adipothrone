@@ -141,7 +141,7 @@ public class RainSource : MonoBehaviour
                 var script = rain.GetComponent<ContactDamageController>(); //ダメージに関するスクリプトを取得
                 if (script != null)
                 {
-                    script.SetDamageAmount(rainDamage); // 雨のダメージを設定
+                    script.SetNormalDamage(rainDamage); // 雨のダメージを設定
                 }
                 else
                 {
@@ -200,7 +200,7 @@ public class RainSource : MonoBehaviour
                 var script = rain.GetComponent<ContactDamageController>(); //ダメージに関するスクリプトを取得
                 if (script != null)
                 {
-                    script.SetDamageAmount(rainDamage); // 雨のダメージを設定
+                    script.SetNormalDamage(rainDamage); // 雨のダメージを設定
                 }
                 else
                 {

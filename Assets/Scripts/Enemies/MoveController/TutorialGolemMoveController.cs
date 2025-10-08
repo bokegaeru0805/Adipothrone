@@ -166,7 +166,7 @@ public class TutorialGolemMoveController : MonoBehaviour
                 var script = shoot.GetComponent<ContactDamageController>(); //ダメージに関するスクリプトを取得
                 if (script != null)
                 {
-                    script.SetDamageAmount(ShootDamage); //弾のダメージを設定
+                    script.SetNormalDamage(ShootDamage); //弾のダメージを設定
                 }
                 else
                 {

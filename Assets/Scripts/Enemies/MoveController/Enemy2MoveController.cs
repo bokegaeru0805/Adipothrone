@@ -251,7 +251,7 @@ public class Enemy2MoveController : MonoBehaviour, IEnemyResettable
                 var script = newGameObject.GetComponent<ContactDamageController>(); //ダメージに関するスクリプトを取得
                 if (script != null)
                 {
-                    script.SetDamageAmount(shootDamage); //弾のダメージを設定
+                    script.SetNormalDamage(shootDamage); //弾のダメージを設定
                 }
                 else
                 {

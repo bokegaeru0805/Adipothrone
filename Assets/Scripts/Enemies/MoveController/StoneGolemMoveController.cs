@@ -242,7 +242,7 @@ public class StoneGolemMoveController : MonoBehaviour
             }
             else
             {
-                armStateController.SetDamageAmount(meleeAttackDamage); // アームのダメージ量を設定
+                armStateController.SetNormalDamage(meleeAttackDamage); // アームのダメージ量を設定
             }
             armObject.tag = GameConstants.DamageableEnemyTagName; // アームのタグを設定
             armObject.SetActive(false); // 初期状態ではアームオブジェクトを非表示にする
@@ -268,7 +268,7 @@ public class StoneGolemMoveController : MonoBehaviour
             }
             else
             {
-                stateController.SetDamageAmount(hammerDamage); // ハンマーのダメージ量を設定
+                stateController.SetNormalDamage(hammerDamage); // ハンマーのダメージ量を設定
             }
             hammerObject.tag = GameConstants.DamageableEnemyTagName; // ハンマーのタグを設定
             hammerObject.SetActive(false); // 初期状態ではハンマーオブジェクトを非表示にする
@@ -570,7 +570,7 @@ public class StoneGolemMoveController : MonoBehaviour
         }
         else
         {
-            stateController.SetDamageAmount(crawlingRockDamage); // 這う岩のダメージ量を設定
+            stateController.SetNormalDamage(crawlingRockDamage); // 這う岩のダメージ量を設定
         }
         myPos.y += 1f; // 這う岩の位置を自分の位置から少し上にずらす
         crawlingRock.transform.position = myPos; //弾の位置を設定
@@ -752,7 +752,7 @@ public class StoneGolemMoveController : MonoBehaviour
                 }
                 else
                 {
-                    stateController.SetDamageAmount(chargeAttackDamage); // 岩のダメージ量を設定
+                    stateController.SetNormalDamage(chargeAttackDamage); // 岩のダメージ量を設定
                 }
 
                 // 岩の半径を取得（SphereCollider or CircleCollider2D を想定）

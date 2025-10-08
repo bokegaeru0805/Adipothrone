@@ -26,9 +26,6 @@ public class GhostwolfMoveController : MonoBehaviour
     [SerializeField]
     private int flatShootDamage = 0; //地面に平行に動く弾のダメージ量
 
-    [SerializeField]
-    private int chargedShotDamage = 0; //扇状弾幕攻撃(溜め攻撃)の弾のダメージ量
-
     [Header("弾のパラメータ")]
     [SerializeField, Tooltip("弾が上昇する最大の高さ")]
     private float maxHeightoffset; //弾が上昇する最大の高さ
@@ -158,7 +155,6 @@ public class GhostwolfMoveController : MonoBehaviour
             normalShootDamage <= 0
             || rainDamage <= 0
             || flatShootDamage <= 0
-            || chargedShotDamage <= 0
         )
         {
             Debug.LogError("GhostWolfに弾のダメージ量が設定されていません。");
@@ -302,7 +298,7 @@ public class GhostwolfMoveController : MonoBehaviour
         var script = newGameObject.GetComponent<ContactDamageController>(); //ダメージに関するスクリプトを取得
         if (script != null)
         {
-            script.SetDamageAmount(normalShootDamage); //弾のダメージを設定
+            script.SetNormalDamage(normalShootDamage); //弾のダメージを設定
         }
         else
         {
@@ -349,7 +345,7 @@ public class GhostwolfMoveController : MonoBehaviour
             var script = newGameObject.GetComponent<ContactDamageController>(); //ダメージに関するスクリプトを取得
             if (script != null)
             {
-                script.SetDamageAmount(normalShootDamage); //弾のダメージを設定
+                script.SetNormalDamage(normalShootDamage); //弾のダメージを設定
             }
             else
             {
@@ -403,7 +399,7 @@ public class GhostwolfMoveController : MonoBehaviour
             var script = newGameObject.GetComponent<ContactDamageController>(); //ダメージに関するスクリプトを取得
             if (script != null)
             {
-                script.SetDamageAmount(rainDamage); //弾のダメージを設定
+                script.SetNormalDamage(rainDamage); //弾のダメージを設定
             }
             else
             {
@@ -451,7 +447,7 @@ public class GhostwolfMoveController : MonoBehaviour
             var script = newGameObject.GetComponent<ContactDamageController>(); //ダメージに関するスクリプトを取得
             if (script != null)
             {
-                script.SetDamageAmount(flatShootDamage); //弾のダメージを設定
+                script.SetNormalDamage(flatShootDamage); //弾のダメージを設定
             }
             else
             {
@@ -546,7 +542,7 @@ public class GhostwolfMoveController : MonoBehaviour
             var script = newGameObject.GetComponent<ContactDamageController>(); //ダメージに関するスクリプトを取得
             if (script != null)
             {
-                script.SetDamageAmount(chargedShotDamage); //弾のダメージを設定
+                script.SetCurrentHPRatioDamage(0.9f); //弾のダメージを設定
             }
             else
             {

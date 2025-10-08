@@ -132,7 +132,7 @@ public class SlimeBossMoveController : MonoBehaviour
         IdleHash = Animator.StringToHash("Blue Idle - Animation");
 
         contactDamageController = GetComponent<ContactDamageController>();
-        contactDamageController?.SetDamageAmount(damage);
+        contactDamageController?.SetNormalDamage(damage);
 
         // HP変化イベントを購読
         characterHpScript.OnHPChanged += HandleHpChanged;

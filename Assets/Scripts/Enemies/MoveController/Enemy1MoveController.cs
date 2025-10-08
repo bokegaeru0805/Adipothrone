@@ -130,7 +130,7 @@ public class Enemy1MoveController : MonoBehaviour, IEnemyResettable
         ContactDamageController contactDamageController = GetComponent<ContactDamageController>();
         if (contactDamageController != null)
         {
-            contactDamageController.SetDamageAmount(damage); // 攻撃力を設定
+            contactDamageController.SetNormalDamage(damage); // 攻撃力を設定
         }
         else
         {

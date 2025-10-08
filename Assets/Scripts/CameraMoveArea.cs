@@ -152,10 +152,10 @@ public class CameraMoveArea : MonoBehaviour
         // カメラの横幅の半分を計算
         cameraHalfWidth = Camera.main.orthographicSize * Camera.main.aspect;
 
-        // 背景の初期位置を保存
         if (backGround != null)
         {
-            defaultBackgroundPosition = backGround.transform.position;
+            defaultBackgroundPosition = backGround.transform.position; // 背景の初期位置を保存
+            backGround.SetActive(false); // 最初は非アクティブにしておく
         }
     }
 
@@ -278,6 +278,7 @@ public class CameraMoveArea : MonoBehaviour
         if (backGround != null)
         {
             backGround.transform.position = defaultBackgroundPosition;
+            backGround.SetActive(false); // エリア外では非アクティブにする
         }
 
         // イベントを発行
