@@ -146,7 +146,6 @@ public class GhostwolfMoveController : MonoBehaviour
     private Vector3 playerPos; //プレイヤーの位置を保存するための変数
     private Animator animator;
     private IDamageable hpscript;
-    private Color col;
     private SpriteRenderer spriteRenderer;
 
     private void Awake()
@@ -188,8 +187,6 @@ public class GhostwolfMoveController : MonoBehaviour
         hpscript = this.GetComponent<IDamageable>(); //hpのscriptを取得
         bossMaxHP = hpscript.MaxHP; //最大HPを取得
         gravity = Mathf.Abs(Physics.gravity.y); //重力の大きさを取得
-        col = new Color(1, 1, 0, 1); //colを初期化
-        spriteRenderer.color = col; //colorコンポーネントを初期化
         action_mode = 0; //行動モードを0に設定
     }
 

@@ -52,4 +52,9 @@ public class ShopUIRefs : MonoBehaviour
 
     [SerializeField] private Sprite _unselectedTabImage;
     public Sprite UnselectedTabImage => _unselectedTabImage;
+
+    [Header("売却時のタブとそのアイテムリスト")]
+    [SerializeField]
+    private List<ShopUIManager.SellItemEntry> _sellItemTab;
+    public List<ShopUIManager.SellItemEntry> SellItemTab => _sellItemTab;
 }

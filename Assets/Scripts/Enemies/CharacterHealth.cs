@@ -84,7 +84,7 @@ public abstract class CharacterHealth : MonoBehaviour, IDamageable, IDroppable, 
         OnDamageApplied();
 
         // --- Step 4: 共通の被弾エフェクト ---
-        StartCoroutine(FadeInOut());
+        StartCoroutine(FlashOnDamage());
 
         // --- Step 5: 死亡判定の、派生クラス独自の処理を呼び出すフック ---
         CheckForDeath();
@@ -146,7 +146,9 @@ public abstract class CharacterHealth : MonoBehaviour, IDamageable, IDroppable, 
         }
         else
         {
-            Debug.LogWarning("GameManagerまたはEnemyDataが見つからないため、討伐数を記録できませんでした。");
+            Debug.LogWarning(
+                "GameManagerまたはEnemyDataが見つからないため、討伐数を記録できませんでした。"
+            );
         }
     }
 
@@ -157,28 +159,90 @@ public abstract class CharacterHealth : MonoBehaviour, IDamageable, IDroppable, 
     protected abstract void OnDeath();
 
     /// <summary>
-    /// 被弾時にキャラクターを短時間点滅させる共通のコルーチン。
-    /// 元のスクリプトの挙動を完全に再現しています。
+    /// 被弾時にキャラクターを点滅させる共通のコルーチン。
+    /// 色の明度（V値）に応じて、白く光るか半透明になるかの演出を切り替えます。
     /// </summary>
-    protected IEnumerator FadeInOut()
+    protected IEnumerator FlashOnDamage()
     {
-        if (spriteRenderer != null)
+        // SpriteRendererがなければ何もしない
+        if (spriteRenderer == null)
+            yield break;
+
+        // SpriteRendererが使用しているマテリアルのインスタンスを取得
+        Material mat = spriteRenderer.material;
+
+        // マテリアルに"_FlashAmount"プロパティが存在するかどうかをチェック
+        if (mat.HasProperty("_FlashAmount"))
         {
-            // 一度元の色に戻してから処理を開始
-            col.a = 1;
-            spriteRenderer.color = col;
-
-            // 一瞬暗く（半透明に）する
-            col.a -= 0.8f;
-            yield return new WaitForSeconds(0.1f);
-            spriteRenderer.color = col;
-
-            // 元の不透明度に戻す
-            col.a += 0.8f;
-            yield return new WaitForSeconds(0.1f);
-            spriteRenderer.color = col;
+            // --- プロパティが存在する場合、通常通りフラッシュ処理を実行 ---
+            try
+            {
+                // シェーダーの"_FlashAmount"プロパティを0.5にして、真っ白に光らせる
+                mat.SetFloat("_FlashAmount", 0.5f);
+                yield return new WaitForSeconds(0.1f);
+            }
+            finally
+            {
+                // 演出が終わったら、必ず"_FlashAmount"を0に戻して元の表示に戻す
+                mat.SetFloat("_FlashAmount", 0.0f);
+            }
+        }
+        else
+        {
+            // --- プロパティが存在しない場合、警告メッセージを表示 ---
+            Debug.LogWarning(
+                "マテリアルに '_FlashAmount' プロパティが存在しません。フラッシュエフェクトは再生されません。",
+                this
+            );
         }
     }
+
+    //元の点滅処理（参考用）
+    // protected IEnumerator FlashOnDamage()
+    // {
+    //     if (spriteRenderer == null) yield break;
+
+    //     // --- 1. 現在の色をHSVに変換し、V値（明度）を取得 ---
+    //     Color.RGBToHSV(spriteRenderer.color, out float h, out float s, out float v);
+
+    //     // 元の不透明度を保存しておく
+    //     float originalAlpha = spriteRenderer.color.a;
+    //     // 元の色（HSV）を保存しておく
+    //     Color originalColor = spriteRenderer.color;
+
+    //     // --- 2. V値（明度）が最大かどうかで処理を分岐 ---
+    //     // わずかな誤差を許容するため、0.99fより小さいかで判定
+    //     if (v < 0.99f)
+    //     {
+    //         // 【V値が最大でない場合】-> 一瞬、白く光らせる（V値を最大にする）
+
+    //         // a. V値を最大(1.0f)にした色を計算
+    //         Color flashColor = Color.HSVToRGB(h, s, 1.0f);
+    //         flashColor.a = originalAlpha; // 不透明度は維持
+
+    //         // b. 一瞬だけ色を差し替え
+    //         spriteRenderer.color = flashColor;
+    //         yield return new WaitForSeconds(0.1f);
+
+    //         // c. 元の色に戻す
+    //         spriteRenderer.color = originalColor;
+    //         yield return new WaitForSeconds(0.1f);
+    //     }
+    //     else
+    //     {
+    //         // 【V値がすでに最大に近い場合（白など）】-> 従来通り、半透明にする
+
+    //         // a. 一瞬暗く（半透明に）する
+    //         Color transparentColor = originalColor;
+    //         transparentColor.a = originalAlpha * 0.2f; // 80%カット
+    //         spriteRenderer.color = transparentColor;
+    //         yield return new WaitForSeconds(0.1f);
+
+    //         // b. 元の不透明度に戻す
+    //         spriteRenderer.color = originalColor;
+    //         yield return new WaitForSeconds(0.1f);
+    //     }
+    // }
 
     // --- ヘルパーメソッド ---
     /// <summary>

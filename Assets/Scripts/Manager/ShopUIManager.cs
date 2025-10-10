@@ -1,11 +1,11 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using Fungus;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
-using System.Linq;
 
 public class ShopUIManager : MonoBehaviour
 {
@@ -20,10 +20,6 @@ public class ShopUIManager : MonoBehaviour
     [Header("UI参照のルート")]
     [SerializeField]
     private ShopUIRefs uiRefs; // UI参照のルートオブジェクト
-
-    [Header("売却時のタブとそのアイテムリスト")]
-    [SerializeField]
-    private List<SellItemEntry> sellItemTab;
 
     [Header("店の会話ハンドラー")]
     [SerializeField]
@@ -50,7 +46,7 @@ public class ShopUIManager : MonoBehaviour
     private int healItemPage = 0; // 回復アイテムのページ番号
 
     [System.Serializable]
-    private class SellItemEntry
+    public class SellItemEntry
     {
         public GameObject itemTab; // アイテムタブのGameObject
 
@@ -166,9 +162,13 @@ public class ShopUIManager : MonoBehaviour
 
         //チェック対象をuiRefsに集約
         Check(shopDataBase, nameof(shopDataBase));
-        Check(uiRefs, nameof(uiRefs));
-        Check(sellItemTab, nameof(sellItemTab));
         Check(conversationHandlerObject, nameof(conversationHandlerObject));
+        Check(uiRefs, nameof(uiRefs));
+        if (uiRefs != null)
+        {
+            if (uiRefs != null)
+                Check(uiRefs.SellItemTab, "uiRefs.SellItemTab");
+        }
 
         return result;
     }
@@ -356,9 +356,9 @@ public class ShopUIManager : MonoBehaviour
         // 範囲外をループさせる（必要ならClampでも可）
         if (newIndex < 0)
         {
-            newIndex = sellItemTab.Count - 1;
+            newIndex = uiRefs.SellItemTab.Count - 1;
         }
-        else if (newIndex >= sellItemTab.Count)
+        else if (newIndex >= uiRefs.SellItemTab.Count)
         {
             newIndex = 0;
         }
@@ -373,9 +373,9 @@ public class ShopUIManager : MonoBehaviour
         {
             index = 0; // 最小値を0に設定
         }
-        else if (index >= sellItemTab.Count)
+        else if (index >= uiRefs.SellItemTab.Count)
         {
-            index = sellItemTab.Count - 1; // 最大値を最終インデックスに設定
+            index = uiRefs.SellItemTab.Count - 1; // 最大値を最終インデックスに設定
         }
 
         currentTabIndex = index;
@@ -384,15 +384,15 @@ public class ShopUIManager : MonoBehaviour
 
     private void UpdateTabPanelVisibility()
     {
-        for (int i = 0; i < sellItemTab.Count; i++)
+        for (int i = 0; i < uiRefs.SellItemTab.Count; i++)
         {
             if (i == currentTabIndex)
             {
-                sellItemTab[i].SetTabSelected(true); // 選択中のタブのパネルの画像を変更
+                uiRefs.SellItemTab[i].SetTabSelected(true); // 選択中のタブのパネルの画像を変更
             }
             else
             {
-                sellItemTab[i].SetTabSelected(false); // 選択されていないタブの画像を変更
+                uiRefs.SellItemTab[i].SetTabSelected(false); // 選択されていないタブの画像を変更
             }
         }
     }
@@ -422,7 +422,7 @@ public class ShopUIManager : MonoBehaviour
         //購入確認パネルを非表示にする
         uiRefs.PurchasePromptPanel.SetActive(false);
         //全てのタブを非表示にする
-        foreach (var entry in sellItemTab)
+        foreach (var entry in uiRefs.SellItemTab)
         {
             entry.itemTab.SetActive(false);
         }
@@ -502,7 +502,7 @@ public class ShopUIManager : MonoBehaviour
         //購入確認パネルを非表示にする
         uiRefs.PurchasePromptPanel.SetActive(false);
         //全てのタブを表示する
-        foreach (var entry in sellItemTab)
+        foreach (var entry in uiRefs.SellItemTab)
         {
             entry.itemTab.SetActive(true);
         }
