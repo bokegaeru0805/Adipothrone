@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using CriWare;
 using CriWare.Assets;
 using UnityEngine;
@@ -10,12 +11,9 @@ using UnityEngine;
 /// </summary>
 public class DebugBGMManager : MonoBehaviour
 {
-    [Header("BGMのACBアセット")]
-    [SerializeField]
     private CriAtomAcbAsset bgmAcbAsset;
 
     public static DebugBGMManager instance { get; private set; }
-
     private CriAtomExPlayer player1;
     private CriAtomExPlayer player2;
     private CriAtomExPlayer currentPlayer;
@@ -45,6 +43,24 @@ public class DebugBGMManager : MonoBehaviour
         else
         {
             Destroy(this.gameObject);
+            return;
+        }
+
+        // CriAtomAssetsLoaderからロード済みのACBアセットを取得する
+        var firstCueSheet = CriAtomAssetsLoader.Instance.CueSheets.FirstOrDefault();
+
+        // 取得できたか確認
+        if (firstCueSheet != null)
+        {
+            // CueSheetからCriAtomAcbAssetを取得して、自身の変数に登録
+            bgmAcbAsset = firstCueSheet.AcbAsset;
+            Debug.Log($"リストの最初のACBアセット '{bgmAcbAsset.name}' の取得に成功しました。");
+
+            // これで bgmAcbAsset を使って再生などの処理ができる
+        }
+        else
+        {
+            Debug.LogError("CriAtomAssetsLoaderにロード済みのACBアセットがありません。");
         }
     }
 
@@ -212,7 +228,7 @@ public class DebugBGMManager : MonoBehaviour
             Debug.Log($"BGMを {BGMCategory.bgm1} から {BGMCategory.bgm0} へ切り替えます。");
             Crossfade(BGMCategory.bgm0, duration);
         }
-        
+
         // 3. 上記のどちらの条件にも当てはまらない場合（両方とも流れていない、または全く別の曲が再生中）は、
         //    何もせずにこの関数を終了します。
     }

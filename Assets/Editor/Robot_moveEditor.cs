@@ -107,6 +107,34 @@ public class Robot_moveEditor : Editor
                 );
             }
 
+            FieldInfo floatingAmplitudeField = typeof(Robot_move).GetField(
+                "floatingAmplitude",
+                BindingFlags.NonPublic | BindingFlags.Instance
+            );
+            if (floatingAmplitudeField != null)
+            {
+                float value = (float)floatingAmplitudeField.GetValue(robot);
+                EditorGUILayout.FloatField("floatingAmplitude", value);
+                EditorGUILayout.LabelField(
+                    "※ 攻撃中でないときの上下の揺れの幅",
+                    EditorStyles.wordWrappedMiniLabel
+                );
+            }
+
+            FieldInfo floatingDurationField = typeof(Robot_move).GetField(
+                "floatingDuration",
+                BindingFlags.NonPublic | BindingFlags.Instance
+            );
+            if (floatingDurationField != null)
+            {
+                float value = (float)floatingDurationField.GetValue(robot);
+                EditorGUILayout.FloatField("floatingDuration", value);
+                EditorGUILayout.LabelField(
+                    "※ 揺れの片道にかかる時間",
+                    EditorStyles.wordWrappedMiniLabel
+                );
+            }
+
             // 同様に他の private 値（例: maxAttackCount）を表示したい場合も追加可能
         }
     }

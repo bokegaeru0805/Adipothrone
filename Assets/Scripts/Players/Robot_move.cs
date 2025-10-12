@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using DG.Tweening;
 using UnityEngine;
 
 public class Robot_move : MonoBehaviour
@@ -63,6 +64,7 @@ public class Robot_move : MonoBehaviour
 
     [SerializeField, Tooltip("攻撃後のプレイヤー硬直時間に影響する係数")]
     private float EnableMoveTimeAcjuctment = 0f;
+
     #endregion
 
     #region Private Fields
@@ -80,6 +82,8 @@ public class Robot_move : MonoBehaviour
     private float _maxSpeed = float.PositiveInfinity; // 追従の最大速度
     private float _currentVelocity = 0; // 平滑化移動で使う内部変数
     private Vector3 robot_pos = Vector3.zero; // 計算用の一時的な座標変数
+    private float floatingAmplitude = 0.25f;  //攻撃中でないときの上下の揺れの幅
+    private float floatingDuration = 1.5f; //揺れの片道にかかる時間
 
     // 攻撃関連のパラメータ
     private int maxAttackCount = 5; // 剣の最大連続攻撃回数
@@ -101,6 +105,7 @@ public class Robot_move : MonoBehaviour
     private bool isAttackInputWindowOpen = false; // 剣の連続攻撃の入力受付中か
     private bool isEnableNextAttack = true; // 次の攻撃が出来るかどうか
     private bool isTalking = false; // 会話状態を保存するローカル変数
+    private Tween floatingTween; // 上下移動のTweenを管理
 
     // 現在装備している武器のデータをキャッシュ
     private BladeWeaponData currentBladeData;
@@ -239,7 +244,8 @@ public class Robot_move : MonoBehaviour
                     _maxSpeed
                 );
 
-                robot_pos.y = offset.y; //プレイヤーに対しての自分のy座標を調整
+                // Y座標はDOTweenで制御するため、ここでは更新しない
+                // robot_pos.y = offset.y; //プレイヤーに対しての自分のy座標を調整
 
                 this.transform.localPosition = robot_pos; //自分の相対座標を設定
             }
@@ -249,6 +255,8 @@ public class Robot_move : MonoBehaviour
     // 注意: このメソッドを IEnumerator にしてコルーチン化すると、弾が正常に発射されないことがある。
     private void Shoot()
     {
+        StopFloatingAndReturn(); // ゆらゆらを停止して元の位置へ
+
         Vector3 newPos = this.transform.position; //自分の座標を保存
         GameObject newGameObject = Instantiate(shoot_prefab) as GameObject; // 弾1のプレハブを生成
         newGameObject.transform.position = newPos; //弾の位置を設定
@@ -267,6 +275,7 @@ public class Robot_move : MonoBehaviour
 
     private void Blade()
     {
+        StopFloatingAndReturn(0.05f); // ゆらゆらをほぼ即座に停止して元の位置へ
         isBladeSwinging = true; //剣の当たり判定を得る
         InstantsetRightFlag(); //即座にロボットの左右を変更する
         StartCoroutine(BladeAttack());
@@ -534,6 +543,9 @@ public class Robot_move : MonoBehaviour
 
         isBladeSwinging = false; // 攻撃完了
 
+        // 攻撃終了後、速やかに基準のY座標に戻る
+        transform.DOLocalMoveY(offset.y, 0.2f).SetEase(Ease.OutQuad);
+
         // 攻撃後の行動不能時間（ヒットストップのような硬直演出）
         float EnableMove_Sec = bladeAttackTime * EnableMoveTimeAcjuctment;
         StartCoroutine(AttackStart(EnableMove_Sec, afterBlade_Sec));
@@ -579,6 +591,9 @@ public class Robot_move : MonoBehaviour
         if (Enable_Sec < after_Sec)
             yield return new WaitForSeconds(after_Sec - Enable_Sec); //攻撃再開するまで停止
         isEnableNextAttack = true; //attackを再開する
+
+        // 攻撃の硬直が解けたら、再度ゆらゆらを開始する
+        StartFloating();
     }
 
     public void SetRightFlag(bool flag)
@@ -673,6 +688,10 @@ public class Robot_move : MonoBehaviour
         this.transform.localPosition = new Vector2(0, 0); //ローカル座標を初期化
         rightFlag = PlayerObject.GetComponent<Heroin_move>().rightFlag; //左右の向きを初期化
         OnRobotVisibilityChanged?.Invoke(true); // ロボットの可視状態を表示にする
+
+        // 初期位置に設定してから、ゆらゆらを開始
+        this.transform.localPosition = new Vector3(rightFlag ? offset.x : -offset.x, offset.y, 0);
+        StartFloating();
     }
 
     private void OnDisable()
@@ -691,6 +710,12 @@ public class Robot_move : MonoBehaviour
         }
 
         GameManager.OnTalkingStateChanged -= HandleTalkingStateChanged;
+
+        // DOTweenを確実に停止させる
+        if (floatingTween != null)
+        {
+            floatingTween.Kill();
+        }
 
         // その他のリセット処理
         isEnable = false;
@@ -840,4 +865,48 @@ public class Robot_move : MonoBehaviour
             OnChangeWeapon(bladeWeaponID);
         }
     }
+
+    #region Floating Movement
+    // --- ゆらゆら動く処理 ---
+
+    /// <summary>
+    /// 攻撃中でないときに、上下にゆらゆら動くTweenを開始します。
+    /// </summary>
+    private void StartFloating()
+    {
+        // 既存のTweenがあれば安全に停止
+        if (floatingTween != null && floatingTween.IsActive())
+        {
+            floatingTween.Kill();
+        }
+
+        // 攻撃中や剣を振っている最中は開始しない
+        if (isAttacking || isBladeSwinging)
+            return;
+
+        // Y座標を offset.y を中心に、floatingAmplitude の幅で往復運動させる
+        // FixedUpdateのタイミングで更新することで物理挙動との同期が取りやすくなります
+        floatingTween = transform
+            .DOLocalMoveY(offset.y + floatingAmplitude, floatingDuration)
+            .SetEase(Ease.InOutSine)
+            .SetLoops(-1, LoopType.Yoyo)
+            .SetUpdate(UpdateType.Fixed);
+    }
+
+    /// <summary>
+    /// ゆらゆら動くTweenを停止し、速やかに基準のY座標に戻します。
+    /// </summary>
+    private void StopFloatingAndReturn(float duration = 0.1f)
+    {
+        // 既存のTweenを停止
+        if (floatingTween != null && floatingTween.IsActive())
+        {
+            floatingTween.Kill();
+        }
+
+        // 基準となるY座標へ指定時間で移動
+        transform.DOLocalMoveY(offset.y, duration).SetUpdate(UpdateType.Fixed);
+    }
+
+    #endregion
 }

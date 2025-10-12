@@ -363,6 +363,7 @@ public class PlayerManager : MonoBehaviour
             {
                 // 90%以上あった場合、HPを1にして耐える
                 SetPlayerIntStatus(PlayerStatusIntName.playerCurrentHP, 1);
+                OnChangeHP?.Invoke(1); // HPが変化したときに呼び出されるイベントを発火
             }
             else
             {

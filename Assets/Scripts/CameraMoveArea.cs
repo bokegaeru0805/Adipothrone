@@ -131,10 +131,14 @@ public class CameraMoveArea : MonoBehaviour
         areaCollider = GetComponent<CompositeCollider2D>();
 
         // シーン内のVolumeコンポーネントを検索してキャッシュ
-        globalVolume = FindObjectOfType<Volume>();
+        globalVolume = GameObject
+            .FindGameObjectWithTag(GameConstants.MainGlobalVolumeTagName)
+            ?.GetComponent<Volume>();
         if (globalVolume == null)
         {
             Debug.LogWarning("シーン内にVolumeコンポーネントが見つかりません。", this);
+            this.enabled = false; // スクリプトを無効化して終了
+            return;
         }
 
         //Lightの形状を更新

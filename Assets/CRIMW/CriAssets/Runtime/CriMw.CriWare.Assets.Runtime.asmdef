@@ -1,5 +1,6 @@
 {
     "name": "CriMw.CriWare.Assets.Runtime",
+    "rootNamespace": "",
     "references": [
         "CriMw.CriWare.Runtime"
     ],
