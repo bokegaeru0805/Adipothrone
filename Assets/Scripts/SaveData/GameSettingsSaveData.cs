@@ -1,3 +1,14 @@
+/// <summary>
+/// 会話の表示速度
+/// </summary>
+public enum MessageSpeed
+{
+    Slow = 10,
+    Normal = 20,
+    Fast = 30,
+    VeryFast = 40
+}
+
 [System.Serializable]
 public class GameSettingsSaveData
 {
@@ -5,6 +16,7 @@ public class GameSettingsSaveData
     public float seVolume; // SE音量 (0.0f 〜 1.0f)
     public int lastUsedSlotIndex; // 最後に使用したセーブスロット番号 (1=スロット1, 2=スロット2, ...)
     public bool isShowingControlsGuide; // 画面上に操作ガイドを表示するかどうか
+    public MessageSpeed messageSpeed; // 会話の表示速度
 
     // ゲーム初回起動時のデフォルト値を設定
     public GameSettingsSaveData()
@@ -15,5 +27,6 @@ public class GameSettingsSaveData
         // 0にすると配列の添字と一致しなくなるため、1に設定
         lastUsedSlotIndex = 1;
         isShowingControlsGuide = true;
+        messageSpeed = MessageSpeed.Normal;
     }
 }

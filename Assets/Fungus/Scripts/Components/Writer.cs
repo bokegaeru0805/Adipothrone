@@ -1,7 +1,7 @@
 // This code is part of the Fungus library (https://github.com/snozbot/fungus)
 // It is released for free under the MIT open source license (https://github.com/snozbot/fungus/blob/master/LICENSE)
 
-﻿using UnityEngine;
+using UnityEngine;
 using UnityEngine.UI;
 using System.Collections;
 using System.Collections.Generic;
@@ -34,30 +34,29 @@ namespace Fungus
     /// </summary>
     public class Writer : MonoBehaviour, IDialogInputListener
     {
-        [Tooltip("Gameobject containing a Text, Inout Field or Text Mesh object to write to")]
+        [Tooltip("テキストを表示する対象のUIオブジェクト（Text, Input Field, TextMeshProなど）を設定します。")]
         [SerializeField] protected GameObject targetTextObject;
 
-        [Tooltip("Gameobject to punch when the punch tags are displayed. If none is set, the main camera will shake instead.")]
+        [Tooltip("画面を揺らす演出（{punch}タグ）の対象オブジェクト。未設定の場合はメインカメラが揺れます。")]
         [SerializeField] protected GameObject punchObject;
 
-        [Tooltip("Writing characters per second")]
+        [Tooltip("1秒間に表示する文字数。数値が大きいほど速く表示されます。")]
         [SerializeField] protected float writingSpeed = 60;
 
-        [Tooltip("Pause duration for punctuation characters")]
+        [Tooltip("句読点（、。！？など）で一瞬止まる時間（秒）。0にすると止まりません。")]
         [SerializeField] protected float punctuationPause = 0.25f;
 
-        [Tooltip("Color of text that has not been revealed yet")]
-        [SerializeField] protected Color hiddenTextColor = new Color(1,1,1,0);
+        [Tooltip("まだ表示されていない文字の色と透明度。通常は透明（アルファを0）にします。")]
+        [SerializeField] protected Color hiddenTextColor = new Color(1, 1, 1, 0);
 
-        [Tooltip("Write one word at a time rather one character at a time")]
+        [Tooltip("有効にすると、一文字ずつではなく単語単位でテキストを表示します。（主に英語向け）")]
         [SerializeField] protected bool writeWholeWords = false;
 
-        [Tooltip("Force the target text object to use Rich Text mode so text color and alpha appears correctly")]
+        [Tooltip("テキストの色やサイズ変更などを有効にするため、リッチテキストを強制的にONにします。")]
         [SerializeField] protected bool forceRichText = true;
 
-        [Tooltip("Click while text is writing to finish writing immediately")]
+        [Tooltip("有効にすると、テキスト表示中にクリックすることで文章を即座に全文表示できます。")]
         [SerializeField] protected bool instantComplete = true;
-
         [SerializeField] protected bool doReadAheadText = true;
 
         // This property is true when the writer is waiting for user input to continue

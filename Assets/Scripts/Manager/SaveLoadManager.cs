@@ -70,68 +70,72 @@ public class SaveLoadManager : MonoBehaviour
 
         LoadSettings(); // ゲーム起動時に必ず設定ファイルを読み込む
 
-            string currentGameVersion = Application.version; //現在のゲームのバージョンを取得
-            FilePlaytime = new Dictionary<int, float>(); //ゲームのプレイ時間を保存する変数を初期化
-            isOnSave = false; //セーブ待機中のフラグを初期化
+        Version currentGameVersion = new Version(Application.version); // 現在のゲームバージョンをVersionオブジェクトとして取得
+        FilePlaytime = new Dictionary<int, float>(); //ゲームのプレイ時間を保存する変数を初期化
+        isOnSave = false; //セーブ待機中のフラグを初期化
 
-            if (FilePlaytime == null)
+        if (FilePlaytime == null)
+        {
+            Debug.LogWarning("FilePlaytimeが初期化されていません。");
+            return;
+        }
+        else
+        {
+            for (
+                int i = GameConstants.AUTO_SAVE_FILE_NUMBER;
+                i < GameConstants.MaxSaveLoadFiles + GameConstants.MAX_AUTOSAVE_FOLDERS;
+                i++
+            )
             {
-                Debug.LogWarning("FilePlaytimeが初期化されていません。");
-                return;
-            }
-            else
-            {
-                for (
-                    int i = GameConstants.AUTO_SAVE_FILE_NUMBER;
-                    i < GameConstants.MaxSaveLoadFiles + GameConstants.MAX_AUTOSAVE_FOLDERS;
-                    i++
-                )
+                //FilePlayTimeにファイルごとのプレイ時間のデータを保存。もしデータがない場合は0を保存。
+                ES3Settings settings = new ES3Settings(GetSaveFilePath(i));
+                FilePlaytime.Add(i, ES3.Load<float>("PlayTime", defaultValue: 0, settings));
+
+                //データがない場合は飛ばす
+                if (SaveLoadManager.FilePlaytime[i] == 0)
+                    continue;
+
+                //セーブデータのゲームバージョンを取得
+                string dataGameVersionStr;
+                try
                 {
-                    //FilePlayTimeにファイルごとのプレイ時間のデータを保存。もしデータがない場合は0を保存。
-                    ES3Settings settings = new ES3Settings(GetSaveFilePath(i));
-                    FilePlaytime.Add(i, ES3.Load<float>("PlayTime", defaultValue: 0, settings));
+                    // セーブデータを読み込む（存在しない、破損などの場合は例外が出る可能性あり）
+                    var loadedData = ES3.Load<SaveData>("SaveData", settings);
 
-                    //データがない場合は飛ばす
-                    if (SaveLoadManager.FilePlaytime[i] == 0)
-                        continue;
+                    // 読み込んだデータからバージョン情報を取得（null 安全アクセス）
+                    dataGameVersionStr = loadedData?.GameVersion;
 
-                    //セーブデータのゲームバージョンを取得
-                    string dataGameVersion;
-                    try
+                    // バージョン情報が null または空文字の場合は不正とみなしてスキップ
+                    if (string.IsNullOrEmpty(dataGameVersionStr))
                     {
-                        // セーブデータを読み込む（存在しない、破損などの場合は例外が出る可能性あり）
-                        var loadedData = ES3.Load<SaveData>("SaveData", settings);
-
-                        // 読み込んだデータからバージョン情報を取得（null 安全アクセス）
-                        dataGameVersion = loadedData?.GameVersion;
-
-                        // バージョン情報が null または空文字の場合は不正とみなしてスキップ
-                        if (string.IsNullOrEmpty(dataGameVersion))
-                        {
-                            Debug.LogWarning(
-                                $"セーブデータにバージョン情報が存在しません（スロット {i}）"
-                            );
-                            FilePlaytime[i] = 0;
-                            continue;
-                        }
-                    }
-                    catch (Exception ex)
-                    {
-                        // 読み込み時に何らかの例外が発生した場合は、ファイルをスキップしプレイ時間を0に
-                        Debug.LogError(
-                            $"セーブデータの読み込みに失敗（スロット {i}）: {ex.Message}"
+                        Debug.LogWarning(
+                            $"セーブデータにバージョン情報が存在しません（スロット {i}）"
                         );
                         FilePlaytime[i] = 0;
                         continue;
                     }
 
-                    // 保存されたゲームバージョンと現在のバージョンが異なる場合、プレイ時間を無効化してファイルを非表示化
-                    if (dataGameVersion != currentGameVersion)
+                    Version dataGameVersion = new Version(dataGameVersionStr);
+
+                    // セーブデータのバージョンが現在のゲームバージョンより新しい場合、
+                    // 未来のバージョンなので互換性がないとみなし、ロード対象から外す
+                    if (dataGameVersion > currentGameVersion)
                     {
-                        FilePlaytime[i] = 0;
+                        Debug.LogWarning(
+                            $"スロット {i} のセーブデータは新しいバージョンのためロードできません。(データ: {dataGameVersion}, ゲーム: {currentGameVersion})"
+                        );
+                        FilePlaytime[i] = 0; // 非表示にする
                     }
                 }
+                catch (Exception ex)
+                {
+                    // 読み込み時に何らかの例外が発生した場合は、ファイルをスキップしプレイ時間を0に
+                    Debug.LogError($"セーブデータの読み込みに失敗（スロット {i}）: {ex.Message}");
+                    FilePlaytime[i] = 0;
+                    continue;
+                }
             }
+        }
     }
 
     private void Start()
@@ -210,6 +214,10 @@ public class SaveLoadManager : MonoBehaviour
                 {
                     //セーブデータをロード
                     SaveData saveData = ES3.Load<SaveData>("SaveData", filePath);
+
+                    // マイグレーション処理の呼び出し
+                    CheckAndMigrateSaveData(saveData);
+
                     //セーブデータをGameManagerに保存
                     GameManager.instance.savedata = saveData;
 
@@ -658,4 +666,85 @@ public class SaveLoadManager : MonoBehaviour
     {
         ES3.Save<GameSettingsSaveData>("settings", Settings, SETTINGS_FILE_PATH);
     }
+
+    /// <summary>
+    /// セーブデータのバージョンをチェックし、必要に応じて移行処理を実行する
+    /// </summary>
+    /// <param name="saveData">ロードしたセーブデータ</param>
+    private void CheckAndMigrateSaveData(SaveData saveData)
+    {
+        // セーブデータにバージョン情報がない（＝最古バージョン）場合の初期値を設定
+        if (string.IsNullOrEmpty(saveData.GameVersion))
+        {
+            saveData.GameVersion = "1.0.0"; // プロジェクトに応じた最古バージョンを指定
+        }
+
+        try
+        {
+            Version currentGameVersion = new Version(Application.version);
+            Version loadedDataVersion = new Version(saveData.GameVersion);
+
+            if (loadedDataVersion < currentGameVersion)
+            {
+                Debug.Log(
+                    $"古いセーブデータ（Ver: {loadedDataVersion}）を検出。マイグレーションを開始します。"
+                );
+
+                // --- 段階的マイグレーション ---
+                // 新しいバージョンへの移行処理をここに追加していく
+
+                // 例: 1.1.0 より前のバージョンから、1.1.0 へのアップデート
+                if (loadedDataVersion < new Version("1.1.0"))
+                {
+                    MigrateToV1_1_0(saveData);
+                }
+
+                // 例: 将来 1.2.0 がリリースされた場合
+                // if (loadedDataVersion < new Version("1.2.0"))
+                // {
+                //     MigrateToV1_2_0(saveData);
+                // }
+
+
+                // 全ての移行処理後、セーブデータ内のバージョンを最新に更新
+                saveData.GameVersion = Application.version;
+                Debug.Log("マイグレーションが完了しました。");
+            }
+        }
+        catch (Exception e)
+        {
+            Debug.LogError(
+                $"セーブデータのバージョンチェック、またはマイグレーションに失敗しました: {e.Message}"
+            );
+            // 必要に応じて、ロードを中止する、ユーザーに通知するなどの処理をここに記述
+        }
+    }
+
+    /// <summary>
+    /// ver 1.1.0 への具体的な移行処理
+    /// </summary>
+    private void MigrateToV1_1_0(SaveData saveData)
+    {
+        Debug.Log("バージョン 1.1.0 への更新処理を実行中...");
+
+        // ここに具体的なデータ構造の変更処理を記述します。
+        // 例：新しいTips機能が追加された場合
+        // if (saveData.TipsData == null)
+        // {
+        //     saveData.TipsData = new TipsData();
+        // }
+
+        // 例：特定のフラグが立っていたら、新しいTipsを解放する
+        // bool hasClearedTutorial = FlagManager.instance.GetFlag("TUTORIAL_CLEARED"); // ※このタイミングではFlagManagerはまだロードされていない可能性があるので注意
+        // if (saveData.SomeOldFlag && !saveData.TipsData.unlockedTips.Contains(1))
+        // {
+        //      saveData.TipsData.unlockedTips.Add(1);
+        // }
+    }
+
+    // 将来のバージョンアップ用
+    // private void MigrateToV1_2_0(SaveData saveData)
+    // {
+    //     Debug.Log("バージョン 1.2.0 への更新処理を実行中...");
+    // }
 }

@@ -59,7 +59,7 @@ public class InputManager : MonoBehaviour
 
     public bool GetPlayerJump()
     {
-        return InputAllowed() && Input.GetKey(inputSettings.PlayerJump);
+        return InputAllowed() && Input.GetKeyDown(inputSettings.PlayerJump);
     }
 
     public bool GetRobotAttack()
@@ -126,11 +126,6 @@ public class InputManager : MonoBehaviour
     {
         return InputAllowed() && Input.GetKeyDown(inputSettings.UISelectNo);
     }
-
-    // public bool GetSkipHold()
-    // {
-    //     return InputAllowed() && Input.GetKey(inputSettings.Skip);
-    // }
 
     public bool SkipDialogHold()
     {

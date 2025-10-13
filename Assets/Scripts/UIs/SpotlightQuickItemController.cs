@@ -23,13 +23,12 @@ public class SpotlightQuickItemController : MonoBehaviour
 
     private void Awake()
     {
-
         //ゲームがまだ開始されていない場合は何もしない
         if (!GameManager.isFirstGameSceneOpen)
         {
             return;
         }
-        
+
         if (instance == null)
         {
             instance = this;
@@ -132,6 +131,39 @@ public class SpotlightQuickItemController : MonoBehaviour
             {
                 // スポットライトが非表示になったときに時間を再開
                 timeManager.ReleasePause();
+            }
+        }
+    }
+
+    /// <summary>
+    /// アプリケーションのフォーカスが変更されたときに呼ばれるメソッド
+    /// </summary>
+    /// <param name="hasFocus">フォーカスを持っているか</param>
+    private void OnApplicationFocus(bool hasFocus)
+    {
+        // ゲームウィンドウからフォーカスが外れた場合
+        if (!hasFocus)
+        {
+            // スポットライトが表示されている途中だったら、強制的に非表示にする
+            if (IsHighlighting)
+            {
+                // フラグを倒す
+                IsHighlighting = false;
+
+                // オブジェクトを非表示にする
+                if (spotlightObject != null)
+                {
+                    spotlightObject.SetActive(false);
+                }
+
+                // 時間の停止を確実に解除する
+                if (timeManager != null)
+                {
+                    timeManager.ReleasePause();
+                }
+
+                // InputManager側の入力状態もリセットするのが理想
+                // inputManager.ResetAllInputs(); // もしこのような機能があれば呼び出す
             }
         }
     }
