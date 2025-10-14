@@ -113,9 +113,7 @@ public class AddItem_Fungus : Command
             () =>
             {
                 // この部分は、プレイヤーがダイアログをクリックした後に実行される
-
-                // 表示したアイテム画像をクリアする
-                SayDialog.GetSayDialog().SetCharacterImage(null);
+                
                 // Flowchartの次のコマンドへ進む
                 Continue();
             }

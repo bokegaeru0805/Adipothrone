@@ -29,6 +29,11 @@ public class InputManager : MonoBehaviour
     /// </summary>
     private bool InputAllowed()
     {
+        if (!GameManager.isFirstGameOpen)
+        {
+            return false;
+        }
+
         return !SaveLoadManager.IsLoading;
     }
 

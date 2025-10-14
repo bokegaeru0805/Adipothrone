@@ -1,10 +1,11 @@
 using UnityEngine;
 
 /// <summary>
-/// プレイヤーに接触した際に、指定した種類のダメージを与えるコンポーネント。
+/// プレイヤーに接触した際に、指定した種類のダメージを与える汎用コンポーネント。
+/// このコンポーネントが正しく機能するには、物理イベントを受け取るために
+/// 自分自身もしくは親オブジェクトにRigidbody2Dがアタッチされている必要があります。
 /// </summary>
 [RequireComponent(typeof(Collider2D))]
-[RequireComponent(typeof(Rigidbody2D))]
 public class ContactDamageController : MonoBehaviour
 {
     /// <summary>

@@ -22,6 +22,9 @@ namespace Fungus
 
         protected override void Awake()
         {
+            if (!GameManager.isFirstGameSceneOpen)
+                return; // ゲームが開始されていない場合は何もしない
+
             base.Awake();
 
             var settings = SaveLoadManager.instance?.Settings;
@@ -30,7 +33,7 @@ namespace Fungus
                 Debug.LogError("設定用のデータががありません。", this);
                 return;
             }
-            
+
             writingSpeed = speedToCharPerSecond[settings.messageSpeed]; // 1秒あたりの文字数を設定
         }
     }

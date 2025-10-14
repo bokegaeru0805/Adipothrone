@@ -482,6 +482,7 @@ public class BirdNormalMoveController : MonoBehaviour, IEnemyResettable
                     groundCheckRadius,
                     GroundLayer
                 );
+
                 if (isTouchingGround)
                 {
                     rbody.velocity = Vector2.zero; // 着地時に速度をリセット

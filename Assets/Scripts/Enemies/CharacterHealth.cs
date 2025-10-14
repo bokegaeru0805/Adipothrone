@@ -42,6 +42,15 @@ public abstract class CharacterHealth : MonoBehaviour, IDamageable, IDroppable, 
     protected Color col;
     protected Animator animator;
 
+    // --- 被弾エフェクト設定 ---
+    //この面積（ピクセル単位）を超えたら大きいと判断し、フラッシュを弱くします
+    private float largeSpriteAreaThreshold = 50000f; // 例: 約223x223ピクセル
+
+    private float normalFlashAmount = 0.5f; //通常時のフラッシュの明るさ
+    private float reducedFlashAmount = 0.25f; //大きいスプライト用の、抑えめのフラッシュの明るさ
+
+    private bool isLargeSprite = false; // Awakeでサイズを判定して設定するフラグ
+
     /// <summary>
     /// コンポーネントが有効になった際の初期化処理。
     /// 派生クラスで必要なコンポーネントをキャッシュする土台となります。
@@ -54,11 +63,15 @@ public abstract class CharacterHealth : MonoBehaviour, IDamageable, IDroppable, 
         if (spriteRenderer == null)
         {
             Debug.LogError($"{this.gameObject.name}にSpriteRendererがアタッチされていません");
+            return;
         }
         else
         {
             col = spriteRenderer.color;
         }
+
+        // スプライトの画面上でのサイズを計算し、大きいかどうかを判定する
+        CalculateSpriteScreenSize();
     }
 
     /// <summary>
@@ -164,35 +177,74 @@ public abstract class CharacterHealth : MonoBehaviour, IDamageable, IDroppable, 
     /// </summary>
     protected IEnumerator FlashOnDamage()
     {
-        // SpriteRendererがなければ何もしない
         if (spriteRenderer == null)
             yield break;
 
-        // SpriteRendererが使用しているマテリアルのインスタンスを取得
         Material mat = spriteRenderer.material;
 
-        // マテリアルに"_FlashAmount"プロパティが存在するかどうかをチェック
         if (mat.HasProperty("_FlashAmount"))
         {
-            // --- プロパティが存在する場合、通常通りフラッシュ処理を実行 ---
+            // --- 変更・追加ここから ---
+            // isLargeSpriteフラグに応じて、使用するフラッシュの明るさを決定
+            float flashAmountToUse = isLargeSprite ? reducedFlashAmount : normalFlashAmount;
+            // --- 変更・追加ここまで ---
+
             try
             {
-                // シェーダーの"_FlashAmount"プロパティを0.5にして、真っ白に光らせる
-                mat.SetFloat("_FlashAmount", 0.5f);
+                // 決定した明るさでフラッシュさせる
+                mat.SetFloat("_FlashAmount", flashAmountToUse);
                 yield return new WaitForSeconds(0.1f);
             }
             finally
             {
-                // 演出が終わったら、必ず"_FlashAmount"を0に戻して元の表示に戻す
                 mat.SetFloat("_FlashAmount", 0.0f);
             }
         }
         else
         {
-            // --- プロパティが存在しない場合、警告メッセージを表示 ---
+            Debug.LogWarning("マテリアルに '_FlashAmount' プロパティが存在しません。", this);
+        }
+    }
+
+    /// <summary>
+    /// スプライトの画面上での実際のサイズを計算し、isLargeSpriteフラグを設定します。
+    /// </summary>
+    private void CalculateSpriteScreenSize()
+    {
+        // カメラとスプライトがなければ計算不可
+        if (Camera.main == null || spriteRenderer.sprite == null)
+            return;
+
+        // Orthographicカメラ（2Dで一般的）を前提として計算
+        if (Camera.main.orthographic)
+        {
+            // 1ワールド単位あたりのピクセル数を計算
+            float pixelsPerUnit = Screen.height / (Camera.main.orthographicSize * 2);
+
+            // スプライトのワールド座標でのサイズを取得（transform.scaleも考慮される）
+            Vector2 spriteWorldSize = spriteRenderer.bounds.size;
+
+            // ピクセル単位でのサイズに変換
+            float spriteWidthPixels = spriteWorldSize.x * pixelsPerUnit;
+            float spriteHeightPixels = spriteWorldSize.y * pixelsPerUnit;
+
+            // ピクセル単位での面積を計算
+            float spriteArea = spriteWidthPixels * spriteHeightPixels;
+
+            // 閾値と比較してフラグを設定
+            isLargeSprite = spriteArea > largeSpriteAreaThreshold;
+
+            // // デバッグ用に計算結果を出力（調整時に便利です）
+            // Debug.Log(
+            //     $"[{this.gameObject.name}] Sprite Area: {spriteArea:F0} pixels. Is large? -> {isLargeSprite}",
+            //     this
+            // );
+        }
+        else
+        {
+            // Perspectiveカメラの場合の計算はより複雑になるため、ここでは警告を出す
             Debug.LogWarning(
-                "マテリアルに '_FlashAmount' プロパティが存在しません。フラッシュエフェクトは再生されません。",
-                this
+                $"[{this.gameObject.name}] はPerspectiveカメラを使用しています。スプライトサイズの計算が不正確になる可能性があります。"
             );
         }
     }
