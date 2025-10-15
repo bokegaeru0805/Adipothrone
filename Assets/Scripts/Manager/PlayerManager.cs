@@ -330,7 +330,7 @@ public class PlayerManager : MonoBehaviour
         if (heroinMove != null && heroinMove.IsImmune)
         {
             // プレイヤーが無敵状態なら、ダメージ処理を一切行わずに終了
-            return; 
+            return;
         }
 
         // 既に死亡処理が始まっている場合は、重複して実行しない
@@ -430,31 +430,42 @@ public class PlayerManager : MonoBehaviour
 
     public void HealHP(int heal)
     {
+        // 0以下の回復量は無意味なので、ここで処理を終了
+        if (heal <= 0)
+        {
+            return;
+        }
+
         int currentHP = GetPlayerIntStatus(PlayerStatusIntName.playerCurrentHP);
-        bool wasDead = currentHP <= 0; // 回復前に死亡していたかを記録
         int maxHP = playerMaxHP;
+        bool wasDead = currentHP <= 0; // 回復前に死亡していたかを記録
 
-        //heal分HPを増やす
-        if (currentHP < maxHP)
+        // すでにHPが満タンで、かつ死んでいない場合は回復不要
+        if (currentHP >= maxHP && !wasDead)
         {
-            SetPlayerIntStatus(PlayerStatusIntName.playerCurrentHP, currentHP + heal);
+            return;
         }
 
-        // HPが最大値を超えないように調整
-        int newHP = GetPlayerIntStatus(PlayerStatusIntName.playerCurrentHP);
-        if (newHP > maxHP)
+        // 回復後のHPを計算し、0と最大値の間に収める
+        int newHP = Mathf.Clamp(currentHP + heal, 0, maxHP);
+
+        // HPに変化がなければ、イベントを発火させる必要もない
+        if (newHP == currentHP)
         {
-            newHP = maxHP;
-            SetPlayerIntStatus(PlayerStatusIntName.playerCurrentHP, newHP);
+            return;
         }
 
-        // もし死亡状態からHPが0より大きくなったら、復活イベントを発行
+        // 計算結果を一度だけセット
+        SetPlayerIntStatus(PlayerStatusIntName.playerCurrentHP, newHP);
+
+        // 死亡状態から復活した場合のイベントを発火
         if (wasDead && newHP > 0)
         {
             OnPlayerRevived?.Invoke();
         }
 
-        OnChangeHP?.Invoke(newHP); // HPが変化したときに呼び出されるイベントを発火
+        // HPが変化したイベントを発火
+        OnChangeHP?.Invoke(newHP);
     }
 
     public void RestoreFullHP()
@@ -499,20 +510,22 @@ public class PlayerManager : MonoBehaviour
     public void HealWP(int heal)
     {
         int maxWP = playerMaxWP;
-        int WP = GetPlayerIntStatus(PlayerStatusIntName.playerCurrentWP);
+        int currentWP = GetPlayerIntStatus(PlayerStatusIntName.playerCurrentWP);
 
-        if (WP < maxWP)
+        // すでにWPが満タンなら、何もせず処理を終了（ガード節）
+        if (currentWP >= maxWP)
         {
-            SetPlayerIntStatus(PlayerStatusIntName.playerCurrentWP, WP + heal);
+            return;
         }
 
-        // WPが最大値を超えないように制限
-        if (WP + heal > maxWP)
-        {
-            SetPlayerIntStatus(PlayerStatusIntName.playerCurrentWP, maxWP);
-        }
+        // 回復後のWPを計算し、最大値を超えないようにMathf.Minで制限
+        int newWP = Mathf.Min(currentWP + heal, maxWP);
 
-        OnChangeWP?.Invoke(WP + heal); // WPが変化したときに呼び出されるイベントを発火
+        // 計算結果を一度だけセットする
+        SetPlayerIntStatus(PlayerStatusIntName.playerCurrentWP, newWP);
+
+        // 正しい最終的な値でイベントを発火させる
+        OnChangeWP?.Invoke(newWP);
     }
 
     public void DamageWP(int damage)
@@ -612,6 +625,7 @@ public class PlayerManager : MonoBehaviour
         }
 
         quickList[quickSlotIndex] = item;
+        SEManager.instance?.PlayUISE(SE_UI.Register1); //登録の効果音を鳴らす
         OnQuickSlotAssigned?.Invoke();
     }
 

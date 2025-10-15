@@ -1,18 +1,23 @@
 using UnityEngine;
 using UnityEngine.SceneManagement;
+#if UNITY_EDITOR
+using UnityEditor;
+#endif
 
 /// <summary>
 /// ゲーム起動時に初期シーンをロードし、シーンロード後に一度だけ初期化処理を実行するクラス。
 /// Resourcesフォルダ内の'GameInitializeSettings'アセットから設定を読み込みます。
+/// この機能はUnityエディタでのテスト実行時のみ有効です。
 /// </summary>
 public static class GameInitializer
 {
     public static bool IsInitialized { get; private set; } = false;
     private const string FirstSceneName = GameConstants.SceneName_Title;
-    
+
     // 設定ファイルのパス
     private const string SETTINGS_PATH = "GameInitializeSettings";
 
+#if UNITY_EDITOR
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
     private static void LoadStartScene()
     {
@@ -41,13 +46,15 @@ public static class GameInitializer
             // 初期化機能が無効な場合は、IsInitializedフラグも立てない
             return;
         }
-        
-        if (IsInitialized) return;
-        
+
+        if (IsInitialized)
+            return;
+
         if (SceneManager.GetActiveScene().name == FirstSceneName)
         {
             SaveLoadManager.instance.DisableSave();
             IsInitialized = true;
         }
     }
+#endif
 }

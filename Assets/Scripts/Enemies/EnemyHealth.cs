@@ -124,6 +124,8 @@ public class EnemyHealth : CharacterHealth, IEnemyResettable
             effect.Play();
         }
 
+        SEManager.instance?.PlayEnemyActionSE(SE_EnemyAction.Death1); // 死亡の効果音を鳴らす
+
         // 物理挙動を停止
         if (rbody != null)
         {

@@ -655,11 +655,28 @@ public class SaveLoadManager : MonoBehaviour
 
     public void LoadSettings()
     {
+        // ロードする前に、設定ファイルがすでに存在するかどうかを確認
+        bool settingsExist = ES3.KeyExists("settings", SETTINGS_FILE_PATH);
+
+        // 従来通りロード処理を実行
+        // (ファイルが存在しない場合は、ここで new GameSettingsSaveData() が生成される)
         Settings = ES3.Load<GameSettingsSaveData>(
             "settings",
             SETTINGS_FILE_PATH,
             new GameSettingsSaveData()
         );
+
+        // もしファイルが存在しなかった場合（＝新しく生成された場合）
+        if (!settingsExist)
+        {
+            // デバッグログを出力
+            Debug.Log(
+                "設定ファイルが見つからなかったため、新しい設定ファイルを生成し、保存しました。"
+            );
+
+            // 生成したばかりの設定をすぐに保存する
+            SaveSettings();
+        }
     }
 
     public void SaveSettings()
@@ -673,10 +690,11 @@ public class SaveLoadManager : MonoBehaviour
     /// <param name="saveData">ロードしたセーブデータ</param>
     private void CheckAndMigrateSaveData(SaveData saveData)
     {
-        // セーブデータにバージョン情報がない（＝最古バージョン）場合の初期値を設定
-        if (string.IsNullOrEmpty(saveData.GameVersion))
+        // セーブデータにバージョン情報がない（＝最古バージョン）もしくは1.00の場合の初期値を設定
+        if (string.IsNullOrEmpty(saveData.GameVersion) || saveData.GameVersion == "1.0")
         {
             saveData.GameVersion = "1.0.0"; // プロジェクトに応じた最古バージョンを指定
+            Debug.Log("セーブデータにバージョン情報がなかったため、1.0.0を設定しました。");
         }
 
         try

@@ -19,6 +19,7 @@ public enum SE_UI
     Complete1 = 2005,
     Decision1 = 2010,
     WeaponDecision1 = 2015,
+    Register1 = 2020,
 }
 
 /// <summary>
@@ -70,6 +71,7 @@ public enum SE_EnemyAction
     SwordSlash2 = 4066,
     SwordThrow1 = 4070,
     RareEnemyAppear = 4075,
+    Death1 = 4080,
 }
 
 /// <summary>

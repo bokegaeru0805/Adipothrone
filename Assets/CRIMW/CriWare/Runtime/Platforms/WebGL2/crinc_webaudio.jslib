@@ -114,7 +114,7 @@ LibraryCriNc = {
                 const output = outputs[0];
                 var outputOffset = 0;
             
-                if(this.totalStoredSamples < 2028){ //元は1024
+                if(this.totalStoredSamples < 4096){ //元は1024
                     this.port.postMessage({ 'type':"DataRequest", 'ncvoice': this.ncvoice});
                 }
             

@@ -19,6 +19,7 @@ public class SEManager : MonoBehaviour
         { SE_UI.Complete1, "Complete1" },
         { SE_UI.Decision1, "Decision1" },
         { SE_UI.WeaponDecision1, "WeaponDecision1" },
+        { SE_UI.Register1, "Register1" },
     };
 
     /// <summary>
@@ -72,6 +73,7 @@ public class SEManager : MonoBehaviour
             { SE_EnemyAction.SwordSlash2, "SwordSlash2" },
             { SE_EnemyAction.SwordThrow1, "SwordThrow1" },
             { SE_EnemyAction.RareEnemyAppear, "RareEnemyAppear" },
+            { SE_EnemyAction.Death1, "Death1_Enemy" },
         };
 
     /// <summary>
@@ -230,7 +232,7 @@ public class SEManager : MonoBehaviour
     {
         if (seDictionary.TryGetValue(seName, out AudioSource source))
         {
-            source.Play();
+            source.PlayOneShot(source.clip);
             if (originalPitchs.TryGetValue(seName, out float originalPitch))
             {
                 source.pitch = originalPitch; //ピッチを初期化
@@ -504,7 +506,7 @@ public class SEManager : MonoBehaviour
         if (seDictionary.TryGetValue(seName, out AudioSource source))
         {
             source.pitch = pitch;
-            source.Play(); // SEを再生
+            source.PlayOneShot(source.clip); // SEを再生
         }
         else
         {
@@ -587,7 +589,7 @@ public class SEManager : MonoBehaviour
             float originalLength = originalLenght[seName];
             float newPitch = originalLength / lenght;
             source.pitch = newPitch;
-            source.Play(); // SEを再生
+            source.PlayOneShot(source.clip); // SEを再生
         }
         else
         {

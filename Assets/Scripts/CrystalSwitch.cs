@@ -1,9 +1,9 @@
 using System.Collections;
 using UnityEngine;
+using DG.Tweening;
 
 public class CrystalSwitch : MonoBehaviour
 {
-    private FlagManager flagManager;
 
     [SerializeField]
     private KeyID button_number;
@@ -25,6 +25,10 @@ public class CrystalSwitch : MonoBehaviour
 
     // 起動後：淡い緑（ON状態）
     private Color SwitchActiveColor = new Color(170f / 255f, 255f / 255f, 190f / 255f); //AAFFBE
+    // --- 浮遊アニメーション関連 ---
+    private float floatingHeight = 1f; //上下に浮遊する移動幅
+    private float floatingDuration = 2.0f; //浮遊アニメーションの片道にかかる時間（秒）
+    private Vector3 initialPosition; // 浮遊アニメーションの基準となる初期座標
 
     private enum ObjectName
     {
@@ -39,6 +43,7 @@ public class CrystalSwitch : MonoBehaviour
         sprite1 = spriteRenderer.sprite; // 初期スプライトを保存
         spriteRenderer.color = SwitchInactiveColor; // 初期色を設定
         this.tag = GameConstants.InteractableObjectTagName; // 初期タグを設定
+        initialPosition = transform.position; // 初期位置を保存
     }
 
     private void Start()
@@ -101,6 +106,13 @@ public class CrystalSwitch : MonoBehaviour
             {
                 ControlObject.SetActive(false);
             }
+
+            // 既存のTweenがあれば停止してから新しいTweenを開始
+            transform.DOKill();
+            // 上下にYoyo（行って戻ってくる）形式で浮遊するアニメーションを開始
+            transform.DOMoveY(initialPosition.y + floatingHeight, floatingDuration)
+                .SetEase(Ease.InOutSine)
+                .SetLoops(-1, LoopType.Yoyo);
         }
         else
         {
@@ -110,6 +122,10 @@ public class CrystalSwitch : MonoBehaviour
             {
                 ControlObject.SetActive(true);
             }
+
+            // アニメーションを停止し、初期位置に戻す
+            transform.DOKill();
+            transform.position = initialPosition;
         }
     }
 
@@ -134,5 +150,8 @@ public class CrystalSwitch : MonoBehaviour
     {
         // オブジェクトが無効になる際に、登録を解除（メモリリーク防止）
         FlagManager.OnKeyFlagChanged -= HandleKeyFlagChanged;
+
+        // DOTweenのアニメーションを確実に停止（エラー防止）
+        transform.DOKill();
     }
 }

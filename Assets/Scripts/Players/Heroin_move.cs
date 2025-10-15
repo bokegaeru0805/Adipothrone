@@ -113,7 +113,7 @@ public class Heroin_move : MonoBehaviour
     }
 
     private void Update()
-    {
+    {   
         if (inputManager == null)
         {
             return; // InputManagerがまだ初期化されていない場合は何もしない
