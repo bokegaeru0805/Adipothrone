@@ -33,14 +33,6 @@ public class HealItemPreviewUIManager : MonoBehaviour
     private int defenceBuffLimit = 0; // 防御力バフの上限
     private int speedBuffLimit = 0; // スピードバフの上限
     private int luckBuffLimit = 0; // 運バフの上限
-    private float attackRemainingTime = 0; // 攻撃力バフの残り時間
-    private float attackDeltaValue = 0; // 攻撃力バフの増加量
-    private float defenseRemainingTime = 0; // 防御力バフの残り時間
-    private float defenseDeltaValue = 0; // 防御力バフの増加量
-    private float speedRemainingTime = 0; // スピードバフの残り時間
-    private float speedDeltaValue = 0; // スピードバフの増加量
-    private float luckRemainingTime = 0; // 運バフの残り時間
-    private float luckDeltaValue = 0; // 運バフの増加量
     private Dictionary<StatusEffectType, BuffIconSet> buffIconLookup; // バフアイコンの辞書
 
     private void Awake()
@@ -72,11 +64,6 @@ public class HealItemPreviewUIManager : MonoBehaviour
         {
             Destroy(gameObject); // 既存のインスタンスがある場合は破棄
         }
-    }
-
-    private void Update()
-    {
-        LoadPlayerEffectStates(); // プレイヤーの効果状態をセーブデータから読み込む
     }
 
     private void Start()
@@ -222,17 +209,28 @@ public class HealItemPreviewUIManager : MonoBehaviour
     public void DisplayPlayerStatusEffect(
         Dictionary<StatusEffectType, Image> iconImages,
         Dictionary<StatusEffectType, (GameObject barObj, Image barImage)> buffBars,
-        out Dictionary<StatusEffectType, bool> buffExpirationFlags
+        Dictionary<StatusEffectType, bool> buffExpirationFlags
     )
     {
-        buffExpirationFlags = new Dictionary<StatusEffectType, bool>();
+        // new Dictionary() の代わりに、渡された辞書をクリアして再利用する
+        // buffExpirationFlags = new Dictionary<StatusEffectType, bool>();
+        // 毎フレームGCが発生していた原因
+        buffExpirationFlags.Clear();
+
+        if (playerEffectManager == null)
+        {
+            // PlayerEffectManager がまだ初期化されていない場合は何もしない
+            return;
+        }
 
         foreach (var pair in iconImages)
         {
-            // バフのタイプに応じた残り時間を取得
-            float remainingTime = GetBuffRemainingTime(pair.Key);
             // バフのタイプを取得
             var type = pair.Key;
+
+            // バフのタイプに応じた残り時間を取得
+            // float remainingTime = GetBuffRemainingTime(pair.Key); // 旧処理
+            float remainingTime = playerEffectManager.GetRemainingTime(type);
 
             // バフのアイコンコンポーネントを取得
             var iconImage = iconImages[type];
@@ -242,7 +240,7 @@ public class HealItemPreviewUIManager : MonoBehaviour
             {
                 GameObject bar = barData.barObj;
                 Image barFillImage = barData.barImage;
-                float delta = GetBuffDeltaValue(type);
+                float delta = playerEffectManager.GetDeltaValue(type);
                 float limit = GetBuffLimitValue(type);
 
                 if (remainingTime > 0f)
@@ -415,85 +413,5 @@ public class HealItemPreviewUIManager : MonoBehaviour
         }
 
         return 1f; // デフォルト値(分母で用いるので、0は不可)
-    }
-
-    /// <summary>
-    /// 指定されたステータス効果の残り時間を取得します。
-    /// </summary>
-    private float GetBuffRemainingTime(StatusEffectType effectType)
-    {
-        switch (effectType)
-        {
-            case StatusEffectType.Attack:
-                return attackRemainingTime;
-            case StatusEffectType.Defense:
-                return defenseRemainingTime;
-            case StatusEffectType.Speed:
-                return speedRemainingTime;
-            case StatusEffectType.Luck:
-                return luckRemainingTime;
-            default:
-                return 0f;
-        }
-    }
-
-    /// <summary>
-    /// 指定されたステータス効果の増加量を取得します。
-    /// </summary>
-    private float GetBuffDeltaValue(StatusEffectType effectType)
-    {
-        switch (effectType)
-        {
-            case StatusEffectType.Attack:
-                return attackDeltaValue;
-            case StatusEffectType.Defense:
-                return defenseDeltaValue;
-            case StatusEffectType.Speed:
-                return speedDeltaValue;
-            case StatusEffectType.Luck:
-                return luckDeltaValue;
-            default:
-                return 0f;
-        }
-    }
-
-    /// <summary>
-    /// プレイヤーの効果状態をセーブデータから読み込みます。
-    /// </summary>
-    private void LoadPlayerEffectStates()
-    {
-        var effectList = GameManager.instance.savedata.PlayerStatus.playerEffectStates;
-
-        if (effectList == null)
-        {
-            Debug.LogError("PlayerEffectStatesが見つかりませんでした");
-            return;
-        }
-
-        //各効果の残り時間と増加量をセーブデータから数値を取得
-        foreach (var effect in effectList)
-        {
-            switch (effect.effectTypeNumber)
-            {
-                case (int)StatusEffectType.Attack:
-                    attackRemainingTime = effect.remainingTime;
-                    attackDeltaValue = effect.deltaValue;
-                    break;
-                case (int)StatusEffectType.Defense:
-                    defenseRemainingTime = effect.remainingTime;
-                    defenseDeltaValue = effect.deltaValue;
-                    break;
-                case (int)StatusEffectType.Speed:
-                    speedRemainingTime = effect.remainingTime;
-                    speedDeltaValue = effect.deltaValue;
-                    break;
-                case (int)StatusEffectType.Luck:
-                    luckRemainingTime = effect.remainingTime;
-                    luckDeltaValue = effect.deltaValue;
-                    break;
-                default:
-                    break;
-            }
-        }
     }
 }

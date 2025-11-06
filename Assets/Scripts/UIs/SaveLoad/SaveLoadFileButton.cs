@@ -56,7 +56,8 @@ public class SaveLoadFileButton : MonoBehaviour
         if (!SaveLoadManager.isDataPrompting && !SaveLoadManager.isOnSave)
         {
             if (
-                SaveLoadManager.FilePlaytime[FileNumber] == 0
+                SaveLoadManager.FileSlotInfos.ContainsKey(FileNumber) //セーブファイル情報が存在し、
+                && SaveLoadManager.FileSlotInfos[FileNumber].playTime == 0f //かつプレイ時間が0なら
                 && SaveLoadManager.instance.CurrentSaveLoadMode == SaveLoadManager.SaveLoadMode.Load
             )
             {
@@ -70,31 +71,23 @@ public class SaveLoadFileButton : MonoBehaviour
                 //データ変更画面が表示されているなら
                 if (datePromptWindow != null)
                 {
-                    if (this.gameObject.name.Contains("_Menu") && UIManager.instance != null)
+                    // 現在アクティブなManager（UIManagerなど）を取得
+                    var activeManager = SaveLoadManager.CurrentActiveManager;
+
+                    if (activeManager != null)
                     {
-                        UIManager.instance.OpenPanel(datePromptWindow, -1);
-                        //データ変更確認パネルを表示
-                    }
-                    else if (
-                        this.gameObject.name.Contains("_Title")
-                        && TitleUIManager.instance != null
-                    )
-                    {
-                        TitleUIManager.instance.OpenPanel(datePromptWindow, -1);
-                        //データ変更確認パネルを表示
-                    }
-                    else if (
-                        this.gameObject.name.Contains("_GameOver")
-                        && GameOverUIManager.instance != null
-                    )
-                    {
-                        GameOverUIManager.instance.OpenPanel(datePromptWindow, -1);
-                        //データ変更確認パネルを表示
+                        // 取得したManagerのOpenPanel()を呼び出す
+                        activeManager.OpenPanel(datePromptWindow, -1);
                     }
                     else
                     {
-                        datePromptWindow.SetActive(true);
-                        //データ変更確認パネルを表示
+                        // Managerが見つからなかった場合のフォールバック処理
+                        Debug.LogWarning(
+                            "SaveLoadFileButton: SaveLoadManager.CurrentActiveManager が設定されていません。"
+                            + "OpenPanel() を実行できませんでした。",
+                            this
+                        );
+                        datePromptWindow.SetActive(true); // 従来の非表示パネルを表示するだけの動作
                     }
                 }
 

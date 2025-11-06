@@ -1,4 +1,5 @@
 using System;
+using NaughtyAttributes;
 using UnityEngine;
 
 /// <summary>
@@ -7,6 +8,9 @@ using UnityEngine;
 /// </summary>
 public class BossHealth : CharacterHealth
 {
+    [InfoBox(
+        "BossHealthスクリプトを使用する場合、決してInitializeBossSpecifics()関数呼び出すことを忘れないでください！"
+    )]
     // --- ボス固有のプロパティとイベント ---
     [Header("ボス固有設定")]
     public BossName bossname; // ボスの種類を識別するためのEnum
@@ -41,7 +45,7 @@ public class BossHealth : CharacterHealth
         else
         {
             AfterDeathGameObject.SetActive(false); //最初は非表示
-            
+
             var BossAfterDeathScript = AfterDeathGameObject.GetComponent<BossAfterDeath>();
             if (BossAfterDeathScript != null)
             {
@@ -59,13 +63,8 @@ public class BossHealth : CharacterHealth
 
         // EnemyDataから最大HPを取得
         MaxHP = enemyData.enemyHP;
-    }
 
-    /// <summary>
-    /// ゲーム開始時のボス固有のセットアップ処理。
-    /// </summary>
-    private void Start()
-    {
+        //以下の動作は、他の関数からStart関数でこのスクリプトが無効化される可能性があるため、Start関数ではなくここで行う
         IsDefeated = false;
         CurrentHP = MaxHP;
 
@@ -73,22 +72,47 @@ public class BossHealth : CharacterHealth
         {
             AfterDeathGameObject.SetActive(false); //撃破後のゲームオブジェクトを非表示
         }
+    }
 
-        // ボスHPバーを表示させ、初期HPを通知
-        GameUIManager.instance.SetGameUIBossData(this.gameObject);
-
-        // base.OnHPChanged は protected にして、InvokeHPChangedEvent() のようなメソッドを作るのがより丁寧ですが、
-        // 今回は直接イベントを呼び出します。
-        InvokeHPChangedEvent(); // HPバーを満タン表示にする
-
-        // ボスの種類に応じたフラグ管理などの初期設定
-        switch (bossname)
+    /// <summary>
+    /// ボス固有の初期化（UI表示、フラグ設定など）をまとめて行います。
+    /// </summary>
+    public void InitializeBossSpecifics()
+    {
+        // --- UIの初期化 ---
+        if (GameUIManager.instance != null)
         {
-            case BossName.FirstBoss:
-                FlagManager.instance.SetKeyOpened(KeyID.K4_2, false);
-                break;
-            case BossName.SlimeBoss:
-                break;
+            GameUIManager.instance.SetGameUIBossData(this.gameObject);
+            InvokeHPChangedEvent(); // HPバーを満タン表示
+        }
+        else
+        {
+            Debug.LogError(
+                "GameUIManagerのインスタンスが見つかりません！ボスHPバーを初期化できません。",
+                this
+            );
+        }
+
+        // --- ボス固有フラグの初期化 ---
+        if (FlagManager.instance != null)
+        {
+            switch (bossname)
+            {
+                case BossName.FirstBoss:
+                    FlagManager.instance.SetKeyOpened(KeyID.K4_2, false);
+                    break;
+                case BossName.SlimeBoss:
+                    // スライムボス固有の初期設定があればここに追加
+                    break;
+                // 他のボスもここに追加
+            }
+        }
+        else
+        {
+            Debug.LogError(
+                "FlagManagerのインスタンスが見つかりません！ボス固有フラグを設定できません。",
+                this
+            );
         }
     }
 

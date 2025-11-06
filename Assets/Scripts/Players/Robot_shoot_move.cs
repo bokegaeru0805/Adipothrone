@@ -1,9 +1,9 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
-using Effekseer;
 using UnityEngine;
 
+[RequireComponent(typeof(CriWare.Assets.CriAtomSePlayer))]
 public class Robot_shoot_move : MonoBehaviour
 {
     #region 外部コンポーネント参照
@@ -11,9 +11,7 @@ public class Robot_shoot_move : MonoBehaviour
     // 他のスクリプトやエフェクトなど、外部のアセットへの参照
     //================================================================================
     private PlayerEffectManager playerEffectManager;
-
-    [SerializeField]
-    private EffekseerEmitter hitEffect;
+    private CriWare.Assets.CriAtomSePlayer sePlayer;
     #endregion
 
 
@@ -72,6 +70,9 @@ public class Robot_shoot_move : MonoBehaviour
             cooldownTime = data.cooldownTime;
             penetrationLimitCount = data.penetrationLimitCount;
             moveType = data.moveType;
+
+            // SEプレイヤーの設定
+            sePlayer = this.GetComponent<CriWare.Assets.CriAtomSePlayer>();
 
             // Colliderの設定
             CircleCollider2D collider = this.GetComponent<CircleCollider2D>();
@@ -220,17 +221,19 @@ public class Robot_shoot_move : MonoBehaviour
 
             enemyCooldowns[enemy] = cooldownTime; // クールタイム開始
             currentPenetrationCount++; //貫通数を増やす
-            if (hitEffect != null)
-            {
-                //ヒット時のエフェクトを再生
-                hitEffect.transform.position = this.transform.position;
-                hitEffect.Play();
-            }
+            
+            // if (hitEffect != null)
+            // {
+            //     //ヒット時のエフェクトを再生
+            //     hitEffect.transform.position = this.transform.position;
+            //     hitEffect.Play();
+            // }
 
             // ヒット処理
             int damageSumAmount = playerEffectManager.CalculateFinalAttackPower(shootPower);
 
             hpScript.Damage(damageSumAmount); // ダメージ量を指定
+            sePlayer.Play(SE_EnemyAction.Damage2); //敵ダメージSEを再生
 
             if (wpCost > 0)
             {

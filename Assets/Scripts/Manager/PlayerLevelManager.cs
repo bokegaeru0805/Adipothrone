@@ -1,5 +1,5 @@
-using UnityEngine;
 using System;
+using UnityEngine;
 
 /// <summary>
 /// プレイヤーのレベルと経験値を専門に管理するクラス。
@@ -58,17 +58,7 @@ public class PlayerLevelManager : MonoBehaviour
         }
 
         int playerExp = PlayerStatus.playerExp;
-        int determinedLevel = 1;
-
-        // 条件を満たす限り、レベルを上げていく
-        foreach (var pair in GameConstants.LevelExpRequirements)
-        {
-            if (playerExp >= pair.Value)
-                determinedLevel = pair.Key;
-            else
-                break;
-        }
-        playerLv = determinedLevel;
+        playerLv = GetLevelFromExp(playerExp);
 
         // 算出したレベルに基づいてステータスを更新
         UpdateLevelBasedStats(false);
@@ -145,15 +135,7 @@ public class PlayerLevelManager : MonoBehaviour
         playerLv++;
         UpdateLevelBasedStats(true); // レベルに応じた能力の変化値を更新し、HPをリセット
 
-        var seManager = SEManager.instance;
-        if (seManager != null)
-        {
-            //もし、レベルアップのSEが再生中でなければ、再生する
-            if (!seManager.IsPlayingSystemEventSE(SE_SystemEvent.LevelUp))
-            {
-                seManager.PlaySystemEventSE(SE_SystemEvent.LevelUp);
-            }
-        }
+        SEManager.instance?.PlaySystemEventSE(SE_SystemEvent.LevelUp); // レベルアップSEを再生
     }
 
     /// <summary>
@@ -173,6 +155,42 @@ public class PlayerLevelManager : MonoBehaviour
             return 0;
 
         return GameConstants.LevelExpRequirements[nextLevel] - PlayerStatus.playerExp;
+    }
+
+    // <summary>
+    /// 指定された経験値がどのレベルに相当するかを計算して返します。
+    /// (GameConstants.LevelExpRequirementsがレベル昇順にソートされている前提)
+    /// </summary>
+    /// <param name="experience">計算対象の経験値</param>
+    /// <returns>対応するレベル (最低レベル1)</returns>
+    public static int GetLevelFromExp(int experience)
+    {
+        int determinedLevel = 1; // 経験値0でもレベル1
+
+        // 条件を満たす限り、レベルを上げていく
+        // (GameConstants.LevelExpRequirements は Key=レベル, Value=必要経験値 の辞書orリスト)
+        foreach (var pair in GameConstants.LevelExpRequirements)
+        {
+            // 所持経験値(experience)が、そのレベル(pair.Key)に必要な経験値(pair.Value)以上か
+            if (experience >= pair.Value)
+            {
+                // 満たしている場合、レベルを更新
+                determinedLevel = pair.Key;
+            }
+            else
+            {
+                // 必要な経験値を満たさなくなったら、それ以降のレベルはチェック不要
+                break;
+            }
+        }
+
+        // 最大レベルを超えないように丸める (CanLevelUpの処理に合わせる)
+        if (determinedLevel > GameConstants.PlayerMaxLevel)
+        {
+            determinedLevel = GameConstants.PlayerMaxLevel;
+        }
+
+        return determinedLevel;
     }
 
     /// <summary>

@@ -34,7 +34,7 @@ public static class DropOnDeathHandler
             DropCoins(1, coin1);
         }
         // 幸運の効果を取得
-        float luckEffectDelta = PlayerEffectManager.instance.luckEffectStates.deltaValue;
+        float luckEffectDelta = PlayerEffectManager.instance.GetDeltaValue(StatusEffectType.Luck);
 
         // 敵が持つすべてのドロップ候補アイテムについて処理
         foreach (var drop in enemyData.dropItems)

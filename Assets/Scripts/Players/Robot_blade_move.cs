@@ -1,10 +1,18 @@
 using System.Collections.Generic;
 using System.Linq;
-using Effekseer;
+// using Effekseer;
 using UnityEngine;
 
+[RequireComponent(typeof(CriWare.Assets.CriAtomSePlayer))]
 public class Robot_blade_move : MonoBehaviour
 {
+    private struct CooldownEntry
+    {
+        // public GameObject enemy; // GameObject参照はGC対象になりうる
+        public int enemyInstanceID; // 代わりにInstanceIDを使う
+        public float timer;
+    }
+
     private PlayerEffectManager playerEffectManager;
     private PlayerManager playerManager;
     public bool isBladeSwinging { get; private set; } = false;
@@ -17,11 +25,12 @@ public class Robot_blade_move : MonoBehaviour
     [SerializeField]
     private GameObject RobotBladeParticle;
 
-    [SerializeField]
-    private EffekseerEffectAsset effect; // .efk を指定
+    // [SerializeField]
+    // private EffekseerEffectAsset effect; // .efk を指定
 
     // 敵ごとのクールタイムタイマー
-    private Dictionary<GameObject, float> enemyCooldowns = new Dictionary<GameObject, float>();
+    // private Dictionary<GameObject, float> enemyCooldowns = new Dictionary<GameObject, float>();
+    private List<CooldownEntry> enemyCooldownsList = new List<CooldownEntry>(32);
     private int bladePower = 0; //剣そのものの攻撃力
     private float cooldownTime = 1.0f; // クールタイム（秒）
     public float attackTime { get; private set; } = 1.0f;
@@ -34,6 +43,7 @@ public class Robot_blade_move : MonoBehaviour
     private Vector2 newColliderSize = Vector2.zero;
     private CapsuleCollider2D capsuleCollider;
     private SpriteRenderer spriteRenderer;
+    private CriWare.Assets.CriAtomSePlayer sePlayer;
     private Robot_move robotMoveScript;
     private BladeWeaponData attack;
 
@@ -41,6 +51,7 @@ public class Robot_blade_move : MonoBehaviour
     {
         capsuleCollider = this.gameObject.GetComponent<CapsuleCollider2D>();
         spriteRenderer = this.gameObject.GetComponent<SpriteRenderer>();
+        sePlayer = this.gameObject.GetComponent<CriWare.Assets.CriAtomSePlayer>();
 
         if (RobotObject == null)
         {
@@ -128,13 +139,27 @@ public class Robot_blade_move : MonoBehaviour
             }
         }
 
-        // タイマーを減らす（必要に応じてクリア）
-        foreach (var key in enemyCooldowns.Keys.ToList())
+        // // タイマーを減らす（必要に応じてクリア）
+        // foreach (var key in enemyCooldowns.Keys.ToList())
+        // {
+        //     enemyCooldowns[key] -= Time.fixedDeltaTime;
+        //     if (enemyCooldowns[key] <= 0f)
+        //     {
+        //         enemyCooldowns.Remove(key);
+        //     }
+        // }
+        for (int i = enemyCooldownsList.Count - 1; i >= 0; i--)
         {
-            enemyCooldowns[key] -= Time.fixedDeltaTime;
-            if (enemyCooldowns[key] <= 0f)
+            CooldownEntry entry = enemyCooldownsList[i]; // structなので値コピー
+            entry.timer -= Time.fixedDeltaTime;
+
+            if (entry.timer <= 0f)
             {
-                enemyCooldowns.Remove(key);
+                enemyCooldownsList.RemoveAt(i); // 後ろからの削除は高速
+            }
+            else
+            {
+                enemyCooldownsList[i] = entry; // 時間を書き戻す
             }
         }
     }
@@ -153,28 +178,51 @@ public class Robot_blade_move : MonoBehaviour
             return; // IDamageableが無効化されている場合は何もしない
         }
 
-        GameObject enemy = collision.gameObject;
+        // GameObject enemy = collision.gameObject;
 
-        // まだクールタイム中なら何もしない
-        if (enemyCooldowns.ContainsKey(enemy))
+        // // まだクールタイム中なら何もしない
+        // if (enemyCooldowns.ContainsKey(enemy))
+        //     return;
+
+        // // クールタイム開始
+        // enemyCooldowns[enemy] = cooldownTime;
+
+        GameObject enemy = collision.gameObject;
+        int enemyID = enemy.GetInstanceID(); // 敵のInstanceIDを取得
+
+        // まだクールタイム中かチェック (ここがO(N)になるが、GCよりはマシ)
+        bool onCooldown = false;
+        foreach (var entry in enemyCooldownsList)
+        {
+            // if (entry.enemy == enemy) // GameObjectの比較は重い
+            if (entry.enemyInstanceID == enemyID) // IDでの比較
+            {
+                onCooldown = true;
+                break;
+            }
+        }
+        if (onCooldown)
             return;
 
         // クールタイム開始
-        enemyCooldowns[enemy] = cooldownTime;
+        enemyCooldownsList.Add(
+            new CooldownEntry { enemyInstanceID = enemyID, timer = cooldownTime }
+        );
 
-        // 衝突点（自分のCollider上の、collisionに最も近い点）
-        Vector2 contactPoint = capsuleCollider.ClosestPoint(collision.transform.position);
-        if (effect != null)
-        {
-            var handle = EffekseerSystem.PlayEffect(effect, contactPoint);
-            //エフェクトを再生
-        }
+        // // 衝突点（自分のCollider上の、collisionに最も近い点）
+        // Vector2 contactPoint = capsuleCollider.ClosestPoint(collision.transform.position);
+        // if (effect != null)
+        // {
+        //     var handle = EffekseerSystem.PlayEffect(effect, contactPoint);
+        //     //エフェクトを再生
+        // }
 
         //様々な効果を考慮した攻撃力を計算
-        int damageSumAmount = playerEffectManager.CalculateFinalAttackPower(bladePower);
+        int damageSumAmount = playerEffectManager?.CalculateFinalAttackPower(bladePower) ?? bladePower;
 
         //ダメージ量を指定
         hpScript.Damage(damageSumAmount);
+        sePlayer.Play(SE_EnemyAction.Damage2); //敵ダメージSEを再生
 
         if (wpCost > 0)
         {

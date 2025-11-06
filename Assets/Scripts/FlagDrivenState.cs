@@ -2,6 +2,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using NaughtyAttributes;
 
 /// <summary>
 /// 【Pro版】フラグの状態に基づいて、オブジェクトの状態を多機能に制御する汎用コンポーネント。

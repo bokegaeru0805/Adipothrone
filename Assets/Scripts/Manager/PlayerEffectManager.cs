@@ -14,17 +14,12 @@ public class PlayerEffectManager : MonoBehaviour
 
     [Header("毒の数値")]
     [SerializeField]
-    private int poisonDamageRate = 0; // 毒のダメージ量
-
-    [SerializeField]
     private float poisonInterval = 0; // 毒のダメージ間隔
 
-    // 各ステータスの現在かかっている効果を保持する
-    public PlayerEffectStates attackEffectStates { get; private set; } = new PlayerEffectStates();
-    public PlayerEffectStates defenseEffectStates { get; private set; } = new PlayerEffectStates();
-    public PlayerEffectStates speedEffectStates { get; private set; } = new PlayerEffectStates();
-    public PlayerEffectStates luckEffectStates { get; private set; } = new PlayerEffectStates();
-    public PlayerEffectStates poisonEffectStates { get; private set; } = new PlayerEffectStates();
+    /// <summary>
+    /// 現在アクティブなすべてのエフェクトをリアルタイムで管理する辞書
+    /// </summary>
+    private Dictionary<StatusEffectType, PlayerEffectStates> activeEffects = new();
 
     // 各ステータスのバフ上限値
     public int attackBuffLimitLevel { get; private set; } =
@@ -84,6 +79,9 @@ public class PlayerEffectManager : MonoBehaviour
 
         // イベントを購読する
         GameManager.OnTalkingStateChanged += HandleTalkingStateChanged;
+
+        //起動時にローカルデータを初期化する
+        InitializeLocalEffects();
     }
 
     private void OnDisable()
@@ -100,11 +98,11 @@ public class PlayerEffectManager : MonoBehaviour
             UpdatePlayerEffects();
 
             // 毒状態であれば、継続ダメージのコルーチンを開始/停止する
-            if (poisonEffectStates.remainingTime > 0 && poisonCoroutine == null)
+            if (GetRemainingTime(StatusEffectType.Poison) > 0 && poisonCoroutine == null)
             {
                 poisonCoroutine = StartCoroutine(ApplyPoisonEffect());
             }
-            else if (poisonEffectStates.remainingTime <= 0 && poisonCoroutine != null)
+            else if (GetRemainingTime(StatusEffectType.Poison) <= 0 && poisonCoroutine != null)
             {
                 StopCoroutine(poisonCoroutine);
                 poisonCoroutine = null;
@@ -112,8 +110,73 @@ public class PlayerEffectManager : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// マネージャーが管理するローカルのエフェクト辞書を初期化・ロードする
+    /// </summary>
+    private void InitializeLocalEffects()
+    {
+        activeEffects.Clear();
+
+        // activeEffectsにセーブデータを反映
+        // PlayerEffectStatesはクラス（参照型）であるため、
+        // セーブデータのインスタンスを直接格納すると、リアルタイム更新時に
+        // セーブデータ（savedata）まで変更されてしまう。
+        // それを防ぐため、必ず new で新しいインスタンスを作成し、値をコピーする。
+        activeEffects[StatusEffectType.Attack] = new PlayerEffectStates(
+            (int)StatusEffectType.Attack,
+            0,
+            0
+        );
+        activeEffects[StatusEffectType.Defense] = new PlayerEffectStates(
+            (int)StatusEffectType.Defense,
+            0,
+            0
+        );
+        activeEffects[StatusEffectType.Speed] = new PlayerEffectStates(
+            (int)StatusEffectType.Speed,
+            0,
+            0
+        );
+        activeEffects[StatusEffectType.Luck] = new PlayerEffectStates(
+            (int)StatusEffectType.Luck,
+            0,
+            0
+        );
+        activeEffects[StatusEffectType.Poison] = new PlayerEffectStates(
+            (int)StatusEffectType.Poison,
+            0,
+            0
+        );
+
+        var effectSaveData = GameManager.instance.savedata.PlayerStatus.playerEffectStates;
+        if (effectSaveData != null)
+        {
+            // セーブデータから効果状態をロードして反映
+            foreach (var savedEffect in effectSaveData)
+            {
+                if (activeEffects.ContainsKey((StatusEffectType)savedEffect.effectTypeNumber))
+                {
+                    activeEffects[(StatusEffectType)savedEffect.effectTypeNumber] =
+                        new PlayerEffectStates(
+                            savedEffect.effectTypeNumber,
+                            savedEffect.deltaValue,
+                            savedEffect.remainingTime
+                        );
+                }
+            }
+        }
+        else
+        {
+            Debug.LogError("PlayerEffectStatesのセーブデータが見つかりません。", this);
+        }
+    }
+
     #region Buff/Debuff Management
-    // バフの上限を更新する関数
+    /// <summary>
+    /// 指定したステータスのバフ上限レベルをセーブデータ上で加算（または減算）します。
+    /// </summary>
+    /// <param name="statusEffectType">対象のステータスタイプ</param>
+    /// <param name="plus">加算するレベル量（減算する場合は負の値を指定）</param>
     public void UpdateBuffLimitLevel(StatusEffectType statusEffectType, int plus)
     {
         var status = GameManager.instance.savedata.PlayerStatus;
@@ -142,7 +205,10 @@ public class PlayerEffectManager : MonoBehaviour
         RefreshBuffLimit(); // バフの上限をリフレッシュ(イベントの発火も兼ねている)
     }
 
-    // バフの上限レベルをリフレッシュして、イベントを発火する関数
+    /// <summary>
+    /// セーブデータから最新のバフ上限値を読み込み、ローカルプロパティを更新し、
+    /// OnChangeBuffLimitイベントを発火させます。
+    /// </summary>
     public void RefreshBuffLimit()
     {
         var status = GameManager.instance.savedata.PlayerStatus;
@@ -160,28 +226,34 @@ public class PlayerEffectManager : MonoBehaviour
         OnChangeBuffLimit?.Invoke(); // バフの上限が変化したときに呼び出されるイベントを発火
     }
 
-    //バフ・デバフの効果を適用する関数
+    /// <summary>
+    /// プレイヤーにバフまたはデバフ効果を適用します。
+    /// 効果量は上限値まで加算され、効果時間は既存の時間と比較して長い方が採用されます。
+    /// （注：毒(Poison)はこの関数では処理されません）
+    /// </summary>
+    /// <param name="statusEffectType">適用する効果のタイプ</param>
+    /// <param name="multiplier">適用する効果量</param>
+    /// <param name="rank">効果のランク（持続時間を決定するため）</param>
     public void ApplyBuffDebuff(
         StatusEffectType statusEffectType,
         float multiplier,
         StatusEffectRank rank
     )
     {
-        if (GameManager.instance.savedata.PlayerStatus.playerEffectStates == null)
+        if (!activeEffects.TryGetValue(statusEffectType, out PlayerEffectStates existingEffect))
         {
-            GameManager.instance.savedata.PlayerStatus.playerEffectStates =
-                new List<PlayerEffectStates>();
+            // 本来 InitializeLocalEffects で初期化されているはず
+            Debug.LogError($"{statusEffectType} が activeEffects に登録されていません。");
+            return;
         }
 
-        int statusEffectTypeNumber = (int)statusEffectType; // 効果の種類を取得
         float statusEffectduration = StatusEffectUtility.GetDurationByRank(rank); // 効果の持続時間を取得
         if (statusEffectduration <= 0)
         {
             return;
         }
-        var effectList = GameManager.instance.savedata.PlayerStatus.playerEffectStates;
-        var existingEffect = effectList.Find(e => e.effectTypeNumber == statusEffectTypeNumber);
-        float effectAmount = existingEffect != null ? existingEffect.deltaValue : 0f;
+
+        float effectAmount = existingEffect.deltaValue;
 
         // 効果の数値を加算する（ただし、上限を超えないようにする）
         switch (statusEffectType)
@@ -216,89 +288,115 @@ public class PlayerEffectManager : MonoBehaviour
                 break;
         }
 
-        if (existingEffect != null)
-        {
-            // 効果を上書き更新
-            existingEffect.deltaValue = effectAmount;
-            // 効果時間を更新（既存の効果時間と新しい効果時間の最大値を取る）
-            existingEffect.remainingTime = Mathf.Max(
-                existingEffect.remainingTime,
-                statusEffectduration
-            );
-        }
-        else
-        {
-            // 新規追加
-            effectList.Add(
-                new PlayerEffectStates(statusEffectTypeNumber, effectAmount, statusEffectduration)
-            );
-        }
+        // 効果を上書き更新
+        existingEffect.deltaValue = effectAmount;
+        // 効果時間を更新（既存の効果時間と新しい効果時間の最大値を取る）
+        existingEffect.remainingTime = Mathf.Max(
+            existingEffect.remainingTime,
+            statusEffectduration
+        );
 
         SEManager.instance?.PlayPlayerActionSE(SE_PlayerAction.Buff1); // バフの効果音を再生
+
+        // Debug.Log(
+        //     $" {statusEffectType} 効果が適用されました。効果量: {effectAmount}, 残り時間: {existingEffect.remainingTime}s"
+        // );
     }
 
-    //バフ・デバフの効果を時間によって管理する関数
+    /// <summary>
+    /// 指定されたバフタイプの現在の残り時間を取得します。
+    /// </summary>
+    /// <returns>残り時間（秒）</returns>
+    public float GetRemainingTime(StatusEffectType type)
+    {
+        if (activeEffects.TryGetValue(type, out PlayerEffectStates effect))
+        {
+            return effect.remainingTime;
+        }
+
+        return 0f;
+    }
+
+    /// <summary>
+    /// 指定されたバフタイプの現在の効果量（DeltaValue）を取得します。
+    /// </summary>
+    /// <returns>効果量。時間切れの場合は0を返す。</returns>
+    public float GetDeltaValue(StatusEffectType type)
+    {
+        if (activeEffects.TryGetValue(type, out PlayerEffectStates effect))
+        {
+            // 時間切れなら 0 を返す
+            return effect.remainingTime > 0 ? effect.deltaValue : 0f;
+        }
+
+        return 0f;
+    }
+
+    /// <summary>
+    /// リアルタイム管理下にある全エフェクトの効果時間を更新（減算）します。
+    /// 時間がゼロになったエフェクトは効果量を0にリセットします。
+    /// </summary>
     public void UpdatePlayerEffects()
     {
-        var effectList = GameManager.instance.savedata.PlayerStatus.playerEffectStates;
-        if (effectList == null || effectList.Count == 0)
-            return;
-
-        // 1. 効果時間を減らす
-        foreach (var effect in effectList)
+        // 効果時間を減らす
+        foreach (var effect in activeEffects.Values)
         {
             if (effect.remainingTime > 0)
             {
                 effect.remainingTime -= Time.deltaTime;
-            }
-        }
 
-        // 2. 効果をこのマネージャーのプロパティに反映
-        foreach (var effect in effectList)
-        {
-            switch (effect.effectTypeNumber)
-            {
-                case (int)StatusEffectType.Attack:
-                    attackEffectStates.deltaValue =
-                        effect.remainingTime > 0 ? effect.deltaValue : 0;
-                    attackEffectStates.remainingTime = effect.remainingTime;
-                    break;
-                case (int)StatusEffectType.Defense:
-                    defenseEffectStates.deltaValue =
-                        effect.remainingTime > 0 ? effect.deltaValue : 0;
-                    defenseEffectStates.remainingTime = effect.remainingTime;
-                    break;
-                case (int)StatusEffectType.Speed:
-                    bool wasActive = speedEffectStates.remainingTime > 0;
-                    bool isActive = effect.remainingTime > 0;
-                    speedEffectStates.remainingTime = effect.remainingTime;
-                    speedEffectStates.deltaValue = isActive ? effect.deltaValue : 0;
-                    if (wasActive != isActive)
+                // 時間が切れた瞬間の処理
+                if (effect.remainingTime <= 0)
+                {
+                    effect.remainingTime = 0;
+                    effect.deltaValue = 0; // 効果量も0に戻す
+
+                    // スピードエフェクトが切れた場合のみイベントを発火
+                    // [コメント] Speedは移動速度や攻撃速度など、
+                    // 他のシステムがリアルタイムで参照する値であるため、
+                    // ON/OFFの切り替わりを通知する必要がある。
+                    if (effect.effectTypeNumber == (int)StatusEffectType.Speed)
                     {
-                        OnSpeedEffectChanged?.Invoke(); // スピードエフェクトが変化したときに呼び出されるイベントを発火
+                        OnSpeedEffectChanged?.Invoke();
                     }
-                    break;
-                case (int)StatusEffectType.Luck:
-                    luckEffectStates.deltaValue = effect.remainingTime > 0 ? effect.deltaValue : 0;
-                    luckEffectStates.remainingTime = effect.remainingTime;
-                    break;
-                case (int)StatusEffectType.Poison:
-                    poisonEffectStates.deltaValue =
-                        effect.remainingTime > 0 ? effect.deltaValue : 0;
-                    poisonEffectStates.remainingTime = effect.remainingTime;
-                    break;
+                }
             }
         }
     }
 
-    // 毒の効果を適用するコルーチン
+    /// <summary>
+    /// セーブ用に、現在のすべてのアクティブなエフェクト状態をリストとして返します。
+    /// </summary>
+    /// <returns>現在の全エフェクト（Poison含む）のコピー（List型）</returns>
+    public List<PlayerEffectStates> GetCurrentEffectStatesForSave()
+    {
+        // Dictionary の Values (PlayerEffectStates) をそのまま新しい List にコピーして返す
+        // （Poisonなどもすべて含まれる）
+        return new List<PlayerEffectStates>(activeEffects.Values);
+    }
+
+    /// <summary>
+    /// 毒の継続ダメージ処理を行うコルーチン。
+    /// Update()メソッドによって開始・停止が管理されます。
+    /// </summary>
     private IEnumerator ApplyPoisonEffect()
     {
+        // この while(true) ループは、毒の残り時間が0になった際に
+        // Update() メソッド側で StopCoroutine(poisonCoroutine) が
+        // 呼び出されることを前提としています。
         while (true)
         {
+            //  毒ダメージ量はリアルタイムで参照する
+            // （例：毒耐性アイテムなどで効果量が変動する可能性があるため）
+            int currentPoisonDamage = (int)GetDeltaValue(StatusEffectType.Poison);
+
             // 毒のダメージを適用
-            playerManager.TakeNormalDamage(poisonDamageRate);
-            //待機する
+            if (currentPoisonDamage > 0)
+            {
+                playerManager.TakeNormalDamage(currentPoisonDamage);
+            }
+
+            // 次のダメージ実行まで待機する
             yield return new WaitForSeconds(poisonInterval);
         }
     }
@@ -312,7 +410,7 @@ public class PlayerEffectManager : MonoBehaviour
     {
         float multiplier = 1;
         float effectDelta =
-            GameConstants.PlayerAttackEffectMultiplier * attackEffectStates.deltaValue;
+            GameConstants.PlayerAttackEffectMultiplier * GetDeltaValue(StatusEffectType.Attack);
 
         // PlayerManagerからレベル補正値を取得し、バフ効果と合算
         multiplier += playerLevelManager.attackLvActualDeltaValue + effectDelta;
@@ -338,7 +436,7 @@ public class PlayerEffectManager : MonoBehaviour
     {
         int totalDefense = 0;
         int effectDelta = (int)(
-            GameConstants.PlayerDefenseEffectMultiplier * defenseEffectStates.deltaValue
+            GameConstants.PlayerDefenseEffectMultiplier * GetDeltaValue(StatusEffectType.Defense)
         );
 
         // PlayerLevelManagerからレベル補正値を取得し、バフ効果と合算
@@ -358,13 +456,16 @@ public class PlayerEffectManager : MonoBehaviour
     /// </summary>
     public float CalculateFinalPlayerMoveSpeed(float baseSpeed)
     {
-        if (speedEffectStates.deltaValue == 0)
+        // スピードエフェクトの変化量を取得
+        float deltaValue = GetDeltaValue(StatusEffectType.Speed);
+
+        // 変化量が0なら基本速度を返す
+        if (deltaValue == 0)
         {
             return baseSpeed;
         }
 
-        float effectDelta =
-            GameConstants.PlayerMoveSpeedEffectMultiplier * speedEffectStates.deltaValue;
+        float effectDelta = GameConstants.PlayerMoveSpeedEffectMultiplier * deltaValue;
 
         // PlayerBodyManagerからWP倍率を取得して反映
         float finalSpeed = baseSpeed * playerBodyManager.speedWpScale * (1f + effectDelta);
@@ -377,13 +478,16 @@ public class PlayerEffectManager : MonoBehaviour
     /// </summary>
     public float CalculateFinalBladeMoveSpeed(float baseSpeed)
     {
-        if (speedEffectStates.deltaValue == 0)
+        // スピードエフェクトの変化量を取得
+        float deltaValue = GetDeltaValue(StatusEffectType.Speed);
+
+        // 変化量が0なら基本速度を返す
+        if (deltaValue == 0)
         {
             return baseSpeed;
         }
 
-        float effectDelta =
-            GameConstants.PlayerWeaponSpeedEffectMultiplier * speedEffectStates.deltaValue;
+        float effectDelta = GameConstants.PlayerWeaponSpeedEffectMultiplier * deltaValue;
 
         // PlayerBodyManagerからWP倍率を取得して反映
         float finalSpeed = baseSpeed / (playerBodyManager.speedWpScale * (1f + effectDelta));

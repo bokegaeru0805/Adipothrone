@@ -194,6 +194,7 @@ public class NightBorneMoveController : MonoBehaviour, IEnemyResettable
     private Coroutine swordCoroutine;
     private StaticAfterImageEffect2DPlayer afterImage;
     private UniqueBossHealth bossHealth;
+    private CriWare.Assets.CriAtomSePlayer sePlayer; // SE再生用のCriAtomSePlayerコンポーネント
     private List<GameObject> linkedObjectsToDestroy = new List<GameObject>();
 
     // ファンネルのコンポーネントと状態をキャッシュするためのリスト
@@ -291,6 +292,8 @@ public class NightBorneMoveController : MonoBehaviour, IEnemyResettable
 
     private void Awake()
     {
+        sePlayer = this.GetComponent<CriWare.Assets.CriAtomSePlayer>();
+        
         spriteRenderer = this.GetComponent<SpriteRenderer>();
         if (spriteRenderer != null)
         {
@@ -803,18 +806,22 @@ public class NightBorneMoveController : MonoBehaviour, IEnemyResettable
         switch (currentAttackPattern)
         {
             case FunnelAttackPattern.StraightDown:
-                SEManager.instance?.PlayEnemyActionSEPitch(SE_EnemyAction.MagicWave1, 1.5f);
+                sePlayer.PlayWithPitch(SE_EnemyAction.MagicWave1, 750f);
+                //SEManager.instance?.PlayEnemyActionSEPitch(SE_EnemyAction.MagicWave1, 1.5f);
                 break;
             case FunnelAttackPattern.Cross:
-                SEManager.instance?.PlayEnemyActionSEPitch(SE_EnemyAction.MagicWave1, 1.3f);
+                sePlayer.PlayWithPitch(SE_EnemyAction.MagicWave1, 450f);
+                //SEManager.instance?.PlayEnemyActionSEPitch(SE_EnemyAction.MagicWave1, 1.3f);
                 break;
             case FunnelAttackPattern.TargetPlayer:
             case FunnelAttackPattern.Random:
-                SEManager.instance?.PlayEnemyActionSEPitch(SE_EnemyAction.MagicWave1, 1.0f);
+                sePlayer.PlayWithPitch(SE_EnemyAction.MagicWave1, 0f);
+                //SEManager.instance?.PlayEnemyActionSEPitch(SE_EnemyAction.MagicWave1, 1.0f);
                 break;
         }
 
-        SEManager.instance?.PlayEnemyActionSE(SE_EnemyAction.SwordSlash2);
+        sePlayer.Play(SE_EnemyAction.SwordSlash2);
+        //SEManager.instance?.PlayEnemyActionSE(SE_EnemyAction.SwordSlash2);
 
         // 状態を移行
         currentFunnelState = FunnelState.Positioning;

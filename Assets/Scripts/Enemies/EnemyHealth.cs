@@ -1,5 +1,3 @@
-using System.Collections;
-using Effekseer;
 using UnityEngine;
 
 /// <summary>
@@ -24,7 +22,7 @@ public class EnemyHealth : CharacterHealth, IEnemyResettable
     // --- 内部コンポーネント参照 ---
     private bool isInitialized = false; // 外部からの初期化が完了したかを管理するフラグ
     private Rigidbody2D rbody;
-    private EffekseerEmitter destroyEffect;
+    // private EffekseerEmitter destroyEffect;
     private float destroyEffectScale = 1.0f; // 死亡エフェクトの大きさ
     private const string deathAnimParam = "death"; // 死亡アニメーションのパラメータ名
     private Transform dropParent;
@@ -85,7 +83,7 @@ public class EnemyHealth : CharacterHealth, IEnemyResettable
 
         // EnemyDataに基づいてステータスを設定
         MaxHP = enemyData.enemyHP;
-        destroyEffect = enemyData.destroyeffect;
+        // destroyEffect = enemyData.destroyeffect;
         destroyEffectScale = enemyData.destroyeffectScale;
 
         // 状態をリセットしてHPなどを満タンにする
@@ -116,13 +114,13 @@ public class EnemyHealth : CharacterHealth, IEnemyResettable
     /// </summary>
     protected override void OnDeath()
     {
-        // エフェクト再生
-        if (destroyEffect != null)
-        {
-            var effect = Instantiate(destroyEffect, transform.position, Quaternion.identity);
-            effect.transform.localScale = Vector3.one * destroyEffectScale;
-            effect.Play();
-        }
+        // // エフェクト再生
+        // if (destroyEffect != null)
+        // {
+        //     var effect = Instantiate(destroyEffect, transform.position, Quaternion.identity);
+        //     effect.transform.localScale = Vector3.one * destroyEffectScale;
+        //     effect.Play();
+        // }
 
         SEManager.instance?.PlayEnemyActionSE(SE_EnemyAction.Death1); // 死亡の効果音を鳴らす
 

@@ -1,3 +1,5 @@
+#if UNITY_EDITOR
+
 using UnityEngine;
 
 /// <summary>
@@ -59,8 +61,10 @@ public class CollisionDebugger : MonoBehaviour
         //    <color=cyan>...</color> : リッチテキストタグを使い、文字をシアン（水色）にする
         //    distance:F2 : 距離を小数点以下2桁までで表示する書式設定
         string logMessage = $"<color=cyan>接触オブジェクト: {objectName}, プレイヤーとの距離: {distance:F5}m</color>";
-        
+
         // 4. コンソールにログを出力
         Debug.Log(logMessage);
     }
 }
+
+#endif

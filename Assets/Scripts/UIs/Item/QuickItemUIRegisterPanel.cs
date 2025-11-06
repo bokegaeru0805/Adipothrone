@@ -71,48 +71,25 @@ public class QuickItemRegisterPanel : MonoBehaviour
 
     private void ClosePanel()
     {
-        if (this.gameObject.name.Contains("_Menu"))
+         // オブジェクト名による分岐を、SaveLoadManager経由の呼び出しに変更
+        if (SaveLoadManager.CurrentActiveManager != null)
         {
-            if (UIManager.instance != null)
-            {
-                UIManager.instance.CloseTopPanel();
-            }
-            else
-            {
-                Debug.LogWarning("UIManagerが存在しません");
-            }
-        }
-        else if (this.gameObject.name.Contains("_Title"))
-        {
-            if (TitleUIManager.instance != null)
-            {
-                TitleUIManager.instance.CloseTopPanel();
-            }
-            else
-            {
-                Debug.LogWarning("TitleUIManagerが存在しません");
-            }
-        }
-        else if (this.gameObject.name.Contains("_GameOver"))
-        {
-            if (GameOverUIManager.instance != null)
-            {
-                GameOverUIManager.instance.CloseTopPanel();
-            }
-            else
-            {
-                Debug.LogWarning("GameOverUIManagerが存在しません");
-            }
+            // 登録されているManagerのCloseTopPanel()を呼び出す
+            SaveLoadManager.CurrentActiveManager.CloseTopPanel();
         }
         else
         {
+            // CurrentActiveManager が見つからなかった場合 (各ManagerのAwakeで登録し忘れている可能性)
+            Debug.LogWarning(
+                "SaveLoadPromptButton: SaveLoadManager.CurrentActiveManager が設定されていません。データ変更確認画面を閉じることができません。",
+                this
+            );
             this.gameObject.SetActive(false);
         }
     }
 
     private void OnEnable()
     {
-        quickItemPanel.ResetSelectionToIndexZero(); //カーソルの位置を初期化
         UIManager.instance.SetQuickItemRegistering(true); //クイックアイテム登録画面が開いているフラグを立てる
     }
 

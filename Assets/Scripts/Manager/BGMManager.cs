@@ -32,7 +32,7 @@ public class BGMManager : MonoBehaviour
         string
     >
     {
-        { BGMCategory.Title, "Title" },//仮Title
+        { BGMCategory.Title, "Title" },
         { BGMCategory.GameOver, "GameOver" },
         { BGMCategory.Field_Quiet, "QuietField" },
         { BGMCategory.Field_Tutorial, "TutorialField" },
@@ -41,10 +41,10 @@ public class BGMManager : MonoBehaviour
         { BGMCategory.Boss_Chapter, "ChapterBoss" },
         { BGMCategory.Boss_Unique, "UniqueBoss" },
         { BGMCategory.Boss_Mid, "MidBoss" },
-        { BGMCategory.Field_Plains, "PlainsField1" }, //仮PlainsField1
+        { BGMCategory.Field_Plains, "PlainsField1" },
         { BGMCategory.Env_Water_Stream1, "WaterStream1" },
         { BGMCategory.Env_Birds, "PlainsField_Amb1" },
-        { BGMCategory.Field_FirstVillage, "FirstVillage" },  //仮FirstVillage
+        { BGMCategory.Field_FirstVillage, "FirstVillage" },
         { BGMCategory.Field_Cave1, "CaveField_Amb1" },
         {
             BGMCategory.None,
@@ -74,11 +74,16 @@ public class BGMManager : MonoBehaviour
 
     private void Start()
     {
+        // ACFファイルの登録
+        //これを行うと、BGMMangerなどのAdjustAllVolumeが正しく動作しなくなる場合があるためコメントアウト
+        //CriAtomEx.RegisterAcf(null, "Adipothrone.acf");
+
         // 初期化
         // プレイヤーは最初に一度だけ生成し、使い回す
         // Awakeで行うと、CRIWAREのシステム自体がまだ起動準備を完了していない場合があるため、Startで行う
         player1 = new CriAtomExPlayer();
         player2 = new CriAtomExPlayer();
+        currentPlayer = new CriAtomExPlayer();
     }
 
     private void OnDestroy()
@@ -93,6 +98,11 @@ public class BGMManager : MonoBehaviour
         {
             player2.Dispose();
             player2 = null;
+        }
+        if (currentPlayer != null)
+        {
+            currentPlayer.Dispose();
+            currentPlayer = null;
         }
     }
 

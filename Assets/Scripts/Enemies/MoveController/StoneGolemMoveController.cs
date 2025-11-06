@@ -1,11 +1,14 @@
 using System.Collections;
 using System.Collections.Generic;
-using Effekseer;
-using Shapes2D;
+// using Effekseer;
 using UnityEngine;
 
+[RequireComponent(typeof(CriWare.Assets.CriAtomSePlayer))]
 public class StoneGolemMoveController : MonoBehaviour
 {
+    private const string SPAWN_ANIMATION_CLIP_NAME = "StoneGolem-spawn"; // 登場アニメーションのクリップ名
+    private const float SPAWN_ANIMATION_SPEED = 0.3f; // 登場アニメーションの再生速度
+
     [Header("腕の設定")]
     [SerializeField]
     private BodyArmConfig[] configs;
@@ -153,11 +156,11 @@ public class StoneGolemMoveController : MonoBehaviour
     [SerializeField]
     private GameObject hammerObject; // ハンマーのオブジェクト
 
-    [SerializeField]
-    private EffekseerEmitter shockWaveEffect; // ショックウェーブエフェクト
+    // [SerializeField]
+    // private EffekseerEmitter shockWaveEffect; // ショックウェーブエフェクト
 
-    [SerializeField]
-    private EffekseerEmitter chargeEffect; // チャージエフェクト
+    // [SerializeField]
+    // private EffekseerEmitter chargeEffect; // チャージエフェクト
 
     private enum CommandType
     {
@@ -194,6 +197,7 @@ public class StoneGolemMoveController : MonoBehaviour
     private bool rightFlag = false; // 右向きフラグ
     private bool hasSummonedMinions = false;
     private bool isMoveStarted = false; // 移動が開始されたかどうか
+    private bool isSpawnAnimationFinished = false; // 登場アニメーションが終了したかどうか
     private const string crawlingRockPoolTag = "StoneGolem_CrawlingRock"; // 這う岩のプールタグ名
     private const string rockPoolTag = "StoneGolem_Rock"; // 岩のプールタグ名
     private const string slashEffectPoolTag = "StoneGolem_SlashEffect"; // スラッシュエフェクトのプールタグ名
@@ -208,6 +212,7 @@ public class StoneGolemMoveController : MonoBehaviour
     private Transform armTransform;
     private SpriteRenderer hammerRenderer;
     private Transform hammerTransform;
+    private CriWare.Assets.CriAtomSePlayer sePlayer;
     private List<GameObject> linkedObjectsToDestroy = new List<GameObject>();
 
     private void RegisterLinkedObject(GameObject obj)
@@ -221,10 +226,8 @@ public class StoneGolemMoveController : MonoBehaviour
     private void Awake()
     {
         spriteRenderer = this.GetComponent<SpriteRenderer>();
-        if (spriteRenderer == null)
-        {
-            Debug.LogError($" {gameObject.name} にSpriteRendererが見つかりません。");
-        }
+        sePlayer = this.GetComponent<CriWare.Assets.CriAtomSePlayer>();
+        animator = this.GetComponent<Animator>();
 
         if (armObject != null)
         {
@@ -283,15 +286,15 @@ public class StoneGolemMoveController : MonoBehaviour
             Debug.LogError("rockEnemyDataが設定されていません。");
         }
 
-        if (chargeEffect == null)
-        {
-            Debug.LogError("ChargeEffect が設定されていません。");
-        }
+        // if (chargeEffect == null)
+        // {
+        //     Debug.LogError("ChargeEffect が設定されていません。");
+        // }
 
-        if (shockWaveEffect == null)
-        {
-            Debug.LogError("ShockWaveEffect が設定されていません。");
-        }
+        // if (shockWaveEffect == null)
+        // {
+        //     Debug.LogError("ShockWaveEffect が設定されていません。");
+        // }
 
         rbody = this.GetComponent<Rigidbody2D>();
         if (rbody == null)
@@ -302,12 +305,6 @@ public class StoneGolemMoveController : MonoBehaviour
         {
             rbody.constraints = RigidbodyConstraints2D.FreezeRotation;
             rbody.velocity = Vector2.zero; // 初期速度をゼロに設定
-        }
-
-        animator = this.GetComponent<Animator>();
-        if (animator == null)
-        {
-            Debug.LogError($" {gameObject.name} にAnimatorが見つかりません。");
         }
 
         this.tag = "Untagged"; // タグを一時的に未設定にする
@@ -351,19 +348,78 @@ public class StoneGolemMoveController : MonoBehaviour
         this.tag = "Untagged"; // タグを一時的に未設定にする
         rightFlag = false; // 初期は左向き
 
+        isSpawnAnimationFinished = false;
         if (useAppearanceEffect)
         {
-            animator.SetTrigger("spawnTrigger"); // 登場アニメーションをトリガー
+            StartCoroutine(PlaySpawnAnimationAndActivate()); // 登場アニメーションを再生してから移動を有効化
+        }
+        else
+        {
+            isSpawnAnimationFinished = true;
         }
 
         this.GetComponent<BossHealth>().enabled = false; // BossHealthスクリプトを無効化
         isMoveStarted = false; // 移動開始フラグをリセット
     }
 
+    /// <summary>
+    /// 登場アニメーションを再生し、完了後に ActivateMovement を呼び出すコルーチン。
+    /// </summary>
+    private IEnumerator PlaySpawnAnimationAndActivate()
+    {
+        // 1. 登場アニメーションをトリガー
+        animator.SetFloat("spawnSpeed", SPAWN_ANIMATION_SPEED);
+        animator.SetTrigger("spawnTrigger");
+
+        // 2. アニメーションクリップの再生時間を取得
+        float spawnAnimationLength = 0f;
+        if (animator != null && animator.runtimeAnimatorController != null)
+        {
+            foreach (AnimationClip clip in animator.runtimeAnimatorController.animationClips)
+            {
+                // 定義したクリップ名で検索
+                if (clip.name == SPAWN_ANIMATION_CLIP_NAME)
+                {
+                    spawnAnimationLength = clip.length;
+                    break;
+                }
+            }
+        }
+
+        // 3. アニメーションの再生速度を考慮して待機時間を計算
+        float waitDuration = spawnAnimationLength / SPAWN_ANIMATION_SPEED;
+
+        // 4. 計算した時間だけ待機
+        if (waitDuration > 0)
+        {
+            yield return new WaitForSeconds(waitDuration);
+        }
+        else
+        {
+            // アニメーションが見つからない場合などは、最低限1フレーム待機
+            Debug.LogWarning(
+                $"登場アニメーション '{SPAWN_ANIMATION_CLIP_NAME}' が見つからないか再生時間が0です。"
+            );
+            yield return null;
+        }
+
+        // 5. アニメーション完了後、本格的な起動処理を呼び出す
+        isSpawnAnimationFinished = true;
+    }
+
     private void FixedUpdate()
     {
         if (playerTransform == null)
-            return;
+        {
+            playerTransform = GameObject
+                .FindGameObjectWithTag(GameConstants.PlayerTagName)
+                .transform;
+            if (playerTransform == null)
+            {
+                Debug.LogError($"{this.name}はPlayerObjectを見つけられませんでした");
+                return;
+            }
+        }
 
         //敵の動きがポーズされているかどうかを確認
         // もしポーズされていればRigidbody2Dを無効化する
@@ -376,9 +432,17 @@ public class StoneGolemMoveController : MonoBehaviour
         else if (!rbody.simulated)
             rbody.simulated = true;
 
+        // 登場アニメーションが終了していない場合は何もしない
+        if (!isSpawnAnimationFinished)
+        {
+            return;
+        }
+
         if (!isMoveStarted)
         {
-            this.GetComponent<BossHealth>().enabled = true; // BossHealthスクリプトを有効化
+            var bossHealth = this.GetComponent<BossHealth>();
+            bossHealth.enabled = true; // BossHealthスクリプトを有効化
+            bossHealth.InitializeBossSpecifics(); // ボス固有の初期化を実行
             this.tag = GameConstants.ImmuneEnemyTagName; // タグをダメージを受けない敵のタグに変更
             isMoveStarted = true;
         }
@@ -528,7 +592,7 @@ public class StoneGolemMoveController : MonoBehaviour
         animator.SetTrigger("attackTrigger"); // 攻撃アニメーションをトリガー
         StartCoroutine(UpdateArmForDuration(attackAnimationTime)); // アームの見た目を更新
         yield return new WaitForSeconds(attackAnimationTime * 0.7f); // 攻撃アニメーションの時間を待機1
-        SEManager.instance?.PlayEnemyActionSEPitch(SE_EnemyAction.Kick1,Random.Range(1.0f, 1.2f)); // 攻撃の効果音を鳴らす
+        sePlayer.Play(SE_EnemyAction.Kick1); // 攻撃の効果音を鳴らす
         yield return new WaitForSeconds(attackAnimationTime * 0.3f); // 攻撃アニメーションの時間を待機2
         yield return new WaitForSeconds(meleeAttackCooldown); // 攻撃後の待機時間
 
@@ -545,7 +609,7 @@ public class StoneGolemMoveController : MonoBehaviour
         animator.SetTrigger("attackTrigger"); // 攻撃アニメーションをトリガー
         StartCoroutine(UpdateArmForDuration(attackAnimationTime)); // アームの見た目を更新
         yield return new WaitForSeconds(attackAnimationTime * 0.7f); // 攻撃アニメーションの時間を待機1
-        SEManager.instance?.PlayEnemyActionSEPitch(SE_EnemyAction.Kick1,Random.Range(0.8f, 1.0f)); // 攻撃の効果音を鳴らす
+        sePlayer.Play(SE_EnemyAction.Kick1); // 攻撃の効果音を鳴らす
         yield return new WaitForSeconds(attackAnimationTime * 0.3f); // 攻撃アニメーションの時間を待機2
 
         GameObject crawlingRock = ObjectPooler.instance.SpawnFromPool(
@@ -652,22 +716,22 @@ public class StoneGolemMoveController : MonoBehaviour
         animator.SetTrigger("hammerReadyTrigger");
         //ハンマー見た目を更新するコルーチンを開始
         StartCoroutine(UpdateHammer());
-        // チャージエフェクトを再生
-        if (chargeEffect != null)
-        {
-            EffekseerEmitter chargeEffectInstance = Instantiate(chargeEffect); //エフェクトを生成
-            chargeEffectInstance.transform.SetParent(this.transform); //エフェクトの親をこのオブジェクトに設定
-            Vector2 chargeEffectPos = pos; //自分の座標をコピー
-            chargeEffectPos.y += chargeEffectOffsetY; //エフェクトのy座標を調整
-            chargeEffectInstance.transform.position = chargeEffectPos; //エフェクトの位置を指定
-            chargeEffectInstance.speed =
-                GameConstants.ChargeEffectDefaultDuration / hammerChargeTime; //エフェクトの速度を指定
-            chargeEffectInstance.transform.localScale = new Vector2(
-                chargeEffectScale,
-                chargeEffectScale
-            ); //エフェクトの大きさを指定
-            chargeEffectInstance.Play(); //エフェクトを再生
-        }
+        // // チャージエフェクトを再生
+        // if (chargeEffect != null)
+        // {
+        //     EffekseerEmitter chargeEffectInstance = Instantiate(chargeEffect); //エフェクトを生成
+        //     chargeEffectInstance.transform.SetParent(this.transform); //エフェクトの親をこのオブジェクトに設定
+        //     Vector2 chargeEffectPos = pos; //自分の座標をコピー
+        //     chargeEffectPos.y += chargeEffectOffsetY; //エフェクトのy座標を調整
+        //     chargeEffectInstance.transform.position = chargeEffectPos; //エフェクトの位置を指定
+        //     chargeEffectInstance.speed =
+        //         GameConstants.ChargeEffectDefaultDuration / hammerChargeTime; //エフェクトの速度を指定
+        //     chargeEffectInstance.transform.localScale = new Vector2(
+        //         chargeEffectScale,
+        //         chargeEffectScale
+        //     ); //エフェクトの大きさを指定
+        //     chargeEffectInstance.Play(); //エフェクトを再生
+        // }
 
         hammerObject.tag = "Untagged"; // ハンマーのタグを一時的に未設定にする（ダメージを受けない敵のタグに変更）
 
@@ -679,13 +743,7 @@ public class StoneGolemMoveController : MonoBehaviour
             float value = Mathf.Lerp(0.41f, 0f, t);
             hammerRenderer.material.SetFloat("_FadeAmount", value);
             elapsed += Time.deltaTime;
-            if (SEManager.instance != null)
-            {
-                if (!SEManager.instance.IsPlayingEnemyActionSE(SE_EnemyAction.ChargePower1))
-                {
-                    SEManager.instance.PlayEnemyActionSE(SE_EnemyAction.ChargePower1); //チャージの効果音を鳴らす
-                }
-            }
+            sePlayer.Play(SE_EnemyAction.ChargePower1); //チャージの効果音を鳴らす
             yield return null;
         }
 
@@ -696,26 +754,27 @@ public class StoneGolemMoveController : MonoBehaviour
         SpawnSlashEffect();
         // スキル名UIを表示
         GameUIManager.instance?.ShowSkillNameUI("地砕");
-        SEManager.instance?.PlayEnemyActionSE(SE_EnemyAction.Impact_iron1); //ハンマー攻撃の効果音を鳴らす
+        sePlayer.Play(SE_EnemyAction.Impact_iron1); //ハンマー攻撃の効果音を鳴らす
+
         //ハンマー攻撃アニメーションの時間分待機する
         yield return new WaitForSeconds(hammerAttackAnimationTime);
 
-        if (shockWaveEffect != null)
-        {
-            EffekseerEmitter shockWaveEffectInstance = Instantiate(shockWaveEffect); //エフェクトを生成
-            shockWaveEffectInstance.transform.SetParent(this.transform); //エフェクトの親をこのオブジェクトに設定
-            Vector2 shockWavePos = this.transform.position; //自分の座標をコピー
-            shockWavePos.x += rightFlag ? shockWaveEffectOffsetX : -shockWaveEffectOffsetX; //エフェクトのx座標を調整
-            shockWaveEffectInstance.transform.position = shockWavePos; //エフェクトの位置を指定
-            float shockwaveRange =
-                2 * Mathf.Max(Mathf.Abs(pos.x - leftBound), Mathf.Abs(pos.x - rightBound)); //エフェクトの大きさを取得
-            shockWaveEffectInstance.transform.localScale = new Vector3(
-                shockwaveRange,
-                shockwaveRange,
-                0
-            ); //エフェクトの大きさを指定
-            shockWaveEffectInstance.Play(); //エフェクトを再生
-        }
+        // if (shockWaveEffect != null)
+        // {
+        //     EffekseerEmitter shockWaveEffectInstance = Instantiate(shockWaveEffect); //エフェクトを生成
+        //     shockWaveEffectInstance.transform.SetParent(this.transform); //エフェクトの親をこのオブジェクトに設定
+        //     Vector2 shockWavePos = this.transform.position; //自分の座標をコピー
+        //     shockWavePos.x += rightFlag ? shockWaveEffectOffsetX : -shockWaveEffectOffsetX; //エフェクトのx座標を調整
+        //     shockWaveEffectInstance.transform.position = shockWavePos; //エフェクトの位置を指定
+        //     float shockwaveRange =
+        //         2 * Mathf.Max(Mathf.Abs(pos.x - leftBound), Mathf.Abs(pos.x - rightBound)); //エフェクトの大きさを取得
+        //     shockWaveEffectInstance.transform.localScale = new Vector3(
+        //         shockwaveRange,
+        //         shockwaveRange,
+        //         0
+        //     ); //エフェクトの大きさを指定
+        //     shockWaveEffectInstance.Play(); //エフェクトを再生
+        // }
         // ダストエフェクトを生成
         SpawnDustEffect();
 
@@ -733,7 +792,7 @@ public class StoneGolemMoveController : MonoBehaviour
                 if (rock == null)
                     continue; // プールから取得できなかった場合はスキップ
 
-                SEManager.instance?.PlayFieldSE(SE_Field.Collapse3); // 岩生成の効果音を鳴らす
+                sePlayer.Play(SE_Field.Collapse3); // 岩落下の効果音を鳴らす
                 var rockHPscript = rock.GetComponent<EnemyHealth>();
                 if (rockHPscript == null)
                 {
@@ -988,6 +1047,7 @@ public class StoneGolemMoveController : MonoBehaviour
 
         Rigidbody2D crawlingRockRigidbody = crawlingRock.GetComponent<Rigidbody2D>(); //Rigidbody2Dコンポーネントを取得
         float existenceDuration = Mathf.Abs(rightBound - leftBound) / crawlingRockSpeed; // 這う岩の存在時間を計算
+        var crawlingRockSePlayer = crawlingRock.GetComponent<CriWare.Assets.CriAtomSePlayer>();
 
         // 岩の生存時間を計測するタイマーを追加
         float lifeTimer = 0f;
@@ -1083,10 +1143,7 @@ public class StoneGolemMoveController : MonoBehaviour
                     ); // プールに一定時間後に返却
                 }
 
-                if (!SEManager.instance.IsPlayingFieldSE(SE_Field.GroundRumble1))
-                {
-                    SEManager.instance.PlayFieldSE(SE_Field.GroundRumble1); // 這う岩の移動音を鳴らす
-                }
+                crawlingRockSePlayer.Play(SE_Field.GroundRumble1); // 這う岩の移動音を鳴らす
             }
             else
             {

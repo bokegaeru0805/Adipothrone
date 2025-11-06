@@ -1,6 +1,5 @@
 using System;
-using System.Collections;
-using TMPro;
+using NaughtyAttributes;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -10,17 +9,20 @@ public class ItemUsePromptButton : MonoBehaviour
 
     [HideInInspector]
     public Enum itemID;
-    private GameObject datePromptWindow;
+    private GameObject dataPromptWindow;
 
     [SerializeField]
-    private GameObject ItemRegisterPromptPanel;
     private PromptType promptType;
+
+    [SerializeField,ShowIf(nameof(promptType), PromptType.Register)] //Registerボタンの場合のみ表示
+    private GameObject ItemRegisterPromptPanel;
 
     private enum PromptType
     {
-        Yes,
-        Register,
-        No,
+        None = 0,
+        Yes = 1,
+        Register = 2,
+        No = 3,
     }
 
     public void SetItemID(Enum num) => itemID = num;
@@ -28,25 +30,23 @@ public class ItemUsePromptButton : MonoBehaviour
     private void Start()
     {
         GetComponent<Button>().onClick.AddListener(OnPromptSelected);
-        datePromptWindow = this.transform.parent.gameObject;
+        dataPromptWindow = this.transform.parent.gameObject;
 
-        if (this.gameObject.name.Contains("Yes"))
+        if (promptType == PromptType.None)
         {
-            promptType = PromptType.Yes;
+            Debug.LogError(
+                $"{this.gameObject.name}: PromptType が None に設定されています。適切な値に変更してください。",
+                this
+            );
+        }
+        else if (promptType == PromptType.Yes)
+        {
             playerManager = PlayerManager.instance;
             if (playerManager == null)
             {
                 Debug.LogWarning("PlayerManagerが存在しません。アイテム使用の確認ができません。");
                 return;
             }
-        }
-        else if (this.gameObject.name.Contains("Register"))
-        {
-            promptType = PromptType.Register;
-        }
-        else
-        {
-            promptType = PromptType.No;
         }
     }
 
@@ -99,42 +99,20 @@ public class ItemUsePromptButton : MonoBehaviour
 
     private void ClosePanel()
     {
-        if (this.gameObject.name.Contains("_Menu"))
+        // オブジェクト名による分岐を、SaveLoadManager経由の呼び出しに変更
+        if (SaveLoadManager.CurrentActiveManager != null)
         {
-            if (UIManager.instance != null)
-            {
-                UIManager.instance.CloseTopPanel();
-            }
-            else
-            {
-                Debug.LogWarning("UIManagerが存在しません");
-            }
-        }
-        else if (this.gameObject.name.Contains("_Title"))
-        {
-            if (TitleUIManager.instance != null)
-            {
-                TitleUIManager.instance.CloseTopPanel();
-            }
-            else
-            {
-                Debug.LogWarning("TitleUIManagerが存在しません");
-            }
-        }
-        else if (this.gameObject.name.Contains("_GameOver"))
-        {
-            if (GameOverUIManager.instance != null)
-            {
-                GameOverUIManager.instance.CloseTopPanel();
-            }
-            else
-            {
-                Debug.LogWarning("GameOverUIManagerが存在しません");
-            }
+            // 登録されているManagerのCloseTopPanel()を呼び出す
+            SaveLoadManager.CurrentActiveManager.CloseTopPanel();
         }
         else
         {
-            datePromptWindow.SetActive(false);
+            // CurrentActiveManager が見つからなかった場合 (各ManagerのAwakeで登録し忘れている可能性)
+            Debug.LogWarning(
+                "SaveLoadPromptButton: SaveLoadManager.CurrentActiveManager が設定されていません。データ変更確認画面を閉じることができません。",
+                this
+            );
+            dataPromptWindow.SetActive(false);
         }
     }
 }

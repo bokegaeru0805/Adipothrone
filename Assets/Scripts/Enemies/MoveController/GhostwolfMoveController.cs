@@ -1,7 +1,8 @@
 using System.Collections;
-using Effekseer;
+// using Effekseer;
 using UnityEngine;
 
+[RequireComponent(typeof(CriWare.Assets.CriAtomSePlayer))]
 public class GhostwolfMoveController : MonoBehaviour
 {
     private GameObject PlayerObject; //ターゲットオブジェクトを定義
@@ -125,36 +126,30 @@ public class GhostwolfMoveController : MonoBehaviour
     private Sprite howlsprite; //弾幕が出るときのスプライト
 
     [Header("エフェクト")]
-    [SerializeField]
-    private EffekseerEmitter chargeEffect;
+    // [SerializeField]
+    // private EffekseerEmitter chargeEffect;
 
-    [SerializeField, Tooltip("扇状弾幕攻撃(溜め攻撃)のエフェクトの大きさ")]
+    // [SerializeField, Tooltip("扇状弾幕攻撃(溜め攻撃)のエフェクトの大きさ")]
     private float chargeRange = 10f;
 
-    [SerializeField]
-    private EffekseerEmitter shockWaveEffect;
+    // [SerializeField]
+    // private EffekseerEmitter shockWaveEffect;
 
     [SerializeField]
     private float ChargeeffectoffsetY; //エフェクトのY座標を調整
     private int totalAttacks = 0; //攻撃した回数
     private float action_mode = 0; // 行動モードを初期化
     private float gravity = 9.81f; //重力の数値
-    private float hpPercent = 100;
-    private int bossMaxHP; //最大HP
-    private int bossHP; //現在のHP
     private bool isFirstHPbelowHalf = false; //HPが半分以下になったかどうかのフラグ
     private Vector3 playerPos; //プレイヤーの位置を保存するための変数
     private Animator animator;
-    private IDamageable hpscript;
+    private BossHealth hpscript;
     private SpriteRenderer spriteRenderer;
+    private CriWare.Assets.CriAtomSePlayer sePlayer;
 
     private void Awake()
     {
-        if (
-            normalShootDamage <= 0
-            || rainDamage <= 0
-            || flatShootDamage <= 0
-        )
+        if (normalShootDamage <= 0 || rainDamage <= 0 || flatShootDamage <= 0)
         {
             Debug.LogError("GhostWolfに弾のダメージ量が設定されていません。");
         }
@@ -169,13 +164,14 @@ public class GhostwolfMoveController : MonoBehaviour
             Debug.LogError("GhostWolfに弾幕が出るときのスプライトが設定されていません。");
         }
 
-        if (shockWaveEffect == null || chargeEffect == null)
-        {
-            Debug.LogError("GhostWolfにエフェクトが設定されていません。");
-        }
+        // if (shockWaveEffect == null || chargeEffect == null)
+        // {
+        //     Debug.LogError("GhostWolfにエフェクトが設定されていません。");
+        // }
 
         spriteRenderer = this.GetComponent<SpriteRenderer>();
-        animator = this.GetComponent<Animator>(); //Animatorのコンポーネントを取得
+        animator = this.GetComponent<Animator>();
+        sePlayer = this.GetComponent<CriWare.Assets.CriAtomSePlayer>();
     }
 
     private void Start()
@@ -184,8 +180,8 @@ public class GhostwolfMoveController : MonoBehaviour
             PlayerObject = GameObject.FindGameObjectWithTag(GameConstants.PlayerTagName); // プレイヤーオブジェクトを探して格納
 
         animator.SetFloat("stay_speed", 0.250f / staySec); //stayアニメーションの時間を調整
-        hpscript = this.GetComponent<IDamageable>(); //hpのscriptを取得
-        bossMaxHP = hpscript.MaxHP; //最大HPを取得
+        hpscript = this.GetComponent<BossHealth>(); //hpのscriptを取得
+        hpscript.InitializeBossSpecifics(); //ボス固有の初期化を実行
         gravity = Mathf.Abs(Physics.gravity.y); //重力の大きさを取得
         action_mode = 0; //行動モードを0に設定
     }
@@ -201,9 +197,8 @@ public class GhostwolfMoveController : MonoBehaviour
         switch (action_mode)
         {
             case 0:
-                bossHP = hpscript.CurrentHP; //現在のHPを取得
-                hpPercent = ((float)bossHP / (float)bossMaxHP) * 100f; //HPの割合を取得
-                int attackversion = Random.Range(0, 2);
+                float hpPercent = hpscript.NormalizedHP * 100; //HPの割合を取得
+                int attackversion = Random.Range(0, 4); //攻撃パターンのバージョンをランダムに決定(0~3)
 
                 if (!isFirstHPbelowHalf && hpPercent < 50)
                 {
@@ -242,7 +237,7 @@ public class GhostwolfMoveController : MonoBehaviour
                         }
                         else
                         {
-                            if (attackversion == 0)
+                            if (attackversion == 0 || attackversion == 1)
                             {
                                 action_mode = 4; //地面に平行に動くHPのある弾
                             }
@@ -313,8 +308,7 @@ public class GhostwolfMoveController : MonoBehaviour
             / (2 * (newPos.y - ExistBottom));
         float vy = Mathf.Sqrt(2 * gravity * maxHeightoffset);
         newrbody.AddForce(new Vector2(vx, vy), ForceMode2D.Impulse); //弾の速度を設定
-        if (SEManager.instance != null)
-            SEManager.instance.PlayEnemyActionSE(SE_EnemyAction.Shoot2_Enemy); //攻撃の効果音を鳴らす
+        sePlayer.Play(SE_EnemyAction.Shoot2_Enemy);
 
         StartCoroutine(DestroyShoot(newGameObject));
 
@@ -366,8 +360,7 @@ public class GhostwolfMoveController : MonoBehaviour
                 ) / (2 * (newPos.y - ExistBottom));
             float vy = Mathf.Sqrt(2 * gravity * maxHeightoffset);
             newrbody.AddForce(new Vector2(vx, vy), ForceMode2D.Impulse); //弾の速度を設定
-            if (SEManager.instance != null)
-                SEManager.instance.PlayEnemyActionSE(SE_EnemyAction.Shoot2_Enemy); //攻撃の効果音を鳴らす
+            sePlayer.Play(SE_EnemyAction.Shoot2_Enemy);
             StartCoroutine(DestroyShoot(newGameObject));
             yield return new WaitForSeconds(Random.Range(0.5f, 1)); //次の攻撃までの時間を設定
         }
@@ -412,8 +405,7 @@ public class GhostwolfMoveController : MonoBehaviour
             Rigidbody2D newrbody = newGameObject.GetComponent<Rigidbody2D>(); //弾のRigidbody2Dを取得
             newrbody.gravityScale = 0; //弾の重力を消去
             newrbody.AddForce(new Vector2(0, -drop_speed), ForceMode2D.Impulse); //弾の落下速度を設定
-            if (SEManager.instance != null)
-                SEManager.instance.PlayFieldSE(SE_Field.WaterDrip1); //攻撃の効果音を鳴らす
+            sePlayer.Play(SE_Field.WaterDrip1); //攻撃の効果音を鳴らす
             StartCoroutine(DestroyShoot(newGameObject));
             yield return new WaitForSeconds(Random.Range(0.5f, 0.75f)); //次の降雨までの時間を設定
         }
@@ -461,8 +453,7 @@ public class GhostwolfMoveController : MonoBehaviour
                 new Vector2(flatshoot_offsetX - shoot_offsetX, targetHeight - newPos.y).normalized
                 * flatShootSpeed; //弾の速度を計算
             newrbody.AddForce(new Vector2(flatvelocity.x, flatvelocity.y), ForceMode2D.Impulse); //弾の速度を設定
-            if (SEManager.instance != null)
-                SEManager.instance.PlayEnemyActionSE(SE_EnemyAction.Shoot1_Enemy); //攻撃の効果音を鳴らす
+            sePlayer.Play(SE_EnemyAction.Shoot1_Enemy); //攻撃の効果音を鳴らす
             StartCoroutine(DestroyFlatShoot(newGameObject, targetHeight));
             yield return new WaitForSeconds(
                 Random.Range(flatShootIntervalMin, flatShootIntervalMax)
@@ -484,51 +475,45 @@ public class GhostwolfMoveController : MonoBehaviour
             ChargeEffectStart_Sec = 0; //エフェクトの開始時間を設定
         yield return new WaitForSeconds(ChargeEffectStart_Sec); //エフェクトの開始まで待つ
 
-        if (chargeEffect != null)
-        {
-            EffekseerEmitter chargeEffectInstance = Instantiate(chargeEffect); //エフェクトを生成
-            chargeEffectInstance.transform.SetParent(this.transform); //エフェクトの親をこのオブジェクトに設定
-            Vector2 chargeEffectPos = this.transform.position; //自分の座標を保存
-            chargeEffectPos.y += ChargeeffectoffsetY; //エフェクトのy座標を調整
-            chargeEffectInstance.transform.position = chargeEffectPos; //エフェクトの位置を指定
-            chargeEffectInstance.transform.localScale = new Vector2(chargeRange, chargeRange); //エフェクトの大きさを指定
-            chargeEffectInstance.Play(); //エフェクトを再生
-        }
+        // if (chargeEffect != null)
+        // {
+        //     EffekseerEmitter chargeEffectInstance = Instantiate(chargeEffect); //エフェクトを生成
+        //     chargeEffectInstance.transform.SetParent(this.transform); //エフェクトの親をこのオブジェクトに設定
+        //     Vector2 chargeEffectPos = this.transform.position; //自分の座標を保存
+        //     chargeEffectPos.y += ChargeeffectoffsetY; //エフェクトのy座標を調整
+        //     chargeEffectInstance.transform.position = chargeEffectPos; //エフェクトの位置を指定
+        //     chargeEffectInstance.transform.localScale = new Vector2(chargeRange, chargeRange); //エフェクトの大きさを指定
+        //     chargeEffectInstance.Play(); //エフェクトを再生
+        // }
 
         while (spriteRenderer.sprite != howlsprite)
         {
-            if (SEManager.instance != null)
-            {
-                if (!SEManager.instance.IsPlayingEnemyActionSE(SE_EnemyAction.ChargePower1))
-                {
-                    SEManager.instance.PlayEnemyActionSE(SE_EnemyAction.ChargePower1); //チャージの効果音を鳴らす
-                }
-            }
+            sePlayer.Play(SE_EnemyAction.ChargePower1); //チャージの効果音を鳴らす
             yield return null; //少し待つ
         }
 
-        SEManager.instance?.StopEnemyActionSE(SE_EnemyAction.ChargePower1); //チャージの効果音を止める
+        sePlayer.Stop(); //チャージの効果音を止める
         Vector3 newPos = this.transform.position; //自分の座標を保存
         newPos.x += shoot_offsetX; //弾のx座標を調整
         newPos.y += shoot_offsetX; //弾のy座標を調整
 
         playerPos = PlayerObject.transform.position; //プレイヤーの座標を取得
-        SEManager.instance?.PlayEnemyActionSE(SE_EnemyAction.Roar1); //咆哮の効果音を鳴らす
+        sePlayer.Play(SE_EnemyAction.Roar1); //咆哮の効果音を鳴らす
         GameUIManager.instance?.ShowSkillNameUI("咆哮"); //スキル名UIを表示
 
-        if (shockWaveEffect != null)
-        {
-            EffekseerEmitter shockWaveEffectInstance = Instantiate(shockWaveEffect); //エフェクトを生成
-            shockWaveEffectInstance.transform.SetParent(this.transform); //エフェクトの親をこのオブジェクトに設定
-            shockWaveEffectInstance.transform.position = this.transform.position; //エフェクトの位置を指定
-            float shockwaveRange = 2 * Mathf.Abs(newPos.x - leftBoundary); //エフェクトの大きさを取得
-            shockWaveEffectInstance.transform.localScale = new Vector3(
-                shockwaveRange,
-                shockwaveRange,
-                0
-            ); //エフェクトの大きさを指定
-            shockWaveEffectInstance.Play(); //エフェクトを再生
-        }
+        // if (shockWaveEffect != null)
+        // {
+        //     EffekseerEmitter shockWaveEffectInstance = Instantiate(shockWaveEffect); //エフェクトを生成
+        //     shockWaveEffectInstance.transform.SetParent(this.transform); //エフェクトの親をこのオブジェクトに設定
+        //     shockWaveEffectInstance.transform.position = this.transform.position; //エフェクトの位置を指定
+        //     float shockwaveRange = 2 * Mathf.Abs(newPos.x - leftBoundary); //エフェクトの大きさを取得
+        //     shockWaveEffectInstance.transform.localScale = new Vector3(
+        //         shockwaveRange,
+        //         shockwaveRange,
+        //         0
+        //     ); //エフェクトの大きさを指定
+        //     shockWaveEffectInstance.Play(); //エフェクトを再生
+        // }
 
         for (int i = 0; i < arcShootCount; i++)
         {

@@ -33,13 +33,18 @@ public class SaveLoadPromptTextDisplay : MonoBehaviour
     public void SetPromptText(int fileNumber)
     {
         var currentMode = SaveLoadManager.instance.CurrentSaveLoadMode;
-        
+
         if (currentMode == SaveLoadManager.SaveLoadMode.Save)
         {
             promptText.text = $"File{fileNumber}にセーブしますか？";
         }
         else if (currentMode == SaveLoadManager.SaveLoadMode.Load)
         {
+            if (fileNumber == GameConstants.AUTO_SAVE_FILE_NUMBER)
+            {
+                promptText.text = $"オートセーブをロードしますか？";
+                return;
+            }
             promptText.text = $"File{fileNumber}をロードしますか？";
         }
     }

@@ -1,6 +1,7 @@
 using System.Collections;
 using UnityEngine;
 
+[RequireComponent(typeof(CriWare.Assets.CriAtomSePlayer))]
 public class TutorialGolemMoveController : MonoBehaviour
 {
     [Header("Flowchart設定")]
@@ -66,6 +67,7 @@ public class TutorialGolemMoveController : MonoBehaviour
     private Vector3 PlayerPosition;
     private SpriteRenderer spriteRenderer;
     private Animator animator;
+    private CriWare.Assets.CriAtomSePlayer sePlayer;
 
     private void Awake()
     {
@@ -91,6 +93,7 @@ public class TutorialGolemMoveController : MonoBehaviour
 
         spriteRenderer = this.GetComponent<SpriteRenderer>();
         animator = this.GetComponent<Animator>();
+        sePlayer = this.GetComponent<CriWare.Assets.CriAtomSePlayer>();
     }
 
     private void Start()
@@ -152,7 +155,7 @@ public class TutorialGolemMoveController : MonoBehaviour
             if (DetectLeft < PlayerPosition.x && PlayerPosition.x < DetectRight)
             {
                 yield return new WaitForSeconds(Interval); //攻撃間隔を待機
-                SEManager.instance!.PlayEnemyActionSE(SE_EnemyAction.Shoot1_Enemy);
+                sePlayer.Play(SE_EnemyAction.Shoot1_Enemy); //効果音を鳴らす
                 animator.SetTrigger("Attack"); //攻撃アニメーションを起動
                 yield return new WaitUntil(() => spriteRenderer.sprite == AttackSprite); //特定のスプライトになるまで待機
 
@@ -229,7 +232,7 @@ public class TutorialGolemMoveController : MonoBehaviour
     private IEnumerator Death()
     {
         animator.SetBool("death", true); //死亡アニメーションを行う
-        SEManager.instance?.PlayFieldSE(SE_Field.SmallBomb); //効果音を鳴らす
+        sePlayer.Play(SE_Field.SmallBomb); //効果音を鳴らす
         yield return new WaitUntil(() => spriteRenderer.sprite == DeathSprite); //特定のスプライトになるまで待機する
         animator.enabled = false; //Animatorを無効化
         FlagManager.instance.SetBoolFlag(PrologueTriggeredEvent.DefeatTutorialGolem, true); //チュートリアルゴーレムを倒したフラグを立てる

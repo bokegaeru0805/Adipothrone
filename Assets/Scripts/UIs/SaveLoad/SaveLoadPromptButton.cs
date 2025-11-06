@@ -1,4 +1,5 @@
 using System.Collections;
+using NaughtyAttributes;
 using TMPro;
 using UnityEngine;
 using UnityEngine.EventSystems;
@@ -8,23 +9,19 @@ public class SaveLoadPromptButton : MonoBehaviour
 {
     public enum PromptType
     {
-        Yes,
-        No,
+        None = 0,
+        Yes = 1,
+        No = 2,
     }
 
-    private PromptType promptType;
     private int fileNumber;
     private GameObject dataPromptWindow;
 
-    [Header("Yesボタンのみが必要とする")]
     [SerializeField]
-    private GameObject TopFile;
+    private PromptType promptType;
 
-    [SerializeField]
-    private GameObject MiddleFile;
-
-    [SerializeField]
-    private GameObject BottomFile;
+    [SerializeField, ShowIf(nameof(promptType), PromptType.Yes)] //Yesボタンの場合のみ表示
+    private SaveLoadPanelActive saveLoadPanelActive;
 
     public void SetFileNumber(int num) => fileNumber = num;
 
@@ -33,53 +30,23 @@ public class SaveLoadPromptButton : MonoBehaviour
         GetComponent<Button>().onClick.AddListener(OnPromptSelected); //Buttonに関数を設定
         dataPromptWindow = this.transform.parent.gameObject; //データ変更確認画面オブジェクトを取得
 
-        if (this.gameObject.name.Contains("Yes"))
+        if (promptType == PromptType.None)
         {
-            promptType = PromptType.Yes;
-
-            if (!TopFile.name.Contains("File_Top"))
-            {
-                Debug.LogWarning("間違えたFile_Topを取得した可能性があります");
-            }
-
-            if (!MiddleFile.name.Contains("File_Middle"))
-            {
-                Debug.LogWarning("間違えたFile_Middleを取得した可能性があります");
-            }
-
-            if (!BottomFile.name.Contains("File_Bottom"))
-            {
-                Debug.LogWarning("間違えたFile_Bottomを取得した可能性があります");
-            }
-        }
-        else if (this.gameObject.name.Contains("No"))
-        {
-            promptType = PromptType.No;
-        }
-        else
-        {
-            Debug.LogWarning(
-                $"{this.gameObject.name}はSaveLoadPromptButtonをつける必要がない可能性があります"
+            Debug.LogError(
+                $"{this.gameObject.name}: PromptType が None に設定されています。適切な値に変更してください。",
+                this
             );
         }
-    }
-
-    private void Update()
-    {
-        switch (promptType)
+        else if (promptType == PromptType.Yes)
         {
-            case PromptType.Yes:
-                if (InputManager.instance.UISelectYes() && this.gameObject.activeSelf)
-                {
-                    HandleYes();
-                }
-                break;
-            case PromptType.No:
-                if (InputManager.instance.UISelectNo() && this.gameObject.activeSelf)
-                {
-                    HandleNo();
-                }
-                break;
+            // TopFileなどのチェックを削除し、saveLoadPanelActiveのチェックに変更
+            if (saveLoadPanelActive == null)
+            {
+                Debug.LogError(
+                    $"{this.gameObject.name}: Yesボタンには SaveLoadPanelActive の参照が必須です。",
+                    this
+                );
+            }
         }
     }
 
@@ -116,7 +83,7 @@ public class SaveLoadPromptButton : MonoBehaviour
                 textDisplay.text = "Fileにセーブ中";
 
             // プレイ時間を記録
-            SaveLoadManager.FilePlaytime[fileNumber] =
+            SaveLoadManager.FileSlotInfos[fileNumber].playTime =
                 SaveLoadManager.StartTime + Time.time - SaveLoadManager.timeSinceLoad;
 
             EventSystem.current.SetSelectedGameObject(null); //一時的にButtonを何も選ばせないようにする
@@ -166,43 +133,29 @@ public class SaveLoadPromptButton : MonoBehaviour
 
         yield return new WaitForSecondsRealtime(0.5f); //セーブ完了をプレイヤーに確認させる時間
 
-        // UI更新（ファイルの表示）
-        GameObject fileText = null;
-
-        // 3つのファイルボタンを配列に格納してループ処理
-        var fileButtons = new[] { TopFile, MiddleFile, BottomFile };
-        foreach (var fileButtonObject in fileButtons)
+        // 1. saveLoadPanelActive が参照設定されているか確認
+        if (saveLoadPanelActive == null)
         {
-            // 各ボタンからSaveLoadFileButtonコンポーネントを取得
-            var saveLoadFileButton = fileButtonObject.GetComponent<SaveLoadFileButton>();
-            if (saveLoadFileButton != null)
-            {
-                // 現在処理中のファイル番号と、ボタンが持つFileNumberが一致するか確認
-                if (saveLoadFileButton.FileNumber == this.fileNumber)
-                {
-                    // 一致したら、そのボタンの子オブジェクト（テキスト）を取得してループを抜ける
-                    fileText = fileButtonObject.transform.GetChild(0).gameObject;
-                    break;
-                }
-            }
-        }
-
-        if (fileText != null)
-        {
-            //ファイルにプレイ時間を書き込む
-            var tmp = fileText.GetComponent<TextMeshProUGUI>();
-            if (tmp != null)
-            {                
-                string fileNameText = "File" + fileNumber;;
-                float playTime = SaveLoadManager.FilePlaytime[fileNumber];
-                int hours = Mathf.FloorToInt(playTime / 3600);
-                int minutes = Mathf.FloorToInt((playTime % 3600) / 60);
-                tmp.text = $"{fileNameText}\nプレイ時間 {hours}:{minutes:D2}"; // D2で分を2桁表示
-            }
+            Debug.LogError("saveLoadPanelActive が設定されていないため、UIの更新ができません。");
         }
         else
         {
-            Debug.LogWarning($"{fileNumber}のスロットのTextを取得できませんでした");
+            // 2. 更新対象のGameObjectを特定する
+            //    saveLoadPanelActive が持つ fileSlots リストから、
+            //    現在セーブした fileNumber を持つボタン（GameObject）を探す
+            GameObject targetSlotObject = saveLoadPanelActive.GetFileSlotUI(fileNumber)?.slotObject;
+
+            if (targetSlotObject != null)
+            {
+                // 3. 特定したGameObjectとファイル番号を渡し、表示更新を依頼する
+                saveLoadPanelActive.UpdateFileSlotDisplay(targetSlotObject, fileNumber);
+            }
+            else
+            {
+                Debug.LogWarning(
+                    $"{fileNumber}を持つスロットが SaveLoadPanelActive に見つかりませんでした。"
+                );
+            }
         }
 
         ClosePanel();
@@ -211,41 +164,19 @@ public class SaveLoadPromptButton : MonoBehaviour
 
     private void ClosePanel()
     {
-        if (this.gameObject.name.Contains("_Menu"))
+        // オブジェクト名による分岐を、SaveLoadManager経由の呼び出しに変更
+        if (SaveLoadManager.CurrentActiveManager != null)
         {
-            if (UIManager.instance != null)
-            {
-                UIManager.instance.CloseTopPanel();
-            }
-            else
-            {
-                Debug.LogWarning("UIManagerが存在しません");
-            }
-        }
-        else if (this.gameObject.name.Contains("_Title"))
-        {
-            if (TitleUIManager.instance != null)
-            {
-                TitleUIManager.instance.CloseTopPanel();
-            }
-            else
-            {
-                Debug.LogWarning("TitleUIManagerが存在しません");
-            }
-        }
-        else if (this.gameObject.name.Contains("_GameOver"))
-        {
-            if (GameOverUIManager.instance != null)
-            {
-                GameOverUIManager.instance.CloseTopPanel();
-            }
-            else
-            {
-                Debug.LogWarning("GameOverUIManagerが存在しません");
-            }
+            // 登録されているManagerのCloseTopPanel()を呼び出す
+            SaveLoadManager.CurrentActiveManager.CloseTopPanel();
         }
         else
         {
+            // CurrentActiveManager が見つからなかった場合 (各ManagerのAwakeで登録し忘れている可能性)
+            Debug.LogWarning(
+                "SaveLoadPromptButton: SaveLoadManager.CurrentActiveManager が設定されていません。データ変更確認画面を閉じることができません。",
+                this
+            );
             dataPromptWindow.SetActive(false);
         }
     }

@@ -85,7 +85,7 @@ public abstract class CharacterHealth : MonoBehaviour, IDamageable, IDroppable, 
 
         // --- Step 1: ダメージ適用前の共通処理 ---
         TimeManager.instance.TriggerHitStop(); //ヒットストップを行う
-        SEManager.instance?.PlayEnemyActionSE(SE_EnemyAction.Damage2); // 被弾SEを再生
+        //SEManager.instance?.PlayEnemyActionSE(SE_EnemyAction.Damage2); // 被弾SEを再生
 
         // --- Step 2: HPの減算 ---
         CurrentHP -= damage;
@@ -184,10 +184,8 @@ public abstract class CharacterHealth : MonoBehaviour, IDamageable, IDroppable, 
 
         if (mat.HasProperty("_FlashAmount"))
         {
-            // --- 変更・追加ここから ---
             // isLargeSpriteフラグに応じて、使用するフラッシュの明るさを決定
             float flashAmountToUse = isLargeSprite ? reducedFlashAmount : normalFlashAmount;
-            // --- 変更・追加ここまで ---
 
             try
             {

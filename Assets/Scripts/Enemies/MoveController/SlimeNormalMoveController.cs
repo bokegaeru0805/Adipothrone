@@ -82,6 +82,7 @@ public class SlimeNormalMoveController : MonoBehaviour, IEnemyResettable
     private int IdleHash;
     private AnimatorStateInfo stateInfo;
     private ContactDamageController contactDamageController;
+    private CriWare.Assets.CriAtomSePlayer sePlayer; // SE再生用のCriAtomSePlayerコンポーネント
 
     // スタック検出用の変数
     private Vector2 lastCheckedPosition;
@@ -138,7 +139,8 @@ public class SlimeNormalMoveController : MonoBehaviour, IEnemyResettable
         }
 
         spriteRenderer = this.GetComponent<SpriteRenderer>();
-        rbody = GetComponent<Rigidbody2D>(); //Rigidbody2Dコンポーネントを取得
+        rbody = GetComponent<Rigidbody2D>();
+        sePlayer = GetComponent<CriWare.Assets.CriAtomSePlayer>();
 
         animator = GetComponent<Animator>();
         if (animator == null)
@@ -430,7 +432,7 @@ public class SlimeNormalMoveController : MonoBehaviour, IEnemyResettable
                 Vector2 dir = playerTransform.position - transform.position;
                 vx = Mathf.Sign(dir.x) * speedX;
                 rbody.AddForce(new Vector2(vx, jumpPower), ForceMode2D.Impulse);
-                SEManager.instance?.PlayEnemyActionSE(SE_EnemyAction.Attack_slime1); // ジャンプ攻撃の効果音を鳴らす
+                sePlayer.Play(SE_EnemyAction.Attack_slime1); // ジャンプ攻撃の効果音を鳴らす
             }
             else
             {

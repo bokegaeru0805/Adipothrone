@@ -5,6 +5,7 @@ using UnityEngine;
 /// 地面を移動し、壁を登り、崖からは重力で落下するキャラクターコントローラー。
 /// </summary>
 [RequireComponent(typeof(Rigidbody2D))]
+[RequireComponent(typeof(CriWare.Assets.CriAtomSePlayer))]
 public class RareEnemyMoveController : MonoBehaviour, IEnemyResettable
 {
     private const float SPAWN_MARGIN = 10f; // スポーン時の端からのマージン
@@ -76,10 +77,11 @@ public class RareEnemyMoveController : MonoBehaviour, IEnemyResettable
     private bool isClimbOnCooldown = false; // 壁登りがクールダウン中かどうかのフラグ
     private float verticalAdjustSpeed = 100f; // 地面から抜け出す速度
     private bool hasBeenSeenByCamera = false; // カメラに一度でも映ったかを記録するフラグ
-    private SpriteRenderer spriteRenderer;
     private Animator animator;
     private Rigidbody2D rbody;
     private EnemyHealth enemyHP;
+    private CriWare.Assets.CriAtomSePlayer sePlayer;
+
 
     //埋まり判定用のbool
     private bool isOverlappingGround =>
@@ -111,9 +113,9 @@ public class RareEnemyMoveController : MonoBehaviour, IEnemyResettable
             }
         }
 
-        spriteRenderer = this.GetComponent<SpriteRenderer>();
         rbody = GetComponent<Rigidbody2D>();
         animator = this.GetComponent<Animator>();
+        sePlayer = this.GetComponent<CriWare.Assets.CriAtomSePlayer>();
 
         enemyHP = this.GetComponent<EnemyHealth>();
         {
@@ -124,7 +126,7 @@ public class RareEnemyMoveController : MonoBehaviour, IEnemyResettable
             }
         }
 
-        tag = GameConstants.ImmuneEnemyTagName;
+        this.tag = GameConstants.ImmuneEnemyTagName;
     }
 
     private void Start()
@@ -408,7 +410,7 @@ public class RareEnemyMoveController : MonoBehaviour, IEnemyResettable
                 spawnEffect.Play();
             }
 
-            SEManager.instance.PlayEnemyActionSE(SE_EnemyAction.RareEnemyAppear);
+            sePlayer.Play(SE_EnemyAction.RareEnemyAppear); // レア敵出現音を再生
         }
     }
 

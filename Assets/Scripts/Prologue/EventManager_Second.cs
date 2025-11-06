@@ -1,7 +1,7 @@
 using System.Collections;
 using Cinemachine;
 using DG.Tweening;
-using Effekseer;
+// using Effekseer;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
@@ -33,12 +33,12 @@ public class EventManager_Second : MonoBehaviour
     [SerializeField]
     private float cameraSecondPosition_x = -66.0f;
 
-    [Header("エフェクト設定")]
-    [SerializeField]
-    private EffekseerEffectAsset warpEffectBefore;
+    // [Header("エフェクト設定")]
+    // [SerializeField]
+    // private EffekseerEffectAsset warpEffectBefore;
 
-    [SerializeField]
-    private EffekseerEffectAsset warpEffectAfter;
+    // [SerializeField]
+    // private EffekseerEffectAsset warpEffectAfter;
 
     [SerializeField]
     private float warpEffectOffsetY = 0.0f;
@@ -175,10 +175,10 @@ public class EventManager_Second : MonoBehaviour
             eventPlayer.transform.position.z
         );
 
-        if (warpEffectBefore != null)
-        {
-            EffekseerSystem.PlayEffect(warpEffectBefore, warpEffectPosition);
-        }
+        // if (warpEffectBefore != null)
+        // {
+        //     EffekseerSystem.PlayEffect(warpEffectBefore, warpEffectPosition);
+        // }
 
         // キャッシュしたコンポーネントを使用
         eventPlayer.transform.DOScale(Vector2.zero, 0.50f);

@@ -95,8 +95,10 @@ public enum PlayerStatusIntName
 {
     // playerMaxHP = 500, //プレイヤーの最大HP
     playerCurrentHP = 501, //プレイヤーの現在のHP
+
     // playerMaxWP = 503, //プレイヤーの最大WP
     playerCurrentWP = 504, //プレイヤーの現在のWP
+    playerExp = 505, //プレイヤーの経験値
 
     // playerLv = 502, //プレイヤーのレベル
     attackBuffLimitLevel = 701, //攻撃力バフの上限

@@ -5,6 +5,23 @@ using System.Linq;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
+/// <summary>
+/// 各セーブスロットの概要情報（プレイ時間と経験値）を格納するクラス
+/// </summary>
+[System.Serializable] // InspectorやES3で扱えるようにする
+public class SaveSlotInfo
+{
+    public float playTime; // プレイ時間（秒）
+    public int experience; // 経験値
+
+    // コンストラクタ（初期値を設定しやすくするため）
+    public SaveSlotInfo(float time = 0f, int exp = 0)
+    {
+        playTime = time;
+        experience = exp;
+    }
+}
+
 public class SaveLoadManager : MonoBehaviour
 {
     public static SaveLoadManager instance { get; private set; } //シングルトンインスタンス
@@ -29,8 +46,8 @@ public class SaveLoadManager : MonoBehaviour
         Load = 2,
     }
 
-    //セーブデータのプレイ時間を保存する辞書
-    public static Dictionary<int, float> FilePlaytime;
+    //セーブデータのプレイ時間などの情報を保存する辞書
+    public static Dictionary<int, SaveSlotInfo> FileSlotInfos;
 
     // 非公開の読み書き用フラグ（このインスタンスが現在ロード中かどうか）
     private bool isLoading = false;
@@ -53,6 +70,93 @@ public class SaveLoadManager : MonoBehaviour
     public static bool isDataPrompting; //データ変更画面が開いているかのフラグ
 
     /// <summary>
+    /// アクティブなUI Managerを積み重ねるスタック。
+    /// </summary>
+    private static Stack<IPanelStackManager> managerStack = new Stack<IPanelStackManager>();
+
+    /// <summary>
+    /// 現在アクティブな、パネルスタックを管理するManager (スタックの一番上のManager)
+    /// </summary>
+    public static IPanelStackManager CurrentActiveManager
+    {
+        get
+        {
+            // スタックが空でなければ一番上を返し、空なら null を返す
+            return managerStack.Count > 0 ? managerStack.Peek() : null;
+        }
+    }
+
+    /// <summary>
+    /// 現在アクティブなパネルスタックManagerをスタックに登録（Push）します。
+    /// 主に各UI Manager (UIManager, TitleUIManagerなど) のAwake()から呼び出されます。
+    /// </summary>
+    /// <param name="manager">登録するManager</param>
+    public static void RegisterActiveManager(IPanelStackManager manager)
+    {
+        if (manager == null)
+        {
+            Debug.LogError("null の Manager を登録しようとしました。");
+            return;
+        }
+
+        Debug.Log($"[{manager.GetType().Name}] がアクティブManagerとしてスタックに登録されました。");
+        managerStack.Push(manager);
+    }
+
+    /// <summary>
+    /// Managerが破棄される際にスタックから登録解除（Pop）します。
+    /// </summary>
+    /// <param name="manager">登録解除するManager</param>
+    public static void UnregisterActiveManager(IPanelStackManager manager)
+    {
+        if (manager == null)
+        {
+            Debug.LogError("null の Manager を登録解除しようとしました。");
+            return;
+        }
+
+        // スタックが空、または一番上のManagerが自分でない場合 (何らかの異常)
+        if (managerStack.Count == 0 || managerStack.Peek() != manager)
+        {
+            Debug.LogError(
+                $"Managerスタックの登録解除エラー: " + 
+                $"解除しようとした [{manager.GetType().Name}] はスタックの一番上にいません。",
+                manager as MonoBehaviour
+            );
+            
+            // 【堅牢化処理】スタック内に存在する場合は、強制的に取り除く
+            // ※通常は起こらないはずだが、安全のため
+            if (managerStack.Contains(manager))
+            {
+                // スタックをリストに変換し、該当アイテムを削除して、スタックを再構築
+                var tempList = managerStack.ToList();
+                tempList.Remove(manager);
+                tempList.Reverse(); // StackはLIFOなので、逆順にしてからClear & Push
+                managerStack.Clear();
+                foreach (var item in tempList)
+                {
+                    managerStack.Push(item);
+                }
+                Debug.LogWarning($"[{manager.GetType().Name}] をスタックの途中から強制的に削除しました。");
+            }
+            return;
+        }
+
+        // 正常な解除処理
+        var poppedManager = managerStack.Pop();
+        Debug.Log($"[{poppedManager.GetType().Name}] がスタックから登録解除されました。");
+
+        if (CurrentActiveManager != null)
+        {
+            Debug.Log($"アクティブManagerは [{CurrentActiveManager.GetType().Name}] に戻りました。");
+        }
+        else
+        {
+            Debug.Log("アクティブなManagerスタックは空になりました。");
+        }
+    }
+
+    /// <summary>
     /// シングルトン初期化
     /// </summary>
     private void Awake()
@@ -71,69 +175,148 @@ public class SaveLoadManager : MonoBehaviour
         LoadSettings(); // ゲーム起動時に必ず設定ファイルを読み込む
 
         Version currentGameVersion = new Version(Application.version); // 現在のゲームバージョンをVersionオブジェクトとして取得
-        FilePlaytime = new Dictionary<int, float>(); //ゲームのプレイ時間を保存する変数を初期化
+        FileSlotInfos = new Dictionary<int, SaveSlotInfo>(); //ゲームのプレイ時間などの情報を保存する変数を初期化
         isOnSave = false; //セーブ待機中のフラグを初期化
 
-        if (FilePlaytime == null)
+        if (FileSlotInfos == null)
         {
-            Debug.LogWarning("FilePlaytimeが初期化されていません。");
+            Debug.LogWarning("FileSlotInfosが初期化されていません。");
             return;
         }
         else
         {
+            // --- Awakeメソッド内のforループ部分 ---
             for (
-                int i = GameConstants.AUTO_SAVE_FILE_NUMBER;
+                int i = GameConstants.AUTO_SAVE_FILE_NUMBER; // オートセーブスロット番号から開始
+                // 通常のセーブスロット数 + オートセーブスロット数 までループ
                 i < GameConstants.MaxSaveLoadFiles + GameConstants.MAX_AUTOSAVE_FOLDERS;
                 i++
             )
             {
-                //FilePlayTimeにファイルごとのプレイ時間のデータを保存。もしデータがない場合は0を保存。
+                // 各セーブファイル用のES3設定を作成
                 ES3Settings settings = new ES3Settings(GetSaveFilePath(i));
-                FilePlaytime.Add(i, ES3.Load<float>("PlayTime", defaultValue: 0, settings));
 
-                //データがない場合は飛ばす
-                if (SaveLoadManager.FilePlaytime[i] == 0)
-                    continue;
+                float loadedPlayTime = 0f; // ロードしたプレイ時間（デフォルト0）
+                int loadedExperience = 0; // ロードした経験値（デフォルト0）
+                string dataGameVersionStr = null; // セーブデータのバージョン文字列（デフォルトnull）
 
-                //セーブデータのゲームバージョンを取得
-                string dataGameVersionStr;
-                try
+                // まず、セーブファイル自体が存在するか確認
+                if (ES3.FileExists(GetSaveFilePath(i)))
                 {
-                    // セーブデータを読み込む（存在しない、破損などの場合は例外が出る可能性あり）
-                    var loadedData = ES3.Load<SaveData>("SaveData", settings);
+                    // プレイ時間をロード (これはトップレベルにある)
+                    // defaultValue: 0f を指定することで、キーが存在しない場合でもエラーにならず0fが返る
+                    loadedPlayTime = ES3.Load<float>("PlayTime", defaultValue: 0f, settings);
 
-                    // 読み込んだデータからバージョン情報を取得（null 安全アクセス）
-                    dataGameVersionStr = loadedData?.GameVersion;
-
-                    // バージョン情報が null または空文字の場合は不正とみなしてスキップ
-                    if (string.IsNullOrEmpty(dataGameVersionStr))
+                    // プレイ時間が0（＝有効なセーブデータではない）場合は、経験値などをロードせずに次のスロットへ
+                    if (loadedPlayTime == 0f)
                     {
-                        Debug.LogWarning(
-                            $"セーブデータにバージョン情報が存在しません（スロット {i}）"
-                        );
-                        FilePlaytime[i] = 0;
+                        // プレイ時間も経験値も0のSaveSlotInfoを追加して次へ
+                        FileSlotInfos.Add(i, new SaveSlotInfo(loadedPlayTime, loadedExperience));
                         continue;
                     }
 
-                    Version dataGameVersion = new Version(dataGameVersionStr);
-
-                    // セーブデータのバージョンが現在のゲームバージョンより新しい場合、
-                    // 未来のバージョンなので互換性がないとみなし、ロード対象から外す
-                    if (dataGameVersion > currentGameVersion)
+                    // SaveDataオブジェクトが存在するか確認してからロード
+                    if (ES3.KeyExists("SaveData", settings))
                     {
+                        try
+                        {
+                            // SaveDataオブジェクト全体を読み込む（バージョン情報やプレイヤー情報が含まれる）
+                            var loadedSaveData = ES3.Load<SaveData>("SaveData", settings);
+
+                            // 読み込んだデータからバージョン情報を取得（null安全アクセス ?. を使用）
+                            dataGameVersionStr = loadedSaveData?.GameVersion;
+
+                            // 読み込んだデータから経験値を取得（PlayerStatusがnullでないことも確認）
+                            if (loadedSaveData != null && loadedSaveData.PlayerStatus != null)
+                            {
+                                loadedExperience = loadedSaveData.PlayerStatus.playerExp;
+                            }
+                            else
+                            {
+                                // SaveDataまたはPlayerStatusが不正な場合は警告を出し、データを無効化
+                                Debug.LogWarning(
+                                    $"スロット {i} の SaveData または PlayerStatus が不正です。データを無効として扱います。"
+                                );
+                                loadedPlayTime = 0f; // プレイ時間もリセット
+                                loadedExperience = 0; // 経験値もリセット
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            // 読み込み時に何らかの例外が発生した場合（データ破損など）
+                            Debug.LogError(
+                                $"SaveDataの読み込みに失敗（スロット {i}）: {ex.Message}"
+                            );
+                            // データを無効として扱う
+                            loadedPlayTime = 0f;
+                            loadedExperience = 0;
+                        }
+                    }
+                    else
+                    {
+                        // PlayTimeはあるがSaveDataがない、という異常な状態
                         Debug.LogWarning(
-                            $"スロット {i} のセーブデータは新しいバージョンのためロードできません。(データ: {dataGameVersion}, ゲーム: {currentGameVersion})"
+                            $"スロット {i} に SaveData キーが存在しません。データを無効として扱います。"
                         );
-                        FilePlaytime[i] = 0; // 非表示にする
+                        // データを無効として扱う
+                        loadedPlayTime = 0f;
+                        loadedExperience = 0;
+                    }
+
+                    // --- バージョンチェック ---
+                    // この時点で loadedPlayTime > 0f であり、かつ dataGameVersionStr が取得できている場合のみ実行
+                    if (loadedPlayTime > 0f && !string.IsNullOrEmpty(dataGameVersionStr))
+                    {
+                        try
+                        {
+                            Version dataGameVersion = new Version(dataGameVersionStr);
+
+                            // セーブデータのバージョンが現在のゲームバージョンより新しい場合、
+                            // 未来のバージョンなので互換性がないとみなし、ロード対象から外す
+                            if (dataGameVersion > currentGameVersion) // currentGameVersionはAwakeの冒頭で取得済みと仮定
+                            {
+                                Debug.LogWarning(
+                                    $"スロット {i} のセーブデータは新しいバージョンのためロードできません。(データ: {dataGameVersion}, ゲーム: {currentGameVersion})"
+                                );
+                                // データを無効として扱う
+                                loadedPlayTime = 0f;
+                                loadedExperience = 0;
+                            }
+                        }
+                        catch (FormatException ex) // Version文字列のフォーマットが不正な場合
+                        {
+                            Debug.LogError(
+                                $"スロット {i} のバージョン文字列 '{dataGameVersionStr}' の形式が不正です: {ex.Message}"
+                            );
+                            // データを無効として扱う
+                            loadedPlayTime = 0f;
+                            loadedExperience = 0;
+                        }
+                        catch (Exception ex) // その他の予期せぬエラー
+                        {
+                            Debug.LogError(
+                                $"バージョンチェック中に予期せぬエラーが発生しました（スロット {i}）: {ex.Message}"
+                            );
+                            // データを無効として扱う
+                            loadedPlayTime = 0f;
+                            loadedExperience = 0;
+                        }
+                    }
+                    else if (loadedPlayTime > 0f && string.IsNullOrEmpty(dataGameVersionStr))
+                    {
+                        // SaveDataのロードに成功したがバージョン文字列が空だった場合（通常はtry内で処理されるはずだが念のため）
+                        Debug.LogWarning(
+                            $"セーブデータにバージョン情報が存在しません（スロット {i}）。データを無効として扱います。"
+                        );
+                        // データを無効として扱う
+                        loadedPlayTime = 0f;
+                        loadedExperience = 0;
                     }
                 }
-                catch (Exception ex)
-                {
-                    // 読み込み時に何らかの例外が発生した場合は、ファイルをスキップしプレイ時間を0に
-                    Debug.LogError($"セーブデータの読み込みに失敗（スロット {i}）: {ex.Message}");
-                    FilePlaytime[i] = 0;
-                    continue;
-                }
+
+                // --- 最終的な値を辞書に追加 ---
+                // ループの最後に、取得した（またはエラーでリセットされた）値でSaveSlotInfoを作成し、辞書に追加
+                FileSlotInfos.Add(i, new SaveSlotInfo(loadedPlayTime, loadedExperience));
             }
         }
     }
@@ -338,7 +521,11 @@ public class SaveLoadManager : MonoBehaviour
                 GameManager.isFirstGameSceneOpen = true; //初回ゲームシーンオープンフラグを立てる
             }
 
+#if DEMO_BUILD
+            string sceneName = GameConstants.SceneName_Chapter1; //デモ版の場合、デフォルトのシーン名を変更
+#else
             string sceneName = GameConstants.SceneName_TutorialStart; //デフォルトのシーン名を設定
+#endif
 
             // セーブデータからシーン名を読み込む（存在チェックも含める）
             if (ES3.KeyExists("CurrentSceneName", filePath))
@@ -378,6 +565,12 @@ public class SaveLoadManager : MonoBehaviour
             {
                 //プレイヤーの初期座標がセーブされていない場合は、GameManagerのPlayerStartPosを使用
                 PlayerPosition = PlayerStartPos;
+
+#if DEMO_BUILD
+                PlayerPosition = new Vector3(-200, 0, 0);
+#else
+                PlayerPosition = PlayerStartPos;
+#endif
             }
 
             //シーンが読み込み完了するまで待つ
@@ -411,6 +604,10 @@ public class SaveLoadManager : MonoBehaviour
                 FadeCanvas.instance.FadeIn(0.5f); //画面を明転させる
             }
 
+#if DEMO_BUILD
+            FadeCanvas.instance.FadeIn(0.5f); //画面を明転させる
+#endif
+
             if (WeaponManager.instance != null)
             {
                 //セーブデータからの参照用辞書・リストの再構築
@@ -420,6 +617,11 @@ public class SaveLoadManager : MonoBehaviour
             {
                 Debug.LogWarning("WeaponManagerが存在しません");
             }
+
+            //BGMとSEの音量を適用
+            //シーンが変わるCRIWAREの仕様により、カテゴリの音量がリセットされてしまう
+            //そのため、再度音量を適用する必要がある
+            ApplyAudioSettings();
 
             // プレイヤーと敵が同時に出現した場合、即座に物理演算が再開すると
             // ロード直後にダメージを受ける/敵と接触する などの不具合が起こりうるため
@@ -456,6 +658,36 @@ public class SaveLoadManager : MonoBehaviour
             return;
         }
 
+        // PlayerEffectManagerから最新のバフ情報を取得してsaveDataに反映
+        if (PlayerEffectManager.instance != null)
+        {
+            // PlayerEffectManagerのリアルタイムデータを取得
+            List<PlayerEffectStates> currentEffects =
+                PlayerEffectManager.instance.GetCurrentEffectStatesForSave();
+
+            // GameManagerのsavedata（PlayerStatus内）に上書き
+            if (GameManager.instance.savedata.PlayerStatus != null)
+            {
+                GameManager.instance.savedata.PlayerStatus.playerEffectStates = currentEffects;
+            }
+            else
+            {
+                Debug.LogWarning(
+                    "PlayerStatusDataがnullのため、エフェクト情報を保存できませんでした。"
+                );
+                isOnSave = false; //フラグを戻す
+                return;
+            }
+        }
+        else
+        {
+            Debug.LogWarning(
+                "PlayerEffectManagerが見つからないため、エフェクト情報を保存できませんでした。"
+            );
+            isOnSave = false; //フラグを戻す
+            return;
+        }
+
         // ゲームのバージョンをsaveDataに取得
         GameManager.instance.savedata.GameVersion = Application.version;
         //セーブデータを取得
@@ -479,14 +711,33 @@ public class SaveLoadManager : MonoBehaviour
         // シーン名をセーブデータに保存
         ES3.Save<string>("CurrentSceneName", currentSceneName, filePath);
 
-        //プレイ時間として、元々のデータのプレイ時間にロードしてからのプレイ時間を加えて保存
+        // プレイ時間として、元々のデータのプレイ時間にロードしてからのプレイ時間を加えて保存
         float newPlayTime = StartTime + Time.time - timeSinceLoad;
         ES3.Save<float>("PlayTime", newPlayTime, filePath);
 
-        // メモリ上のプレイ時間データも更新
-        if (FilePlaytime.ContainsKey(file_number))
+        // --- PlayerEXPの保存 ---
+        // 現在のプレイヤー経験値を取得
+        int currentExperience = PlayerManager.instance.GetPlayerIntStatus(
+            PlayerStatusIntName.playerExp
+        );
+        ES3.Save<int>("PlayerEXP", currentExperience, filePath);
+
+        // --- メモリ上のスロット情報 (FileSlotInfos) の更新 ---
+        // 辞書にキーが存在するか確認
+        if (FileSlotInfos.ContainsKey(file_number))
         {
-            FilePlaytime[file_number] = newPlayTime;
+            // 既存の SaveSlotInfo オブジェクトの値を更新
+            FileSlotInfos[file_number].playTime = newPlayTime;
+            FileSlotInfos[file_number].experience = currentExperience;
+        }
+        else
+        {
+            // もしキーが存在しない場合（通常はAwakeで初期化されるはずだが念のため）、
+            // 新しい SaveSlotInfo オブジェクトを作成して辞書に追加
+            FileSlotInfos.Add(file_number, new SaveSlotInfo(newPlayTime, currentExperience));
+            Debug.LogWarning(
+                $"FileSlotInfosにキー {file_number} が存在しなかったため、新しく追加しました。"
+            );
         }
 
         isOnSave = false; //セーブ待機中のフラグをOFF
@@ -765,4 +1016,36 @@ public class SaveLoadManager : MonoBehaviour
     // {
     //     Debug.Log("バージョン 1.2.0 への更新処理を実行中...");
     // }
+
+    /// <summary>
+    /// SettingsファイルからBGMとSEの音量設定を読み込み、各Managerに適用します。
+    /// </summary>
+    public void ApplyAudioSettings()
+    {
+        if (Settings == null)
+        {
+            Debug.LogWarning("SaveLoadManagerのSettingsがnullです。音量設定を適用できません。");
+            return; // Settingsがなければ何もできない
+        }
+
+        // BGM音量の適用
+        if (BGMManager.instance == null)
+        {
+            Debug.LogWarning("BGMManagerが存在しません");
+        }
+        else
+        {
+            BGMManager.instance.AdjustAllVolume(Settings.bgmVolume); //BGM音量を設定
+        }
+
+        // SE音量の適用
+        if (SEManager.instance == null)
+        {
+            Debug.LogWarning("SEManagerが存在しません");
+        }
+        else
+        {
+            SEManager.instance.AdjustAllSEVolume(Settings.seVolume); //SE音量を設定
+        }
+    }
 }

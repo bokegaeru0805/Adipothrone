@@ -104,6 +104,7 @@ public class UniqueBossHealth : CharacterHealth, IEnemyResettable
         InvokeHPChangedEvent(); // HPバーを満タン表示にする
 
         BGMManager.instance?.Crossfade(BGMCategory.Boss_Unique, crossFadeTime);
+        //BGMManager.instance?.Crossfade(BGMCategory.Boss_Unique, crossFadeTime);
     }
 
     /// <summary>

@@ -7,7 +7,7 @@ using System.Collections.Generic;
 [CustomPropertyDrawer(typeof(FlagConditionPro))]
 public class FlagConditionDrawerPro : PropertyDrawer
 {
-    // ▼▼▼【重要】新しいEnumフラグを追加したら、このリストに追記してください▼▼▼
+    //【重要】新しいEnumフラグを追加したら、このリストに追記してください
     private static readonly List<Type> boolEnumTypes = new List<Type> { typeof(PrologueTriggeredEvent), typeof(Chapter1TriggeredEvent), typeof(TutorialEvent) };
     private static readonly List<Type> intEnumTypes = new List<Type> { typeof(PrologueCountedEvent), typeof(Chapter1CountedEvent) };
     
@@ -81,7 +81,6 @@ public class FlagConditionDrawerPro : PropertyDrawer
             enumValueNameProp.stringValue = valueNames[newValueIndex];
         }
 
-        // ▼▼▼ 修正箇所 ▼▼▼
         if (currentConditionType == FlagConditionPro.ConditionType.Bool)
         {
             var boolRect = new Rect(valueNameRect.xMax + 5, line2Rect.y, 20, line2Rect.height);
@@ -101,7 +100,6 @@ public class FlagConditionDrawerPro : PropertyDrawer
             comparisonProp.enumValueIndex = (int)(FlagConditionPro.IntComparison)EditorGUI.EnumPopup(comparisonRect, (FlagConditionPro.IntComparison)comparisonProp.enumValueIndex);
             intProp.intValue = EditorGUI.IntField(intRect, intProp.intValue);
         }
-        // ▲▲▲ 修正箇所 ▲▲▲
 
         EditorGUI.EndProperty();
     }

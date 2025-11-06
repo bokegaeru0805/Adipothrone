@@ -1,16 +1,15 @@
 using System;
 using System.Collections;
-using Unity.VisualScripting;
 using UnityEngine;
 
 public class Heroin_move : MonoBehaviour
 {
+    private const float Bound2EffectLength = 1.384f; //揺れる効果音の長さ
     private GameManager gameManager; // GameManagerのインスタンスを保存する変数
     private PlayerManager playerManager; // PlayerManagerのインスタンスを保存する変数
     private PlayerEffectManager playerEffectManager; // PlayerEffectManagerのインスタンスを保存する変数
     private PlayerBodyManager playerBodyManager; // PlayerBodyManagerのインスタンスを保存する変数
     private InputManager inputManager; // InputManagerのインスタンスを保存する変数
-    private SEManager seManager; // SEManagerのインスタンスを保存する変数
 
     [Header("必須の子オブジェクト")]
     [SerializeField]
@@ -49,7 +48,6 @@ public class Heroin_move : MonoBehaviour
     private float WalkTime = 1.46f; //一回の歩行アニメーションの秒数
     private float DashTime = 0.72f; //一回のダッシュアニメーションの秒数
     private float BoundIntervalTime; //揺れる音を鳴らす間を記録する変数
-    private float Bound2EffectLength = 1.384f; //揺れる効果音の長さ
     private float groundCheckRadius = 0.2f; // 接地判定の半径
     private float gravity; //重力の大きさを保存する変数
     private int BodyState; //体形の状態を保存する変数
@@ -70,6 +68,7 @@ public class Heroin_move : MonoBehaviour
     private SpriteRenderer spriteRenderer; //SpriteRendererをキャッシュするための変数
     private Color m_col; //SpriteRendererの色を保存するための変数
     private Robot_move robotMoveScript;
+    private CriWare.Assets.CriAtomSePlayer sePlayer; // SE再生用のCriAtomSePlayerコンポーネント
     public event Action<bool> OnPlayerVisibilityChanged; // プレイヤーの可視状態が変化したときに呼び出されるイベント
 
     private void Awake()
@@ -77,6 +76,7 @@ public class Heroin_move : MonoBehaviour
         m_animator = GetComponent<Animator>();
         rbody = GetComponent<Rigidbody2D>();
         spriteRenderer = GetComponent<SpriteRenderer>();
+        sePlayer = GetComponent<CriWare.Assets.CriAtomSePlayer>();
         m_col = spriteRenderer.color;
 
         if (RobotObject == null)
@@ -163,15 +163,7 @@ public class Heroin_move : MonoBehaviour
 
                 if (isGrounded)
                 {
-                    if (!seManager.IsPlayingPlayerActionSE(SE_PlayerAction.Walk1))
-                    {
-                        seManager.PlayPlayerActionSEPitch(
-                            SE_PlayerAction.Walk1,
-                            isDashing
-                                ? UnityEngine.Random.Range(2.0f, 2.5f)
-                                : UnityEngine.Random.Range(1.0f, 1.5f)
-                        );
-                    }
+                    sePlayer.Play(SE_PlayerAction.Walk1);
                 }
 
                 BoundIntervalTime += isDashing ? 2 * Time.deltaTime : Time.deltaTime;
@@ -182,12 +174,12 @@ public class Heroin_move : MonoBehaviour
                     && BodyState == GameConstants.BodyState_Armed2
                 )
                 {
-                    seManager?.PlayPlayerActionSE(SE_PlayerAction.Bound2);
+                    sePlayer.Play(SE_PlayerAction.Bound2);
                     BoundIntervalTime = 0f;
                 }
                 else if (BoundIntervalTime >= 3.448f && BodyState == GameConstants.BodyState_Armed1)
                 {
-                    seManager?.PlayPlayerActionSE(SE_PlayerAction.GichiGichi1);
+                    sePlayer.Play(SE_PlayerAction.GichiGichi1);
                     BoundIntervalTime = 0f;
                 }
 
@@ -200,8 +192,8 @@ public class Heroin_move : MonoBehaviour
             }
             else
             {
-                if (seManager.IsPlayingPlayerActionSE(SE_PlayerAction.Walk1))
-                    seManager.StopPlayerActionSE(SE_PlayerAction.Walk1); //歩行の効果音を止める
+                // if (seManager.IsPlayingPlayerActionSE(SE_PlayerAction.Walk1))
+                //     seManager.StopPlayerActionSE(SE_PlayerAction.Walk1); //歩行の効果音を止める
                 m_animator.SetInteger("AnimState", 0);
             }
 
@@ -274,23 +266,21 @@ public class Heroin_move : MonoBehaviour
                         m_animator.SetTrigger("Armed2_JumpTrigger");
                         break;
                 }
-                seManager?.PlayPlayerActionSEPitch(
-                    SE_PlayerAction.Jump1,
-                    UnityEngine.Random.Range(1.0f, 1.5f)
-                ); //ジャンプの効果音を鳴らす
+
+                sePlayer.Play(SE_PlayerAction.Jump1);
             }
 
             // 着地判定：前のフレームでは空中、今フレームで地面
             if (!wasGroundedLastFrame && isGrounded)
             {
-                seManager?.PlayPlayerActionSE(SE_PlayerAction.Land1); //着地の効果音を鳴らす
+                sePlayer.Play(SE_PlayerAction.Land1); //着地の効果音を鳴らす
                 if (BodyState == GameConstants.BodyState_Armed2)
                 {
-                    seManager?.PlayPlayerActionSE(SE_PlayerAction.Bound1); //着地のバウンドの効果音を鳴らす
+                    sePlayer.Play(SE_PlayerAction.Bound1);
                 }
                 else if (BodyState == GameConstants.BodyState_Armed1)
                 {
-                    seManager?.PlayPlayerActionSE(SE_PlayerAction.Bound3); //着地のバウンドの効果音を鳴らす
+                    sePlayer.Play(SE_PlayerAction.Bound3);
                 }
             }
             wasGroundedLastFrame = isGrounded; // 前のフレームの接地状態を保存
@@ -355,17 +345,15 @@ public class Heroin_move : MonoBehaviour
                 {
                     //インベントに金を追加
                     playerManager.ChangeMoney(script.DropMoney);
-                    seManager?.PlayFieldSEPitch(
-                        SE_Field.CoinGet1,
-                        UnityEngine.Random.Range(1.0f, 1.5f)
-                    ); //効果音を鳴らす
+                    sePlayer.Play(SE_Field.CoinGet1);
                 }
 
                 if (script.DropID != null)
                 {
                     gameManager.AddAllTypeIDToInventory(script.DropID);
                     //ドロップ品をインベントに追加
-                    seManager?.PlaySystemEventSE(SE_SystemEvent.ItemGet2);
+                    sePlayer.Play(SE_SystemEvent.ItemGet2);
+
                 }
 
                 Destroy(collision.gameObject); //ドロップ品を消去
@@ -524,7 +512,6 @@ public class Heroin_move : MonoBehaviour
         playerEffectManager = PlayerEffectManager.instance;
         playerBodyManager = PlayerBodyManager.instance;
         inputManager = InputManager.instance;
-        seManager = SEManager.instance; // SEManagerのインスタンスを取得
 
         // いずれかのマネージャーが見つからなければ、処理を中断
         if (
@@ -533,7 +520,6 @@ public class Heroin_move : MonoBehaviour
             || playerEffectManager == null
             || playerBodyManager == null
             || inputManager == null
-            || seManager == null
         )
         {
             Debug.LogError("必要なマネージャーが見つかりませんでした。Heroin_moveは機能しません。");
@@ -556,7 +542,6 @@ public class Heroin_move : MonoBehaviour
             PlayerStatusBoolName.isRobotmove,
             playerManager.GetPlayerBoolStatus(PlayerStatusBoolName.isRobotmove)
         );
-        Bound2EffectLength = seManager.GetPlayerActionSELength(SE_PlayerAction.Bound2); //揺れる効果音の長さを取得
 
         // その他の初期化
         spriteRenderer.flipX = true; // 初期状態では右向き

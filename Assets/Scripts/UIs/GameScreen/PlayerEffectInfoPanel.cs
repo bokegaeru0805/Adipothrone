@@ -5,6 +5,8 @@ using UnityEngine.UI;
 
 public class PlayerEffectInfoPanel : MonoBehaviour
 {
+    private HealItemPreviewUIManager healItemPreviewUIManager;
+
     [Header("バフアイコン画像")]
     [SerializeField]
     private List<StatusEffectIcon> iconImageList;
@@ -36,6 +38,12 @@ public class PlayerEffectInfoPanel : MonoBehaviour
     /// </summary>
     private Dictionary<StatusEffectType, Tween> blinkingTweens = new();
 
+    // <summary>
+    /// バフの有効期限フラグを受け取るためのキャッシュ辞書
+    /// 毎フレームnewするのを防ぐため、Dictionaryをキャッシュする
+    /// </summary>
+    private Dictionary<StatusEffectType, bool> expirationFlags = new();
+
     private void Awake()
     {
         if (iconImageList == null || iconImageList.Count != 4)
@@ -66,15 +74,17 @@ public class PlayerEffectInfoPanel : MonoBehaviour
 
     private void Update()
     {
-        if (HealItemPreviewUIManager.instance == null)
+        if (healItemPreviewUIManager == null)
         {
-            return;
+            healItemPreviewUIManager = HealItemPreviewUIManager.instance;
+            if (healItemPreviewUIManager == null)
+                return;
         }
         // 毎フレーム呼び出し（または必要に応じて呼ぶ）
-        HealItemPreviewUIManager.instance.DisplayPlayerStatusEffect(
+        healItemPreviewUIManager.DisplayPlayerStatusEffect(
             iconImages,
             buffBars,
-            out var expirationFlags
+            expirationFlags // キャッシュした辞書を渡す
         );
 
         // バフが切れそうな時にアイコンを点滅させる

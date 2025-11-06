@@ -12,7 +12,7 @@ public class PlayerTestMoveController : MonoBehaviour
     private Camera mainCamera;
     private float zOffset = 10f;
 
-    // [追加] Playモード停止機能のための設定項目
+    // Playモード停止機能のための設定項目
     [Header("エディタ用デバッグ機能")]
     [Tooltip("このキーを指定回数連打するとPlayモードを停止します")]
     [SerializeField]
@@ -26,7 +26,7 @@ public class PlayerTestMoveController : MonoBehaviour
     [SerializeField]
     private float timeWindow = 0.5f;
 
-    // [追加] 連打回数と時間を記録するための内部変数
+    // 連打回数と時間を記録するための内部変数
     private int currentPressCount = 0;
     private float timeSinceLastPress = 0f;
 
@@ -52,13 +52,13 @@ public class PlayerTestMoveController : MonoBehaviour
         // 4. オブジェクトの位置を、変換したワールド座標に設定する
         transform.position = mouseWorldPosition;
 
-        // [追加] エディタ内でのみ実行するキー連打チェック処理
+        // エディタ内でのみ実行するキー連打チェック処理
 #if UNITY_EDITOR
         HandleEditorStop();
 #endif
     }
 
-    // [追加] Playモード停止を処理する専用の関数
+    // Playモード停止を処理する専用の関数
 #if UNITY_EDITOR
     private void HandleEditorStop()
     {

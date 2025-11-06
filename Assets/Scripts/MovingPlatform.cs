@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
-using Shapes2D;
+using CriWare;
+using Fungus;
 using UnityEngine;
 
 /// <summary>
@@ -8,7 +9,9 @@ using UnityEngine;
 /// FixedUpdateで物理的に移動し、プレイヤーを乗せて一緒に動きます。
 /// 横幅に応じてスプライトを動的に生成・配置します。
 /// </summary>
-[RequireComponent(typeof(BoxCollider2D))] // リフトにはBoxCollider2Dが必須
+[RequireComponent(typeof(BoxCollider2D))]
+[RequireComponent(typeof(Rigidbody2D))]
+[RequireComponent(typeof(CriWare.Assets.CriAtomSePlayer))]
 public class MovingPlatform : MonoBehaviour
 {
     [Header("リフトの移動設定")]
@@ -40,13 +43,28 @@ public class MovingPlatform : MonoBehaviour
     [Tooltip("リフトの横幅 (ユニット単位)。スプライトの幅の倍数で設定することを推奨します。")]
     [SerializeField]
     private int platformWidthUnits = 5;
-    private string sortingLayerName = "Ground";
+
+    [Header("リフトの種類")]
+    [Tooltip("リフトの種類。SEなどに影響する可能性があります。")]
+    [SerializeField]
+    private LiftType liftType = LiftType.None;
+
+    // --- リフトの種類 ---
+    public enum LiftType
+    {
+        None = 0, // デフォルト
+        Wood = 1, // 木のリフト
+        // 必要に応じて他の種類を追加
+    }
+
+    private string sortingLayerName = GameConstants.GroundLayerName;
     private int orderInLayer = 0;
     private Vector2 targetWorldPosition; // リフトの現在の目標位置（ワールド座標）
     private bool movingToEnd = true; // 現在の移動方向 (始点→終点: true, 終点→始点: false)
     private float waitTimer = 0.0f; // 終点に到達した後の待機時間を計測するタイマー
     private bool isWaiting = false; // リフトが待機状態かどうかのフラグ
     private Rigidbody2D rbody;
+    private CriWare.Assets.CriAtomSePlayer sePlayer;
 
     private void Awake()
     {
@@ -64,7 +82,16 @@ public class MovingPlatform : MonoBehaviour
             );
         }
 
+        if (liftType == LiftType.None)
+        {
+            Debug.LogWarning(
+                $"{this.name}のリフトの種類がNoneに設定されています。適切な種類を設定してください。"
+            );
+        }
+
         rbody = GetComponent<Rigidbody2D>();
+        sePlayer = GetComponent<CriWare.Assets.CriAtomSePlayer>();
+        StopMovingSound(); // 初期状態ではSEを停止
 
         // リフトのスプライトを動的に生成
         GeneratePlatformSprites();
@@ -75,7 +102,7 @@ public class MovingPlatform : MonoBehaviour
     /// </summary>
     private void Start()
     {
-        // 初期位置を始点に設定
+        // 初期位置を始点に設定（Awakeだと親の位置が確定していない可能性があるため）
         transform.localPosition = startLocalPosition;
         // 最初の目標位置を終点に設定
         targetWorldPosition = GetWorldPosition(endLocalPosition);
@@ -229,6 +256,49 @@ public class MovingPlatform : MonoBehaviour
         {
             // プレイヤーの親オブジェクトを解除
             other.transform.SetParent(null);
+        }
+    }
+
+    /// <summary>
+    /// Renderer がいずれかのカメラに表示されるようになったときに呼び出されます。
+    /// </summary>
+    private void OnBecameVisible()
+    {
+        // 待機中でなければ（＝動いているはずなら）SEを再生
+        if (!isWaiting)
+        {
+            PlayMovingSound();
+        }
+    }
+
+    /// <summary>
+    /// Renderer がどのカメラにも表示されなくなったときに呼び出されます。
+    /// </summary>
+    private void OnBecameInvisible()
+    {
+        // カメラから見えなくなったらSEを停止
+        StopMovingSound();
+    }
+
+    /// <summary>
+    /// 移動効果音を再生します。
+    /// </summary>
+    private void PlayMovingSound()
+    {
+        if (sePlayer != null && sePlayer.status != CriAtomSource.Status.Playing)
+        {
+            sePlayer.Play(SE_Field.LiftMove_Wood);
+        }
+    }
+
+    /// <summary>
+    /// 移動効果音を停止します。
+    /// </summary>
+    private void StopMovingSound()
+    {
+        if (sePlayer != null && sePlayer.status == CriAtomSource.Status.Playing)
+        {
+            sePlayer.Stop();
         }
     }
 

@@ -18,24 +18,23 @@ public class SelectButton : MonoBehaviour
     {
         if (EnablePanel != null)
         {
-            if (this.gameObject.name.Contains("_Menu") && UIManager.instance != null)
+            // 現在アクティブなManager（UIManagerなど）を取得
+            var activeManager = SaveLoadManager.CurrentActiveManager;
+
+            if (activeManager != null)
             {
-                UIManager.instance.OpenPanel(EnablePanel, panelStage);
-            }
-            else if (this.gameObject.name.Contains("_Title") && TitleUIManager.instance != null)
-            {
-                TitleUIManager.instance.OpenPanel(EnablePanel, panelStage);
-            }
-            else if (
-                this.gameObject.name.Contains("_GameOver")
-                && GameOverUIManager.instance != null
-            )
-            {
-                GameOverUIManager.instance.OpenPanel(EnablePanel, panelStage);
+                // 取得したManagerのOpenPanel()を呼び出す
+                activeManager.OpenPanel(EnablePanel, panelStage);
             }
             else
             {
-                EnablePanel.SetActive(true);
+                // Managerが見つからなかった場合のフォールバック処理
+                Debug.LogWarning(
+                    "SaveLoadFileButton: SaveLoadManager.CurrentActiveManager が設定されていません。"
+                        + "OpenPanel() を実行できませんでした。",
+                    this
+                );
+                EnablePanel.SetActive(true); // 従来の非表示パネルを表示するだけの動作
             }
 
             // 最後に押されたボタンを親パネルに記録させる

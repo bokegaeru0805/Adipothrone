@@ -5,6 +5,7 @@ using UnityEngine;
 /// <summary>
 /// 発射されたファンネルの移動と画面外検知を管理する
 /// </summary>
+[RequireComponent(typeof(CriWare.Assets.CriAtomSePlayer))]
 public class FunnelProjectile : MonoBehaviour
 {
     private float preparationTime = 0.3f;
@@ -17,6 +18,7 @@ public class FunnelProjectile : MonoBehaviour
     private NightBorneMoveController ownerController; // 自分を制御するコントローラー
     private Coroutine launchCoroutine; // 実行中のコルーチンを管理
     private StaticAfterImageEffect2DPlayer afterImage; //残像エフェクト
+    private CriWare.Assets.CriAtomSePlayer sePlayer; // SE再生用のCriAtomSePlayerコンポーネント
 
     private void Awake()
     {
@@ -33,6 +35,7 @@ public class FunnelProjectile : MonoBehaviour
         }
 
         this.tag = GameConstants.ImmuneEnemyTagName;
+        sePlayer = GetComponent<CriWare.Assets.CriAtomSePlayer>();
 
         // 最初は無効化しておく
         this.enabled = false;
@@ -108,10 +111,11 @@ public class FunnelProjectile : MonoBehaviour
 
         // --- 2. 発射フェーズ ---
         isLaunched = true;
-        SEManager.instance.PlayEnemyActionSEPitch(
-            SE_EnemyAction.SwordThrow1,
-            Random.Range(1.0f, 1.2f)
-        ); // 発射音を再生
+        sePlayer.Play(SE_EnemyAction.SwordThrow1); // 発射音を再生
+        // SEManager.instance.PlayEnemyActionSEPitch(
+        //     SE_EnemyAction.SwordThrow1,
+        //     Random.Range(1.0f, 1.2f)
+        // );
     }
 
     private void Update()

@@ -1,12 +1,19 @@
 using UnityEngine;
 using UnityEngine.Rendering.Universal;
 
+[RequireComponent(typeof(CriWare.Assets.CriAtomSePlayer))]
 public class TorchController : MonoBehaviour
 {
     private bool isFirstUpdate = true;
+    private bool isPlayerInTargetArea = false;
     private Light2D torchLight = null;
     private Animator torchAnimator = null;
     private Material torchMaterial = null;
+    private CriWare.Assets.CriAtomSePlayer sePlayer = null;
+
+    [SerializeField]
+    [Tooltip("このEnemyActivatorを起動させるCameraMoveArea")]
+    private CameraMoveArea targetCameraArea;
 
     [SerializeField]
     public TorchState firstState = TorchState.Red; // 初期状態を設定するための変数
@@ -33,15 +40,74 @@ public class TorchController : MonoBehaviour
 
     private void Awake()
     {
+        if (targetCameraArea == null)
+        {
+            Debug.LogError($"{name} に targetCameraArea が設定されていません。", this);
+        }
+
         torchLight = this.GetComponent<Light2D>();
         torchAnimator = this.GetComponent<Animator>();
         torchMaterial = this.GetComponent<SpriteRenderer>().material;
+        sePlayer = this.GetComponent<CriWare.Assets.CriAtomSePlayer>();
     }
 
     private void Start()
     {
         SetTorchState(firstState);
         isFirstUpdate = false;
+        isPlayerInTargetArea = false;
+    }
+
+    private void OnEnable()
+    {
+        CameraMoveArea.OnPlayerEnteredArea += HandlePlayerEnteredArea;
+        CameraMoveArea.OnPlayerExitedArea += HandlePlayerExitedArea;
+    }
+
+    private void OnDisable()
+    {
+        CameraMoveArea.OnPlayerEnteredArea -= HandlePlayerEnteredArea;
+        CameraMoveArea.OnPlayerExitedArea -= HandlePlayerExitedArea;
+    }
+
+    private void HandlePlayerEnteredArea(CameraMoveArea enteredArea)
+    {
+        // プレイヤーが入ったエリアが、自分が監視しているエリアなら音を鳴らす
+        if (enteredArea == targetCameraArea)
+        {
+            isPlayerInTargetArea = true;
+        }
+    }
+
+    private void HandlePlayerExitedArea(CameraMoveArea exitedArea)
+    {
+        // プレイヤーが出たエリアが、自分が監視しているエリアなら音を止める
+        if (exitedArea == targetCameraArea)
+        {
+            isPlayerInTargetArea = false;
+        }
+    }
+
+    private void Update()
+    {
+        if (isPlayerInTargetArea)
+        {
+            if (
+                !sePlayer.IsPlaying()
+                && currentState != TorchState.Off
+                && currentState != TorchState.None
+            )
+            {
+                sePlayer.Play(SE_Field.FireBurning1); // トーチの燃える音をループ再生
+            }
+        }
+        else
+        {
+            if (sePlayer.IsPlaying())
+            {
+                sePlayer.Stop(); // トーチの燃える音を停止
+            }
+        }
     }
 
     public void SetTorchState(TorchState torchState)
@@ -61,7 +127,7 @@ public class TorchController : MonoBehaviour
                 torchMaterial.mainTexture = defaultTorchSprite.texture; // デフォルトのスプライト
                 if (!isFirstUpdate)
                 {
-                    SEManager.instance?.PlayFieldSE(SE_Field.FlameOff); // トーチの光が消えるSEを再生
+                    sePlayer.Play(SE_Field.FlameOff); // トーチの光が消えるSEを再生
                 }
                 break;
             case TorchState.Red:
@@ -72,7 +138,7 @@ public class TorchController : MonoBehaviour
                 torchAnimator.SetTrigger("red"); // 赤色のアニメーションをトリガー
                 if (!isFirstUpdate)
                 {
-                    SEManager.instance?.PlayFieldSE(SE_Field.FlameOn); // トーチの光が点くSEを再生
+                    sePlayer.Play(SE_Field.FlameOn); // トーチの光が点くSEを再生
                 }
                 break;
             case TorchState.Blue:
@@ -83,7 +149,7 @@ public class TorchController : MonoBehaviour
                 torchAnimator.SetTrigger("blue");
                 if (!isFirstUpdate)
                 {
-                    SEManager.instance?.PlayFieldSE(SE_Field.FlameOn); // トーチの光が点くSEを再生
+                    sePlayer.Play(SE_Field.FlameOn); // トーチの光が点くSEを再生
                 }
                 break;
         }

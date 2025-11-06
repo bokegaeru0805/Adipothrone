@@ -18,29 +18,21 @@ public class CloseButton : MonoBehaviour
     {
         if (DisablePanel != null)
         {
-            if (this.gameObject.name.Contains("_Menu") && UIManager.instance != null)
+            // オブジェクト名による分岐を、SaveLoadManager経由の呼び出しに変更
+            if (SaveLoadManager.CurrentActiveManager != null)
             {
-                UIManager.instance.CloseTopPanel();
-            }
-            else if (this.gameObject.name.Contains("_Title") && TitleUIManager.instance != null)
-            {
-                TitleUIManager.instance.CloseTopPanel();
-            }
-            else if (
-                this.gameObject.name.Contains("_GameOver")
-                && GameOverUIManager.instance != null
-            )
-            {
-                GameOverUIManager.instance.CloseTopPanel();
+                // 登録されているManagerのCloseTopPanel()を呼び出す
+                SaveLoadManager.CurrentActiveManager.CloseTopPanel();
             }
             else
             {
+                // CurrentActiveManager が見つからなかった場合 (各ManagerのAwakeで登録し忘れている可能性)
+                Debug.LogWarning(
+                    "SaveLoadPromptButton: SaveLoadManager.CurrentActiveManager が設定されていません。データ変更確認画面を閉じることができません。",
+                    this
+                );
                 DisablePanel.SetActive(false);
             }
-            // ❗重要：
-            // パネルを非表示にした直後に、次に選択状態にしたいUIオブジェクトを明示的に指定する。
-            // これは「PanelのOnDisable()などで自動化」するよりも、確実で柔軟な制御が可能。
-            // CloseButtonから処理することで、どのボタンで閉じたかによって遷移先を変えることもできる。
         }
         else
         {

@@ -1,12 +1,13 @@
 using System.Collections.Generic;
 using System.Linq;
 using DG.Tweening;
+using TMPro;
 using UnityEngine;
 using UnityEngine.EventSystems;
 
-public class TitleUIManager : MonoBehaviour
+public class TitleUIManager : MonoBehaviour,IPanelStackManager
 {
-    public static TitleUIManager instance;
+    public static TitleUIManager instance{ get; private set; }
 
     [SerializeField, Tooltip("セーブファイルがないときの最初のボタン")]
     private GameObject GameStartfirstSelected;
@@ -17,6 +18,10 @@ public class TitleUIManager : MonoBehaviour
     [Header("強調表示するUI")]
     [SerializeField, Tooltip("決定キーのUIオブジェクト")]
     private RectTransform confirmButtonUI;
+
+    [Header("バージョン表示")]
+    [SerializeField, Tooltip("バージョン表示のテキストオブジェクト")]
+    private TextMeshProUGUI versionText;
 
     // [SerializeField, Tooltip("キャンセルキーのUIオブジェクト")]
     // private RectTransform cancelButtonUI;
@@ -38,6 +43,9 @@ public class TitleUIManager : MonoBehaviour
         instance = this;
         panelStack = new Stack<GameObject>();
 
+        // Awakeで、アクティブなManagerとして自身を登録
+        SaveLoadManager.RegisterActiveManager(this);
+
         //アニメーションを開始する前に、UIの初期スケールを記憶しておく
         if (confirmButtonUI != null)
         {
@@ -54,8 +62,15 @@ public class TitleUIManager : MonoBehaviour
         bool isExistSaveFile = true;
         if (SaveLoadManager.instance != null)
         {
-            isExistSaveFile = !SaveLoadManager.FilePlaytime.Values.All(value => value == 0f);
-            //セーブファイルが存在するかどうかを取得
+            // セーブファイルが少なくとも1つ存在するかどうかを取得 (プレイ時間が0より大きいスロットが1つでもあればtrue)
+            isExistSaveFile = SaveLoadManager.FileSlotInfos.Values.Any(slotInfo =>
+                slotInfo != null && slotInfo.playTime > 0f
+            );
+
+            //BGMとSEの音量を適用
+            //シーンが変わるCRIWAREの仕様により、カテゴリの音量がリセットされてしまう
+            //そのため、再度音量を適用する必要がある
+            SaveLoadManager.instance.ApplyAudioSettings();
         }
         else
         {
@@ -87,7 +102,13 @@ public class TitleUIManager : MonoBehaviour
             }
         }
 
-        // ★ 最初にボタンの強調アニメーションを開始
+        if (versionText != null)
+        {
+            //バージョン表示を更新
+            versionText.text = $"Ver.{Application.version}";
+        }
+
+        // 最初にボタンの強調アニメーションを開始
         StartButtonEmphasis();
     }
 
@@ -95,7 +116,12 @@ public class TitleUIManager : MonoBehaviour
     {
         // アニメーションを停止
         StopButtonEmphasis();
-        instance = null;
+        
+        if (instance == this)
+        {
+            SaveLoadManager.UnregisterActiveManager(this);
+            instance = null;
+        }
     }
 
     private void Update()

@@ -1,6 +1,7 @@
 using System.Collections;
 using UnityEngine;
 
+[RequireComponent(typeof(CriWare.Assets.CriAtomSePlayer))]
 public class RainSource : MonoBehaviour
 {
     [Header("雨のダメージ設定")]
@@ -63,7 +64,8 @@ public class RainSource : MonoBehaviour
     [SerializeField]
     private GameObject rain_prefab; // 雨のプレハブ
     private bool isEnable; //存在しているかどうかのフラグ
-    private Vector3 PlayerPosition;
+    private Vector3 playerPosition; //プレイヤーの位置
+    private CriWare.Assets.CriAtomSePlayer sePlayer;
 
     private enum RainType
     {
@@ -88,6 +90,8 @@ public class RainSource : MonoBehaviour
         {
             Debug.LogError("RainSourceの雨の種類が設定されていません。");
         }
+
+        sePlayer = GetComponent<CriWare.Assets.CriAtomSePlayer>();
     }
 
     private void Start()
@@ -102,7 +106,7 @@ public class RainSource : MonoBehaviour
             );
             return;
         }
-        PlayerPosition = PlayerObject.transform.position;
+        playerPosition = PlayerObject.transform.position;
         isEnable = false;
         switch (raintype)
         {
@@ -119,12 +123,12 @@ public class RainSource : MonoBehaviour
     {
         while (true)
         {
-            PlayerPosition = PlayerObject.transform.position;
+            playerPosition = PlayerObject.transform.position;
             bool isInArea =
-                DetectLeft < PlayerPosition.x
-                && PlayerPosition.x < DetectRight
-                && DetectBottom < PlayerPosition.y
-                && PlayerPosition.y < DetectTop;
+                DetectLeft < playerPosition.x
+                && playerPosition.x < DetectRight
+                && DetectBottom < playerPosition.y
+                && playerPosition.y < DetectTop;
 
             if (isInArea)
             {
@@ -176,12 +180,12 @@ public class RainSource : MonoBehaviour
     {
         while (true)
         {
-            PlayerPosition = PlayerObject.transform.position;
+            playerPosition = PlayerObject.transform.position;
             bool isInArea =
-                DetectLeft < PlayerPosition.x
-                && PlayerPosition.x < DetectRight
-                && DetectBottom < PlayerPosition.y
-                && PlayerPosition.y < DetectTop;
+                DetectLeft < playerPosition.x
+                && playerPosition.x < DetectRight
+                && DetectBottom < playerPosition.y
+                && playerPosition.y < DetectTop;
 
             if (isInArea)
             {
@@ -245,9 +249,9 @@ public class RainSource : MonoBehaviour
             {
                 Destroy(rain);
                 int isDropSoundPlay = Random.Range(1, 6);
-                if (isDropSoundPlay == 1 && SEManager.instance != null)
+                if (isDropSoundPlay == 1)
                 {
-                    SEManager.instance.PlayFieldSE(SE_Field.WaterDrop1);
+                    sePlayer.Play(SE_Field.WaterDrop1);
                 }
                 yield break;
             }

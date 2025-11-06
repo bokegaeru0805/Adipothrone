@@ -5,7 +5,7 @@ using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
 
-public class GameOverUIManager : MonoBehaviour
+public class GameOverUIManager : MonoBehaviour, IPanelStackManager
 {
     [Header("UI参照のルート")]
     [SerializeField]
@@ -13,11 +13,14 @@ public class GameOverUIManager : MonoBehaviour
     public static GameOverUIManager instance { get; private set; }
     private GameObject firstSelected;
     private GameObject lastSelected; //最後に選ばれていたボタンを保存する変数
+    private bool isRegistered = false; //自分がスタックに登録されたかを覚えておくフラグを追加
     private Stack<GameObject> panelStack = new Stack<GameObject>();
 
     private void Awake()
     {
         instance = this;
+
+        isRegistered = false; // 登録フラグを初期化
 
         if (uiRefs == null)
         {
@@ -34,8 +37,28 @@ public class GameOverUIManager : MonoBehaviour
         firstSelected = uiRefs.ContinueSelectButton; // 最初に選ばれるボタンを設定
     }
 
+    private void OnDestroy()
+    {
+        // instance が自分自身であることを確認してから登録解除
+        if (instance == this)
+        {
+            // 自分が登録されている場合 *だけ* 登録解除する
+            if (isRegistered)
+            {
+                // このManagerが（例えばタイトルに戻るなどで）破棄されるときに
+                // スタックに積まれていたら、解除する
+                SaveLoadManager.UnregisterActiveManager(this);
+            }
+            instance = null;
+        }
+    }
+
     public void StartGameOver()
     {
+        //アクティブなManagerとして自身を登録
+        SaveLoadManager.RegisterActiveManager(this);
+        //  登録したことをフラグに記録
+        isRegistered = true;
         Gameover();
     }
 
@@ -47,7 +70,7 @@ public class GameOverUIManager : MonoBehaviour
         SEManager.instance?.StopAllSE();
         //オブジェクトプールをクリア
         ObjectPooler.instance?.ReturnAllToPool();
-        
+
         uiRefs.GameOverPanel.SetActive(true); // GameOverパネルを表示
         panelStack = new Stack<GameObject>(); //一応Stackを初期化
         if (firstSelected != null)

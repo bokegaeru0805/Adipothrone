@@ -11,7 +11,7 @@ using UnityEngine;
 /// </summary>
 public class DebugBGMManager : MonoBehaviour
 {
-   [Header("BGMのACBアセット")]
+    [Header("BGMのACBアセット")]
     [SerializeField]
     private CriAtomAcbAsset bgmAcbAsset;
 
@@ -28,7 +28,6 @@ public class DebugBGMManager : MonoBehaviour
         if (instance == null)
         {
             instance = this;
-            DontDestroyOnLoad(this.gameObject);
         }
         else
         {
@@ -81,12 +80,12 @@ public class DebugBGMManager : MonoBehaviour
 
     public void PlayBGM0()
     {
-        Play("bgm0");
+        Play("FirstVillage");
     }
 
     public void PlayBGM1()
     {
-        Play("bgm1");
+        Play("PlainsField1");
     }
 
     /// <summary>

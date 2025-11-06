@@ -1,6 +1,7 @@
 using System.Collections;
 using UnityEngine;
 
+[RequireComponent(typeof(CriWare.Assets.CriAtomSePlayer))]
 public class SlimeBossMoveController : MonoBehaviour
 {
     [SerializeField]
@@ -80,6 +81,7 @@ public class SlimeBossMoveController : MonoBehaviour
     private SpriteRenderer spriteRenderer;
     private Rigidbody2D rbody;
     private Animator animator;
+    private CriWare.Assets.CriAtomSePlayer sePlayer;
     private int IdleHash;
     private AnimatorStateInfo stateInfo;
     private ContactDamageController contactDamageController;
@@ -112,16 +114,10 @@ public class SlimeBossMoveController : MonoBehaviour
             Debug.LogError($"{this.name}の移動範囲が設定されていません。");
         }
         spriteRenderer = GetComponent<SpriteRenderer>();
+        sePlayer = GetComponent<CriWare.Assets.CriAtomSePlayer>();
+
         rbody = GetComponent<Rigidbody2D>();
         rbody.constraints = RigidbodyConstraints2D.FreezeRotation;
-
-        characterHpScript = this.GetComponent<CharacterHealth>(); //hpのscriptを取得
-        if (characterHpScript == null)
-        {
-            Debug.LogError($"{this.name}はCharacterHealthスクリプトを持っていません");
-            return;
-        }
-        characterHpScript.enabled = false; // CharacterHealthのスクリプトを無効化
 
         this.tag = "Untagged"; //ダメージ判定を無効化するために、タグを"Untagged"に設定
     }
@@ -134,8 +130,17 @@ public class SlimeBossMoveController : MonoBehaviour
         contactDamageController = GetComponent<ContactDamageController>();
         contactDamageController?.SetNormalDamage(damage);
 
-        // HP変化イベントを購読
-        characterHpScript.OnHPChanged += HandleHpChanged;
+        //以下のHP関連の操作は、BossHealth関数との兼ね合いからStart関数で行う必要がある
+        characterHpScript = this.GetComponent<CharacterHealth>(); //hpのscriptを取得
+        if (characterHpScript == null)
+        {
+            Debug.LogError($"{this.name}はCharacterHealthスクリプトを持っていません");
+        }
+        else
+        {
+            characterHpScript.OnHPChanged += HandleHpChanged; // HP変化イベントを購読
+            characterHpScript.enabled = false; // CharacterHealthのスクリプトを無効化
+        }
 
         ResetState();
     }
@@ -219,7 +224,10 @@ public class SlimeBossMoveController : MonoBehaviour
             {
                 isMoveStarted = true;
                 tag = GameConstants.ImmuneEnemyTagName; // ダメージ判定を有効化
-                this.GetComponent<BossHealth>().enabled = true; // BossHealthのスクリプトを有効化
+                var bossHealth = this.GetComponent<BossHealth>();
+                bossHealth.enabled = true; // BossHealthのスクリプトを有効化
+                bossHealth.InitializeBossSpecifics(); // ボス固有の初期化を実行
+
                 BGMManager.instance?.Play(BGMCategory.Boss_Mid);
             }
             else
@@ -279,12 +287,12 @@ public class SlimeBossMoveController : MonoBehaviour
                         // 初速度を設定
                         rbody.velocity = new Vector2(vx, 0f);
                         rbody.AddForce(new Vector2(0f, initialVy), ForceMode2D.Impulse);
-                        SEManager.instance?.PlayEnemyActionSE(SE_EnemyAction.Attack_slime1); // 高ジャンプ攻撃の効果音を鳴らす
+                        sePlayer.Play(SE_EnemyAction.Attack_slime_boss); // 高ジャンプ攻撃の効果音を鳴らす
                     }
                     else
                     {
                         rbody.AddForce(new Vector2(0, jumpPower), ForceMode2D.Impulse);
-                        SEManager.instance?.PlayEnemyActionSE(SE_EnemyAction.Attack_slime1); // ジャンプ攻撃の効果音を鳴らす
+                        sePlayer.Play(SE_EnemyAction.Attack_slime_boss); // ジャンプ攻撃の効果音を鳴らす
                     }
                 }
                 break;
@@ -304,7 +312,7 @@ public class SlimeBossMoveController : MonoBehaviour
                     if (isHPbelowHalf && jumpCount >= jumpCountUntilPowerAttack)
                     {
                         jumpCount = 0;
-                        SEManager.instance?.PlayEnemyActionSE(SE_EnemyAction.Land_enemy1); // 高ジャンプの着地音を鳴らす
+                        sePlayer.Play(SE_EnemyAction.Land_enemy1); // 高ジャンプの着地音を鳴らす
 
                         // 高ジャンプの後に休憩してから通常行動に戻す
                         StartCoroutine(RecoverFromHighJump());

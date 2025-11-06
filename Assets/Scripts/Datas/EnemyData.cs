@@ -1,5 +1,4 @@
 using System.Collections.Generic;
-using Effekseer;
 using UnityEngine;
 
 [CreateAssetMenu(fileName = "NewEnemy", menuName = "Enemies/NormalEnemy")]
@@ -16,7 +15,7 @@ public class EnemyData : ScriptableObject
     public int dropMoney; // 落とす金額
     public int requiredLevel; // 所要レベル
     public List<DropItemData> dropItems = new List<DropItemData>(); // ドロップアイテムリスト
-    public EffekseerEmitter destroyeffect; // 死亡エフェクトのアセット
+    // public EffekseerEmitter destroyeffect; // 死亡エフェクトのアセット
     public float destroyeffectScale = 1.0f; // 死亡エフェクトの大きさ
     [Tooltip("この敵を図鑑に表示するかどうか")]
     public bool isListedInDex = true;

@@ -1,6 +1,7 @@
 using System.Collections;
 using UnityEngine;
 
+[RequireComponent(typeof(CriWare.Assets.CriAtomSePlayer))]
 public class BirdNormalMoveController : MonoBehaviour, IEnemyResettable
 {
     private const float MOVE_RANGE = 4.0f; // ランダムに設定する場合の移動幅
@@ -102,6 +103,7 @@ public class BirdNormalMoveController : MonoBehaviour, IEnemyResettable
     private Animator animator = null;
     private Rigidbody2D rbody;
     private SpriteRenderer spriteRenderer;
+    private CriWare.Assets.CriAtomSePlayer sePlayer; // SE再生用のCriAtomSePlayerコンポーネント
     private float currentRotationOffset = 0f; // 回転の現在のオフセット
     private float timeElapsedForWobble = 0f; // 微振動の経過時間
 
@@ -172,12 +174,6 @@ public class BirdNormalMoveController : MonoBehaviour, IEnemyResettable
             Debug.LogError($"{this.name}のスプライトが設定されていません。");
         }
 
-        animator = GetComponent<Animator>();
-        if (animator == null)
-        {
-            Debug.LogError($"{this.name}にAnimatorコンポーネントがアタッチされていません。");
-        }
-
         //物理挙動の初期化
         rbody = this.GetComponent<Rigidbody2D>();
         if (rbody == null)
@@ -191,11 +187,9 @@ public class BirdNormalMoveController : MonoBehaviour, IEnemyResettable
             rbody.simulated = false; // 初期状態では物理挙動を無効化
         }
 
+        animator = GetComponent<Animator>();
         spriteRenderer = this.GetComponent<SpriteRenderer>();
-        if (spriteRenderer == null)
-        {
-            Debug.LogError($"{this.gameObject.name}にSpriteRendererコンポーネントがありません。");
-        }
+        sePlayer = GetComponent<CriWare.Assets.CriAtomSePlayer>();
 
         if (activator == null)
         {
@@ -593,7 +587,7 @@ public class BirdNormalMoveController : MonoBehaviour, IEnemyResettable
         Vector2 currentPos = transform.position; // 現在のY座標が上昇した位置になっている
         float directionX = Mathf.Sign(targetDiveX - currentPos.x); // プレイヤーの位置に基づいてX方向を決定
         diveVelocity = new Vector2(directionX * diveSpeed, -diveSpeed); // ダイブ速度を設定
-        SEManager.instance.PlayEnemyActionSE(SE_EnemyAction.Attack_fly1); // ダイブ開始時のSEを再生
+        sePlayer.Play(SE_EnemyAction.Attack_fly1); // ダイブ開始時のSEを再生
         this.tag = GameConstants.DamageableEnemyTagName; // タグをダメージを受ける敵のタグに変更
         contactDamageObject.tag = GameConstants.DamageableEnemyTagName; // 子オブジェクトもタグをダメージを受ける敵のタグに変更
         spriteRenderer.sprite = glideSprite; // グライドスプライトに変更

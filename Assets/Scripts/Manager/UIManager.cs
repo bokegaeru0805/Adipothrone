@@ -4,7 +4,7 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.EventSystems;
 
-public class UIManager : MonoBehaviour
+public class UIManager : MonoBehaviour, IPanelStackManager
 {
     public static event System.Action<bool> OnMenuStateChanged; // メニューの表示状態が変化したときに発行されるイベント
     public bool IsQuickItemRegistering { get; private set; } = false; //クイックアイテム登録中かどうかのフラグ
@@ -37,6 +37,8 @@ public class UIManager : MonoBehaviour
             instance = this;
             isOpeningCanvas = false;
             IsQuickItemRegistering = false;
+            // 現在のシーンのPanelStackManagerとして自身を登録
+            SaveLoadManager.RegisterActiveManager(this);
 
             if (uiRefs == null)
             {
@@ -80,6 +82,20 @@ public class UIManager : MonoBehaviour
     private void OnDisable()
     {
         // オブジェクトが非アクティブになったら、購読を解除（メモリリーク防止）
+        GameManager.OnTalkingStateChanged -= HandleTalkingStateChanged;
+    }
+
+    private void OnDestroy()
+    {
+        // このインスタンスがシングルトンのインスタンス（instance）と
+        // 同一である場合のみ、登録解除処理を行う
+        if (instance == this)
+        {
+            SaveLoadManager.UnregisterActiveManager(this);
+            instance = null; // instance もクリア
+        }
+
+        // OnDisableと重複するが、OnDestroyで確実に購読解除
         GameManager.OnTalkingStateChanged -= HandleTalkingStateChanged;
     }
 

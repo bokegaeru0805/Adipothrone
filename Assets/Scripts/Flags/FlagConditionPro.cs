@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Events;
+using NaughtyAttributes;
 
 // このファイルはMonoBehaviourではないため、どのGameObjectにもアタッチしません。
 // プロジェクト内に存在するだけで、他のスクリプトから参照できます。
