@@ -20,9 +20,27 @@ public class Robot_move : MonoBehaviour
     public Vector2 offset = new Vector2(1.5f, 2f);
 
     /// <summary>
-    /// 剣を振っている最中かどうかのフラグ
+    /// 剣を振っている最中かどうかのフラグ (イベント発行用に変更)
     /// </summary>
-    public bool isBladeSwinging { get; private set; } = false;
+    private bool _isBladeSwinging = false;
+    public bool isBladeSwinging
+    {
+        get { return _isBladeSwinging; }
+        private set
+        {
+            // 値が本当に変わった時だけイベントを発行
+            if (_isBladeSwinging != value)
+            {
+                _isBladeSwinging = value;
+                OnBladeSwingingChanged?.Invoke(_isBladeSwinging); // イベント発行
+            }
+        }
+    }
+
+    /// <summary>
+    /// 剣の振り状態が変更されたときに発行されるイベント (true: 振り始め, false: 振り終わり)
+    /// </summary>
+    public event Action<bool> OnBladeSwingingChanged;
 
     /// <summary>
     /// 現在、右を向いているかどうかのフラグ
@@ -82,7 +100,7 @@ public class Robot_move : MonoBehaviour
     private float _maxSpeed = float.PositiveInfinity; // 追従の最大速度
     private float _currentVelocity = 0; // 平滑化移動で使う内部変数
     private Vector3 robot_pos = Vector3.zero; // 計算用の一時的な座標変数
-    private float floatingAmplitude = 0.25f;  //攻撃中でないときの上下の揺れの幅
+    private float floatingAmplitude = 0.25f; //攻撃中でないときの上下の揺れの幅
     private float floatingDuration = 1.5f; //揺れの片道にかかる時間
 
     // 攻撃関連のパラメータ
@@ -372,9 +390,10 @@ public class Robot_move : MonoBehaviour
         attackCount = 0; // 攻撃回数を初期化
         if (blade_prefab == null)
         {
-            Debug.LogError("Blade prefab is not assigned.");
+            Debug.LogError("BladeAttack: blade_prefabが設定されていません。");
             yield break; // 剣のプレハブが設定されていない場合は終了
         }
+
         float bladeAttackTime = blade_prefab.GetComponent<Robot_blade_move>().attackTime;
         bladeAttackTime = playerEffectManager.CalculateFinalBladeMoveSpeed(bladeAttackTime);
 

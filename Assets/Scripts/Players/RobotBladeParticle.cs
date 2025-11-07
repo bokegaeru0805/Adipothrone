@@ -1,7 +1,3 @@
-using System.Collections;
-using System.Collections.Generic;
-using Shapes2D;
-using Unity.Mathematics;
 using UnityEngine;
 
 public class RobotBladeParticle : MonoBehaviour
@@ -15,21 +11,67 @@ public class RobotBladeParticle : MonoBehaviour
 
     [HideInInspector]
     public float BladeLenght = 0;
-    private bool isBladeAttack = false;
+    private Robot_move robotMoveScript;
 
     private void Start()
     {
         trail.emitting = false;
         trail.startWidth = 0.6f;
         trail.endWidth = 0.0f;
+
+        if (BladeObject != null)
+        {
+            // Robot_blade_move は Robot_move の子である想定
+            robotMoveScript = BladeObject.GetComponentInParent<Robot_move>();
+        }
+
+        if (robotMoveScript == null)
+        {
+            Debug.LogError("Robot_moveスクリプトが親階層に見つかりません。", this);
+        }
+        else
+        {
+            // Robot_move のイベントを購読
+            robotMoveScript.OnBladeSwingingChanged += HandleBladeSwingingChanged;
+        }
+    }
+
+    private void OnEnable()
+    {
+        if (robotMoveScript != null)
+        {
+            // Robot_move のイベントを購読
+            robotMoveScript.OnBladeSwingingChanged += HandleBladeSwingingChanged;
+            
+            // 起動時の初期状態を同期
+            HandleBladeSwingingChanged(robotMoveScript.isBladeSwinging);
+        }
+    }
+
+    private void OnDisable()
+    {
+        if (robotMoveScript != null)
+        {
+            // 購読解除
+            robotMoveScript.OnBladeSwingingChanged -= HandleBladeSwingingChanged;
+        }
+    }
+
+    /// <summary>
+    /// 剣の振り状態が変わったときに Robot_move から呼ばれる
+    /// </summary>
+    private void HandleBladeSwingingChanged(bool isSwinging)
+    {
+        // 状態が変わった瞬間に Trail の emitting を切り替える
+        trail.emitting = isSwinging;
     }
 
     private void FixedUpdate()
     {
-        isBladeAttack = BladeObject.GetComponent<Robot_blade_move>().isBladeSwinging;
-        if (isBladeAttack)
+
+        // isBladeAttackの監視を削除し、trail.emitting が true の場合（＝攻撃中）のみ処理する
+        if (trail.emitting)
         {
-            trail.emitting = true;
             float Bladeangle = BladeObject.transform.eulerAngles.z;
             if (270 <= Bladeangle)
                 Bladeangle = Bladeangle - 360;
@@ -40,10 +82,6 @@ public class RobotBladeParticle : MonoBehaviour
                 0
             );
             this.transform.position = BladeObject.transform.position + offset;
-        }
-        else
-        {
-            trail.emitting = false;
         }
     }
 }

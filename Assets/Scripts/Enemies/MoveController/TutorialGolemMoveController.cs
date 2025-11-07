@@ -61,12 +61,13 @@ public class TutorialGolemMoveController : MonoBehaviour
     [SerializeField]
     private Sprite DeathSprite; //死亡判定時のスプライト
     private float flatvelocity;
-    private int enemyHP = 1; //ヒットポイント(０にすると即死してしまう)
     private int ShootDamage = 16; //弾のダメージ量
     private bool isAttacking = false; //攻撃コルーチンが起こっているかどうかのフラグ
+    private bool isDead = false; //死亡しているかどうかのフラグ
     private Vector3 PlayerPosition;
     private SpriteRenderer spriteRenderer;
     private Animator animator;
+    private CharacterHealth enemyHealth;
     private CriWare.Assets.CriAtomSePlayer sePlayer;
 
     private void Awake()
@@ -94,54 +95,96 @@ public class TutorialGolemMoveController : MonoBehaviour
         spriteRenderer = this.GetComponent<SpriteRenderer>();
         animator = this.GetComponent<Animator>();
         sePlayer = this.GetComponent<CriWare.Assets.CriAtomSePlayer>();
+        enemyHealth = this.GetComponent<CharacterHealth>();
+        if (enemyHealth == null)
+        {
+            Debug.LogError(
+                "TutorialGolemにCharacterHealthコンポーネントがアタッチされていません。"
+            );
+        }
     }
 
     private void Start()
     {
-        if (FlagManager.instance.GetBoolFlag(PrologueTriggeredEvent.DefeatTutorialGolem))
+        bool? isDefeated = FlagManager.instance?.GetBoolFlag(
+            PrologueTriggeredEvent.DefeatTutorialGolem
+        );
+
+        if (isDefeated == true)
         {
+            isDead = true;
             this.tag = "Untagged"; //enemyのtagを外す
             Destroy(this.gameObject); //自分のゲームオブジェクト消去
             AfterDeathObject.SetActive(true); //死亡後のオブジェクトを表示させる
+            return;
         }
         else
         {
             if (playerTransform == null)
+            {
                 playerTransform = GameObject
                     .FindGameObjectWithTag(GameConstants.PlayerTagName)
                     .transform; //PlayerのTransformを取得
+            }
 
+            isDead = false;
             AfterDeathObject.SetActive(false); //死亡後のオブジェクトを非表示させる
             isAttacking = false;
             flatvelocity = Mathf.Abs(
                 (ExistLeft - (this.transform.position.x + offsetX)) / timeToEdge
             ); //弾の速度を計算
         }
+
+        StartAttackWhenReady();
     }
 
-    private void OnEnable()
+    /// <summary>
+    /// 初期化（Start）が完了するのを待ってから、攻撃コルーチンを開始する
+    /// </summary>
+    private void StartAttackWhenReady()
     {
-        if (playerTransform == null)
+        // --- ここから下は、Start()完了後に実行されることが保証される ---
+
+        // OnEnable時に、もし死骸が表示されていたら非表示にする
+        // (Start()のフラグチェックで「生」と判定された後での念押し)
+        if (AfterDeathObject.activeSelf)
         {
-            playerTransform = GameObject
-                .FindGameObjectWithTag(GameConstants.PlayerTagName)
-                .transform;
+            AfterDeathObject.SetActive(false);
         }
 
-        if (AfterDeathObject.activeSelf) //死亡後のオブジェクトがアクティブな場合
-        {
-            AfterDeathObject.SetActive(false); //死亡後のオブジェクトを非表示させる
-        }
-
+        // 攻撃コルーチンが多重起動しないようにフラグをチェックして開始
         if (!isAttacking)
         {
             StartCoroutine(Attack());
         }
     }
 
+    private void OnEnable()
+    {
+        //イベントを購読
+        if (enemyHealth != null)
+        {
+            // 既に死亡している（またはStartで破棄が決定した）場合は、イベントを購読しない
+            if (!isDead)
+            {
+                enemyHealth.OnHPChanged += CheckHP;
+            }
+        }
+    }
+
     private void OnDisable()
     {
         isAttacking = false; //攻撃コルーチンが起こっているフラグを下げる
+
+        //イベントの購読を解除
+        if (enemyHealth != null)
+        {
+            enemyHealth.OnHPChanged -= CheckHP;
+        }
+
+        // オブジェクト無効化時に、実行中の全コルーチンを強制停止する
+        // これがないと、isAttackingフラグだけがfalseになり、コルーチンが暴走する可能性がある
+        StopAllCoroutines();
     }
 
     private IEnumerator Attack()
@@ -150,8 +193,16 @@ public class TutorialGolemMoveController : MonoBehaviour
 
         while (true)
         {
+            if (playerTransform == null)
+            {
+                // プレイヤーが見つからなければ、次のフレームで再試行
+                yield return null;
+                continue;
+            }
+
             PlayerPosition = playerTransform.position;
 
+            Debug.Log($"PlayerPosition.x: {PlayerPosition.x}, DetectLeft: {DetectLeft}, DetectRight: {DetectRight}");
             if (DetectLeft < PlayerPosition.x && PlayerPosition.x < DetectRight)
             {
                 yield return new WaitForSeconds(Interval); //攻撃間隔を待機
@@ -219,18 +270,18 @@ public class TutorialGolemMoveController : MonoBehaviour
         }
     }
 
-    private void FixedUpdate()
+    private void CheckHP(int currentHP)
     {
-        enemyHP = this.gameObject.GetComponent<IDamageable>().CurrentHP; //enemy_HPから現在のhpを取得
-        if (enemyHP <= 0 && this.tag != "Untagged")
+        if (currentHP <= 0 && !isDead)
         {
-            this.tag = "Untagged"; //enemyのtagを外す
             StartCoroutine(Death());
         }
     }
 
     private IEnumerator Death()
     {
+        isDead = true; //死亡しているフラグを立てる
+        this.tag = "Untagged"; //enemyのtagを外す
         animator.SetBool("death", true); //死亡アニメーションを行う
         sePlayer.Play(SE_Field.SmallBomb); //効果音を鳴らす
         yield return new WaitUntil(() => spriteRenderer.sprite == DeathSprite); //特定のスプライトになるまで待機する

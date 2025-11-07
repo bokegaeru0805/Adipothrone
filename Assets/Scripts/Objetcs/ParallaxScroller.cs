@@ -1,6 +1,5 @@
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
+using System.Linq;
 
 /// <summary>
 /// 複数の背景オブジェクトを連続的に横スクロールさせるコンポーネント。
@@ -27,14 +26,14 @@ public class ParallaxScroller : MonoBehaviour
     private float backgroundWidth;
 
     /// <summary>
-    /// スクロール処理を実行するかどうかのフラグ。OnEnable/OnDisableで切り替わります。
-    /// </summary>
-    private bool shouldScroll = false;
-
-    /// <summary>
     /// 親オブジェクトの前フレームでのワールド座標。移動量を計算するために使います。
     /// </summary>
     private Vector3 lastParentPosition;
+
+    /// <summary>
+    /// 子オブジェクトのRendererコンポーネントのキャッシュ
+    /// </summary>
+    private Renderer[] backgroundRenderers;
 
     /// <summary>
     /// ゲーム開始時に一度だけ呼ばれる初期化処理
@@ -47,6 +46,9 @@ public class ParallaxScroller : MonoBehaviour
             Debug.LogError("背景オブジェクトが設定されていません。", this);
             return;
         }
+
+        // Rendererキャッシュ配列を初期化
+        backgroundRenderers = new Renderer[backgrounds.Length];
 
         // --- 背景の横幅を計算 ---
         // 最初の背景からSpriteRendererを取得して、スプライトの幅を基準とします（全て同じ幅と仮定）
@@ -67,6 +69,14 @@ public class ParallaxScroller : MonoBehaviour
         {
             // ローカル座標で、(背景の幅 * インデックス番号) の位置に配置します
             backgrounds[i].transform.localPosition = new Vector3(backgroundWidth * i, 0, 0);
+
+            // Rendererをキャッシュ
+            Renderer renderer = backgrounds[i].GetComponent<Renderer>();
+            if (renderer == null)
+            {
+                Debug.LogError($"背景オブジェクト '{backgrounds[i].name}' にRendererがありません。", this);
+            }
+            backgroundRenderers[i] = renderer;
         }
 
         // 親オブジェクトの初期位置を記録します
@@ -78,19 +88,8 @@ public class ParallaxScroller : MonoBehaviour
     /// </summary>
     private void OnEnable()
     {
-        // スクロールを開始するようにフラグを立てます
-        shouldScroll = true;
         // 有効化された瞬間の親の位置を記録し、意図しない移動差分の発生を防ぎます
         lastParentPosition = transform.position;
-    }
-
-    /// <summary>
-    /// このコンポーネントが無効になったときに呼び出される
-    /// </summary>
-    private void OnDisable()
-    {
-        // スクロールを停止させ、無駄な処理を防ぎます
-        shouldScroll = false;
     }
 
     /// <summary>
@@ -98,9 +97,18 @@ public class ParallaxScroller : MonoBehaviour
     /// </summary>
     void LateUpdate()
     {
-        // スクロールフラグがfalseなら、この先の処理は行いません
-        if (!shouldScroll)
+        // 子オブジェクトのRendererのうち、どれか1つでもカメラに映っているか判定
+        // (isVisible プロパティは、シーンビューもカメラとみなす点に注意)
+        // .Any() はLINQの機能です
+        bool isAnyVisible = backgroundRenderers.Any(r => r != null && r.isVisible);
+
+        // 1つも見えていなければ、スクロール処理を行わない
+        if (!isAnyVisible)
+        {
+            // ただし、親の位置は更新し続ける（次に見えた瞬間に座標がジャンプするのを防ぐため）
+            lastParentPosition = transform.position;
             return;
+        }
 
         // --- 1. 親の移動補正を行うか自動で判断 ---
         // scrollSpeedが閾値より大きい場合のみ、親の移動を打ち消す補正を有効にします。

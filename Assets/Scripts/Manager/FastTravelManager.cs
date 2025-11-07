@@ -1,5 +1,4 @@
 using System;
-using System.Collections;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
@@ -8,6 +7,10 @@ public class FastTravelManager : MonoBehaviour
     [Header("ファストトラベルポイントのデータベース")]
     [SerializeField]
     private FastTravelPointDataBase fastTravelPointDataBase; //ファストトラベルポイントのデータベース
+
+    [Header("デフォルトのファストトラベルポイントID")]
+    [SerializeField]
+    private FastTravelName defaultFastTravelPointID; // デフォルトのファストトラベルポイントID
     private bool shouldRunDeathFastTravelTutorial = false; // 死亡ファストトラベルチュートリアルを実行するかどうか
 
     private void Awake()
@@ -89,16 +92,25 @@ public class FastTravelManager : MonoBehaviour
 
     public void ExecuteDeathFastTravel()
     {
+        // チュートリアルを実行するかどうかを判定
         shouldRunDeathFastTravelTutorial =
             SceneManager.GetActiveScene().name != GameConstants.SceneName_TutorialStart
             && !FlagManager.instance.GetBoolFlag(TutorialEvent.DeathFastTravelTutorialComplete);
 
+        // 最後に使用したファストトラベルポイントIDを取得
         int lastUsedFastTravelID = GameManager
             .instance
             .savedata
             .FastTravelData
             .LastUsedFastTravelID;
         FastTravelName selectedFastTravelID = (FastTravelName)lastUsedFastTravelID;
+
+        // 最後に使用したファストトラベルポイントが無効な場合、デフォルトのポイントに設定
+        if (selectedFastTravelID == FastTravelName.None)
+        {
+            selectedFastTravelID = defaultFastTravelPointID;
+        }
+
         ExecuteFastTravel(selectedFastTravelID);
     }
 }

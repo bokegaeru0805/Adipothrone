@@ -15,7 +15,6 @@ public class Robot_blade_move : MonoBehaviour
 
     private PlayerEffectManager playerEffectManager;
     private PlayerManager playerManager;
-    public bool isBladeSwinging { get; private set; } = false;
     public float BladeLength { get; private set; } = 0;
 
     [Header("Faboの剣にはKinematicなRigidbody2Dが必要")]
@@ -119,24 +118,10 @@ public class Robot_blade_move : MonoBehaviour
         if (!GameManager.isFirstGameSceneOpen)
             return;
 
-        isBladeSwinging = robotMoveScript.isBladeSwinging;
-
-        if (isBladeSwinging)
+        // 攻撃中でない（コライダーが無効）の時だけ、向きの追従を行う（FixedUpdateで毎フレーム角度を更新する場合）
+        if (!capsuleCollider.enabled)
         {
-            if (!capsuleCollider.enabled)
-            {
-                capsuleCollider.enabled = true; //当たり判定を得る(見た目上はそうなっていないが、大丈夫)
-            }
-        }
-        else
-        {
-            rightFlag = robotMoveScript.rightFlag;
-            this.transform.rotation = Quaternion.Euler(0f, 0f, rightFlag ? -30 : 210); //非攻撃時は剣の向きを逐一変える
-
-            if (capsuleCollider.enabled)
-            {
-                capsuleCollider.enabled = false; //当たり判定を失くす
-            }
+            UpdateBladeRotationWhenIdle();
         }
 
         // // タイマーを減らす（必要に応じてクリア）
@@ -218,7 +203,8 @@ public class Robot_blade_move : MonoBehaviour
         // }
 
         //様々な効果を考慮した攻撃力を計算
-        int damageSumAmount = playerEffectManager?.CalculateFinalAttackPower(bladePower) ?? bladePower;
+        int damageSumAmount =
+            playerEffectManager?.CalculateFinalAttackPower(bladePower) ?? bladePower;
 
         //ダメージ量を指定
         hpScript.Damage(damageSumAmount);
@@ -231,11 +217,63 @@ public class Robot_blade_move : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// Robot_moveから剣の振り状態の変更通知を受け取ったときの処理
+    /// </summary>
+    /// <param name="isSwinging">新しい状態</param>
+    private void HandleBladeSwingingChanged(bool isSwinging)
+    {
+        // FixedUpdateで行っていたコライダーの切り替えを、イベント発生時に即座に行う
+        if (isSwinging)
+        {
+            if (!capsuleCollider.enabled)
+            {
+                capsuleCollider.enabled = true; //当たり判定を得る
+            }
+        }
+        else
+        {
+            if (capsuleCollider.enabled)
+            {
+                capsuleCollider.enabled = false; //当たり判定を失くす
+            }
+
+            // 非攻撃状態になった瞬間に、現在の向きに合わせて角度を更新する
+            UpdateBladeRotationWhenIdle();
+        }
+    }
+
+    /// <summary>
+    /// 非攻撃時の剣の角度を、ロボットの向きに合わせて更新する
+    /// </summary>
+    private void UpdateBladeRotationWhenIdle()
+    {
+        if (robotMoveScript != null)
+        {
+            rightFlag = robotMoveScript.rightFlag;
+            this.transform.rotation = Quaternion.Euler(0f, 0f, rightFlag ? -30 : 210);
+        }
+    }
+
     private void OnEnable()
     {
         // 初期化が完了していない場合は何もしない
         if (!GameManager.isFirstGameSceneOpen)
             return;
+
+        // robotMoveScriptがnullでないことを確認してから購読
+        if (robotMoveScript != null)
+        {
+            // Robot_move側で定義したイベントを購読
+            robotMoveScript.OnBladeSwingingChanged += HandleBladeSwingingChanged;
+
+            // 起動時の初期状態を同期（安全のため）
+            HandleBladeSwingingChanged(robotMoveScript.isBladeSwinging);
+        }
+        else
+        {
+            Debug.LogError("Robot_moveスクリプトが見つかりません。",this);
+        }
 
         //生成が完了したフラグを立てる
         isStarted = true;
@@ -247,6 +285,11 @@ public class Robot_blade_move : MonoBehaviour
 
     private void OnDisable()
     {
+        // 購読解除
+        if (robotMoveScript != null)
+        {
+            robotMoveScript.OnBladeSwingingChanged -= HandleBladeSwingingChanged;
+        }
         //生成が完了したフラグを下げる
         isStarted = false;
     }

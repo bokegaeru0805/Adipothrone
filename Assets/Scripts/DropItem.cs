@@ -73,6 +73,11 @@ public class DropItem : MonoBehaviour
     [Tooltip("揺れアニメーションの片道にかかる時間（秒）")]
     [SerializeField]
     private float hoverDuration = 1.5f;
+
+    [Header("ドロップアニメーション設定")]
+    [Tooltip("ドロップ時に上方向に加える力の強さ")]
+    [SerializeField]
+    private float dropInitialUpForce = 5f;
     private float groundCheckRaycastDistance = 5f; //地面を探すために真下に飛ばすRaycastの最大距離
     private int TreasuresortingOrder = 20;
     private int CoinsortingOrder = 30;
@@ -191,50 +196,117 @@ public class DropItem : MonoBehaviour
     }
 
     /// <summary>
-    /// Raycastを使い、このオブジェクトを指定した地面レイヤーの表面に配置する
+    /// オブジェクトの登場処理。
+    /// 地面に埋まっていれば表面にスナップし、空中にいればドロップ（落下）させる。
     /// </summary>
     private void AdjustPositionToGroundSurface()
     {
         // レイヤーが未設定の場合は何もしない
         if (groundLayer.value == 0)
         {
+            // 安全のためKinematicにしてその場でホバー（宝箱以外）
+            rbody.bodyType = RigidbodyType2D.Kinematic;
+            rbody.velocity = Vector2.zero;
+            StartHoverAnimation();
             return;
         }
 
-        // Raycastの開始位置を、オブジェクトの現在位置より少し高い場所（上空）に設定する
-        Vector2 rayStartPosition = new Vector2(transform.position.x, transform.position.y + 5f);
+        // --- 1. まず、現在地が地面に埋まっているか（または接しているか）をチェック ---
 
-        // 上空から真下に向けてRaycastを発射（距離を長めに設定）
-        RaycastHit2D hit = Physics2D.Raycast(
-            rayStartPosition,
-            Vector2.down,
-            groundCheckRaycastDistance,
-            groundLayer
-        );
+        float checkRayDistance;
+        Vector2 checkRayStart = transform.position;
 
-        // Rayが地面レイヤーに衝突した場合
-        if (hit.collider != null)
+        // Pivotの位置に応じて「埋まり判定」のRayの長さを変える
+        if (isTreasureBox)
         {
-            // 物理演算を停止し、手動で座標を制御できるようにする
-            rbody.bodyType = RigidbodyType2D.Kinematic;
-            rbody.velocity = Vector2.zero; // 念のため速度をリセット
-
-            // スプライトの高さの半分（中心から下端までの距離）を取得
-            float halfHeight = spriteRenderer.bounds.extents.y;
-
-            // 新しいY座標を計算 = 地面の接触点 ＋ スプライトの高さの半分
-            float newY = hit.point.y + halfHeight;
-
-            // 新しい座標を設定
-            transform.position = new Vector3(transform.position.x, newY, transform.position.z);
-
-            // ホバーアニメーションは宝箱以外で開始
-            StartHoverAnimation();
+            // 宝箱 (Pivot: Bottom) の場合：
+            // 原点（下端）からごくわずか下（0.1f）にRayを撃つ
+            checkRayDistance = 0.1f;
         }
         else
         {
-            // 重力で落下させるために物理演算を有効にする
+            // アイテム/お金 (Pivot: Center) の場合：
+            // スプライトの高さの半分（中心から下端までの距離）を取得
+            float halfHeight = spriteRenderer.bounds.extents.y;
+            checkRayDistance = halfHeight + 0.1f; // 中心から下端+αまで
+        }
+
+        // オブジェクトの中心（または下端）から、スプライトの下端より少し下まで短いRayを撃つ
+        RaycastHit2D checkHit = Physics2D.Raycast(
+            checkRayStart,
+            Vector2.down,
+            checkRayDistance,
+            groundLayer
+        );
+
+        // --- 2. 判定に応じて処理を分岐 ---
+
+        if (checkHit.collider != null)
+        {
+            // 【ケースA: 地面に埋まっている（または接している）場合】
+            // 即座に地面の表面にスナップさせる
+
+            // Raycastの開始位置を、オブジェクトの現在位置より少し高い場所（上空）に設定する
+            Vector2 rayStartPosition = new Vector2(transform.position.x, transform.position.y + 1f);
+
+            // 上空から真下に向けて地面を探すRaycastを発射
+            RaycastHit2D snapHit = Physics2D.Raycast(
+                rayStartPosition,
+                Vector2.down,
+                groundCheckRaycastDistance, // 5fなどの十分な距離
+                groundLayer
+            );
+
+            if (snapHit.collider != null)
+            {
+                // 物理演算を停止し、手動で座標を制御できるようにする
+                rbody.bodyType = RigidbodyType2D.Kinematic;
+                rbody.velocity = Vector2.zero; // 念のため速度をリセット
+
+                // Pivotの位置に応じて、スナップさせるY座標を変える
+                float newY;
+                if (isTreasureBox)
+                {
+                    // 宝箱 (Pivot: Bottom) の場合：
+                    // オブジェクトの原点（＝スプライトの下端）を地面の接触点に合わせる
+                    newY = snapHit.point.y;
+                }
+                else
+                {
+                    // アイテム/お金 (Pivot: Center) の場合：
+                    // スプライトの高さの半分（中心から下端までの距離）を取得
+                    float halfHeight = spriteRenderer.bounds.extents.y;
+                    // 新しいY座標を計算 = 地面の接触点 ＋ スプライトの高さの半分
+                    newY = snapHit.point.y + halfHeight;
+                }
+
+                // 新しい座標を設定
+                transform.position = new Vector3(transform.position.x, newY, transform.position.z);
+
+                // ホバーアニメーションは宝箱以外で開始
+                StartHoverAnimation();
+            }
+            else
+            {
+                // 埋まっているが真下に地面が見つからない（崖の端など）レアケース
+                // 念のためDynamicにして落下させる
+                rbody.bodyType = RigidbodyType2D.Dynamic;
+            }
+        }
+        else
+        {
+            // 【ケースB: 空中にいる場合】
+            // ピョンと跳ねるドロップ処理を実行する
+
+            // 1. 重力で落下させるために物理演算を有効にする
             rbody.bodyType = RigidbodyType2D.Dynamic;
+
+            // 2. 上方向の初速（Impulse）を与える
+            Vector2 initialForce = new Vector2(0, dropInitialUpForce);
+            rbody.velocity = Vector2.zero; // 既存の速度をリセット
+            rbody.AddForce(initialForce, ForceMode2D.Impulse);
+
+            // 3. ホバーアニメーションは OnCollisionEnter2D で着地時に呼ばれるのを待つ
         }
     }
 
@@ -308,6 +380,7 @@ public class DropItem : MonoBehaviour
             // 地面に着地したら、物理演算を停止してその場に固定する
             rbody.bodyType = RigidbodyType2D.Kinematic;
             rbody.velocity = Vector2.zero; // 完全に静止させる
+            StartHoverAnimation(); // 着地後にホバーアニメーションを開始
         }
     }
 

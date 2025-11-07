@@ -63,6 +63,7 @@ public class Heroin_move : MonoBehaviour
     private bool wasGroundedLastFrame = true; //前のフレームで接地していたかどうかのフラグ
     private bool jumpRequested = false;
     private bool isTalking = false; // 会話状態を保存するローカル変数
+    private bool isDead = false; // プレイヤーが死亡しているかどうかのマスターフラグ
     private Rigidbody2D rbody; // Rigidbody2Dコンポーネント
     private Animator m_animator; // アニメータコンポーネント
     private SpriteRenderer spriteRenderer; //SpriteRendererをキャッシュするための変数
@@ -121,7 +122,7 @@ public class Heroin_move : MonoBehaviour
 
         vx = 0; //x方向の速度を初期化
 
-        if (Time.timeScale > 0f && !isTalking)
+        if (Time.timeScale > 0f && !isTalking && !isDead)
         {
             if (isFirstGetKey)
             { //向きの初期化の処理
@@ -210,6 +211,13 @@ public class Heroin_move : MonoBehaviour
         else
         {
             m_animator.SetInteger("AnimState", 0); //自分のanimationをstand状態にする
+
+            // 死亡時に不要な入力をクリア
+            if (isDead)
+            {
+                vx = 0;
+                jumpRequested = false;
+            }
         }
     }
 
@@ -362,7 +370,7 @@ public class Heroin_move : MonoBehaviour
     }
 
     /// <summary>
-    /// [変更] ダメージを受けたときの物理的なリアクション処理。
+    /// ダメージを受けたときの物理的なリアクション処理。
     /// PlayerManagerからのOnDamageReactionイベントによって呼び出される。
     /// </summary>
     private void ReactToDamage() // 引数なし、privateに変更
@@ -395,7 +403,11 @@ public class Heroin_move : MonoBehaviour
         m_col = new Color(1.0f, 1.0f, 1.0f, 1.0f); //色を初期化
         immunity = true; //無敵状態にする
         yield return new WaitForSeconds(MoveStart_Sec); //MoveStart_Secの待つ
-        move = true; //velocityを再開する
+        //死亡していない場合のみ、moveをtrueに戻す
+        if (!isDead)
+        {
+            move = true; //velocityを再開する
+        }
         yield return new WaitForSeconds(immunityDuration); //immunityDurationの待つ
         immunity = false; //無敵状態を解除する
         m_col.a = 1.0f; //不透明度を初期化する
@@ -431,6 +443,8 @@ public class Heroin_move : MonoBehaviour
     /// </summary>
     public void EnterDeathState()
     {
+        // 死亡フラグを立てる
+        isDead = true;
         // プレイヤーの操作を不能にする
         move = false;
 
@@ -467,6 +481,8 @@ public class Heroin_move : MonoBehaviour
     /// </summary>
     public void ResetToLiveState()
     {
+        // 死亡フラグを解除する
+        isDead = false;
         // プレイヤーの操作を可能にする
         move = true;
 
@@ -550,6 +566,7 @@ public class Heroin_move : MonoBehaviour
         isAttacking = false; // 初期状態では攻撃中ではない
         immunity = false; // 初期状態では無敵ではない
         move = true; // 初期状態では操作可能
+        isDead = false; // 初期状態では死亡していない
         OnPlayerVisibilityChanged?.Invoke(true); // プレイヤーの可視状態を通知
     }
 
@@ -575,6 +592,7 @@ public class Heroin_move : MonoBehaviour
 
         // その他のリセット処理
         move = true; // 操作可能状態に戻す
+        isDead = false; // 死亡状態を解除
         immunity = false; // 無敵状態を解除
         m_col = new Color(1.0f, 1.0f, 1.0f, 1.0f); // 色を初期化
         m_col.a = 1.0f; // 不透明度を初期化
