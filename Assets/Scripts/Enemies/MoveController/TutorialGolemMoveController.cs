@@ -201,8 +201,7 @@ public class TutorialGolemMoveController : MonoBehaviour
             }
 
             PlayerPosition = playerTransform.position;
-
-            Debug.Log($"PlayerPosition.x: {PlayerPosition.x}, DetectLeft: {DetectLeft}, DetectRight: {DetectRight}");
+            
             if (DetectLeft < PlayerPosition.x && PlayerPosition.x < DetectRight)
             {
                 yield return new WaitForSeconds(Interval); //攻撃間隔を待機

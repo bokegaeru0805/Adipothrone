@@ -6,6 +6,10 @@ public class TitleManager : MonoBehaviour
     private void Start()
     {
         StartCoroutine(PlayTitleBGMWhenReady());
+
+        //画面を明転させる
+        //ゲームオーバー時など、タイトルに戻る際にフェードインを行うため
+        FadeCanvas.instance.FadeIn(0.5f);
     }
 
     /// <summary>

@@ -288,17 +288,18 @@ public class BirdNormalMoveController : MonoBehaviour, IEnemyResettable
                     }
                 }
             }
-            else // activaterが見つからない場合
-            {
-                Debug.LogWarning(
-                    $"{this.name}の親にEnemyActivatorが見つかりませんでした。移動範囲の自動設定は行いません。"
-                );
-            }
 
             this.transform.position = new Vector2(
                 UnityEngine.Random.Range(leftBound, rightBound),
                 normalY
             ); //自分の初期座標を決定
+        }
+        else // activaterが見つからない場合
+        {
+            Debug.LogWarning(
+                $"{this.name}の親にEnemyActivatorが見つかりませんでした。移動範囲の自動設定は行いません。",
+                this
+            );
         }
     }
 

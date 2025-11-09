@@ -537,9 +537,7 @@ namespace Fungus
                     StoryTextRectTrans.SetInsetAndSizeFromParentEdge(
                         RectTransform.Edge.Left,
                         startStoryTextInset,
-                        startStoryTextWidth
-                            - imageContainerWidth
-                            - startStoryTextInset
+                        startStoryTextWidth - imageContainerWidth - startStoryTextInset
                     );
                 }
                 else
@@ -548,9 +546,7 @@ namespace Fungus
                     StoryTextRectTrans.SetInsetAndSizeFromParentEdge(
                         RectTransform.Edge.Right,
                         startStoryTextInset,
-                        startStoryTextWidth
-                            - imageContainerWidth
-                            - startStoryTextInset
+                        startStoryTextWidth - imageContainerWidth - startStoryTextInset
                     );
                 }
             }
@@ -634,6 +630,13 @@ namespace Fungus
         /// </summary>
         public virtual void SetCharacterName(string name, Color color)
         {
+            if (name == "")
+            {
+                // 名前が空文字列なら、名前パネルを非表示にする
+                nameTextPanel.SetActive(false);
+                return;
+            }
+
             if (nameTextPanel.activeInHierarchy == false)
             {
                 // キャラクター名パネルが非表示なら、表示する

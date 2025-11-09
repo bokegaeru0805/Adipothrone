@@ -61,14 +61,14 @@
 困ってること……？,Heroin,WellQuestReceived,Heroin_flexible_troubled
 少女は少しだけ顔を曇らせて、私の後ろをちらりと振り返った。,narrative,WellQuestReceived,
 お店で使ってる井戸があるんだけど、なんか……最近、変な音がするようになっちゃって……,Village_ShopGirl,WellQuestReceived,Village_ShopGirl_normal_normal
-井戸から……音？ それはちょっと気になるね……,Heroin,WellQuestReceived,Heroin_flexible_normal
+井戸から……音？ それはちょっと気になるね……,Heroin,WellQuestReceived,Heroin_flexible_troubled
 うん……ママに頼みたいけど寝ちゃってるし……わたしじゃ怖くて、見に行けなくて……,Village_ShopGirl,WellQuestReceived,Village_ShopGirl_normal_normal
 そっか……うん、それなら、わたしが見に行ってみようか？,Heroin,WellQuestReceived,Heroin_flexible_normal
 えっ！？ ほんとに！？,Village_ShopGirl,WellQuestReceived,Village_ShopGirl_normal_normal
 うん。ちょっと覗くだけなら、平気だよ。何か変だったら、すぐ戻ってくるし。,Heroin,WellQuestReceived,Heroin_flexible_normal
 わぁぁ〜……ありがとう、お姉ちゃん！,Village_ShopGirl,WellQuestReceived,Village_ShopGirl_normal_normal
 井戸は家のすぐ隣にあるの。木の柵の近くにあるから、すぐわかるよ！,Village_ShopGirl,WellQuestReceived,Village_ShopGirl_normal_normal
-わかった、行ってみるね。,Heroin,WellQuestReceived,Heroin_flexible_normal
+わかった、行ってみるね。,Heroin,WellQuestReceived,Heroin_flexible_smile
 うんっ、気をつけてねーっ！,Village_ShopGirl,WellQuestReceived,Village_ShopGirl_normal_normal
 ……な、に……あれ……,Heroin,SwordTutorialComplete,Heroin_flexible_surprised
 薄暗がりの中に、ぼんやりと揺れる影が複数——,narrative,SwordTutorialComplete,
@@ -87,7 +87,7 @@
 今後は、距離と状況に応じて、弾と近接武装を使い分ける方針が有効と判断されます。,Fabo,WellEnemyDefeated,
 うん……弾だけじゃ対処できない場面もあるもんね。覚えておくね。,Heroin,WellEnemyDefeated,Heroin_flexible_normal
 とりあえず……もう大丈夫そう。戻って、あの子に報告しなきゃ。,Heroin,WellEnemyDefeated,Heroin_flexible_normal
-"<sprite name=""Gear_Icon"">武器の変更と装備について説明します。",narrative,WellEnemyDefeated,
+<sprite name='Gear_Icon'>武器の変更と装備について説明します。,narrative,WellEnemyDefeated,
 "<sprite name=""Gear_Icon"">ゲーム中に{$KeyColor}{$WeaponChangeKey}{$ColorTagClose}を押すことで、「弾」と「剣」の武器を即座に切り替えることができます。",narrative,WellEnemyDefeated,
 "<sprite name=""Gear_Icon"">また、それぞれの武器を別の装備に変更したい場合は、メニュー画面から「Weapon」を選択してください。",narrative,WellEnemyDefeated,
 "<sprite name=""Gear_Icon"">装備画面で、使用したい武器を選んで装備することで、戦い方をカスタマイズできます。",narrative,WellEnemyDefeated,
@@ -248,6 +248,6 @@
 演出,,CaveBossDefeat,
 "<sprite name=""Gear_Icon"">ここまで遊んでいただき、ありがとうございます。",narrative,CaveBossDefeat,
 "<sprite name=""Gear_Icon"">ゲームに関するご感想やご要望がございましたら、ゲーム紹介ページに記載している私のX（旧Twitter）アカウントまでお気軽にお寄せください。",narrative,CaveBossDefeat,
-"<sprite name=""Gear_Icon"">現時点(2025年8月4日)では、本作の続きも制作予定となっております。",narrative,CaveBossDefeat,
+"<sprite name=""Gear_Icon"">現時点(2025年11月9日)では、本作の続きも制作予定となっております。",narrative,CaveBossDefeat,
 "<sprite name=""Gear_Icon""> もし少しでもご興味をお持ちいただけましたら、感想や提案をいただけると幸いです。",narrative,CaveBossDefeat,
 "<sprite name=""Gear_Icon"">今後とも、どうぞよろしくお願いいたします。",narrative,CaveBossDefeat,

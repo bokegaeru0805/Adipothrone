@@ -360,7 +360,7 @@ public class QuickItemPanel : MonoBehaviour
         // 1. 一時停止すべきかどうかの条件をチェック
         // UIが開いている、会話中である場合は一時停止
         // この条件を変更する場合は、SpotlightQuickItemControllerのIsHighlightingの条件も変更する必要がある
-        bool shouldBePaused = isMenuOpen || isTalking;
+        bool shouldBePaused =  isTalking;
 
         // 2. 状態の切り替わりを検知して、適切な処理を一度だけ呼び出す
         if (shouldBePaused && !isUiPaused)

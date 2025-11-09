@@ -1,9 +1,11 @@
 using Fungus;
 using UnityEngine;
+using NaughtyAttributes;
 
 public class GlobalFlowchartController : MonoBehaviour
 {
     public static GlobalFlowchartController instance = null;
+    [HideInInspector]
     public Flowchart globalFlowchart = null;
 
     private void Awake()

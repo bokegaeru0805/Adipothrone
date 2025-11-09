@@ -213,27 +213,6 @@ public class GameManager : MonoBehaviour
     /// <param name="itemAmount">取得したアイテムの数</param>
     public void TreasureFungus(BaseItemData itemData, int itemAmount = 1)
     {
-        // // アイテム名が指定されていなければ、IDから取得する
-        // if (string.IsNullOrEmpty(itemName))
-        // {
-        //     itemName = GetAllTypeIDtoName(itemID);
-        // }
-
-        // // アイテムIDからタイプを判別
-        // int typeNumber = EnumIDUtility.ExtractTypeID(EnumIDUtility.ToID(itemID));
-        // string itemPrefix = GetItemTypePrefix(itemID); // 文頭につける語彙
-
-        // // 最終的なメッセージを組み立てる
-        // string message;
-        // if (itemAmount == 1)
-        // {
-        //     message = $"{itemPrefix}「{itemName}」を手に入れた！";
-        // }
-        // else
-        // {
-        //     message = $"{itemPrefix}「{itemName}」を\n{itemAmount}個手に入れた！";
-        // }
-
         if (TreasureBlock != null && globalFlowchart != null)
         {
             // ブロック内の最初のSayコマンドを探してテキストを設定

@@ -845,6 +845,7 @@ public class SaveLoadManager : MonoBehaviour
 
     /// <summary>
     /// 指定されたファイル番号に対応するセーブファイルのパスを取得する
+    /// 決して変更しないでください。セーブ・ロードの整合性に関わります。
     /// </summary>
     /// <param name="fileNumber">セーブファイルの番号</param>
     private string GetSaveFilePath(int fileNumber)

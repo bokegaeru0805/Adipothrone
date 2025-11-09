@@ -95,6 +95,9 @@ public class AddItem_Fungus : Command
             sayDialog.gameObject.SetActive(true);
         }
 
+        // アイテム表示の際はキャラクター名を消すため、キャラクターをnullに設定
+        sayDialog.SetCharacter(null);
+
         // // アイテム表示の際はキャラクター名を消すため、キャラクターをnullに設定
         // sayDialog.SetCharacter(null);
         // SayDialogのキャラクター画像の位置に、アイテムのスプライトを設定
@@ -113,7 +116,7 @@ public class AddItem_Fungus : Command
             () =>
             {
                 // この部分は、プレイヤーがダイアログをクリックした後に実行される
-                
+
                 // Flowchartの次のコマンドへ進む
                 Continue();
             }

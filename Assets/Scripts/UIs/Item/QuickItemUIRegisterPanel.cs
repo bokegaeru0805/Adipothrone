@@ -1,4 +1,5 @@
 using System;
+using NaughtyAttributes;
 using UnityEngine;
 
 public class QuickItemRegisterPanel : MonoBehaviour
@@ -6,11 +7,10 @@ public class QuickItemRegisterPanel : MonoBehaviour
     [HideInInspector]
     public Enum itemID;
 
+    [InfoBox("必ずこのゲームオブジェクトは初期状態で表示にしてください。")]
+
     [SerializeField]
     private QuickItemPanel quickItemPanel; //ゲーム画面のショートカットパネルのオブジェクト
-
-    // private GameObject buttonYes;
-    // private GameObject buttonNo;
     private GameObject lastSelectedObject; //最後に選ばれていたボタンを保存する変数
 
     private void Awake()
@@ -19,6 +19,8 @@ public class QuickItemRegisterPanel : MonoBehaviour
         {
             Debug.LogError("QuickItemUIManager: QuickItemPanelが設定されていません");
         }
+
+        this.gameObject.SetActive(false); //最初は非表示にする
     }
 
     private void Update()
@@ -71,7 +73,7 @@ public class QuickItemRegisterPanel : MonoBehaviour
 
     private void ClosePanel()
     {
-         // オブジェクト名による分岐を、SaveLoadManager経由の呼び出しに変更
+        // オブジェクト名による分岐を、SaveLoadManager経由の呼び出しに変更
         if (SaveLoadManager.CurrentActiveManager != null)
         {
             // 登録されているManagerのCloseTopPanel()を呼び出す
