@@ -111,11 +111,6 @@ public class StoneGolemMoveController : MonoBehaviour
     [SerializeField]
     private Vector2 slashEffectOffset = new Vector2(-1.1f, 2.15f); // スラッシュエフェクトのオフセット(左向き時)
 
-    [SerializeField]
-    private float chargeEffectOffsetY = 3.5f; // チャージエフェクトのY方向オフセット
-
-    [SerializeField]
-    private float chargeEffectScale = 16f; // チャージエフェクトのスケール
 
     [SerializeField, Tooltip("衝撃波エフェクトのX方向オフセット")]
     private float shockWaveEffectOffsetX = 1.12f; // 衝撃波エフェクトのX方向オフセット
@@ -155,12 +150,12 @@ public class StoneGolemMoveController : MonoBehaviour
 
     [SerializeField]
     private GameObject hammerObject; // ハンマーのオブジェクト
+    [Header("エフェクト設定")]
+    [SerializeField]
+    private ChargeEffect_Master chargeEffect; // チャージエフェクト
 
     // [SerializeField]
     // private EffekseerEmitter shockWaveEffect; // ショックウェーブエフェクト
-
-    // [SerializeField]
-    // private EffekseerEmitter chargeEffect; // チャージエフェクト
 
     private enum CommandType
     {
@@ -252,7 +247,7 @@ public class StoneGolemMoveController : MonoBehaviour
         }
         else
         {
-            Debug.LogError("アームオブジェクトが設定されていません。");
+            Debug.LogError("アームオブジェクトが設定されていません。", this);
         }
 
         if (hammerObject != null)
@@ -278,23 +273,18 @@ public class StoneGolemMoveController : MonoBehaviour
         }
         else
         {
-            Debug.LogError("ハンマーオブジェクトが設定されていません。");
+            Debug.LogError("ハンマーオブジェクトが設定されていません。", this);
         }
 
         if (rockEnemyData == null)
         {
-            Debug.LogError("rockEnemyDataが設定されていません。");
+            Debug.LogError("rockEnemyDataが設定されていません。", this);
         }
 
-        // if (chargeEffect == null)
-        // {
-        //     Debug.LogError("ChargeEffect が設定されていません。");
-        // }
-
-        // if (shockWaveEffect == null)
-        // {
-        //     Debug.LogError("ShockWaveEffect が設定されていません。");
-        // }
+        if(chargeEffect == null)
+        {
+            Debug.LogError("chargeEffectが設定されていません。",this);
+        }
 
         rbody = this.GetComponent<Rigidbody2D>();
         if (rbody == null)
@@ -716,22 +706,11 @@ public class StoneGolemMoveController : MonoBehaviour
         animator.SetTrigger("hammerReadyTrigger");
         //ハンマー見た目を更新するコルーチンを開始
         StartCoroutine(UpdateHammer());
-        // // チャージエフェクトを再生
-        // if (chargeEffect != null)
-        // {
-        //     EffekseerEmitter chargeEffectInstance = Instantiate(chargeEffect); //エフェクトを生成
-        //     chargeEffectInstance.transform.SetParent(this.transform); //エフェクトの親をこのオブジェクトに設定
-        //     Vector2 chargeEffectPos = pos; //自分の座標をコピー
-        //     chargeEffectPos.y += chargeEffectOffsetY; //エフェクトのy座標を調整
-        //     chargeEffectInstance.transform.position = chargeEffectPos; //エフェクトの位置を指定
-        //     chargeEffectInstance.speed =
-        //         GameConstants.ChargeEffectDefaultDuration / hammerChargeTime; //エフェクトの速度を指定
-        //     chargeEffectInstance.transform.localScale = new Vector2(
-        //         chargeEffectScale,
-        //         chargeEffectScale
-        //     ); //エフェクトの大きさを指定
-        //     chargeEffectInstance.Play(); //エフェクトを再生
-        // }
+        if (chargeEffect != null)
+        {
+            chargeEffect.SetDuration(hammerChargeTime); //チャージエフェクトの持続時間を設定
+            chargeEffect.PlayEffect();
+        }
 
         hammerObject.tag = "Untagged"; // ハンマーのタグを一時的に未設定にする（ダメージを受けない敵のタグに変更）
 

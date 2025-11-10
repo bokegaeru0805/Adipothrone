@@ -126,17 +126,12 @@ public class GhostwolfMoveController : MonoBehaviour
     private Sprite howlsprite; //弾幕が出るときのスプライト
 
     [Header("エフェクト")]
-    // [SerializeField]
-    // private EffekseerEmitter chargeEffect;
-
-    // [SerializeField, Tooltip("扇状弾幕攻撃(溜め攻撃)のエフェクトの大きさ")]
-    private float chargeRange = 10f;
+    [SerializeField]
+    private ChargeEffect_Master chargeEffect; //チャージエフェクト
 
     // [SerializeField]
     // private EffekseerEmitter shockWaveEffect;
 
-    [SerializeField]
-    private float ChargeeffectoffsetY; //エフェクトのY座標を調整
     private int totalAttacks = 0; //攻撃した回数
     private float action_mode = 0; // 行動モードを初期化
     private float gravity = 9.81f; //重力の数値
@@ -151,23 +146,23 @@ public class GhostwolfMoveController : MonoBehaviour
     {
         if (normalShootDamage <= 0 || rainDamage <= 0 || flatShootDamage <= 0)
         {
-            Debug.LogError("GhostWolfに弾のダメージ量が設定されていません。");
+            Debug.LogError("GhostWolfに弾のダメージ量が設定されていません。", this);
         }
 
         if (shoot_prefab1 == null || shoot_prefab2 == null || shoot_prefab3 == null)
         {
-            Debug.LogError("GhostWolfに弾のプレハブが設定されていません。");
+            Debug.LogError("GhostWolfに弾のプレハブが設定されていません。", this);
         }
 
         if (howlsprite == null)
         {
-            Debug.LogError("GhostWolfに弾幕が出るときのスプライトが設定されていません。");
+            Debug.LogError("GhostWolfに弾幕が出るときのスプライトが設定されていません。", this);
         }
 
-        // if (shockWaveEffect == null || chargeEffect == null)
-        // {
-        //     Debug.LogError("GhostWolfにエフェクトが設定されていません。");
-        // }
+        if (chargeEffect == null)
+        {
+            Debug.LogError("GhostWolfにエフェクトが設定されていません。", this);
+        }
 
         spriteRenderer = this.GetComponent<SpriteRenderer>();
         animator = this.GetComponent<Animator>();
@@ -470,21 +465,11 @@ public class GhostwolfMoveController : MonoBehaviour
         animator.SetTrigger("howl");
         animator.SetBool("isFinishHowl", false);
 
-        float ChargeEffectStart_Sec = Attack5howlSec - 5.0f; //エフェクトの開始時間を設定
-        if (ChargeEffectStart_Sec < 0)
-            ChargeEffectStart_Sec = 0; //エフェクトの開始時間を設定
-        yield return new WaitForSeconds(ChargeEffectStart_Sec); //エフェクトの開始まで待つ
-
-        // if (chargeEffect != null)
-        // {
-        //     EffekseerEmitter chargeEffectInstance = Instantiate(chargeEffect); //エフェクトを生成
-        //     chargeEffectInstance.transform.SetParent(this.transform); //エフェクトの親をこのオブジェクトに設定
-        //     Vector2 chargeEffectPos = this.transform.position; //自分の座標を保存
-        //     chargeEffectPos.y += ChargeeffectoffsetY; //エフェクトのy座標を調整
-        //     chargeEffectInstance.transform.position = chargeEffectPos; //エフェクトの位置を指定
-        //     chargeEffectInstance.transform.localScale = new Vector2(chargeRange, chargeRange); //エフェクトの大きさを指定
-        //     chargeEffectInstance.Play(); //エフェクトを再生
-        // }
+        if (chargeEffect != null)
+        {
+            chargeEffect.SetDuration(Attack5howlSec * 0.885f); //チャージエフェクトの持続時間を設定
+            chargeEffect.PlayEffect();
+        }
 
         while (spriteRenderer.sprite != howlsprite)
         {
