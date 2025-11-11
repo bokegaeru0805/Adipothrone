@@ -69,7 +69,8 @@ public class GameOverUIManager : MonoBehaviour, IPanelStackManager
         //SEを全て停止
         SEManager.instance?.StopAllSE();
         //オブジェクトプールをクリア
-        ObjectPooler.instance?.ReturnAllToPool();
+        ObjectPooler.SceneInstance?.ReturnAllToPool();
+        ObjectPooler.PersistentInstance?.ReturnAllToPool();
 
         uiRefs.GameOverPanel.SetActive(true); // GameOverパネルを表示
         panelStack = new Stack<GameObject>(); //一応Stackを初期化

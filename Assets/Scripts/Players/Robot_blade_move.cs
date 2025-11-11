@@ -1,6 +1,4 @@
 using System.Collections.Generic;
-using System.Linq;
-// using Effekseer;
 using UnityEngine;
 
 [RequireComponent(typeof(CriWare.Assets.CriAtomSePlayer))]
@@ -24,9 +22,6 @@ public class Robot_blade_move : MonoBehaviour
     [SerializeField]
     private GameObject RobotBladeParticle;
 
-    // [SerializeField]
-    // private EffekseerEffectAsset effect; // .efk を指定
-
     // 敵ごとのクールタイムタイマー
     // private Dictionary<GameObject, float> enemyCooldowns = new Dictionary<GameObject, float>();
     private List<CooldownEntry> enemyCooldownsList = new List<CooldownEntry>(32);
@@ -37,6 +32,7 @@ public class Robot_blade_move : MonoBehaviour
     private float wpCost = 0f; // WP消費量
     private bool rightFlag = true;
     public bool isStarted { get; private set; } = false; //生成が完了したかどうか
+    private string hitEffectPoolTag = "HitEffect1"; // ヒットエフェクトのプールタグ
     private Sprite sprite;
     private Vector2 newColliderOffset = Vector2.zero;
     private Vector2 newColliderSize = Vector2.zero;
@@ -194,13 +190,23 @@ public class Robot_blade_move : MonoBehaviour
             new CooldownEntry { enemyInstanceID = enemyID, timer = cooldownTime }
         );
 
-        // // 衝突点（自分のCollider上の、collisionに最も近い点）
-        // Vector2 contactPoint = capsuleCollider.ClosestPoint(collision.transform.position);
-        // if (effect != null)
-        // {
-        //     var handle = EffekseerSystem.PlayEffect(effect, contactPoint);
-        //     //エフェクトを再生
-        // }
+        // 衝突点（自分のCollider上の、collisionに最も近い点）
+        Vector2 contactPoint = capsuleCollider.ClosestPoint(collision.transform.position);
+
+        // ヒットエフェクトの再生
+        // 永続プール(PersistentInstance)がnullでないか確認
+        if (ObjectPooler.PersistentInstance != null && !string.IsNullOrEmpty(hitEffectPoolTag))
+        {
+            // 衝突点（弾の位置）を取得
+            Vector3 hitPosition = contactPoint;
+
+            // ObjectPooler の永続インスタンスから、指定した「タグ」のエフェクトを呼び出す
+            ObjectPooler.PersistentInstance.SpawnFromPool(
+                hitEffectPoolTag, // プレハブの代わりに「タグ」を渡す
+                hitPosition, // 座標
+                Quaternion.identity // 回転
+            );
+        }
 
         //様々な効果を考慮した攻撃力を計算
         int damageSumAmount =
@@ -272,7 +278,7 @@ public class Robot_blade_move : MonoBehaviour
         }
         else
         {
-            Debug.LogError("Robot_moveスクリプトが見つかりません。",this);
+            Debug.LogError("Robot_moveスクリプトが見つかりません。", this);
         }
 
         //生成が完了したフラグを立てる

@@ -602,7 +602,7 @@ public class StoneGolemMoveController : MonoBehaviour
         sePlayer.Play(SE_EnemyAction.Kick1); // 攻撃の効果音を鳴らす
         yield return new WaitForSeconds(attackAnimationTime * 0.3f); // 攻撃アニメーションの時間を待機2
 
-        GameObject crawlingRock = ObjectPooler.instance.SpawnFromPool(
+        GameObject crawlingRock = ObjectPooler.SceneInstance.SpawnFromPool(
             crawlingRockPoolTag,
             transform.position,
             Quaternion.identity
@@ -722,7 +722,6 @@ public class StoneGolemMoveController : MonoBehaviour
             float value = Mathf.Lerp(0.41f, 0f, t);
             hammerRenderer.material.SetFloat("_FadeAmount", value);
             elapsed += Time.deltaTime;
-            sePlayer.Play(SE_EnemyAction.ChargePower1); //チャージの効果音を鳴らす
             yield return null;
         }
 
@@ -762,7 +761,7 @@ public class StoneGolemMoveController : MonoBehaviour
             for (int i = 0; i < rocksPerWave; i++)
             {
                 // 岩を生成（足元から）
-                GameObject rock = ObjectPooler.instance.SpawnFromPool(
+                GameObject rock = ObjectPooler.SceneInstance.SpawnFromPool(
                     rockPoolTag,
                     transform.position,
                     Quaternion.identity
@@ -1047,7 +1046,7 @@ public class StoneGolemMoveController : MonoBehaviour
                 // 生存時間に達したらオブジェクトを破棄して終了
                 if (lifeTimer >= existenceDuration)
                 {
-                    ObjectPooler.instance.ReturnToPool(crawlingRockPoolTag, crawlingRock);
+                    ObjectPooler.SceneInstance.ReturnToPool(crawlingRockPoolTag, crawlingRock);
                     yield break;
                 }
 
@@ -1075,7 +1074,7 @@ public class StoneGolemMoveController : MonoBehaviour
 
                 if (isOutOfBounds)
                 {
-                    ObjectPooler.instance.ReturnToPool(crawlingRockPoolTag, crawlingRock);
+                    ObjectPooler.SceneInstance.ReturnToPool(crawlingRockPoolTag, crawlingRock);
                     yield break;
                 }
 
@@ -1083,7 +1082,7 @@ public class StoneGolemMoveController : MonoBehaviour
                 if (elapsedTime >= crawlingRockDustEffectInterval)
                 {
                     elapsedTime = 0f; // 経過時間をリセット
-                    GameObject crawlingDustEffect = ObjectPooler.instance.SpawnFromPool(
+                    GameObject crawlingDustEffect = ObjectPooler.SceneInstance.SpawnFromPool(
                         crawlingDustEffectPoolTag,
                         crawlingRock.transform.position
                             + new Vector3(
@@ -1105,7 +1104,7 @@ public class StoneGolemMoveController : MonoBehaviour
                         Debug.LogError(
                             "CrawlingDustEffectPrefab に ParticleSystem が見つかりません。"
                         );
-                        ObjectPooler.instance.ReturnToPool(
+                        ObjectPooler.SceneInstance.ReturnToPool(
                             crawlingDustEffectPoolTag,
                             crawlingDustEffect
                         );
@@ -1115,7 +1114,7 @@ public class StoneGolemMoveController : MonoBehaviour
                     float destroyTime = main.duration + 0.01f; // パーティクルの持続時間を取得
                     main.loop = false; // ループしないように設定
                     crawlingDustEffect.SetActive(true); // パーティクルを有効化
-                    ObjectPooler.instance.ReturnToPoolAfterDelay(
+                    ObjectPooler.SceneInstance.ReturnToPoolAfterDelay(
                         crawlingDustEffectPoolTag,
                         crawlingDustEffect,
                         destroyTime
@@ -1141,7 +1140,7 @@ public class StoneGolemMoveController : MonoBehaviour
             transform.position.y
         );
         // エフェクトを生成
-        GameObject effectObj = ObjectPooler.instance.SpawnFromPool(
+        GameObject effectObj = ObjectPooler.SceneInstance.SpawnFromPool(
             dustEffectPoolTag,
             effectPosition,
             Quaternion.identity
@@ -1160,7 +1159,7 @@ public class StoneGolemMoveController : MonoBehaviour
         }
 
         // duration + 少し余裕を持って削除
-        ObjectPooler.instance.ReturnToPoolAfterDelay(
+        ObjectPooler.SceneInstance.ReturnToPoolAfterDelay(
             dustEffectPoolTag,
             effectObj,
             dustEffectDuration + 0.5f
@@ -1169,7 +1168,7 @@ public class StoneGolemMoveController : MonoBehaviour
 
     public void SpawnSlashEffect()
     {
-        GameObject effectObj = ObjectPooler.instance.SpawnFromPool(
+        GameObject effectObj = ObjectPooler.SceneInstance.SpawnFromPool(
             slashEffectPoolTag,
             transform.position,
             transform.rotation
@@ -1193,7 +1192,7 @@ public class StoneGolemMoveController : MonoBehaviour
         {
             ps.Play();
             // duration + 少し余裕を持って削除
-            ObjectPooler.instance.ReturnToPoolAfterDelay(
+            ObjectPooler.SceneInstance.ReturnToPoolAfterDelay(
                 slashEffectPoolTag,
                 effectObj,
                 slashEffectDefaultDuration + 0.5f
@@ -1202,7 +1201,7 @@ public class StoneGolemMoveController : MonoBehaviour
         else
         {
             Debug.LogError("SlashEffectPrefab に ParticleSystem が見つかりません。");
-            ObjectPooler.instance.ReturnToPoolAfterDelay(slashEffectPoolTag, effectObj, 0); // エフェクトがない場合は削除
+            ObjectPooler.SceneInstance.ReturnToPoolAfterDelay(slashEffectPoolTag, effectObj, 0); // エフェクトがない場合は削除
             return;
         }
     }
@@ -1223,7 +1222,7 @@ public class StoneGolemMoveController : MonoBehaviour
         }
         linkedObjectsToDestroy.Clear();
 
-        ObjectPooler.instance.ReturnAllToPool(); // すべてのオブジェクトをプールに返却
+        ObjectPooler.SceneInstance.ReturnAllToPool(); // すべてのオブジェクトをプールに返却
     }
 
     private void OnDrawGizmos()

@@ -473,7 +473,6 @@ public class GhostwolfMoveController : MonoBehaviour
 
         while (spriteRenderer.sprite != howlsprite)
         {
-            sePlayer.Play(SE_EnemyAction.ChargePower1); //チャージの効果音を鳴らす
             yield return null; //少し待つ
         }
 

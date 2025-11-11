@@ -99,7 +99,7 @@ public class SaveLoadManager : MonoBehaviour
             return;
         }
 
-        Debug.Log($"[{manager.GetType().Name}] がアクティブManagerとしてスタックに登録されました。");
+        // Debug.Log($"[{manager.GetType().Name}] がアクティブManagerとしてスタックに登録されました。");
         managerStack.Push(manager);
     }
 
@@ -144,16 +144,16 @@ public class SaveLoadManager : MonoBehaviour
 
         // 正常な解除処理
         var poppedManager = managerStack.Pop();
-        Debug.Log($"[{poppedManager.GetType().Name}] がスタックから登録解除されました。");
+        // Debug.Log($"[{poppedManager.GetType().Name}] がスタックから登録解除されました。");
 
-        if (CurrentActiveManager != null)
-        {
-            Debug.Log($"アクティブManagerは [{CurrentActiveManager.GetType().Name}] に戻りました。");
-        }
-        else
-        {
-            Debug.Log("アクティブなManagerスタックは空になりました。");
-        }
+        // if (CurrentActiveManager != null)
+        // {
+        //     Debug.Log($"アクティブManagerは [{CurrentActiveManager.GetType().Name}] に戻りました。");
+        // }
+        // else
+        // {
+        //     Debug.Log("アクティブなManagerスタックは空になりました。");
+        // }
     }
 
     /// <summary>

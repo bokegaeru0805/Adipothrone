@@ -37,6 +37,7 @@ public class Robot_shoot_move : MonoBehaviour
     [Header("3-Way弾用の設定")]
     [SerializeField, Tooltip("上下の弾が広がる高さ")]
     private float height = 1.5f;
+    private string hitEffectPoolTag = "HitEffect1"; // ヒットエフェクトのプールタグ
     #endregion
 
 
@@ -221,13 +222,21 @@ public class Robot_shoot_move : MonoBehaviour
 
             enemyCooldowns[enemy] = cooldownTime; // クールタイム開始
             currentPenetrationCount++; //貫通数を増やす
-            
-            // if (hitEffect != null)
-            // {
-            //     //ヒット時のエフェクトを再生
-            //     hitEffect.transform.position = this.transform.position;
-            //     hitEffect.Play();
-            // }
+
+            // ヒットエフェクトの再生
+            // 永続プール(PersistentInstance)がnullでないか確認
+            if (ObjectPooler.PersistentInstance != null && !string.IsNullOrEmpty(hitEffectPoolTag))
+            {
+                // 衝突点（弾の位置）を取得
+                Vector3 hitPosition = this.transform.position;
+
+                // ObjectPooler の永続インスタンスから、指定した「タグ」のエフェクトを呼び出す
+                ObjectPooler.PersistentInstance.SpawnFromPool(
+                    hitEffectPoolTag, // プレハブの代わりに「タグ」を渡す
+                    hitPosition, // 座標
+                    Quaternion.identity // 回転
+                );
+            }
 
             // ヒット処理
             int damageSumAmount = playerEffectManager.CalculateFinalAttackPower(shootPower);

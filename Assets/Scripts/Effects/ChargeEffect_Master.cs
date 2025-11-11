@@ -1,12 +1,14 @@
 using System.Collections.Generic;
 using NaughtyAttributes;
 using UnityEngine;
+using System.Collections;
 
 /// <summary>
 /// ChargeEffect_Master オブジェクトにアタッチします。
 /// 2つのエフェクトグループ（CoreEffects, SlashEffects）の
 /// 大きさ、再生時間、再生/停止をまとめて制御します。
 /// </summary>
+[RequireComponent(typeof(CriWare.Assets.CriAtomSePlayer))]
 public class ChargeEffect_Master : MonoBehaviour
 {
     [Header("エフェクトグループのTransform")]
@@ -35,6 +37,13 @@ public class ChargeEffect_Master : MonoBehaviour
 
     // 初期化が完了したかどうかのフラグ
     private bool isInitialized = false;
+
+    /// SetDuration で設定された最新の再生時間を保持
+    private float currentDuration = 1.0f;
+
+    /// 実行中のSE停止コルーチンの参照
+    private Coroutine stopSeCoroutine = null;
+    private CriWare.Assets.CriAtomSePlayer sePlayer;
 
     void Awake()
     {
@@ -86,7 +95,6 @@ public class ChargeEffect_Master : MonoBehaviour
             {
                 allParticleSystems.Add(ps);
             }
-
         }
         else
         {
@@ -98,6 +106,8 @@ public class ChargeEffect_Master : MonoBehaviour
         {
             Debug.LogWarning("制御対象のParticleSystemが一つも見つかりませんでした。", this);
         }
+
+        sePlayer = this.GetComponent<CriWare.Assets.CriAtomSePlayer>();
 
         isInitialized = true;
     }
@@ -115,6 +125,13 @@ public class ChargeEffect_Master : MonoBehaviour
             Initialize();
         }
 
+        // 既に実行中のSE停止タイマーがあれば、それを停止する
+        if (stopSeCoroutine != null)
+        {
+            StopCoroutine(stopSeCoroutine);
+            stopSeCoroutine = null;
+        }
+
         foreach (var ps in allParticleSystems)
         {
             if (ps == null)
@@ -123,6 +140,15 @@ public class ChargeEffect_Master : MonoBehaviour
             // 再生する前に、もし再生中なら一度停止してリセットする
             ps.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
             ps.Play();
+        }
+
+        // サウンドを再生
+        if (sePlayer != null)
+        {
+            sePlayer.Play(SE_EnemyAction.ChargePower1);
+
+            // 現在設定されている再生時間（currentDuration）後にSEを停止するコルーチンを開始
+            stopSeCoroutine = StartCoroutine(StopSeAfterDuration(this.currentDuration));
         }
     }
 
@@ -133,6 +159,19 @@ public class ChargeEffect_Master : MonoBehaviour
     {
         if (!isInitialized)
             return;
+
+        // 実行中のSE停止タイマーを停止
+        if (stopSeCoroutine != null)
+        {
+            StopCoroutine(stopSeCoroutine);
+            stopSeCoroutine = null;
+        }
+
+        // SEも即座に停止
+        if (sePlayer != null)
+        {
+            sePlayer.Stop();
+        }
 
         foreach (var ps in allParticleSystems)
         {
@@ -189,6 +228,9 @@ public class ChargeEffect_Master : MonoBehaviour
             return;
         }
 
+        // SE停止タイマー用に、設定されたdurationの値をクラス変数に保存
+        this.currentDuration = duration;
+
         foreach (var ps in allParticleSystems)
         {
             if (ps == null)
@@ -200,6 +242,26 @@ public class ChargeEffect_Master : MonoBehaviour
             //システム自体の再生時間を設定
             main.duration = duration - main.startLifetime.constantMax;
         }
+    }
+
+    /// <summary>
+    /// 指定した時間（秒）が経過した後にSEを停止するコルーチン。
+    /// WaitForSeconds は Time.timeScale の影響を受けます。
+    /// </summary>
+    /// <param name="duration">待機する時間（秒）</param>
+    private IEnumerator StopSeAfterDuration(float duration)
+    {
+        // Time.timeScale の影響を受ける待機
+        yield return new WaitForSeconds(duration);
+
+        // 待機後、SEを停止
+        if (sePlayer != null)
+        {
+            sePlayer.Stop();
+        }
+
+        // 実行中のコルーチン参照をクリア
+        stopSeCoroutine = null;
     }
 
     /// <summary>

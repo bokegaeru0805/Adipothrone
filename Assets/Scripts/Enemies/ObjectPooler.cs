@@ -5,11 +5,26 @@ using UnityEngine;
 
 /// <summary>
 /// 様々なGameObjectをプールして再利用するための汎用的なオブジェクトプーラー。
+/// isPersistentフラグに応じて、シーン用(false)と永続(true)の2種類を管理できます。
 /// </summary>
 public class ObjectPooler : MonoBehaviour
 {
-    // --- シングルトンインスタンス ---
-    public static ObjectPooler instance;
+    /// <summary>
+    /// シーン固有のオブジェクト（敵など）用プール。
+    /// シーン切り替えで破棄されます。
+    /// </summary>
+    public static ObjectPooler SceneInstance { get; private set; }
+
+    /// <summary>
+    /// ゲーム全体で共通のオブジェクト（エフェクトなど）用プール。
+    /// シーンをまたいで永続します。
+    /// </summary>
+    public static ObjectPooler PersistentInstance { get; private set; }
+
+    [Header("プールの種類")]
+    [SerializeField]
+    [Tooltip("trueにすると、シーンをまたいで破棄されない永続プールになります。")]
+    private bool isPersistent = false;
 
     [System.Serializable]
     public class Pool
@@ -25,31 +40,98 @@ public class ObjectPooler : MonoBehaviour
     // プール本体。タグをキーとして、オブジェクトのキューを管理する
     private Dictionary<string, Queue<GameObject>> poolDictionary;
 
+    // プールごとの「親Transform」を記憶する辞書を追加
+    private Dictionary<string, Transform> poolParentDictionary;
+
     //アクティブな（貸し出し中の）オブジェクトを追跡するための辞書
     private Dictionary<GameObject, string> activeObjects = new Dictionary<GameObject, string>();
 
     private void Awake()
     {
-        instance = this;
+        if (isPersistent)
+        {
+            // 【永続インスタンスの処理】
+            if (PersistentInstance == null)
+            {
+                PersistentInstance = this;
+                // DontDestroyOnLoad(gameObject); // シーンが切り替わっても破棄しない
+            }
+            else
+            {
+                // 既に永続インスタンスが存在する場合は、重複なので自身を破棄
+                Destroy(gameObject);
+                return;
+            }
+        }
+        else
+        {
+            // 【シーンインスタンスの処理】
+            if (SceneInstance != null)
+            {
+                // シーン内に既にシーン用プーラーがある場合は警告し、自身を破棄
+                Debug.LogWarning(
+                    $"シーン用ObjectPoolerが '{SceneInstance.gameObject.name}' と '{this.gameObject.name}' の2つ存在します。"
+                );
+                Destroy(gameObject);
+                return;
+            }
+            SceneInstance = this;
+        }
+
+        // --- 3. プールの初期化処理を Awake に移動 ---
+        // (Startだと、AwakeでSpawnFromPoolを呼んだ時にエラーになるため)
+        InitializePools();
     }
 
-    private void Start()
+    private void InitializePools()
     {
         poolDictionary = new Dictionary<string, Queue<GameObject>>();
 
-        // インスペクターで設定された各プールを初期化
+        poolParentDictionary = new Dictionary<string, Transform>();
+
         foreach (Pool pool in pools)
         {
             Queue<GameObject> objectQueue = new Queue<GameObject>();
 
+            // 生成したオブジェクトを、このプーラーの子オブジェクトにして、
+            // ヒエラルキーを見やすくする
+            Transform poolParent = new GameObject(pool.tag + " Pool").transform;
+            poolParent.SetParent(this.transform, false);
+
+            //親Transformを辞書に登録
+            poolParentDictionary.Add(pool.tag, poolParent);
+
+            // プレハブの正しいローカルスケールを先に取得しておく
+            Vector3 prefabLocalScale = pool.prefab.transform.localScale;
+
             for (int i = 0; i < pool.size; i++)
             {
-                GameObject obj = Instantiate(pool.prefab);
-                obj.SetActive(false); // 非表示にしておく
-                objectQueue.Enqueue(obj); // キューに追加
+                // (poolParentの子として生成し、worldPositionStays: false は正しい)
+                GameObject obj = Instantiate(pool.prefab, poolParent, false);
+
+                // Instantiateによって(1,1,1)にリセットされた可能性のあるスケールを、
+                // プレハブの正しいローカルスケールで上書き（強制的に再設定）する
+                obj.transform.localScale = prefabLocalScale;
+
+                obj.SetActive(false);
+                objectQueue.Enqueue(obj);
             }
 
             poolDictionary.Add(pool.tag, objectQueue);
+        }
+    }
+
+    // --- 4. OnDestroy を追加（メモリリーク防止） ---
+    private void OnDestroy()
+    {
+        // シングルトン参照を解除
+        if (isPersistent && PersistentInstance == this)
+        {
+            PersistentInstance = null;
+        }
+        else if (!isPersistent && SceneInstance == this)
+        {
+            SceneInstance = null;
         }
     }
 
@@ -64,7 +146,7 @@ public class ObjectPooler : MonoBehaviour
             return null;
         }
 
-        // 修正点：プールが空（全てのオブジェクトが使用中）の場合の処理
+        //プールが空（全てのオブジェクトが使用中）の場合の処理
         GameObject objectToSpawn;
 
         // プールに待機中のオブジェクトがあれば、それを取り出す
@@ -73,7 +155,9 @@ public class ObjectPooler : MonoBehaviour
             objectToSpawn = poolDictionary[tag].Dequeue();
 
             // プールから取り出す際に親子関係を解除（ルートに移動）
-            objectToSpawn.transform.SetParent(null);
+            // worldPositionStays: false を指定して、
+            // 親を解除する際にローカルスケール（プレハブのスケール）を維持する
+            objectToSpawn.transform.SetParent(null, false);
         }
         // プールが空っぽ（全てのオブジェクトが使用中）だった場合
         else
@@ -101,9 +185,8 @@ public class ObjectPooler : MonoBehaviour
         objectToSpawn.transform.position = position;
         objectToSpawn.transform.rotation = rotation;
 
-        // 変更点：貸し出したオブジェクトを追跡リストに追加
+        // 貸し出したオブジェクトを追跡リストに追加
         activeObjects.Add(objectToSpawn, tag);
-
         return objectToSpawn;
     }
 
@@ -128,7 +211,18 @@ public class ObjectPooler : MonoBehaviour
             activeObjects.Remove(objectToReturn);
         }
 
-        objectToReturn.transform.SetParent(null); // 親をリセット
+        // 親を null ではなく、InitializePools で作成した整理用の親 (poolParent) に戻す
+        if (poolParentDictionary.TryGetValue(tag, out Transform poolParent))
+        {
+            // worldPositionStays: false でローカルスケールの変更を防ぎながら親を設定
+            objectToReturn.transform.SetParent(poolParent, false);
+        }
+        else
+        {
+            // (フォールバック)
+            objectToReturn.transform.SetParent(null, false);
+        }
+
         objectToReturn.SetActive(false);
 
         // 使用済みのオブジェクトをキューの末尾に戻す (Enqueue)

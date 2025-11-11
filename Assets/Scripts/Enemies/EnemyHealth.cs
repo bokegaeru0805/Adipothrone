@@ -22,9 +22,9 @@ public class EnemyHealth : CharacterHealth, IEnemyResettable
     // --- 内部コンポーネント参照 ---
     private bool isInitialized = false; // 外部からの初期化が完了したかを管理するフラグ
     private Rigidbody2D rbody;
-    // private EffekseerEmitter destroyEffect;
     private float destroyEffectScale = 1.0f; // 死亡エフェクトの大きさ
     private const string deathAnimParam = "death"; // 死亡アニメーションのパラメータ名
+    private string destroyEffectPoolTag = "DestroyEffect1"; // 死亡エフェクトのプールタグ
     private Transform dropParent;
 
     /// <summary>
@@ -121,6 +121,24 @@ public class EnemyHealth : CharacterHealth, IEnemyResettable
         //     effect.transform.localScale = Vector3.one * destroyEffectScale;
         //     effect.Play();
         // }
+
+        // 死亡エフェクトの再生
+        // 永続プール(PersistentInstance)がnullでないか確認
+        if (ObjectPooler.PersistentInstance != null && !string.IsNullOrEmpty(destroyEffectPoolTag))
+        {
+            // 衝突点（弾の位置）を取得
+            Vector3 hitPosition = this.transform.position;
+
+            // ObjectPooler の永続インスタンスから、指定した「タグ」のエフェクトを呼び出す
+            GameObject effect = ObjectPooler.PersistentInstance.SpawnFromPool(
+                destroyEffectPoolTag, // プレハブの代わりに「タグ」を渡す
+                hitPosition, // 座標
+                Quaternion.identity // 回転
+            );
+
+            // エフェクトの大きさを調整
+            effect.transform.localScale = Vector3.one * destroyEffectScale;
+        }
 
         SEManager.instance?.PlayEnemyActionSE(SE_EnemyAction.Death1); // 死亡の効果音を鳴らす
 
