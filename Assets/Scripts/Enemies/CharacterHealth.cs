@@ -1,5 +1,6 @@
 using System;
 using System.Collections;
+using MyGame.CameraControl;
 using UnityEngine;
 
 /// <summary>
@@ -85,6 +86,7 @@ public abstract class CharacterHealth : MonoBehaviour, IDamageable, IDroppable, 
 
         // --- Step 1: ダメージ適用前の共通処理 ---
         TimeManager.instance.TriggerHitStop(); //ヒットストップを行う
+        CameraManager.instance.PlayHitShake(); //カメラ揺れを行う
         //SEManager.instance?.PlayEnemyActionSE(SE_EnemyAction.Damage2); // 被弾SEを再生
 
         // --- Step 2: HPの減算 ---

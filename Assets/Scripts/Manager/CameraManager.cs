@@ -7,14 +7,17 @@ namespace MyGame.CameraControl
 {
     public class CameraManager : MonoBehaviour
     {
+        [SerializeField]
+        private NoiseSettings takeHitNoiseSettings; // 敵ヒット時の揺れ設定をInspectorから割り当てるための変数
         public static CameraManager instance { get; private set; }
         private Camera cam;
         private CinemachineVirtualCamera virtualCamera;
         private CinemachineTransposer framing;
         private CameraBoundaryChecker boundaryChecker;
-
-        // 実行中のダンピングリセットコルーチンを管理するための変数
-        private Coroutine dampingResetCoroutine = null;
+        private CinemachineBasicMultiChannelPerlin perlinNoise;
+        private const float HIT_SHAKE_DURATION = 0.1f; // 敵ヒット時0.1秒間揺らす
+        private Coroutine shakeCoroutine = null; // 実行中のシェイクコルーチンを管理
+        private Coroutine dampingResetCoroutine = null; // 実行中のダンピングリセットコルーチンを管理するための変数
 
         private void Awake()
         {
@@ -67,6 +70,24 @@ namespace MyGame.CameraControl
                 {
                     Debug.LogError("CameraManagerはCinemachineTransposerを取得できませんでした");
                 }
+
+                // VCamからNoiseコンポーネントを取得
+                perlinNoise =
+                    virtualCamera.GetCinemachineComponent<CinemachineBasicMultiChannelPerlin>();
+                if (perlinNoise == null)
+                {
+                    // このエラーが出た場合、VCamにNoiseコンポーネントを追加し、Profileを設定してください
+                    Debug.LogWarning(
+                        "CameraManagerはCinemachineBasicMultiChannelPerlinを取得できませんでした。ダメージ時の揺れは機能しません。"
+                    );
+                }
+
+                if (takeHitNoiseSettings == null)
+                {
+                    Debug.LogWarning(
+                        "CameraManagerのtakeHitNoiseSettingsが設定されていません。ダメージ時の揺れは機能しません。"
+                    );
+                }
             }
             else
             {
@@ -74,6 +95,20 @@ namespace MyGame.CameraControl
             }
         }
 
+        private void Start()
+        {
+            if (perlinNoise != null)
+            {
+                // 初めは無効化しておく
+                // Awakeで行うと、"none"状態になってしまう場合があるため、Startで行う
+                perlinNoise.enabled = false;
+            }
+        }
+
+        /// <summary>
+        /// （コルーチン）カメラのY軸追従を即座に行わせ（Damping=0）、ターゲットに十分近づくかカメラが端に達するまで待機し、
+        ///  その後Damping設定を元に戻します。
+        /// </summary>
         public IEnumerator CameraMove()
         {
             if (framing != null)
@@ -111,6 +146,11 @@ namespace MyGame.CameraControl
             }
         }
 
+        /// <summary>
+        /// （コルーチン）Cinemachine Brainを一時的に無効化し、DOTweenを使用してカメラを指定のターゲット地点まで指定時間で移動させます。
+        /// </summary>
+        /// <param name="targetPoint">移動先の座標</param>
+        /// <param name="reachTime">移動にかかる時間（秒）</param>
         public IEnumerator CameraMoveByTween(Vector3 targetPoint, float reachTime)
         {
             if (cam == null)
@@ -128,11 +168,69 @@ namespace MyGame.CameraControl
                 .WaitForCompletion();
         }
 
+        /// <summary>
+        /// 敵ヒット時など、小規模なカメラシェイク（Noise）を発生させます。
+        /// </summary>
+        public void PlayHitShake()
+        {
+            if (perlinNoise == null)
+            {
+                Debug.LogWarning(
+                    "Noiseコンポーネントが未設定のため、PlayHitShakeを呼び出せません。"
+                );
+                return;
+            }
+
+            // 既に実行中のシェイクコルーチンがあれば停止（連続ヒット時に揺れ時間をリセットするため）
+            if (shakeCoroutine != null)
+            {
+                StopCoroutine(shakeCoroutine);
+            }
+
+            // 新しいシェイクコルーチンを開始
+            shakeCoroutine = StartCoroutine(ShakeCoroutine());
+        }
+
+        /// <summary>
+        /// （コルーチン）指定時間だけPerlinNoiseを有効化し、その後無効化します。
+        /// </summary>
+        private IEnumerator ShakeCoroutine()
+        {
+            if (takeHitNoiseSettings == null)
+            {
+                yield break;
+            }
+
+            // Noiseプロファイルを設定
+            perlinNoise.m_NoiseProfile = takeHitNoiseSettings;
+            // Noiseを有効化（揺れ開始）
+            perlinNoise.enabled = true;
+
+            // 指定時間待機
+            yield return new WaitForSeconds(HIT_SHAKE_DURATION);
+
+            // Noiseを無効化（揺れ停止）
+            perlinNoise.enabled = false;
+
+            // 管理変数をクリア
+            shakeCoroutine = null;
+        }
+
+        /// <summary>
+        /// カメラシェイクのコルーチンを開始します。
+        /// </summary>
+        /// <param name="positionStrength">シェイクの強さ（各軸）</param>
+        /// <param name="shakeDuration">シェイクの時間（秒）</param>
         public void StartCameraShake(Vector3 positionStrength, float shakeDuration)
         {
             StartCoroutine(CameraShake(positionStrength, shakeDuration));
         }
 
+        /// <summary>
+        /// （コルーチン）Cinemachine Brainを一時的に無効化し、DOTweenを使用してカメラを振動させます。完了後、CameraResetを呼び出します。
+        /// </summary>
+        /// <param name="positionStrength">シェイクの強さ（各軸）</param>
+        /// <param name="shakeDuration">シェイクの時間（秒）</param>
         public IEnumerator CameraShake(Vector3 positionStrength, float shakeDuration)
         {
             if (cam == null)
@@ -147,6 +245,9 @@ namespace MyGame.CameraControl
             CameraReset();
         }
 
+        /// <summary>
+        /// カメラのCinemachine Brainを再度有効にし、Cinemachineによる通常のカメラ制御に戻します。
+        /// </summary>
         public void CameraReset()
         {
             Camera.main.GetComponent<CinemachineBrain>().enabled = true;
@@ -167,6 +268,10 @@ namespace MyGame.CameraControl
             dampingResetCoroutine = StartCoroutine(TemporaryResetYDampingCoroutine(duration));
         }
 
+        /// <summary>
+        /// （コルーチン）指定された時間、CinemachineTransposerのYDampingを0に設定し、時間が経過したら元の値に戻します。
+        /// </summary>
+        /// <param name="duration">Dampingを0にしておく時間（秒）</param>
         private IEnumerator TemporaryResetYDampingCoroutine(float duration)
         {
             if (framing != null)

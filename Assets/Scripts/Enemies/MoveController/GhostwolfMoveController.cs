@@ -1,5 +1,4 @@
 using System.Collections;
-// using Effekseer;
 using UnityEngine;
 
 [RequireComponent(typeof(CriWare.Assets.CriAtomSePlayer))]
@@ -129,8 +128,8 @@ public class GhostwolfMoveController : MonoBehaviour
     [SerializeField]
     private ChargeEffect_Master chargeEffect; //チャージエフェクト
 
-    // [SerializeField]
-    // private EffekseerEmitter shockWaveEffect;
+    [SerializeField]
+    private BurstEffect_Master burstEffect; //衝撃波エフェクト
 
     private int totalAttacks = 0; //攻撃した回数
     private float action_mode = 0; // 行動モードを初期化
@@ -159,7 +158,7 @@ public class GhostwolfMoveController : MonoBehaviour
             Debug.LogError("GhostWolfに弾幕が出るときのスプライトが設定されていません。", this);
         }
 
-        if (chargeEffect == null)
+        if (chargeEffect == null || burstEffect == null)
         {
             Debug.LogError("GhostWolfにエフェクトが設定されていません。", this);
         }
@@ -485,19 +484,10 @@ public class GhostwolfMoveController : MonoBehaviour
         sePlayer.Play(SE_EnemyAction.Roar1); //咆哮の効果音を鳴らす
         GameUIManager.instance?.ShowSkillNameUI("咆哮"); //スキル名UIを表示
 
-        // if (shockWaveEffect != null)
-        // {
-        //     EffekseerEmitter shockWaveEffectInstance = Instantiate(shockWaveEffect); //エフェクトを生成
-        //     shockWaveEffectInstance.transform.SetParent(this.transform); //エフェクトの親をこのオブジェクトに設定
-        //     shockWaveEffectInstance.transform.position = this.transform.position; //エフェクトの位置を指定
-        //     float shockwaveRange = 2 * Mathf.Abs(newPos.x - leftBoundary); //エフェクトの大きさを取得
-        //     shockWaveEffectInstance.transform.localScale = new Vector3(
-        //         shockwaveRange,
-        //         shockwaveRange,
-        //         0
-        //     ); //エフェクトの大きさを指定
-        //     shockWaveEffectInstance.Play(); //エフェクトを再生
-        // }
+        if (burstEffect != null)
+        {
+            burstEffect.PlayEffect();
+        }
 
         for (int i = 0; i < arcShootCount; i++)
         {

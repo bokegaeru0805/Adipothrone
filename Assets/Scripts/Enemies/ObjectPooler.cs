@@ -101,17 +101,11 @@ public class ObjectPooler : MonoBehaviour
             //親Transformを辞書に登録
             poolParentDictionary.Add(pool.tag, poolParent);
 
-            // プレハブの正しいローカルスケールを先に取得しておく
-            Vector3 prefabLocalScale = pool.prefab.transform.localScale;
 
             for (int i = 0; i < pool.size; i++)
             {
                 // (poolParentの子として生成し、worldPositionStays: false は正しい)
                 GameObject obj = Instantiate(pool.prefab, poolParent, false);
-
-                // Instantiateによって(1,1,1)にリセットされた可能性のあるスケールを、
-                // プレハブの正しいローカルスケールで上書き（強制的に再設定）する
-                obj.transform.localScale = prefabLocalScale;
 
                 obj.SetActive(false);
                 objectQueue.Enqueue(obj);

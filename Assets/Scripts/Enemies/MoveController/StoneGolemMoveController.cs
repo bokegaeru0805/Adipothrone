@@ -1,6 +1,5 @@
 using System.Collections;
 using System.Collections.Generic;
-// using Effekseer;
 using UnityEngine;
 
 [RequireComponent(typeof(CriWare.Assets.CriAtomSePlayer))]
@@ -111,7 +110,6 @@ public class StoneGolemMoveController : MonoBehaviour
     [SerializeField]
     private Vector2 slashEffectOffset = new Vector2(-1.1f, 2.15f); // スラッシュエフェクトのオフセット(左向き時)
 
-
     [SerializeField, Tooltip("衝撃波エフェクトのX方向オフセット")]
     private float shockWaveEffectOffsetX = 1.12f; // 衝撃波エフェクトのX方向オフセット
 
@@ -120,6 +118,12 @@ public class StoneGolemMoveController : MonoBehaviour
 
     [SerializeField, Tooltip("這う岩のダストエフェクトが発生する間隔")]
     private float crawlingRockDustEffectInterval = 0.5f; // 這う岩のダストエフェクトが発生する間隔
+
+    [SerializeField, Tooltip("這う岩のダストエフェクトのX方向オフセット")]
+    private float crawlingDustEffectOffsetX = 5f; // 這う岩のダストエフェクトのX方向オフセット
+
+    [SerializeField, Tooltip("パンチ時のダストエフェクトのX方向オフセット")]
+    private float punchDustEffectOffsetX = 1.5f; // パンチ時のダストエフェクトのX方向オフセット
 
     [Header("行動範囲")]
     [SerializeField]
@@ -150,12 +154,13 @@ public class StoneGolemMoveController : MonoBehaviour
 
     [SerializeField]
     private GameObject hammerObject; // ハンマーのオブジェクト
+
     [Header("エフェクト設定")]
     [SerializeField]
     private ChargeEffect_Master chargeEffect; // チャージエフェクト
 
-    // [SerializeField]
-    // private EffekseerEmitter shockWaveEffect; // ショックウェーブエフェクト
+    [SerializeField]
+    private BurstEffect_Master burstEffect; // 衝撃波エフェクト
 
     private enum CommandType
     {
@@ -184,7 +189,6 @@ public class StoneGolemMoveController : MonoBehaviour
     private const float hammerAttackAnimationTime = 0.250f; // ハンマー攻撃アニメーションの時間
     private float dustEffectDuration => rockWaves * rockWaveInterval + hammerAttackCooldown; // ダストエフェクトの持続時間
     private const float rockAngularSpeed = 100f; // 岩の回転速度
-    private float crawlingDustEffectOffsetX => crawlingRockSpeed / 3.5f; // 這う岩のダストエフェクトのX方向オフセット
     private const float slashEffectDefaultDuration = 0.35f; // スラッシュエフェクトのデフォルト持続時間
     private int totalActions = 0;
     private int bossMaxHP; //最大HP
@@ -198,6 +202,8 @@ public class StoneGolemMoveController : MonoBehaviour
     private const string slashEffectPoolTag = "StoneGolem_SlashEffect"; // スラッシュエフェクトのプールタグ名
     private const string dustEffectPoolTag = "StoneGolem_DustEffect"; // ダストエフェクトのプールタグ名
     private const string crawlingDustEffectPoolTag = "StoneGolem_CrawlingDustEffect"; //這う岩のダストエフェクトのプールタグ名
+    private const string punchDustEffectPoolTag = "StoneGolem_PunchDustEffect"; //パンチ時のダストエフェクトのプールタグ名
+    private const string rockEruptionEffectPoolTag = "StoneGolem_RockEruptionEffect"; // 岩の噴出エフェクトのプールタグ名
     private IDamageable hpscript;
     private Rigidbody2D rbody;
     private Animator animator;
@@ -281,9 +287,9 @@ public class StoneGolemMoveController : MonoBehaviour
             Debug.LogError("rockEnemyDataが設定されていません。", this);
         }
 
-        if(chargeEffect == null)
+        if (chargeEffect == null || burstEffect == null)
         {
-            Debug.LogError("chargeEffectが設定されていません。",this);
+            Debug.LogError("エフェクトが設定されていません。", this);
         }
 
         rbody = this.GetComponent<Rigidbody2D>();
@@ -583,6 +589,11 @@ public class StoneGolemMoveController : MonoBehaviour
         StartCoroutine(UpdateArmForDuration(attackAnimationTime)); // アームの見た目を更新
         yield return new WaitForSeconds(attackAnimationTime * 0.7f); // 攻撃アニメーションの時間を待機1
         sePlayer.Play(SE_EnemyAction.Kick1); // 攻撃の効果音を鳴らす
+        GameObject punchDustEffect = ObjectPooler.SceneInstance.SpawnFromPool(
+            punchDustEffectPoolTag,
+            transform.position + new Vector3(punchDustEffectOffsetX * dir, 0f, 0f),
+            Quaternion.identity
+        ); // パンチ時のダストエフェクトを生成
         yield return new WaitForSeconds(attackAnimationTime * 0.3f); // 攻撃アニメーションの時間を待機2
         yield return new WaitForSeconds(meleeAttackCooldown); // 攻撃後の待機時間
 
@@ -600,6 +611,11 @@ public class StoneGolemMoveController : MonoBehaviour
         StartCoroutine(UpdateArmForDuration(attackAnimationTime)); // アームの見た目を更新
         yield return new WaitForSeconds(attackAnimationTime * 0.7f); // 攻撃アニメーションの時間を待機1
         sePlayer.Play(SE_EnemyAction.Kick1); // 攻撃の効果音を鳴らす
+        GameObject punchDustEffect = ObjectPooler.SceneInstance.SpawnFromPool(
+            punchDustEffectPoolTag,
+            transform.position + new Vector3(punchDustEffectOffsetX * dir, 0f, 0f),
+            Quaternion.identity
+        ); // パンチ時のダストエフェクトを生成
         yield return new WaitForSeconds(attackAnimationTime * 0.3f); // 攻撃アニメーションの時間を待機2
 
         GameObject crawlingRock = ObjectPooler.SceneInstance.SpawnFromPool(
@@ -737,22 +753,12 @@ public class StoneGolemMoveController : MonoBehaviour
         //ハンマー攻撃アニメーションの時間分待機する
         yield return new WaitForSeconds(hammerAttackAnimationTime);
 
-        // if (shockWaveEffect != null)
-        // {
-        //     EffekseerEmitter shockWaveEffectInstance = Instantiate(shockWaveEffect); //エフェクトを生成
-        //     shockWaveEffectInstance.transform.SetParent(this.transform); //エフェクトの親をこのオブジェクトに設定
-        //     Vector2 shockWavePos = this.transform.position; //自分の座標をコピー
-        //     shockWavePos.x += rightFlag ? shockWaveEffectOffsetX : -shockWaveEffectOffsetX; //エフェクトのx座標を調整
-        //     shockWaveEffectInstance.transform.position = shockWavePos; //エフェクトの位置を指定
-        //     float shockwaveRange =
-        //         2 * Mathf.Max(Mathf.Abs(pos.x - leftBound), Mathf.Abs(pos.x - rightBound)); //エフェクトの大きさを取得
-        //     shockWaveEffectInstance.transform.localScale = new Vector3(
-        //         shockwaveRange,
-        //         shockwaveRange,
-        //         0
-        //     ); //エフェクトの大きさを指定
-        //     shockWaveEffectInstance.Play(); //エフェクトを再生
-        // }
+        // 衝撃波エフェクトを生成
+        if (burstEffect != null)
+        {
+            burstEffect.PlayEffect();
+        }
+
         // ダストエフェクトを生成
         SpawnDustEffect();
 
@@ -845,6 +851,18 @@ public class StoneGolemMoveController : MonoBehaviour
                     rb.angularVelocity = rockAngularSpeed; // 岩の回転速度を設定
                 }
             }
+
+            Vector2 effectPosition = new Vector2(
+                transform.position.x + (rightFlag ? dustEffectOffsetX : -dustEffectOffsetX),
+                transform.position.y
+            );
+            // エフェクトを生成
+            ObjectPooler.SceneInstance.SpawnFromPool(
+                rockEruptionEffectPoolTag,
+                effectPosition,
+                Quaternion.identity
+            );
+
             // 次のウェーブまで少し待つ
             yield return new WaitForSeconds(rockWaveInterval);
 
@@ -854,9 +872,6 @@ public class StoneGolemMoveController : MonoBehaviour
             }
         }
 
-        // ハンマー攻撃後の待機時間
-        yield return new WaitForSeconds(hammerAttackCooldown);
-
         // ハンマー攻撃完了アニメーションをトリガー
         animator.SetTrigger("hammerFinishTrigger");
         //ハンマーの見た目を更新するコルーチンを停止
@@ -865,6 +880,9 @@ public class StoneGolemMoveController : MonoBehaviour
         {
             hammerObject.SetActive(false); // ハンマーオブジェクトを無効化
         }
+
+        // ハンマー攻撃後の待機時間
+        yield return new WaitForSeconds(hammerAttackCooldown);
 
         // 行動記録を更新
         SetCommand(CommandType.None);
@@ -1052,9 +1070,10 @@ public class StoneGolemMoveController : MonoBehaviour
 
                 Vector3 pos = crawlingRock.transform.position;
                 bool isOutOfBounds = false;
+                bool _rightFlag = crawlingRockRigidbody.velocity.x >= 0;
 
                 // 右に移動中（速度が正）の場合
-                if (crawlingRockRigidbody.velocity.x > 0)
+                if (_rightFlag)
                 {
                     // 岩の右端が、右の境界線を越えたら消去
                     if (pos.x + rockHalfWidth + crawlingRockDestroyBuffer > rightBound)
@@ -1086,7 +1105,7 @@ public class StoneGolemMoveController : MonoBehaviour
                         crawlingDustEffectPoolTag,
                         crawlingRock.transform.position
                             + new Vector3(
-                                rightFlag ? crawlingDustEffectOffsetX : -crawlingDustEffectOffsetX,
+                                _rightFlag ? crawlingDustEffectOffsetX : -crawlingDustEffectOffsetX,
                                 0f,
                                 0f
                             ),
@@ -1095,30 +1114,8 @@ public class StoneGolemMoveController : MonoBehaviour
 
                     Vector3 scale = crawlingDustEffect.transform.localScale; // スケールを取得
                     // 右向きか否かに応じてスケールを調整
-                    scale.x =
-                        Mathf.Abs(scale.x) * (crawlingRockRigidbody.velocity.x >= 0 ? -1f : 1f);
+                    scale.x = Mathf.Abs(scale.x) * (_rightFlag ? -1f : 1f);
                     crawlingDustEffect.transform.localScale = scale; // スケールを適用
-                    ParticleSystem ps = crawlingDustEffect.GetComponent<ParticleSystem>();
-                    if (ps == null)
-                    {
-                        Debug.LogError(
-                            "CrawlingDustEffectPrefab に ParticleSystem が見つかりません。"
-                        );
-                        ObjectPooler.SceneInstance.ReturnToPool(
-                            crawlingDustEffectPoolTag,
-                            crawlingDustEffect
-                        );
-                        yield break;
-                    }
-                    var main = ps.main;
-                    float destroyTime = main.duration + 0.01f; // パーティクルの持続時間を取得
-                    main.loop = false; // ループしないように設定
-                    crawlingDustEffect.SetActive(true); // パーティクルを有効化
-                    ObjectPooler.SceneInstance.ReturnToPoolAfterDelay(
-                        crawlingDustEffectPoolTag,
-                        crawlingDustEffect,
-                        destroyTime
-                    ); // プールに一定時間後に返却
                 }
 
                 crawlingRockSePlayer.Play(SE_Field.GroundRumble1); // 這う岩の移動音を鳴らす
@@ -1146,24 +1143,14 @@ public class StoneGolemMoveController : MonoBehaviour
             Quaternion.identity
         );
 
-        // ParticleSystem コンポーネント取得
-        ParticleSystem ps = effectObj.GetComponent<ParticleSystem>();
-        if (ps != null)
+        if (effectObj == null)
+            return;
+
+        var aturoPoolReturn = effectObj.GetComponent<AutoPoolReturn>();
+        if (aturoPoolReturn != null)
         {
-            var main = ps.main;
-            main.duration = dustEffectDuration + 0.5f; // パーティクルの持続時間を設定
-            main.loop = false; // ループしない
-            main.startLifetime = dustEffectDuration + 0.5f; // パーティクルのライフタイムを設定
-
-            ps.Play();
+            aturoPoolReturn.SetFadeDurationOverride(hammerAttackCooldown);
         }
-
-        // duration + 少し余裕を持って削除
-        ObjectPooler.SceneInstance.ReturnToPoolAfterDelay(
-            dustEffectPoolTag,
-            effectObj,
-            dustEffectDuration + 0.5f
-        );
     }
 
     public void SpawnSlashEffect()

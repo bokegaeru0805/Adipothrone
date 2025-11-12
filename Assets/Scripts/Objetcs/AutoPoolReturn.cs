@@ -1,5 +1,17 @@
 using System.Collections;
+using DG.Tweening;
+using NaughtyAttributes;
 using UnityEngine;
+
+/// <summary>
+/// 返却先のObjectPoolerのインスタンスを指定します
+/// </summary>
+public enum PoolType
+{
+    Persistent, // 永続プール (エフェクトなど)
+    Scene // シーン用プール (敵など)
+    ,
+}
 
 /// <summary>
 /// アニメーションが付いたエフェクトプレハブにアタッチします。
@@ -9,16 +21,32 @@ using UnityEngine;
 [RequireComponent(typeof(Animator))]
 public class AutoPoolReturn : MonoBehaviour
 {
-    private Animator animator;
-
     [Header("ObjectPooler 設定")]
     [SerializeField]
     [Tooltip("このオブジェクトの返却先となる ObjectPooler の「タグ」")]
     private string myPoolTag;
 
+    [SerializeField]
+    [Tooltip("返却先のプールの種類（Persistent=永続, Scene=シーン用）")]
+    private PoolType returnToPool = PoolType.Persistent; // デフォルトは永続プール
+
+    [Header("フェードアウト設定")]
+    [SerializeField]
+    [Tooltip("trueにすると、アニメーション終了後に徐々に消えます")]
+    private bool useFadeOut = false;
+
+    [SerializeField, ShowIf(nameof(useFadeOut))]
+    [Tooltip("フェードアウトにかける時間（秒）")]
+    private float fadeOutDuration = 0.5f;
+
+    private Animator animator;
+    private SpriteRenderer spriteRenderer;
+    private float defaultFadeOutDuration;
+
     private void Awake()
     {
         animator = GetComponent<Animator>();
+        spriteRenderer = GetComponent<SpriteRenderer>();
 
         if (string.IsNullOrEmpty(myPoolTag))
         {
@@ -28,7 +56,7 @@ public class AutoPoolReturn : MonoBehaviour
             );
         }
 
-        this.transform.localScale = Vector3.one; // スケールをリセット
+        defaultFadeOutDuration = fadeOutDuration; // デフォルト値を保存
     }
 
     /// <summary>
@@ -36,6 +64,21 @@ public class AutoPoolReturn : MonoBehaviour
     /// </summary>
     private void OnEnable()
     {
+        // OnEnable時に、値をデフォルト（インスペクター設定値）に戻す
+        // これにより、プールから再利用されるたびに、
+        // 前回の上書き設定（SetFadeDurationOverride）がリセットされます。
+        fadeOutDuration = defaultFadeOutDuration;
+
+        // プールから再利用されたときのために、アルファ値を元に戻す
+        if (useFadeOut && spriteRenderer != null)
+        {
+            // DOTween の Kill() でアルファが0のまま止まっている可能性があるので、
+            // 即座にアルファを 1 (不透明) に戻す
+            Color resetColor = spriteRenderer.color;
+            resetColor.a = 1f;
+            spriteRenderer.color = resetColor;
+        }
+
         // 実行中のアニメーションの長さを取得
         float animationLength = animator.GetCurrentAnimatorStateInfo(0).length;
 
@@ -62,16 +105,86 @@ public class AutoPoolReturn : MonoBehaviour
         // アニメーションの長さだけ待つ
         yield return new WaitForSeconds(delay);
 
-        // 永続プーラー(PersistentInstance) が存在し、タグが設定されていれば
-        if (ObjectPooler.PersistentInstance != null && !string.IsNullOrEmpty(myPoolTag))
+        // フェードアウト処理
+        if (useFadeOut && spriteRenderer != null)
         {
-            // 自分自身を、指定されたタグのプールに返却（非アクティブ化）
-            ObjectPooler.PersistentInstance.ReturnToPool(myPoolTag, this.gameObject);
+            // DOTween でフェードアウトさせ、完了するまで待機する
+            yield return spriteRenderer.DOFade(0f, fadeOutDuration).WaitForCompletion();
         }
-        else
+
+        // タグが設定されていない場合は、プール返却を諦めて破棄
+        if (string.IsNullOrEmpty(myPoolTag))
         {
-            // マネージャーがいない、またはタグが未設定の場合は、破棄する
+            Debug.LogWarning($"'{gameObject.name}' に myPoolTag がないため、破棄します。", this);
             Destroy(gameObject);
+            yield break; // コルーチンをここで終了
+        }
+
+        bool returned = false; // 返却に成功したか
+
+        // 選択されたプールの種類に応じて、返却先を決定
+        if (returnToPool == PoolType.Persistent)
+        {
+            // 【永続プール】が指定されている場合
+            if (ObjectPooler.PersistentInstance != null)
+            {
+                ObjectPooler.PersistentInstance.ReturnToPool(myPoolTag, this.gameObject);
+                returned = true;
+            }
+        }
+        else // (returnToPool == PoolType.Scene)
+        {
+            // 【シーンプール】が指定されている場合
+            if (ObjectPooler.SceneInstance != null)
+            {
+                ObjectPooler.SceneInstance.ReturnToPool(myPoolTag, this.gameObject);
+                returned = true;
+            }
+        }
+
+        // もし、指定されたプール（Persistent/Scene）が存在しなかった場合
+        if (!returned)
+        {
+            // プールが見つからなかったので、オブジェクトを破棄する
+            Debug.LogWarning(
+                $"返却先の {returnToPool} プール（タグ: {myPoolTag}）が見つかりません。オブジェクトを破棄します。",
+                this
+            );
+            Destroy(gameObject);
+        }
+    }
+
+    /// <summary>
+    /// 外部からフェードアウト時間を一時的に上書きします。
+    /// （プールに返却され、次にOnEnableされるとデフォルト値にリセットされます）
+    /// </summary>
+    /// <param name="newDuration">新しいフェードアウト時間（秒）</param>
+    public void SetFadeDurationOverride(float newDuration)
+    {
+        // フェードアウトが有効になっていない場合は、この設定を無視
+        if (!useFadeOut)
+        {
+            return;
+        }
+
+        // 0秒未満は設定しない
+        if (newDuration < 0f)
+        {
+            newDuration = 0f;
+        }
+
+        this.fadeOutDuration = newDuration;
+    }
+
+    /// <summary>
+    /// オブジェクトが無効化（プールに返却）される際に、実行中のTweenを停止する
+    /// </summary>
+    private void OnDisable()
+    {
+        // 安全のため、実行中のDOTweenを停止
+        if (spriteRenderer != null)
+        {
+            spriteRenderer.DOKill();
         }
     }
 }
