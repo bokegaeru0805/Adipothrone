@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using TMPro;
@@ -7,6 +8,13 @@ public class GameUIManager : MonoBehaviour
 {
     public static GameUIManager instance { get; private set; }
     private PlayerManager playerManager;
+    public bool IsInBossBattle { get; private set; } = false; //現在ボスとの戦闘中か（ボスUIが表示されているか）どうか。
+
+    /// <summary>
+    /// ボス戦の状態が変更されたときに発行されるイベント
+    /// (true = ボス戦開始, false = ボス戦終了)
+    /// </summary>
+    public static event Action<bool> OnBossBattleStateChanged;
 
     [Header("UI参照のルート")]
     [SerializeField]
@@ -36,12 +44,13 @@ public class GameUIManager : MonoBehaviour
     private CharacterHealth currentBossHPScript = null; // 現在のボスHPスクリプト
     private bool isTalking = false; // 会話状態を保存するローカル変数
 
-
     private void Awake()
     {
         if (instance == null)
         {
             instance = this;
+            SetBossBattleState(false);
+            ; // 起動時は必ずfalse
             if (uiRefs == null)
             {
                 Debug.LogError("GameUIManagerにGameUIRefsが設定されていません！");
@@ -61,7 +70,8 @@ public class GameUIManager : MonoBehaviour
             }
             else
             {
-                SetBossUIVisibility(false); ; //ボスのHPバーのパネルを非表示
+                SetBossUIVisibility(false);
+                ; //ボスのHPバーのパネルを非表示
                 uiRefs.BossLevelNumberText.text = $"???"; //ボスのレベルテキストをリセット
             }
 
@@ -208,7 +218,10 @@ public class GameUIManager : MonoBehaviour
         }
     }
 
-    // プレイヤーのHPの初期値を取得
+    /// <summary>
+    /// プレイヤーの最大HP変更時（または初期化時）に呼び出され、HP関連UIを更新します。
+    /// </summary>
+    /// <param name="newMaxHP">新しい最大HP</param>
     private void InitializePlayerHPData(int newMaxHP)
     {
         playerMaxHP = newMaxHP;
@@ -230,7 +243,9 @@ public class GameUIManager : MonoBehaviour
         }
     }
 
-    // プレイヤーのWPの初期値を取得するメソッド
+    //// <summary>
+    /// プレイヤーのWPデータを初期化し、UI（テキストとゲージ）に反映します。
+    /// </summary>
     private void InitializePlayerWPData()
     {
         playerMaxWP = playerManager.playerMaxWP;
@@ -252,13 +267,19 @@ public class GameUIManager : MonoBehaviour
         }
     }
 
-    //ボスのHPを取得
+    /// <summary>
+    /// ボスのHPが変更されたときにイベント経由で呼ばれ、内部のボスHP変数を更新します。
+    /// </summary>
+    /// <param name="bossCurrentHP">ボスの新しい現在HP</param>
     private void GetBossData(int bossCurrentHP)
     {
         bossHP = bossCurrentHP;
     }
 
-    //プレイヤーのHPデータを取得するメソッド
+    /// <summary>
+    /// プレイヤーのHP変更イベント（OnChangeHP）から呼び出されるコールバック。
+    /// </summary>
+    /// <param name="newHP">プレイヤーの新しい現在HP</param>
     private void OnChangeHP(int newHP)
     {
         playerHP = newHP; // プレイヤーの現在のHPを更新
@@ -270,7 +291,10 @@ public class GameUIManager : MonoBehaviour
         }
     }
 
-    //プレイヤーのWPデータを取得するメソッド
+    /// <summary>
+    /// プレイヤーのWP変更イベント（OnChangeWP）から呼び出されるコールバック。
+    /// </summary>
+    /// <param name="newWP">プレイヤーの新しい現在WP</param>
     private void OnChangeWP(int newWP)
     {
         playerWP = newWP;
@@ -281,7 +305,10 @@ public class GameUIManager : MonoBehaviour
         }
     }
 
-    //ボスのUIデータを設定するメソッド
+    // <summary>
+    /// ボス戦開始時に外部から呼び出され、ボスUIの表示とHPイベントの購読を開始します。
+    /// </summary>
+    /// <param name="gameObject">ボスのGameObject</param>
     public void SetGameUIBossData(GameObject gameObject)
     {
         bossObject = gameObject; //ボスゲームオブジェクトを設定
@@ -291,6 +318,8 @@ public class GameUIManager : MonoBehaviour
         {
             // スクリプトがない場合でもUIを非表示にするなどの処理は行う
             SetBossUIVisibility(false);
+            //念のためfalseに設定
+            SetBossBattleState(false);
             Debug.LogWarning("ボスオブジェクトにboss_HPスクリプトが見つかりません。", gameObject);
             return;
         }
@@ -308,13 +337,17 @@ public class GameUIManager : MonoBehaviour
         }
 
         currentBossHPScript.OnHPChanged += GetBossData; //イベントの購読
+        SetBossBattleState(true); //ボス戦闘中フラグをtrueにする
 
         // ボスのHP関係UIを表示
         //GameManager.IsTalkingがtrue、つまり会話中はUIを非表示(false)にする
         SetBossUIVisibility(!isTalking);
     }
 
-    //ボスのUIデータを削除するメソッド
+    /// <summary>
+    /// ボス戦終了時に外部から呼び出され、ボスUIを非表示にし、HPイベントの購読を解除します。
+    /// </summary>
+    /// <param name="gameObject">ボスのGameObject（対象確認用）</param>
     public void RemoveUIBossData(GameObject gameObject)
     {
         if (bossObject != gameObject)
@@ -335,15 +368,21 @@ public class GameUIManager : MonoBehaviour
             uiRefs.BossLevelNumberText.text = $"???"; //ボスのレベルテキストをリセット
         }
         bossObject = null; //ボスゲームオブジェクトをnullにする
+        SetBossBattleState(false); //ボス戦闘中フラグをfalseにする
     }
 
-    // ボスのUIをアクティブにするメソッド
+    /// <summary>
+    /// 会話状態の変更イベント（GameManager.OnTalkingStateChanged）から呼び出されるコールバック。
+    /// </summary>
+    /// <param name="talkState">true=会話中, false=会話終了</param>
     private void SetActiveBossUI(bool talkState)
     {
         isTalking = talkState; // ローカル変数に会話状態を保存
 
         if (bossObject == null)
         {
+            // ボスがいないなら、もちろんボス戦中でもない
+            SetBossBattleState(false);
             return; // ボスオブジェクトが存在しない場合は何もしない
         }
 
@@ -376,7 +415,10 @@ public class GameUIManager : MonoBehaviour
         }
     }
 
-    // アイテムを取得したときにログを追加するメソッド
+    /// <summary>
+    /// 外部から呼び出され、取得したアイテム名をログUIのキューに追加します。
+    /// </summary>
+    /// <param name="itemName">取得したアイテムの名前</param>
     public void AddGetItemLog(string itemName)
     {
         float now = Time.time;
@@ -391,7 +433,9 @@ public class GameUIManager : MonoBehaviour
         UpdateItemUI();
     }
 
-    // アイテムログのUIを更新するメソッド
+    /// <summary>
+    /// アイテムログのキュー（recentGetItems）の内容を、実際のUIスロットに反映させます。
+    /// </summary>
     private void UpdateItemUI()
     {
         // recentGetItems（Queue型）を配列に変換して、インデックスアクセスを可能にする。
@@ -418,7 +462,10 @@ public class GameUIManager : MonoBehaviour
         }
     }
 
-    // レベルアップのポップアップを表示するメソッド
+    /// <summary>
+        /// 外部から呼び出され、レベルアップのポップアップUIを表示します。
+        /// </summary>
+    /// <param name="level">新しいレベル</param>
     public void ShowLevelUpUI(int level)
     {
         if (uiRefs.LevelUpPopup == null)
@@ -436,13 +483,19 @@ public class GameUIManager : MonoBehaviour
         StartCoroutine(HideLevelUpUIAfterDelay());
     }
 
+    /// <summary>
+    /// （コルーチン）レベルアップUIを一定時間表示した後に非表示にします。
+    /// </summary>
     private IEnumerator HideLevelUpUIAfterDelay()
     {
         yield return new WaitForSeconds(levelUpDisplayTime);
         uiRefs.LevelUpPopup.SetActive(false);
     }
 
-    // 技名表示のUIを表示するメソッド
+    /// <summary>
+    /// 外部から呼び出され、技名のUIを表示します。
+    /// </summary>
+    /// <param name="skillName">表示する技名</param>
     public void ShowSkillNameUI(string skillName)
     {
         if (uiRefs.SkillNameDisplay == null || uiRefs.SkillNameText == null)
@@ -454,13 +507,18 @@ public class GameUIManager : MonoBehaviour
         StartCoroutine(HideSkillNameUIAfterDelay());
     }
 
+    /// <summary>
+    /// （コルーチン）技名UIを一定時間表示した後に非表示にします。
+    /// </summary>
     private IEnumerator HideSkillNameUIAfterDelay()
     {
         yield return new WaitForSeconds(skillNameDisplayTime);
         uiRefs.SkillNameDisplay.SetActive(false);
     }
 
-    // ファストトラベルのパネルを開くメソッド
+    /// <summary>
+    /// 外部から呼び出され、ファストトラベルのパネルUIを開きます。
+    /// </summary>
     public void OpenFastTravelPanel()
     {
         if (uiRefs.FastTravelPanel == null)
@@ -474,5 +532,24 @@ public class GameUIManager : MonoBehaviour
         {
             fastTravelPanelActive.OpenFastTravelPanel();
         }
+    }
+
+    /// <summary>
+    /// ボス戦の状態を設定し、必要に応じてイベント（OnBossBattleStateChanged）を発行します。
+    /// </summary>
+    /// <param name="isFighting">ボス戦中ならtrue</param>
+    private void SetBossBattleState(bool isFighting)
+    {
+        // 既に同じ状態なら、何もしない
+        if (this.IsInBossBattle == isFighting)
+        {
+            return;
+        }
+
+        // 状態を更新
+        this.IsInBossBattle = isFighting;
+
+        // 状態の変更をイベントで通知
+        OnBossBattleStateChanged?.Invoke(isFighting);
     }
 }

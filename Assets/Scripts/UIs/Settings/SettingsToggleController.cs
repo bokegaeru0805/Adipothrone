@@ -13,15 +13,18 @@ public class SettingsToggleController : MonoBehaviour
     {
         None = 0,
         ShowControlsGuide = 1, // 操作方法UIの表示/非表示
+        EnableMouseInput = 2, // マウス入力の有効/無効
         // 今後、VSync切り替え、フルスクリーン切り替えなどをここに追加できる
     }
 
     [Header("トグルの設定")]
     [Tooltip("このトグルがどの設定項目を管理するかを指定します")]
-    [SerializeField] private SettingType settingType;
+    [SerializeField]
+    private SettingType settingType;
 
     [Tooltip("このトグルによって表示/非表示が切り替わるUIパネル")]
-    [SerializeField] private GameObject targetUIPanel;
+    [SerializeField]
+    private GameObject targetUIPanel;
 
     private Toggle toggle;
     private SaveLoadManager saveLoadManager; // セーブ/ロード機能を使う際に有効化
@@ -50,14 +53,16 @@ public class SettingsToggleController : MonoBehaviour
     /// </summary>
     private void OnEnable()
     {
-
         //必要なマネージャーのインスタンスがまだ取得されていなければ、ここで取得する
         if (saveLoadManager == null)
         {
             saveLoadManager = SaveLoadManager.instance;
             if (saveLoadManager == null)
             {
-                Debug.LogError("SaveLoadManagerのインスタンスが見つかりません！設定をロードできません。", this);
+                Debug.LogError(
+                    "SaveLoadManagerのインスタンスが見つかりません！設定をロードできません。",
+                    this
+                );
                 return; // マネージャーが見つからなければ、ここで処理を中断
             }
         }
@@ -90,7 +95,6 @@ public class SettingsToggleController : MonoBehaviour
 
         // 変更された値をメモリ上のセーブデータに即座に反映
         SaveSetting();
-
     }
 
     /// <summary>
@@ -98,13 +102,17 @@ public class SettingsToggleController : MonoBehaviour
     /// </summary>
     private void LoadSetting()
     {
-        if (saveLoadManager == null || toggle == null) return;
+        if (saveLoadManager == null || toggle == null)
+            return;
 
         bool currentValue = false; // デフォルト値
         switch (settingType)
         {
             case SettingType.ShowControlsGuide:
                 currentValue = saveLoadManager.Settings.isShowingControlsGuide;
+                break;
+            case SettingType.EnableMouseInput:
+                currentValue = saveLoadManager.Settings.isMouseInputEnabled;
                 break;
         }
 
@@ -121,12 +129,16 @@ public class SettingsToggleController : MonoBehaviour
     /// </summary>
     private void SaveSetting()
     {
-        if (saveLoadManager == null || toggle == null) return;
+        if (saveLoadManager == null || toggle == null)
+            return;
 
         switch (settingType)
         {
             case SettingType.ShowControlsGuide:
                 saveLoadManager.Settings.isShowingControlsGuide = toggle.isOn;
+                break;
+            case SettingType.EnableMouseInput:
+                saveLoadManager.Settings.isMouseInputEnabled = toggle.isOn;
                 break;
         }
     }

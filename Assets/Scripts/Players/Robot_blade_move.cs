@@ -22,6 +22,12 @@ public class Robot_blade_move : MonoBehaviour
     [SerializeField]
     private GameObject RobotBladeParticle;
 
+    [SerializeField, Tooltip("非ボスヒット時に追加再生するエフェクトの数")]
+    private int subHitEffectCount = 3;
+
+    [SerializeField, Tooltip("非ボスヒット時の追加エフェクトが散らばる半径")]
+    private float subHitEffectSpawnRadius = 1.5f;
+
     // 敵ごとのクールタイムタイマー
     // private Dictionary<GameObject, float> enemyCooldowns = new Dictionary<GameObject, float>();
     private List<CooldownEntry> enemyCooldownsList = new List<CooldownEntry>(32);
@@ -31,8 +37,10 @@ public class Robot_blade_move : MonoBehaviour
     public float moveTime { get; private set; } = 1.0f;
     private float wpCost = 0f; // WP消費量
     private bool rightFlag = true;
+    private bool _isInBossBattle = false; // ボス戦闘中かどうか
     public bool isStarted { get; private set; } = false; //生成が完了したかどうか
     private string hitEffectPoolTag = "HitEffect1"; // ヒットエフェクトのプールタグ
+    private string subHitEffectPoolTag = "HitEffect2"; // サブ弾ヒットエフェクトのプールタグ
     private Sprite sprite;
     private Vector2 newColliderOffset = Vector2.zero;
     private Vector2 newColliderSize = Vector2.zero;
@@ -198,7 +206,7 @@ public class Robot_blade_move : MonoBehaviour
         if (ObjectPooler.PersistentInstance != null && !string.IsNullOrEmpty(hitEffectPoolTag))
         {
             // 衝突点（弾の位置）を取得
-            Vector3 hitPosition = contactPoint;
+            Vector2 hitPosition = contactPoint;
 
             // ObjectPooler の永続インスタンスから、指定した「タグ」のエフェクトを呼び出す
             ObjectPooler.PersistentInstance.SpawnFromPool(
@@ -206,6 +214,25 @@ public class Robot_blade_move : MonoBehaviour
                 hitPosition, // 座標
                 Quaternion.identity // 回転
             );
+
+            if (!_isInBossBattle && !string.IsNullOrEmpty(subHitEffectPoolTag))
+            {
+                // ボス戦闘中でなければ、指定した回数だけサブエフェクトをランダムな位置に再生
+                for (int i = 0; i < subHitEffectCount; i++)
+                {
+                    // hitPosition の周囲（半径 subHitEffectSpawnRadius 内）にランダムな座標を生成
+                    // (Random.insideUnitCircle は Vector2(x, y) を返す)
+                    Vector2 randomOffset = Random.insideUnitCircle * subHitEffectSpawnRadius;
+                    Vector2 spawnPosition = hitPosition + randomOffset;
+
+                    // プールからサブエフェクトを再生
+                    ObjectPooler.PersistentInstance.SpawnFromPool(
+                        subHitEffectPoolTag,
+                        spawnPosition, // ランダム化された座標
+                        Quaternion.identity
+                    );
+                }
+            }
         }
 
         //様々な効果を考慮した攻撃力を計算
@@ -261,6 +288,16 @@ public class Robot_blade_move : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// OnBossBattleStateChangedイベントを受け取ったときに実行される関数
+    /// </summary>
+    /// <param name="isInBattle">イベントから渡された「ボス戦中かどうか」のbool値</param>
+    private void OnBossBattleStateChanged(bool isInBattle)
+    {
+        // 自身の変数を更新する
+        _isInBossBattle = isInBattle;
+    }
+
     private void OnEnable()
     {
         // 初期化が完了していない場合は何もしない
@@ -287,6 +324,9 @@ public class Robot_blade_move : MonoBehaviour
         rightFlag = robotMoveScript.rightFlag;
         //画像の角度を初期化
         this.transform.rotation = Quaternion.Euler(0f, 0f, rightFlag ? 60 : 120);
+        // イベントを購読する
+        GameUIManager.OnBossBattleStateChanged += OnBossBattleStateChanged;
+        OnBossBattleStateChanged(GameUIManager.instance.IsInBossBattle); // 現在の状態で初期化
     }
 
     private void OnDisable()
@@ -296,6 +336,8 @@ public class Robot_blade_move : MonoBehaviour
         {
             robotMoveScript.OnBladeSwingingChanged -= HandleBladeSwingingChanged;
         }
+        // イベントの購読解除
+        GameUIManager.OnBossBattleStateChanged -= OnBossBattleStateChanged;
         //生成が完了したフラグを下げる
         isStarted = false;
     }

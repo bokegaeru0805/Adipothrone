@@ -19,6 +19,11 @@ public class Robot_shoot_move : MonoBehaviour
     //================================================================================
     // 武器データ(ShootWeaponData)から初期化される、弾の基本的な性能値
     //================================================================================
+    [SerializeField, Tooltip("非ボスヒット時に追加再生するエフェクトの数")]
+    private int subHitEffectCount = 3;
+
+    [SerializeField, Tooltip("非ボスヒット時の追加エフェクトが散らばる半径")]
+    private float subHitEffectSpawnRadius = 1.5f;
     ShootWeaponData currentShootData = null; // 現在の武器データ
     private int shootPower = 0; // 弾そのものの攻撃力
     private float shootSpeed = 0; // 弾の速度
@@ -38,6 +43,7 @@ public class Robot_shoot_move : MonoBehaviour
     [SerializeField, Tooltip("上下の弾が広がる高さ")]
     private float height = 1.5f;
     private string hitEffectPoolTag = "HitEffect1"; // ヒットエフェクトのプールタグ
+    private string subHitEffectPoolTag = "HitEffect2"; // サブ弾ヒットエフェクトのプールタグ
     #endregion
 
 
@@ -51,6 +57,7 @@ public class Robot_shoot_move : MonoBehaviour
     private bool isMoveRight = true; // 弾の移動方向（true: 右, false: 左）
     private Vector2 initialPosition; // 弾が発射された初期位置
     private bool isSubBullet = false; // 自身が複製された弾（サブ弾）かどうかのフラグ
+    private bool _isInBossBattle = false; // ボス戦闘中かどうか
     #endregion
 
     /// <summary>
@@ -90,6 +97,9 @@ public class Robot_shoot_move : MonoBehaviour
                 animator.enabled = true; // アニメーションを有効化
                 animator.Play(data.shootAnimation.name);
             }
+
+            //ボス戦闘中かどうかを取得
+            _isInBossBattle = GameUIManager.instance?.IsInBossBattle ?? false;
         }
         else
         {
@@ -228,7 +238,7 @@ public class Robot_shoot_move : MonoBehaviour
             if (ObjectPooler.PersistentInstance != null && !string.IsNullOrEmpty(hitEffectPoolTag))
             {
                 // 衝突点（弾の位置）を取得
-                Vector3 hitPosition = this.transform.position;
+                Vector2 hitPosition = this.transform.position;
 
                 // ObjectPooler の永続インスタンスから、指定した「タグ」のエフェクトを呼び出す
                 ObjectPooler.PersistentInstance.SpawnFromPool(
@@ -236,6 +246,25 @@ public class Robot_shoot_move : MonoBehaviour
                     hitPosition, // 座標
                     Quaternion.identity // 回転
                 );
+
+                if (!_isInBossBattle && !string.IsNullOrEmpty(subHitEffectPoolTag))
+                {
+                    // ボス戦闘中でなければ、指定した回数だけサブエフェクトをランダムな位置に再生
+                    for (int i = 0; i < subHitEffectCount; i++)
+                    {
+                        // hitPosition の周囲（半径 subHitEffectSpawnRadius 内）にランダムな座標を生成
+                        // (Random.insideUnitCircle は Vector2(x, y) を返す)
+                        Vector2 randomOffset = Random.insideUnitCircle * subHitEffectSpawnRadius;
+                        Vector2 spawnPosition = hitPosition + randomOffset;
+
+                        // プールからサブエフェクトを再生
+                        ObjectPooler.PersistentInstance.SpawnFromPool(
+                            subHitEffectPoolTag,
+                            spawnPosition, // ランダム化された座標
+                            Quaternion.identity
+                        );
+                    }
+                }
             }
 
             // ヒット処理

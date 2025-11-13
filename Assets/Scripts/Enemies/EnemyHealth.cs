@@ -25,6 +25,8 @@ public class EnemyHealth : CharacterHealth, IEnemyResettable
     private float destroyEffectScale = 1.0f; // 死亡エフェクトの大きさ
     private const string deathAnimParam = "death"; // 死亡アニメーションのパラメータ名
     private string destroyEffectPoolTag = "DestroyEffect1"; // 死亡エフェクトのプールタグ
+    private string subDestroyEffectPoolTag = "DestroyEffect2"; // サブ死亡エフェクトのプールタグ
+    private int subDestroyEffectCount = 3; // サブ死亡エフェクトの生成数
     private Transform dropParent;
 
     /// <summary>
@@ -114,20 +116,12 @@ public class EnemyHealth : CharacterHealth, IEnemyResettable
     /// </summary>
     protected override void OnDeath()
     {
-        // // エフェクト再生
-        // if (destroyEffect != null)
-        // {
-        //     var effect = Instantiate(destroyEffect, transform.position, Quaternion.identity);
-        //     effect.transform.localScale = Vector3.one * destroyEffectScale;
-        //     effect.Play();
-        // }
-
         // 死亡エフェクトの再生
         // 永続プール(PersistentInstance)がnullでないか確認
         if (ObjectPooler.PersistentInstance != null && !string.IsNullOrEmpty(destroyEffectPoolTag))
         {
             // 衝突点（弾の位置）を取得
-            Vector3 hitPosition = this.transform.position;
+            Vector2 hitPosition = this.transform.position;
 
             // ObjectPooler の永続インスタンスから、指定した「タグ」のエフェクトを呼び出す
             GameObject effect = ObjectPooler.PersistentInstance.SpawnFromPool(
@@ -138,6 +132,28 @@ public class EnemyHealth : CharacterHealth, IEnemyResettable
 
             // エフェクトの大きさを調整
             effect.transform.localScale = Vector3.one * destroyEffectScale;
+
+            // GameUIManager から現在のボス戦状態を取得
+            bool isBossBattle = GameUIManager.instance?.IsInBossBattle ?? false;
+
+            if (!isBossBattle && !string.IsNullOrEmpty(subDestroyEffectPoolTag))
+            {
+                // ボス戦闘中でなければ、指定した回数だけサブエフェクトをランダムな位置に再生
+                for (int i = 0; i < subDestroyEffectCount; i++)
+                {
+                    // hitPosition の周囲（半径 subHitEffectSpawnRadius 内）にランダムな座標を生成
+                    // (Random.insideUnitCircle は Vector2(x, y) を返す)
+                    Vector2 randomOffset = Random.insideUnitCircle * destroyEffectScale;
+                    Vector2 spawnPosition = hitPosition + randomOffset;
+
+                    // プールからサブエフェクトを再生
+                    ObjectPooler.PersistentInstance.SpawnFromPool(
+                        subDestroyEffectPoolTag,
+                        spawnPosition, // ランダム化された座標
+                        Quaternion.identity
+                    );
+                }
+            }
         }
 
         SEManager.instance?.PlayEnemyActionSE(SE_EnemyAction.Death1); // 死亡の効果音を鳴らす

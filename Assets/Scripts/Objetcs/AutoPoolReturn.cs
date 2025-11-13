@@ -15,8 +15,10 @@ public enum PoolType
 
 /// <summary>
 /// アニメーションが付いたエフェクトプレハブにアタッチします。
-/// 再生（OnEnable）されたら、アニメーションの長さの分だけ待機し、
-/// 終了後に自動で ObjectPooler (永続インスタンス) に返却されます。
+/// OnEnable時にエフェクトの初期化（アルファ値のリセットや、ボス戦に応じたスケール変更など）を行い、
+/// アニメーション終了後に自動で ObjectPooler に返却されます。
+/// (注：スケール変更機能は、OnEnable時の初期化処理の一部として、
+/// 他スクリプトとの実行順序の問題を避けるためにこのスクリプトに含まれています。)
 /// </summary>
 [RequireComponent(typeof(Animator))]
 public class AutoPoolReturn : MonoBehaviour
@@ -39,8 +41,18 @@ public class AutoPoolReturn : MonoBehaviour
     [Tooltip("フェードアウトにかける時間（秒）")]
     private float fadeOutDuration = 0.5f;
 
+    [Header("ボス戦スケール設定")]
+    [SerializeField]
+    [Tooltip("trueにすると、ボス戦中にスケールを変更します")]
+    private bool scaleOnBossBattle = false;
+
+    [SerializeField, ShowIf(nameof(scaleOnBossBattle))]
+    [Tooltip("ボス戦中に適用するスケール")]
+    private float bossScale = 1f;
+
     private Animator animator;
     private SpriteRenderer spriteRenderer;
+    private float originalScale;
     private float defaultFadeOutDuration;
 
     private void Awake()
@@ -57,6 +69,7 @@ public class AutoPoolReturn : MonoBehaviour
         }
 
         defaultFadeOutDuration = fadeOutDuration; // デフォルト値を保存
+        originalScale = this.transform.localScale.x; // 元のスケールを保存
     }
 
     /// <summary>
@@ -77,6 +90,22 @@ public class AutoPoolReturn : MonoBehaviour
             Color resetColor = spriteRenderer.color;
             resetColor.a = 1f;
             spriteRenderer.color = resetColor;
+        }
+
+        // スケール変更が有効な場合、現在のボス戦状態に応じてスケールを設定
+        if (scaleOnBossBattle)
+        {
+            // GameUIManager から現在のボス戦状態を取得
+            bool isBossBattle = GameUIManager.instance?.IsInBossBattle ?? false;
+            float targetScale = isBossBattle ? bossScale : originalScale;
+
+            // ボス戦中ならボススケール、そうでなければ元のスケールを適用
+            this.transform.localScale = new Vector2(targetScale, targetScale);
+        }
+        else
+        {
+            // スケール変更がOFFの場合は、常に元のスケールに戻す
+            this.transform.localScale = new Vector2(originalScale, originalScale);
         }
 
         // 実行中のアニメーションの長さを取得

@@ -9,6 +9,12 @@ namespace MyGame.CameraControl
     {
         [SerializeField]
         private NoiseSettings takeHitNoiseSettings; // 敵ヒット時の揺れ設定をInspectorから割り当てるための変数
+        [SerializeField]
+        [Tooltip("敵ヒット時の揺れの強さ（振幅）")]
+        private float hitShakeAmplitude = 1.0f;
+        [SerializeField]
+        [Tooltip("敵ヒット時の揺れの細かさ（周波数）")]
+        private float hitShakeFrequency = 1.0f;
         public static CameraManager instance { get; private set; }
         private Camera cam;
         private CinemachineVirtualCamera virtualCamera;
@@ -201,10 +207,12 @@ namespace MyGame.CameraControl
                 yield break;
             }
 
-            // Noiseプロファイルを設定
-            perlinNoise.m_NoiseProfile = takeHitNoiseSettings;
             // Noiseを有効化（揺れ開始）
             perlinNoise.enabled = true;
+            //Noiseプロファイルを設定
+            perlinNoise.m_NoiseProfile = takeHitNoiseSettings;
+            perlinNoise.m_AmplitudeGain = hitShakeAmplitude;
+            perlinNoise.m_FrequencyGain = hitShakeFrequency;
 
             // 指定時間待機
             yield return new WaitForSeconds(HIT_SHAKE_DURATION);

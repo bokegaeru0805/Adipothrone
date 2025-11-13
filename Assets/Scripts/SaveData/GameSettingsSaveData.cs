@@ -17,6 +17,7 @@ public class GameSettingsSaveData
     public int lastUsedSlotIndex; // 最後に使用したセーブスロット番号 (1=スロット1, 2=スロット2, ...)
     public bool isShowingControlsGuide; // 画面上に操作ガイドを表示するかどうか
     public MessageSpeed messageSpeed; // 会話の表示速度
+    public bool isMouseInputEnabled; // UIのマウス操作を有効にするか (true=有効, false=無効)
 
     // ゲーム初回起動時のデフォルト値を設定
     public GameSettingsSaveData()
@@ -28,5 +29,6 @@ public class GameSettingsSaveData
         lastUsedSlotIndex = 1;
         isShowingControlsGuide = true;
         messageSpeed = MessageSpeed.Normal;
+        isMouseInputEnabled = true;
     }
 }
