@@ -18,11 +18,6 @@ public class SEManager : MonoBehaviour
     private CriAtomExPlayer sePlayer;
     private const string SECategoryName = "SE"; // SEカテゴリのパラメータ名
 
-    /// <summary>
-    /// SaveLoadManagerから設定されたグローバル音量
-    /// </summary>
-    private float _globalSeVolume = 1.0f;
-
     private void Awake()
     {
         if (instance == null)

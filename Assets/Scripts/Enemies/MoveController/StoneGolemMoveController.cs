@@ -1137,20 +1137,11 @@ public class StoneGolemMoveController : MonoBehaviour
             transform.position.y
         );
         // エフェクトを生成
-        GameObject effectObj = ObjectPooler.SceneInstance.SpawnFromPool(
+        ObjectPooler.SceneInstance.SpawnFromPool(
             dustEffectPoolTag,
             effectPosition,
             Quaternion.identity
         );
-
-        if (effectObj == null)
-            return;
-
-        var aturoPoolReturn = effectObj.GetComponent<AutoPoolReturn>();
-        if (aturoPoolReturn != null)
-        {
-            aturoPoolReturn.SetFadeDurationOverride(hammerAttackCooldown);
-        }
     }
 
     public void SpawnSlashEffect()
