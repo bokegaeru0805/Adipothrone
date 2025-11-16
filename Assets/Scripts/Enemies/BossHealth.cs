@@ -117,18 +117,6 @@ public class BossHealth : CharacterHealth
     }
 
     /// <summary>
-    /// [フックの上書き] ダメージが適用された直後に、HPバー更新イベントを発行します。
-    /// </summary>
-    protected override void OnDamageApplied()
-    {
-        // isDefeatedになる前のHPでイベントを発行
-        if (!IsDefeated)
-        {
-            InvokeHPChangedEvent();
-        }
-    }
-
-    /// <summary>
     /// ボス固有の死亡処理。撃破後オブジェクトの有効化と自身の破壊を行います。
     /// </summary>
     protected override void OnDeath()

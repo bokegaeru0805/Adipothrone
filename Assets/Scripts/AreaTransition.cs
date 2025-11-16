@@ -22,7 +22,7 @@ public class AreaTransition : MonoBehaviour
             //プレイヤーが操作不能状態でない場合のみ移動させる
             if (
                 !PlayerManager.instance.isControlLocked
-                && collision.CompareTag("Player")
+                && collision.CompareTag(GameConstants.PlayerTagName)
             )
             {
                 DoorOpener.OpenDoor(movePos, this, DoorOpener.DoorType.None);

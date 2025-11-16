@@ -1,6 +1,7 @@
 using System.Collections;
 using UnityEngine;
 using UnityEngine.UI;
+using MyGame.CameraControl;
 
 public class BossAfterDeath : MonoBehaviour
 {
@@ -106,7 +107,8 @@ public class BossAfterDeath : MonoBehaviour
             shapeModule.radius = bossWidth * 0.25f + PARTICLE_RADIUS_OFFSET; // ボスの横幅の半分を設定
         }
 
-        BGMManager.instance?.FadeOut(3.0f); //ボス撃破時のBGMを流す
+        BGMManager.instance?.FadeOut(3.0f); //BGMをフェードアウトする
+        CameraManager.instance?.PlayCustomShake(3.0f, 0.5f, 0.3f * 10); // カメラシェイクを再生
 
         for (int i = 0; i < 10; i++)
         {

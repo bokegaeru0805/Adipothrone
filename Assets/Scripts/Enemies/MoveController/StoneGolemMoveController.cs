@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using MyGame.CameraControl;
 
 [RequireComponent(typeof(CriWare.Assets.CriAtomSePlayer))]
 public class StoneGolemMoveController : MonoBehaviour
@@ -589,7 +590,8 @@ public class StoneGolemMoveController : MonoBehaviour
         StartCoroutine(UpdateArmForDuration(attackAnimationTime)); // アームの見た目を更新
         yield return new WaitForSeconds(attackAnimationTime * 0.7f); // 攻撃アニメーションの時間を待機1
         sePlayer.Play(SE_EnemyAction.Kick1); // 攻撃の効果音を鳴らす
-        GameObject punchDustEffect = ObjectPooler.SceneInstance.SpawnFromPool(
+        CameraManager.instance?.PlayCustomShake(1.5f, 2.0f, 0.3f); // カメラシェイクを再生
+        ObjectPooler.SceneInstance.SpawnFromPool(
             punchDustEffectPoolTag,
             transform.position + new Vector3(punchDustEffectOffsetX * dir, 0f, 0f),
             Quaternion.identity
@@ -606,12 +608,12 @@ public class StoneGolemMoveController : MonoBehaviour
         Vector3 myPos = this.transform.position; //自分の座標を保存
         float dir = Mathf.Sign(playerTransform.position.x - myPos.x);
         rightFlag = dir > 0; // 向きを更新
-
         animator.SetTrigger("attackTrigger"); // 攻撃アニメーションをトリガー
         StartCoroutine(UpdateArmForDuration(attackAnimationTime)); // アームの見た目を更新
         yield return new WaitForSeconds(attackAnimationTime * 0.7f); // 攻撃アニメーションの時間を待機1
         sePlayer.Play(SE_EnemyAction.Kick1); // 攻撃の効果音を鳴らす
-        GameObject punchDustEffect = ObjectPooler.SceneInstance.SpawnFromPool(
+        CameraManager.instance?.PlayCustomShake(1.5f, 2.0f, 0.3f); // カメラシェイクを再生
+        ObjectPooler.SceneInstance.SpawnFromPool(
             punchDustEffectPoolTag,
             transform.position + new Vector3(punchDustEffectOffsetX * dir, 0f, 0f),
             Quaternion.identity
@@ -725,6 +727,7 @@ public class StoneGolemMoveController : MonoBehaviour
         if (chargeEffect != null)
         {
             chargeEffect.SetDuration(hammerChargeTime); //チャージエフェクトの持続時間を設定
+            CameraManager.instance?.PlayCustomShake(0.5f, 10.0f, hammerChargeTime); // カメラシェイクを再生
             chargeEffect.PlayEffect();
         }
 
@@ -750,8 +753,7 @@ public class StoneGolemMoveController : MonoBehaviour
         GameUIManager.instance?.ShowSkillNameUI("地砕");
         sePlayer.Play(SE_EnemyAction.Impact_iron1); //ハンマー攻撃の効果音を鳴らす
 
-        //ハンマー攻撃アニメーションの時間分待機する
-        yield return new WaitForSeconds(hammerAttackAnimationTime);
+        yield return new WaitForSeconds(hammerAttackAnimationTime); //ハンマー攻撃アニメーションの時間分待機する
 
         // 衝撃波エフェクトを生成
         if (burstEffect != null)
@@ -759,8 +761,8 @@ public class StoneGolemMoveController : MonoBehaviour
             burstEffect.PlayEffect();
         }
 
-        // ダストエフェクトを生成
-        SpawnDustEffect();
+        SpawnDustEffect();  // ダストエフェクトを生成
+        CameraManager.instance?.PlayCustomShake(2.0f, 2.0f, rockWaveInterval * (rockWaves+1)); // カメラシェイクを再生
 
         for (int wave = 0; wave < rockWaves; wave++)
         {

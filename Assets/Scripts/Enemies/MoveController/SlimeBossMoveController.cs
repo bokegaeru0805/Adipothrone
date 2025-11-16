@@ -1,4 +1,5 @@
 using System.Collections;
+using MyGame.CameraControl;
 using UnityEngine;
 
 [RequireComponent(typeof(CriWare.Assets.CriAtomSePlayer))]
@@ -78,6 +79,8 @@ public class SlimeBossMoveController : MonoBehaviour
     private bool rightFlag = false;
     private bool isHPbelowHalf => ((float)bossHP / (float)bossMaxHP) < 0.5f;
     private bool isMoveStarted = false; // 移動開始フラグ
+    private const string jumpDustEffectPoolTag = "SlimeBoss_JumpDustEffectPool";
+    private const string highJumpDustEffectPoolTag = "SlimeBoss_HighJumpDustEffectPool";
     private SpriteRenderer spriteRenderer;
     private Rigidbody2D rbody;
     private Animator animator;
@@ -292,7 +295,18 @@ public class SlimeBossMoveController : MonoBehaviour
                     else
                     {
                         rbody.AddForce(new Vector2(0, jumpPower), ForceMode2D.Impulse);
+                        GameObject jumpDustEffect = ObjectPooler.SceneInstance.SpawnFromPool(
+                            jumpDustEffectPoolTag,
+                            groundCheck.position,
+                            Quaternion.identity
+                        ); // ジャンプのダストエフェクトを生成
+
+                        Vector3 scale = jumpDustEffect.transform.localScale; // スケールを取得
+                        scale.x = Mathf.Abs(scale.x) * (rightFlag ? -1f : 1f); // 右向きか否かに応じてスケールを調整
+                        jumpDustEffect.transform.localScale = scale; // スケールを適用
+
                         sePlayer.Play(SE_EnemyAction.Attack_slime_boss); // ジャンプ攻撃の効果音を鳴らす
+                        CameraManager.instance?.PlayCustomShake(1.5f, 2.0f, 0.3f); // カメラシェイクを再生
                     }
                 }
                 break;
@@ -313,6 +327,12 @@ public class SlimeBossMoveController : MonoBehaviour
                     {
                         jumpCount = 0;
                         sePlayer.Play(SE_EnemyAction.Land_enemy1); // 高ジャンプの着地音を鳴らす
+                        ObjectPooler.SceneInstance.SpawnFromPool(
+                            highJumpDustEffectPoolTag,
+                            groundCheck.position,
+                            Quaternion.identity
+                        ); // ジャンプのダストエフェクトを生成
+                        CameraManager.instance?.PlayCustomShake(8.0f, 2.0f, 0.5f); // カメラシェイクを再生
 
                         // 高ジャンプの後に休憩してから通常行動に戻す
                         StartCoroutine(RecoverFromHighJump());

@@ -1,6 +1,7 @@
 using System.Collections;
 using Cinemachine;
 using DG.Tweening;
+using TMPro;
 using UnityEngine;
 
 namespace MyGame.CameraControl
@@ -9,9 +10,11 @@ namespace MyGame.CameraControl
     {
         [SerializeField]
         private NoiseSettings takeHitNoiseSettings; // 敵ヒット時の揺れ設定をInspectorから割り当てるための変数
+
         [SerializeField]
         [Tooltip("敵ヒット時の揺れの強さ（振幅）")]
         private float hitShakeAmplitude = 1.0f;
+
         [SerializeField]
         [Tooltip("敵ヒット時の揺れの細かさ（周波数）")]
         private float hitShakeFrequency = 1.0f;
@@ -24,7 +27,7 @@ namespace MyGame.CameraControl
         private const float HIT_SHAKE_DURATION = 0.1f; // 敵ヒット時0.1秒間揺らす
         private Coroutine shakeCoroutine = null; // 実行中のシェイクコルーチンを管理
         private Coroutine dampingResetCoroutine = null; // 実行中のダンピングリセットコルーチンを管理するための変数
-
+        private bool isPriorityShakeActive = false; // 優先度の高い（カスタム）シェイクが実行中か
         private void Awake()
         {
             if (instance == null)
@@ -90,9 +93,17 @@ namespace MyGame.CameraControl
 
                 if (takeHitNoiseSettings == null)
                 {
-                    Debug.LogWarning(
-                        "CameraManagerのtakeHitNoiseSettingsが設定されていません。ダメージ時の揺れは機能しません。"
-                    );
+                    takeHitNoiseSettings = Resources.Load<NoiseSettings>($"EnemyHitShake");
+                    if (takeHitNoiseSettings == null)
+                    {
+                        Debug.LogWarning(
+                            "CameraManagerのtakeHitNoiseSettingsが設定されていません。ダメージ時の揺れは機能しません。"
+                        );
+                    }
+                    else
+                    {
+                        Debug.Log("takeHitNoiseSettingsをResourcesから読み込みました。");
+                    }
                 }
             }
             else
@@ -107,7 +118,10 @@ namespace MyGame.CameraControl
             {
                 // 初めは無効化しておく
                 // Awakeで行うと、"none"状態になってしまう場合があるため、Startで行う
-                perlinNoise.enabled = false;
+                // perlinNoise.enabled = false;
+                perlinNoise.m_NoiseProfile = null;
+                perlinNoise.m_AmplitudeGain = 0f;
+                perlinNoise.m_FrequencyGain = 0f;
             }
         }
 
@@ -187,6 +201,12 @@ namespace MyGame.CameraControl
                 return;
             }
 
+            // 優先度の高い（カスタム）シェイクが実行中なら、この（ヒット）シェイクは実行しない
+            if (isPriorityShakeActive)
+            {
+                return;
+            }
+
             // 既に実行中のシェイクコルーチンがあれば停止（連続ヒット時に揺れ時間をリセットするため）
             if (shakeCoroutine != null)
             {
@@ -207,8 +227,6 @@ namespace MyGame.CameraControl
                 yield break;
             }
 
-            // Noiseを有効化（揺れ開始）
-            perlinNoise.enabled = true;
             //Noiseプロファイルを設定
             perlinNoise.m_NoiseProfile = takeHitNoiseSettings;
             perlinNoise.m_AmplitudeGain = hitShakeAmplitude;
@@ -218,10 +236,74 @@ namespace MyGame.CameraControl
             yield return new WaitForSeconds(HIT_SHAKE_DURATION);
 
             // Noiseを無効化（揺れ停止）
-            perlinNoise.enabled = false;
+            // perlinNoise.enabled = false;
+            perlinNoise.m_NoiseProfile = null;
+            perlinNoise.m_AmplitudeGain  = 0f;
+            perlinNoise.m_FrequencyGain = 0f;
 
             // 管理変数をクリア
             shakeCoroutine = null;
+        }
+
+        /// <summary>
+        /// 外部から指定された強さと時間で、優先度の高いカメラシェイク（Noise）を発生させます。
+        /// この揺れは、PlayHitShake()による揺れをブロックします。
+        /// </summary>
+        /// <param name="amplitude">揺れの強さ（振幅）</param>
+        /// <param name="frequency">揺れの細かさ（周波数）</param>
+        /// <param name="duration">揺れる時間（秒）</param>
+        public void PlayCustomShake(float amplitude, float frequency, float duration)
+        {
+            if (perlinNoise == null)
+            {
+                Debug.LogWarning(
+                    "Noiseコンポーネントが未設定のため、PlayCustomShakeを呼び出せません。"
+                );
+                return;
+            }
+
+            // 既に実行中のシェイクコルーチンがあれば停止（カスタムシェイクが常に優先）
+            if (shakeCoroutine != null)
+            {
+                StopCoroutine(shakeCoroutine);
+            }
+
+            // 優先シェイクフラグを立て、新しいコルーチンを開始
+            isPriorityShakeActive = true;
+            shakeCoroutine = StartCoroutine(CustomShakeCoroutine(amplitude, frequency, duration));
+        }
+
+        /// <summary>
+        /// （コルーチン）指定されたパラメータでPerlinNoiseを有効化し、時間経過後に停止します。
+        /// </summary>
+        private IEnumerator CustomShakeCoroutine(float amplitude, float frequency, float duration)
+        {
+            if (takeHitNoiseSettings == null)
+            {
+                isPriorityShakeActive = false; // 実行できないのでフラグを倒す
+                yield break;
+            }
+
+            // Noiseを有効化
+            // perlinNoise.enabled = true;
+            perlinNoise.m_NoiseProfile = takeHitNoiseSettings; // ヒット時と同じNoise Profileを流用
+
+            // パラメータを適用
+            perlinNoise.m_AmplitudeGain = amplitude;
+            perlinNoise.m_FrequencyGain = frequency;
+
+            // 指定時間待機 (Time.timeScaleの影響を受けます)
+            yield return new WaitForSeconds(duration);
+
+            // Noiseを無効化
+            // perlinNoise.enabled = false;
+            perlinNoise.m_NoiseProfile = null;
+            perlinNoise.m_AmplitudeGain = 0f;
+            perlinNoise.m_FrequencyGain = 0f;
+
+            // 管理変数をクリア
+            shakeCoroutine = null;
+            isPriorityShakeActive = false; // 優先シェイクフラグを倒す
         }
 
         /// <summary>

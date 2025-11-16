@@ -114,7 +114,7 @@ TextureImporter:
       rect:
         serializedVersion: 2
         x: 0
-        y: 112
+        y: 144
         width: 16
         height: 16
       alignment: 0
@@ -135,7 +135,7 @@ TextureImporter:
       rect:
         serializedVersion: 2
         x: 16
-        y: 112
+        y: 144
         width: 16
         height: 16
       alignment: 0
@@ -155,8 +155,8 @@ TextureImporter:
       name: Industrial_Tileset_1B_2
       rect:
         serializedVersion: 2
-        x: 32
-        y: 112
+        x: 0
+        y: 128
         width: 16
         height: 16
       alignment: 0
@@ -176,8 +176,8 @@ TextureImporter:
       name: Industrial_Tileset_1B_3
       rect:
         serializedVersion: 2
-        x: 48
-        y: 112
+        x: 16
+        y: 128
         width: 16
         height: 16
       alignment: 0
@@ -197,7 +197,7 @@ TextureImporter:
       name: Industrial_Tileset_1B_4
       rect:
         serializedVersion: 2
-        x: 64
+        x: 0
         y: 112
         width: 16
         height: 16
@@ -218,7 +218,7 @@ TextureImporter:
       name: Industrial_Tileset_1B_5
       rect:
         serializedVersion: 2
-        x: 80
+        x: 16
         y: 112
         width: 16
         height: 16
@@ -239,7 +239,7 @@ TextureImporter:
       name: Industrial_Tileset_1B_6
       rect:
         serializedVersion: 2
-        x: 96
+        x: 32
         y: 112
         width: 16
         height: 16
@@ -260,7 +260,7 @@ TextureImporter:
       name: Industrial_Tileset_1B_7
       rect:
         serializedVersion: 2
-        x: 112
+        x: 48
         y: 112
         width: 16
         height: 16
@@ -281,7 +281,7 @@ TextureImporter:
       name: Industrial_Tileset_1B_8
       rect:
         serializedVersion: 2
-        x: 128
+        x: 64
         y: 112
         width: 16
         height: 16
@@ -302,7 +302,7 @@ TextureImporter:
       name: Industrial_Tileset_1B_9
       rect:
         serializedVersion: 2
-        x: 144
+        x: 80
         y: 112
         width: 16
         height: 16
@@ -323,7 +323,7 @@ TextureImporter:
       name: Industrial_Tileset_1B_10
       rect:
         serializedVersion: 2
-        x: 160
+        x: 96
         y: 112
         width: 16
         height: 16
@@ -344,7 +344,7 @@ TextureImporter:
       name: Industrial_Tileset_1B_11
       rect:
         serializedVersion: 2
-        x: 176
+        x: 112
         y: 112
         width: 16
         height: 16
@@ -365,8 +365,8 @@ TextureImporter:
       name: Industrial_Tileset_1B_12
       rect:
         serializedVersion: 2
-        x: 0
-        y: 96
+        x: 128
+        y: 112
         width: 16
         height: 16
       alignment: 0
@@ -386,8 +386,8 @@ TextureImporter:
       name: Industrial_Tileset_1B_13
       rect:
         serializedVersion: 2
-        x: 16
-        y: 96
+        x: 144
+        y: 112
         width: 16
         height: 16
       alignment: 0
@@ -407,8 +407,8 @@ TextureImporter:
       name: Industrial_Tileset_1B_14
       rect:
         serializedVersion: 2
-        x: 32
-        y: 96
+        x: 160
+        y: 112
         width: 16
         height: 16
       alignment: 0
@@ -428,8 +428,8 @@ TextureImporter:
       name: Industrial_Tileset_1B_15
       rect:
         serializedVersion: 2
-        x: 48
-        y: 96
+        x: 176
+        y: 112
         width: 16
         height: 16
       alignment: 0
@@ -449,7 +449,7 @@ TextureImporter:
       name: Industrial_Tileset_1B_16
       rect:
         serializedVersion: 2
-        x: 64
+        x: 0
         y: 96
         width: 16
         height: 16
@@ -470,7 +470,7 @@ TextureImporter:
       name: Industrial_Tileset_1B_17
       rect:
         serializedVersion: 2
-        x: 80
+        x: 16
         y: 96
         width: 16
         height: 16
@@ -491,7 +491,7 @@ TextureImporter:
       name: Industrial_Tileset_1B_18
       rect:
         serializedVersion: 2
-        x: 96
+        x: 32
         y: 96
         width: 16
         height: 16
@@ -512,7 +512,7 @@ TextureImporter:
       name: Industrial_Tileset_1B_19
       rect:
         serializedVersion: 2
-        x: 112
+        x: 48
         y: 96
         width: 16
         height: 16
@@ -533,7 +533,7 @@ TextureImporter:
       name: Industrial_Tileset_1B_20
       rect:
         serializedVersion: 2
-        x: 128
+        x: 64
         y: 96
         width: 16
         height: 16
@@ -554,7 +554,7 @@ TextureImporter:
       name: Industrial_Tileset_1B_21
       rect:
         serializedVersion: 2
-        x: 144
+        x: 80
         y: 96
         width: 16
         height: 16
@@ -575,7 +575,7 @@ TextureImporter:
       name: Industrial_Tileset_1B_22
       rect:
         serializedVersion: 2
-        x: 160
+        x: 96
         y: 96
         width: 16
         height: 16
@@ -596,7 +596,7 @@ TextureImporter:
       name: Industrial_Tileset_1B_23
       rect:
         serializedVersion: 2
-        x: 176
+        x: 112
         y: 96
         width: 16
         height: 16
@@ -617,8 +617,8 @@ TextureImporter:
       name: Industrial_Tileset_1B_24
       rect:
         serializedVersion: 2
-        x: 0
-        y: 80
+        x: 128
+        y: 96
         width: 16
         height: 16
       alignment: 0
@@ -638,8 +638,8 @@ TextureImporter:
       name: Industrial_Tileset_1B_25
       rect:
         serializedVersion: 2
-        x: 16
-        y: 80
+        x: 144
+        y: 96
         width: 16
         height: 16
       alignment: 0
@@ -659,8 +659,8 @@ TextureImporter:
       name: Industrial_Tileset_1B_26
       rect:
         serializedVersion: 2
-        x: 32
-        y: 80
+        x: 160
+        y: 96
         width: 16
         height: 16
       alignment: 0
@@ -680,8 +680,8 @@ TextureImporter:
       name: Industrial_Tileset_1B_27
       rect:
         serializedVersion: 2
-        x: 48
-        y: 80
+        x: 176
+        y: 96
         width: 16
         height: 16
       alignment: 0
@@ -701,7 +701,7 @@ TextureImporter:
       name: Industrial_Tileset_1B_28
       rect:
         serializedVersion: 2
-        x: 64
+        x: 0
         y: 80
         width: 16
         height: 16
@@ -722,7 +722,7 @@ TextureImporter:
       name: Industrial_Tileset_1B_29
       rect:
         serializedVersion: 2
-        x: 80
+        x: 16
         y: 80
         width: 16
         height: 16
@@ -743,7 +743,7 @@ TextureImporter:
       name: Industrial_Tileset_1B_30
       rect:
         serializedVersion: 2
-        x: 96
+        x: 32
         y: 80
         width: 16
         height: 16
@@ -764,7 +764,7 @@ TextureImporter:
       name: Industrial_Tileset_1B_31
       rect:
         serializedVersion: 2
-        x: 112
+        x: 48
         y: 80
         width: 16
         height: 16
@@ -785,7 +785,7 @@ TextureImporter:
       name: Industrial_Tileset_1B_32
       rect:
         serializedVersion: 2
-        x: 128
+        x: 64
         y: 80
         width: 16
         height: 16
@@ -806,7 +806,7 @@ TextureImporter:
       name: Industrial_Tileset_1B_33
       rect:
         serializedVersion: 2
-        x: 144
+        x: 80
         y: 80
         width: 16
         height: 16
@@ -827,7 +827,7 @@ TextureImporter:
       name: Industrial_Tileset_1B_34
       rect:
         serializedVersion: 2
-        x: 160
+        x: 96
         y: 80
         width: 16
         height: 16
@@ -848,7 +848,7 @@ TextureImporter:
       name: Industrial_Tileset_1B_35
       rect:
         serializedVersion: 2
-        x: 176
+        x: 112
         y: 80
         width: 16
         height: 16
@@ -869,8 +869,8 @@ TextureImporter:
       name: Industrial_Tileset_1B_36
       rect:
         serializedVersion: 2
-        x: 0
-        y: 64
+        x: 128
+        y: 80
         width: 16
         height: 16
       alignment: 0
@@ -890,8 +890,8 @@ TextureImporter:
       name: Industrial_Tileset_1B_37
       rect:
         serializedVersion: 2
-        x: 16
-        y: 64
+        x: 144
+        y: 80
         width: 16
         height: 16
       alignment: 0
@@ -911,8 +911,8 @@ TextureImporter:
       name: Industrial_Tileset_1B_38
       rect:
         serializedVersion: 2
-        x: 32
-        y: 64
+        x: 160
+        y: 80
         width: 16
         height: 16
       alignment: 0
@@ -932,8 +932,8 @@ TextureImporter:
       name: Industrial_Tileset_1B_39
       rect:
         serializedVersion: 2
-        x: 48
-        y: 64
+        x: 176
+        y: 80
         width: 16
         height: 16
       alignment: 0
@@ -953,7 +953,7 @@ TextureImporter:
       name: Industrial_Tileset_1B_40
       rect:
         serializedVersion: 2
-        x: 64
+        x: 0
         y: 64
         width: 16
         height: 16
@@ -974,7 +974,7 @@ TextureImporter:
       name: Industrial_Tileset_1B_41
       rect:
         serializedVersion: 2
-        x: 80
+        x: 16
         y: 64
         width: 16
         height: 16
@@ -995,7 +995,7 @@ TextureImporter:
       name: Industrial_Tileset_1B_42
       rect:
         serializedVersion: 2
-        x: 96
+        x: 32
         y: 64
         width: 16
         height: 16
@@ -1016,7 +1016,7 @@ TextureImporter:
       name: Industrial_Tileset_1B_43
       rect:
         serializedVersion: 2
-        x: 112
+        x: 48
         y: 64
         width: 16
         height: 16
@@ -1037,7 +1037,7 @@ TextureImporter:
       name: Industrial_Tileset_1B_44
       rect:
         serializedVersion: 2
-        x: 128
+        x: 64
         y: 64
         width: 16
         height: 16
@@ -1058,7 +1058,7 @@ TextureImporter:
       name: Industrial_Tileset_1B_45
       rect:
         serializedVersion: 2
-        x: 144
+        x: 80
         y: 64
         width: 16
         height: 16
@@ -1079,7 +1079,7 @@ TextureImporter:
       name: Industrial_Tileset_1B_46
       rect:
         serializedVersion: 2
-        x: 160
+        x: 96
         y: 64
         width: 16
         height: 16
@@ -1100,7 +1100,7 @@ TextureImporter:
       name: Industrial_Tileset_1B_47
       rect:
         serializedVersion: 2
-        x: 176
+        x: 112
         y: 64
         width: 16
         height: 16
@@ -1121,8 +1121,8 @@ TextureImporter:
       name: Industrial_Tileset_1B_48
       rect:
         serializedVersion: 2
-        x: 0
-        y: 48
+        x: 128
+        y: 64
         width: 16
         height: 16
       alignment: 0
@@ -1142,8 +1142,8 @@ TextureImporter:
       name: Industrial_Tileset_1B_49
       rect:
         serializedVersion: 2
-        x: 16
-        y: 48
+        x: 144
+        y: 64
         width: 16
         height: 16
       alignment: 0
@@ -1163,8 +1163,8 @@ TextureImporter:
       name: Industrial_Tileset_1B_50
       rect:
         serializedVersion: 2
-        x: 32
-        y: 48
+        x: 160
+        y: 64
         width: 16
         height: 16
       alignment: 0
@@ -1184,8 +1184,8 @@ TextureImporter:
       name: Industrial_Tileset_1B_51
       rect:
         serializedVersion: 2
-        x: 48
-        y: 48
+        x: 176
+        y: 64
         width: 16
         height: 16
       alignment: 0
@@ -1205,7 +1205,7 @@ TextureImporter:
       name: Industrial_Tileset_1B_52
       rect:
         serializedVersion: 2
-        x: 64
+        x: 0
         y: 48
         width: 16
         height: 16
@@ -1226,7 +1226,7 @@ TextureImporter:
       name: Industrial_Tileset_1B_53
       rect:
         serializedVersion: 2
-        x: 80
+        x: 16
         y: 48
         width: 16
         height: 16
@@ -1247,7 +1247,7 @@ TextureImporter:
       name: Industrial_Tileset_1B_54
       rect:
         serializedVersion: 2
-        x: 96
+        x: 32
         y: 48
         width: 16
         height: 16
@@ -1268,7 +1268,7 @@ TextureImporter:
       name: Industrial_Tileset_1B_55
       rect:
         serializedVersion: 2
-        x: 112
+        x: 48
         y: 48
         width: 16
         height: 16
@@ -1289,7 +1289,7 @@ TextureImporter:
       name: Industrial_Tileset_1B_56
       rect:
         serializedVersion: 2
-        x: 128
+        x: 64
         y: 48
         width: 16
         height: 16
@@ -1310,7 +1310,7 @@ TextureImporter:
       name: Industrial_Tileset_1B_57
       rect:
         serializedVersion: 2
-        x: 144
+        x: 80
         y: 48
         width: 16
         height: 16
@@ -1331,7 +1331,7 @@ TextureImporter:
       name: Industrial_Tileset_1B_58
       rect:
         serializedVersion: 2
-        x: 160
+        x: 96
         y: 48
         width: 16
         height: 16
@@ -1352,7 +1352,7 @@ TextureImporter:
       name: Industrial_Tileset_1B_59
       rect:
         serializedVersion: 2
-        x: 176
+        x: 112
         y: 48
         width: 16
         height: 16
@@ -1373,8 +1373,8 @@ TextureImporter:
       name: Industrial_Tileset_1B_60
       rect:
         serializedVersion: 2
-        x: 0
-        y: 32
+        x: 128
+        y: 48
         width: 16
         height: 16
       alignment: 0
@@ -1394,8 +1394,8 @@ TextureImporter:
       name: Industrial_Tileset_1B_61
       rect:
         serializedVersion: 2
-        x: 16
-        y: 32
+        x: 144
+        y: 48
         width: 16
         height: 16
       alignment: 0
@@ -1415,8 +1415,8 @@ TextureImporter:
       name: Industrial_Tileset_1B_62
       rect:
         serializedVersion: 2
-        x: 32
-        y: 32
+        x: 160
+        y: 48
         width: 16
         height: 16
       alignment: 0
@@ -1436,8 +1436,8 @@ TextureImporter:
       name: Industrial_Tileset_1B_63
       rect:
         serializedVersion: 2
-        x: 48
-        y: 32
+        x: 176
+        y: 48
         width: 16
         height: 16
       alignment: 0
@@ -1457,7 +1457,7 @@ TextureImporter:
       name: Industrial_Tileset_1B_64
       rect:
         serializedVersion: 2
-        x: 64
+        x: 0
         y: 32
         width: 16
         height: 16
@@ -1478,7 +1478,7 @@ TextureImporter:
       name: Industrial_Tileset_1B_65
       rect:
         serializedVersion: 2
-        x: 80
+        x: 16
         y: 32
         width: 16
         height: 16
@@ -1499,7 +1499,7 @@ TextureImporter:
       name: Industrial_Tileset_1B_66
       rect:
         serializedVersion: 2
-        x: 96
+        x: 32
         y: 32
         width: 16
         height: 16
@@ -1520,7 +1520,7 @@ TextureImporter:
       name: Industrial_Tileset_1B_67
       rect:
         serializedVersion: 2
-        x: 112
+        x: 48
         y: 32
         width: 16
         height: 16
@@ -1541,7 +1541,7 @@ TextureImporter:
       name: Industrial_Tileset_1B_68
       rect:
         serializedVersion: 2
-        x: 128
+        x: 64
         y: 32
         width: 16
         height: 16
@@ -1562,7 +1562,7 @@ TextureImporter:
       name: Industrial_Tileset_1B_69
       rect:
         serializedVersion: 2
-        x: 144
+        x: 80
         y: 32
         width: 16
         height: 16
@@ -1583,7 +1583,7 @@ TextureImporter:
       name: Industrial_Tileset_1B_70
       rect:
         serializedVersion: 2
-        x: 160
+        x: 96
         y: 32
         width: 16
         height: 16
@@ -1604,7 +1604,7 @@ TextureImporter:
       name: Industrial_Tileset_1B_71
       rect:
         serializedVersion: 2
-        x: 176
+        x: 112
         y: 32
         width: 16
         height: 16
@@ -1625,8 +1625,8 @@ TextureImporter:
       name: Industrial_Tileset_1B_72
       rect:
         serializedVersion: 2
-        x: 0
-        y: 16
+        x: 128
+        y: 32
         width: 16
         height: 16
       alignment: 0
@@ -1646,8 +1646,8 @@ TextureImporter:
       name: Industrial_Tileset_1B_73
       rect:
         serializedVersion: 2
-        x: 16
-        y: 16
+        x: 144
+        y: 32
         width: 16
         height: 16
       alignment: 0
@@ -1667,8 +1667,8 @@ TextureImporter:
       name: Industrial_Tileset_1B_74
       rect:
         serializedVersion: 2
-        x: 32
-        y: 16
+        x: 160
+        y: 32
         width: 16
         height: 16
       alignment: 0
@@ -1688,8 +1688,8 @@ TextureImporter:
       name: Industrial_Tileset_1B_75
       rect:
         serializedVersion: 2
-        x: 48
-        y: 16
+        x: 176
+        y: 32
         width: 16
         height: 16
       alignment: 0
@@ -1709,7 +1709,7 @@ TextureImporter:
       name: Industrial_Tileset_1B_76
       rect:
         serializedVersion: 2
-        x: 64
+        x: 0
         y: 16
         width: 16
         height: 16
@@ -1730,7 +1730,7 @@ TextureImporter:
       name: Industrial_Tileset_1B_77
       rect:
         serializedVersion: 2
-        x: 80
+        x: 16
         y: 16
         width: 16
         height: 16
@@ -1751,7 +1751,7 @@ TextureImporter:
       name: Industrial_Tileset_1B_78
       rect:
         serializedVersion: 2
-        x: 96
+        x: 32
         y: 16
         width: 16
         height: 16
@@ -1772,7 +1772,7 @@ TextureImporter:
       name: Industrial_Tileset_1B_79
       rect:
         serializedVersion: 2
-        x: 112
+        x: 48
         y: 16
         width: 16
         height: 16
@@ -1793,7 +1793,7 @@ TextureImporter:
       name: Industrial_Tileset_1B_80
       rect:
         serializedVersion: 2
-        x: 128
+        x: 64
         y: 16
         width: 16
         height: 16
@@ -1814,7 +1814,7 @@ TextureImporter:
       name: Industrial_Tileset_1B_81
       rect:
         serializedVersion: 2
-        x: 144
+        x: 80
         y: 16
         width: 16
         height: 16
@@ -1835,7 +1835,7 @@ TextureImporter:
       name: Industrial_Tileset_1B_82
       rect:
         serializedVersion: 2
-        x: 160
+        x: 96
         y: 16
         width: 16
         height: 16
@@ -1856,7 +1856,7 @@ TextureImporter:
       name: Industrial_Tileset_1B_83
       rect:
         serializedVersion: 2
-        x: 176
+        x: 112
         y: 16
         width: 16
         height: 16
@@ -1877,8 +1877,8 @@ TextureImporter:
       name: Industrial_Tileset_1B_84
       rect:
         serializedVersion: 2
-        x: 0
-        y: 0
+        x: 128
+        y: 16
         width: 16
         height: 16
       alignment: 0
@@ -1898,8 +1898,8 @@ TextureImporter:
       name: Industrial_Tileset_1B_85
       rect:
         serializedVersion: 2
-        x: 16
-        y: 0
+        x: 144
+        y: 16
         width: 16
         height: 16
       alignment: 0
@@ -1919,8 +1919,8 @@ TextureImporter:
       name: Industrial_Tileset_1B_86
       rect:
         serializedVersion: 2
-        x: 32
-        y: 0
+        x: 160
+        y: 16
         width: 16
         height: 16
       alignment: 0
@@ -1940,8 +1940,8 @@ TextureImporter:
       name: Industrial_Tileset_1B_87
       rect:
         serializedVersion: 2
-        x: 48
-        y: 0
+        x: 176
+        y: 16
         width: 16
         height: 16
       alignment: 0
@@ -1961,7 +1961,7 @@ TextureImporter:
       name: Industrial_Tileset_1B_88
       rect:
         serializedVersion: 2
-        x: 64
+        x: 0
         y: 0
         width: 16
         height: 16
@@ -1982,7 +1982,7 @@ TextureImporter:
       name: Industrial_Tileset_1B_89
       rect:
         serializedVersion: 2
-        x: 80
+        x: 16
         y: 0
         width: 16
         height: 16
@@ -2003,7 +2003,7 @@ TextureImporter:
       name: Industrial_Tileset_1B_90
       rect:
         serializedVersion: 2
-        x: 96
+        x: 32
         y: 0
         width: 16
         height: 16
@@ -2024,7 +2024,7 @@ TextureImporter:
       name: Industrial_Tileset_1B_91
       rect:
         serializedVersion: 2
-        x: 112
+        x: 48
         y: 0
         width: 16
         height: 16
@@ -2045,7 +2045,7 @@ TextureImporter:
       name: Industrial_Tileset_1B_92
       rect:
         serializedVersion: 2
-        x: 128
+        x: 64
         y: 0
         width: 16
         height: 16
@@ -2066,7 +2066,7 @@ TextureImporter:
       name: Industrial_Tileset_1B_93
       rect:
         serializedVersion: 2
-        x: 144
+        x: 80
         y: 0
         width: 16
         height: 16
@@ -2087,7 +2087,7 @@ TextureImporter:
       name: Industrial_Tileset_1B_94
       rect:
         serializedVersion: 2
-        x: 160
+        x: 96
         y: 0
         width: 16
         height: 16
@@ -2108,7 +2108,7 @@ TextureImporter:
       name: Industrial_Tileset_1B_95
       rect:
         serializedVersion: 2
-        x: 176
+        x: 112
         y: 0
         width: 16
         height: 16
@@ -2121,6 +2121,90 @@ TextureImporter:
       bones: []
       spriteID: 245fc8728a74578438819e3d4d1701da
       internalID: -548996255
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Industrial_Tileset_1B_96
+      rect:
+        serializedVersion: 2
+        x: 128
+        y: 0
+        width: 16
+        height: 16
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 2570a78c3014cc24f8a3cd272bc76f53
+      internalID: 1077969120
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Industrial_Tileset_1B_97
+      rect:
+        serializedVersion: 2
+        x: 144
+        y: 0
+        width: 16
+        height: 16
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: fe4ff2571b23aae48b6d012de1e2f057
+      internalID: -2080241100
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Industrial_Tileset_1B_98
+      rect:
+        serializedVersion: 2
+        x: 160
+        y: 0
+        width: 16
+        height: 16
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 1ec318b4f45bcfe4d8ad8010a206427e
+      internalID: 1955189217
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Industrial_Tileset_1B_99
+      rect:
+        serializedVersion: 2
+        x: 176
+        y: 0
+        width: 16
+        height: 16
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 086ad398a9dbc634db73245337d0d8be
+      internalID: 1812928976
       vertices: []
       indices: 
       edges: []
@@ -2232,6 +2316,10 @@ TextureImporter:
       Industrial_Tileset_1B_93: -1393389119
       Industrial_Tileset_1B_94: -2023283998
       Industrial_Tileset_1B_95: -548996255
+      Industrial_Tileset_1B_96: 1077969120
+      Industrial_Tileset_1B_97: -2080241100
+      Industrial_Tileset_1B_98: 1955189217
+      Industrial_Tileset_1B_99: 1812928976
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 

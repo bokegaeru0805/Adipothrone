@@ -1,5 +1,6 @@
 using System.Collections;
 using UnityEngine;
+using MyGame.CameraControl;
 
 [RequireComponent(typeof(CriWare.Assets.CriAtomSePlayer))]
 public class GhostwolfMoveController : MonoBehaviour
@@ -302,7 +303,8 @@ public class GhostwolfMoveController : MonoBehaviour
             / (2 * (newPos.y - ExistBottom));
         float vy = Mathf.Sqrt(2 * gravity * maxHeightoffset);
         newrbody.AddForce(new Vector2(vx, vy), ForceMode2D.Impulse); //弾の速度を設定
-        sePlayer.Play(SE_EnemyAction.Shoot2_Enemy);
+        sePlayer.Play(SE_EnemyAction.Shoot2_Enemy); //攻撃の効果音を鳴らす
+        CameraManager.instance?.PlayCustomShake(1.0f, 3.0f, 0.3f); // カメラシェイクを再生
 
         StartCoroutine(DestroyShoot(newGameObject));
 
@@ -354,7 +356,8 @@ public class GhostwolfMoveController : MonoBehaviour
                 ) / (2 * (newPos.y - ExistBottom));
             float vy = Mathf.Sqrt(2 * gravity * maxHeightoffset);
             newrbody.AddForce(new Vector2(vx, vy), ForceMode2D.Impulse); //弾の速度を設定
-            sePlayer.Play(SE_EnemyAction.Shoot2_Enemy);
+            sePlayer.Play(SE_EnemyAction.Shoot2_Enemy); //攻撃の効果音を鳴らす
+            CameraManager.instance?.PlayCustomShake(1.0f, 3.0f, 0.3f); // カメラシェイクを再生
             StartCoroutine(DestroyShoot(newGameObject));
             yield return new WaitForSeconds(Random.Range(0.5f, 1)); //次の攻撃までの時間を設定
         }
@@ -448,6 +451,7 @@ public class GhostwolfMoveController : MonoBehaviour
                 * flatShootSpeed; //弾の速度を計算
             newrbody.AddForce(new Vector2(flatvelocity.x, flatvelocity.y), ForceMode2D.Impulse); //弾の速度を設定
             sePlayer.Play(SE_EnemyAction.Shoot1_Enemy); //攻撃の効果音を鳴らす
+            CameraManager.instance?.PlayCustomShake(1.5f, 2.0f, 0.3f); // カメラシェイクを再生
             StartCoroutine(DestroyFlatShoot(newGameObject, targetHeight));
             yield return new WaitForSeconds(
                 Random.Range(flatShootIntervalMin, flatShootIntervalMax)
@@ -467,6 +471,7 @@ public class GhostwolfMoveController : MonoBehaviour
         if (chargeEffect != null)
         {
             chargeEffect.SetDuration(Attack5howlSec * 0.885f); //チャージエフェクトの持続時間を設定
+            CameraManager.instance?.PlayCustomShake(0.5f, 10.0f, Attack5howlSec * 0.885f); // カメラシェイクを再生
             chargeEffect.PlayEffect();
         }
 
@@ -481,6 +486,7 @@ public class GhostwolfMoveController : MonoBehaviour
         newPos.y += shoot_offsetX; //弾のy座標を調整
 
         playerPos = PlayerObject.transform.position; //プレイヤーの座標を取得
+        CameraManager.instance?.PlayCustomShake(2.0f, 2.0f, 3f); // カメラシェイクを再生
         sePlayer.Play(SE_EnemyAction.Roar1); //咆哮の効果音を鳴らす
         GameUIManager.instance?.ShowSkillNameUI("咆哮"); //スキル名UIを表示
 

@@ -1,5 +1,6 @@
 using System;
 using System.Collections;
+using UnityEditor;
 using UnityEngine;
 
 public class Heroin_move : MonoBehaviour
@@ -114,7 +115,19 @@ public class Heroin_move : MonoBehaviour
     }
 
     private void Update()
-    {   
+    {
+#if UNITY_EDITOR
+        if (Input.GetKeyDown(KeyCode.LeftAlt))
+        {
+            // 再生/停止の切り替え
+            EditorApplication.isPaused = EditorApplication.isPaused ? false : true;
+        }
+        else if (Input.GetKeyDown(KeyCode.Period))
+        {
+            EditorApplication.Step(); // 1フレーム進める
+        }
+#endif
+
         if (inputManager == null)
         {
             return; // InputManagerがまだ初期化されていない場合は何もしない
@@ -361,7 +374,6 @@ public class Heroin_move : MonoBehaviour
                     gameManager.AddAllTypeIDToInventory(script.DropID);
                     //ドロップ品をインベントに追加
                     sePlayer.Play(SE_SystemEvent.ItemGet2);
-
                 }
 
                 Destroy(collision.gameObject); //ドロップ品を消去

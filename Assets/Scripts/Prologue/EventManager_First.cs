@@ -144,7 +144,7 @@ public class EventManager_First : MonoBehaviour
 
         yield return Camera
             .main.transform.DOLocalMoveX(
-                (PlayerSecondPosition_x + womanSecondPosition_x) / 2,
+                222,
                 (womanAppearPosition_x - womanSecondPosition_x) / PlayerWalkSpeed
             )
             .WaitForCompletion();

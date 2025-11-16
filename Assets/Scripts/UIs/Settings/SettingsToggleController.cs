@@ -1,3 +1,4 @@
+using NaughtyAttributes;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -25,6 +26,10 @@ public class SettingsToggleController : MonoBehaviour
     [Tooltip("このトグルによって表示/非表示が切り替わるUIパネル")]
     [SerializeField]
     private GameObject targetUIPanel;
+
+    [Tooltip("マウス入力の有効/無効を制御する場合に必要")]
+    [SerializeField, ShowIf(nameof(settingType), SettingType.EnableMouseInput)]
+    private MouseInputController titleCanvasMouseController;
 
     private Toggle toggle;
     private SaveLoadManager saveLoadManager; // セーブ/ロード機能を使う際に有効化
@@ -139,6 +144,11 @@ public class SettingsToggleController : MonoBehaviour
                 break;
             case SettingType.EnableMouseInput:
                 saveLoadManager.Settings.isMouseInputEnabled = toggle.isOn;
+                // マウス入力の有効/無効も即座に反映
+                if (titleCanvasMouseController != null)
+                {
+                    titleCanvasMouseController.SetMouseInputActive(toggle.isOn);
+                }
                 break;
         }
     }

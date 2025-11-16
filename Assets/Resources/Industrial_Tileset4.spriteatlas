@@ -33,6 +33,7 @@ SpriteAtlas:
     variantMultiplier: 1
     packables:
     - {fileID: 102900000, guid: 2ed6bd6f1edcd4c4c80b17783e6e074a, type: 3}
+    - {fileID: 21300000, guid: 044a419ad5eab61499da59d4090489e9, type: 3}
     bindAsDefault: 1
     isAtlasV2: 0
     cachedData: {fileID: 0}
@@ -133,6 +134,7 @@ SpriteAtlas:
     - 319384f06b09d924f8ecd55333fdbfe8: -1604248213
     - 319384f06b09d924f8ecd55333fdbfe8: -1449838703
     - 319384f06b09d924f8ecd55333fdbfe8: 245783845
+    - 044a419ad5eab61499da59d4090489e9: 21300000
   m_MasterAtlas: {fileID: 0}
   m_PackedSprites:
   - {fileID: 982416765, guid: 319384f06b09d924f8ecd55333fdbfe8, type: 3}
@@ -231,6 +233,7 @@ SpriteAtlas:
   - {fileID: -1604248213, guid: 319384f06b09d924f8ecd55333fdbfe8, type: 3}
   - {fileID: -1449838703, guid: 319384f06b09d924f8ecd55333fdbfe8, type: 3}
   - {fileID: 245783845, guid: 319384f06b09d924f8ecd55333fdbfe8, type: 3}
+  - {fileID: 21300000, guid: 044a419ad5eab61499da59d4090489e9, type: 3}
   m_PackedSpriteNamesToIndex:
   - 2_Industrial_Tileset_1_Background_53
   - 2_Industrial_Tileset_1_Background_52
@@ -328,6 +331,7 @@ SpriteAtlas:
   - 2_Industrial_Tileset_1_Background_12
   - 2_Industrial_Tileset_1_Background_11
   - 2_Industrial_Tileset_1_Background_10
+  - Industrial_Background_Tile
   m_RenderDataMap: {}
   m_Tag: Industrial_Tileset4
   m_IsVariant: 0
