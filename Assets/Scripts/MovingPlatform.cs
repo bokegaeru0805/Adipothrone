@@ -57,7 +57,7 @@ public class MovingPlatform : MonoBehaviour
         // 必要に応じて他の種類を追加
     }
 
-    private string sortingLayerName = GameConstants.GroundLayerName;
+    private string sortingLayerName = GameConstants.SortingLayerName_Ground;
     private int orderInLayer = 0;
     private Vector2 targetWorldPosition; // リフトの現在の目標位置（ワールド座標）
     private bool movingToEnd = true; // 現在の移動方向 (始点→終点: true, 終点→始点: false)

@@ -2,10 +2,12 @@ using System.Collections;
 using System.Collections.Generic;
 using Fungus;
 using UnityEngine;
+using System;
 
 /// <summary>
-/// 【最適化版】NPCとの会話をトリガーする汎用コンポーネント。
+/// NPCとの会話をトリガーする汎用コンポーネント。
 /// Inspectorから設定された条件リストに基づき、実行するFungusブロックを動的に決定します。
+/// また、フラグ状態に応じて吹き出しアイコンの表示/非表示を制御します。
 /// </summary>
 [RequireComponent(typeof(BoxCollider2D))]
 public class NPCDialogueTrigger : MonoBehaviour
@@ -23,6 +25,11 @@ public class NPCDialogueTrigger : MonoBehaviour
     [SerializeField]
     private List<DialogueCondition> dialogueConditions = new List<DialogueCondition>();
 
+    [Header("吹き出し設定")]
+    [Tooltip("頭上に表示する吹き出しのゲームオブジェクト")]
+    [SerializeField]
+    private GameObject speechBubbleObject;
+
     private ShopInteractionTrigger shopInteractionTrigger = null;
     private bool isShopTrigger = false;
     private bool isTalking = false; // 会話状態を保存するローカル変数
@@ -37,6 +44,12 @@ public class NPCDialogueTrigger : MonoBehaviour
 
         shopInteractionTrigger = this.GetComponent<ShopInteractionTrigger>();
         isShopTrigger = shopInteractionTrigger != null;
+
+        // 初期状態では吹き出しを一旦非表示にしておく（DelayedInitializationで正しい状態になる）
+        if (speechBubbleObject != null)
+        {
+            speechBubbleObject.SetActive(false);
+        }
     }
 
     private void OnTriggerStay2D(Collider2D collision)
@@ -115,12 +128,17 @@ public class NPCDialogueTrigger : MonoBehaviour
 
         // イベントを購読する
         GameManager.OnTalkingStateChanged += HandleTalkingStateChanged;
+        FlagManager.OnBoolFlagChanged += HandleFlagChanged;
+
+        // 初期化時に一度吹き出しの状態を更新
+        UpdateBubbleState();
     }
 
     private void OnDisable()
     {
         // オブジェクトが非アクティブになったら、購読を解除（メモリリーク防止）
         GameManager.OnTalkingStateChanged -= HandleTalkingStateChanged;
+        FlagManager.OnBoolFlagChanged -= HandleFlagChanged;
     }
 
     /// <summary>
@@ -129,5 +147,40 @@ public class NPCDialogueTrigger : MonoBehaviour
     private void HandleTalkingStateChanged(bool talkState)
     {
         isTalking = talkState;
+    }
+
+    /// <summary>
+    /// フラグ変更時に呼ばれるコールバック
+    /// </summary>
+    private void HandleFlagChanged(Enum flagName, bool newValue)
+    {
+        UpdateBubbleState();
+    }
+
+    /// <summary>
+    /// 現在のフラグ状態に基づいて、吹き出しの表示/非表示を更新する。
+    /// </summary>
+    private void UpdateBubbleState()
+    {
+        if (speechBubbleObject == null)
+            return;
+
+        bool shouldShow = false; // 初期値は非表示
+
+        // 会話実行時と同じロジックで、現在有効な条件を探す
+        foreach (var condition in dialogueConditions)
+        {
+            if (condition.AreAllFlagsMet())
+            {
+                shouldShow = condition.showBubble;
+                break; // 最初に一致した条件のshowBubble設定を採用
+            }
+        }
+
+        // 状態が異なる場合のみSetActiveを呼ぶ（負荷軽減）
+        if (speechBubbleObject.activeSelf != shouldShow)
+        {
+            speechBubbleObject.SetActive(shouldShow);
+        }
     }
 }

@@ -1,8 +1,10 @@
 using System.Collections;
+using NaughtyAttributes;
 using UnityEngine;
 
 [RequireComponent(typeof(Rigidbody2D))]
-public class SlimeNormalMoveController : MonoBehaviour, IEnemyResettable
+[RequireComponent(typeof(Animator))]
+public class DrakeBabyMoveController : MonoBehaviour, IEnemyResettable
 {
     private const float MOVE_RANGE = 10.0f; // ランダムに設定する場合の移動幅
 
@@ -25,16 +27,38 @@ public class SlimeNormalMoveController : MonoBehaviour, IEnemyResettable
     private float attackRange = 1.5f;
 
     [SerializeField]
-    private float jumpPower = 1.0f;
+    private float jumpPower = 1.25f;
+
+    [Header("待機・移動時間の設定")]
+    [SerializeField]
+    [Tooltip("待機時間の最小値（秒）")]
+    private float minIdleTime = 1.0f;
 
     [SerializeField]
-    private float jumpChargeTime = 0.5f; // ジャンプ前の溜め時間 (秒)
+    [Tooltip("待機時間の最大値（秒）")]
+    private float maxIdleTime = 3.0f;
 
-    [Header("必要ならば設定")]
     [SerializeField]
+    [Tooltip("移動時間の最小値（秒）")]
+    private float minMoveTime = 2.0f;
+
+    [SerializeField]
+    [Tooltip("移動時間の最大値（秒）")]
+    private float maxMoveTime = 5.0f;
+
+    [SerializeField]
+    [Tooltip("ジャンプ前の溜め時間（秒）")]
+    private float jumpChargeTime = 0.5f;
+
+    [Header("移動範囲の設定")]
+    [SerializeField]
+    [Tooltip("手動で移動範囲を設定するかどうか")]
+    private bool isUseManualBounds = false;
+
+    [SerializeField, ShowIf(nameof(isUseManualBounds))]
     private float leftBound;
 
-    [SerializeField]
+    [SerializeField, ShowIf(nameof(isUseManualBounds))]
     private float rightBound;
 
     [Header("地面判定用の設定")]
@@ -43,9 +67,6 @@ public class SlimeNormalMoveController : MonoBehaviour, IEnemyResettable
 
     [SerializeField]
     private float groundCheckRadius = 0.2f;
-
-    [SerializeField]
-    private LayerMask GroundLayer;
 
     [Header("配置調整用の設定")]
     [SerializeField]
@@ -58,7 +79,7 @@ public class SlimeNormalMoveController : MonoBehaviour, IEnemyResettable
     private enum EnemyVariant
     {
         None = 0,
-        Chapter1 = 1,
+        Desert = 1,
     }
 
     private int damage = 0; // 攻撃力
@@ -68,6 +89,7 @@ public class SlimeNormalMoveController : MonoBehaviour, IEnemyResettable
     private float jumpStartTime;
     private float timeToReverseWhenStuck = 2.0f; //動けないと判断してから反転するまでの時間（秒）
     private float stuckDistanceThreshold = 0.1f; //動いていると判断する最低限の移動距離
+    private LayerMask GroundLayer;
     private bool isGrounded =>
         Physics2D.OverlapCircle(groundCheck.position, groundCheckRadius, GroundLayer);
 
@@ -79,17 +101,19 @@ public class SlimeNormalMoveController : MonoBehaviour, IEnemyResettable
     private Rigidbody2D rbody;
     private Animator animator;
     private EnemyHealth enemyHP;
-    private int IdleHash;
-    private AnimatorStateInfo stateInfo;
     private ContactDamageController contactDamageController;
-    private CriWare.Assets.CriAtomSePlayer sePlayer; // SE再生用のCriAtomSePlayerコンポーネント
+    private CriWare.Assets.CriAtomSePlayer sePlayer;
 
     // スタック検出用の変数
     private Vector2 lastCheckedPosition;
     private float timeStuck = 0f;
     private const float STUCK_CHECK_INTERVAL = 0.5f; // 位置を確認する間隔（秒）
 
-    private enum SlimeState
+    // 状態切り替え用のタイマー変数
+    private float stateChangeTimer = 0f;
+    private float currentStateDuration = 0f;
+
+    private enum DrakeState
     {
         None,
         Idle,
@@ -100,16 +124,17 @@ public class SlimeNormalMoveController : MonoBehaviour, IEnemyResettable
         AdjustingPosition,
     }
 
-    private SlimeState currentState = SlimeState.Idle;
+    private DrakeState currentState = DrakeState.Idle;
     private bool rightFlag = false;
-    private bool isUseAutoBounds = false; // 行動範囲自動設定モードかどうか
     private Vector2 pos = Vector2.zero;
 
     private void Awake()
     {
+        GroundLayer = LayerMask.GetMask(GameConstants.PhysicsLayerName_Ground); // Groundレイヤーを取得
+
         switch (variantType)
         {
-            case EnemyVariant.Chapter1:
+            case EnemyVariant.Desert:
                 damage = 23;
                 break;
             default:
@@ -141,13 +166,7 @@ public class SlimeNormalMoveController : MonoBehaviour, IEnemyResettable
         spriteRenderer = this.GetComponent<SpriteRenderer>();
         rbody = GetComponent<Rigidbody2D>();
         sePlayer = GetComponent<CriWare.Assets.CriAtomSePlayer>();
-
         animator = GetComponent<Animator>();
-        if (animator == null)
-        {
-            Debug.LogError($"{this.gameObject.name}にAnimatorコンポーネントがありません。");
-            return;
-        }
 
         enemyHP = this.GetComponent<EnemyHealth>();
         {
@@ -157,16 +176,10 @@ public class SlimeNormalMoveController : MonoBehaviour, IEnemyResettable
                 return;
             }
         }
-
-        // 自動設定モードかどうかを判定
-        // 境界値が両方とも設定されていない場合、自動モードを有効にする
-        isUseAutoBounds = leftBound == 0 && rightBound == 0;
     }
 
     private void Start()
     {
-        IdleHash = Animator.StringToHash("Blue Idle - Animation");
-
         contactDamageController = GetComponent<ContactDamageController>();
         contactDamageController?.SetNormalDamage(damage);
 
@@ -183,6 +196,7 @@ public class SlimeNormalMoveController : MonoBehaviour, IEnemyResettable
             if (playerTransform == null)
             {
                 Debug.LogError($"{this.name}はPlayerTransformを見つけられませんでした");
+                return;
             }
         }
 
@@ -212,7 +226,9 @@ public class SlimeNormalMoveController : MonoBehaviour, IEnemyResettable
         }
 
         tag = GameConstants.ImmuneEnemyTagName;
-        currentState = SlimeState.Moving;
+        // 初期状態をMovingにし、タイマーを設定
+        currentState = DrakeState.Moving;
+        SetNextStateDuration();
 
         // スタック検出用の変数を初期化
         lastCheckedPosition = transform.position;
@@ -224,7 +240,7 @@ public class SlimeNormalMoveController : MonoBehaviour, IEnemyResettable
         // leftBoundとrightBoundが共に0の場合、ランダムに範囲を設定
         if (activator != null)
         {
-            if (isUseAutoBounds) // 自動設定モードの場合
+            if (!isUseManualBounds) // 自動設定モードの場合
             {
                 // activatorが持つCollider2Dの境界を取得する
                 var activatorCollider = activator.GetComponent<Collider2D>();
@@ -276,13 +292,15 @@ public class SlimeNormalMoveController : MonoBehaviour, IEnemyResettable
         StartCoroutine(CheckAndAdjustPosition());
     }
 
-    // 配置時の埋まりチェックと位置調整コルーチン
+    /// <summary>
+    /// 配置時に地面に埋まっている場合、埋まらない位置まで座標を上方向に調整するコルーチン。
+    /// </summary>
     private IEnumerator CheckAndAdjustPosition()
     {
         // 重なっている間、上に移動
         if (isOverlappingGround)
         {
-            currentState = SlimeState.AdjustingPosition; // ステートを位置調整中に
+            currentState = DrakeState.AdjustingPosition; // ステートを位置調整中に
             rbody.simulated = false; // 物理演算を一時停止して手動で移動
 
             // 重なりがなくなるまで上に移動
@@ -294,10 +312,10 @@ public class SlimeNormalMoveController : MonoBehaviour, IEnemyResettable
 
             // 位置調整が完了したら、物理演算を再開し、元のステートに戻す
             rbody.simulated = true;
-            currentState = SlimeState.Moving;
+            currentState = DrakeState.Moving;
         }
-
-        animator?.Play("Blue Idle - Animation"); // アイドルアニメーションを強制再生
+        //TODO:このアイドルアニメーションの再生方法は暫定的です。後で改善してください。
+        animator?.SetTrigger("IdleTrigger"); // アイドルアニメーションを強制再生
     }
 
     private void FixedUpdate()
@@ -306,28 +324,47 @@ public class SlimeNormalMoveController : MonoBehaviour, IEnemyResettable
             return;
 
         // 位置調整中は他の物理演算や移動ロジックを停止
-        if (currentState == SlimeState.AdjustingPosition)
+        if (currentState == DrakeState.AdjustingPosition)
         {
             return;
         }
 
-        //敵の動きがポーズされているかどうかを確認
-        // もしポーズされていればRigidbody2Dを無効化する
-        if (TimeManager.instance.isEnemyMovePaused)
+        //TODO:一時的にコメントアウト
+        // //敵の動きがポーズされているかどうかを確認
+        // // もしポーズされていればRigidbody2Dを無効化する
+        // if (TimeManager.instance.isEnemyMovePaused)
+        // {
+        //     if (rbody.simulated)
+        //         rbody.simulated = false;
+        //     return;
+        // }
+        // else if (!rbody.simulated)
+        //     rbody.simulated = true;
+
+        // 状態切り替えのロジック (Idle <-> Moving)
+        if (currentState == DrakeState.Idle || currentState == DrakeState.Moving)
         {
-            if (rbody.simulated)
-                rbody.simulated = false;
-            return;
+            stateChangeTimer += Time.deltaTime;
+            if (stateChangeTimer >= currentStateDuration)
+            {
+                ToggleState();
+            }
         }
-        else if (!rbody.simulated)
-            rbody.simulated = true;
 
         pos = transform.position;
         Vector3 dir = (Vector2)playerTransform.position - pos;
 
         switch (currentState)
         {
-            case SlimeState.Moving:
+            case DrakeState.Idle:
+                rbody.velocity = Vector2.zero;
+                // Idle中はプレイヤーとの距離チェックを行い、攻撃範囲に入ったら即座に攻撃へ移行
+                if (IsPlayerInAttackRange(dir))
+                {
+                    StartAttack();
+                }
+                break;
+            case DrakeState.Moving:
                 if ((pos.x <= leftBound && vx <= 0) || (rightBound <= pos.x && 0 <= vx))
                 {
                     rightFlag = !rightFlag;
@@ -336,42 +373,30 @@ public class SlimeNormalMoveController : MonoBehaviour, IEnemyResettable
                 }
                 rbody.velocity = new Vector2(vx, rbody.velocity.y);
 
-                bool inRange =
-                    dir.x * (rightFlag ? 1 : -1) <= attackRange
-                    && dir.x * (rightFlag ? 1 : -1) >= 0;
-                if (inRange)
+                if (IsPlayerInAttackRange(dir))
                 {
-                    // プレイヤーが攻撃範囲に入ったら、溜めステートに移行
-                    currentState = SlimeState.PreparingToJump;
-                    rbody.velocity = Vector2.zero; // 移動を停止
-                    // 溜めアニメーションのトリガーを引く（必要に応じて）
-                    // animator.SetTrigger("chargeTriggered");
-                    StartCoroutine(JumpChargeCoroutine());
+                    StartAttack();
                 }
                 break;
 
-            case SlimeState.PreparingToJump:
+            case DrakeState.PreparingToJump:
                 // コルーチンが完了するまで待機
                 break;
 
-            case SlimeState.Jumping:
+            case DrakeState.Jumping:
                 if (
                     rbody.velocity.y <= 0
                     && isGrounded
                     && (Time.time - jumpStartTime > groundIgnoreAfterJumpTime)
                 )
                 {
-                    currentState = SlimeState.Recovering;
+                    currentState = DrakeState.Recovering;
                 }
                 break;
 
-            case SlimeState.Recovering:
-                stateInfo = animator.GetCurrentAnimatorStateInfo(0);
+            case DrakeState.Recovering:
                 tag = GameConstants.ImmuneEnemyTagName;
-                if (stateInfo.shortNameHash == IdleHash)
-                {
-                    currentState = SlimeState.Moving;
-                }
+                currentState = DrakeState.Moving;
                 break;
         }
 
@@ -407,7 +432,70 @@ public class SlimeNormalMoveController : MonoBehaviour, IEnemyResettable
         }
     }
 
-    // ジャンプ前の溜めを行うコルーチン
+    /// <summary>
+    /// 次の状態（IdleまたはMoving）の継続時間をランダムに設定する
+    /// </summary>
+    private void SetNextStateDuration()
+    {
+        stateChangeTimer = 0f;
+        if (currentState == DrakeState.Idle)
+        {
+            currentStateDuration = Random.Range(minIdleTime, maxIdleTime);
+        }
+        else if (currentState == DrakeState.Moving)
+        {
+            currentStateDuration = Random.Range(minMoveTime, maxMoveTime);
+        }
+    }
+
+    /// <summary>
+    /// IdleとMovingの状態を切り替える
+    /// </summary>
+    private void ToggleState()
+    {
+        if (currentState == DrakeState.Idle)
+        {
+            currentState = DrakeState.Moving;
+            // 移動再開時に向きに応じた速度を再設定
+            vx = speedX * (rightFlag ? 1 : -1);
+            //TODO:アニメーションがあればここでWalkなどを再生
+        }
+        else if (currentState == DrakeState.Moving)
+        {
+            currentState = DrakeState.Idle;
+            rbody.velocity = Vector2.zero;
+            //TODO:アニメーションがあればここでIdleなどを再生
+        }
+        SetNextStateDuration();
+    }
+
+    /// <summary>
+    /// プレイヤーが攻撃範囲内にいるか判定する
+    /// </summary>
+    private bool IsPlayerInAttackRange(Vector3 dir)
+    {
+        return dir.x * (rightFlag ? 1 : -1) <= attackRange && dir.x * (rightFlag ? 1 : -1) >= 0;
+    }
+
+    /// <summary>
+    /// 攻撃動作を開始する
+    /// </summary>
+    private void StartAttack()
+    {
+        // プレイヤーが攻撃範囲に入ったら、溜めステートに移行
+        currentState = DrakeState.PreparingToJump;
+        rbody.velocity = Vector2.zero; // 移動を停止
+
+        // 攻撃に入ったので、Idle/Movingの切り替えタイマーをリセット
+        stateChangeTimer = 0f;
+
+        StartCoroutine(JumpChargeCoroutine());
+    }
+
+    /// <summary>
+    /// ジャンプ攻撃前の「溜め」動作を管理するコルーチン。
+    /// 溜め時間の経過後、ジャンプステートへ移行し、プレイヤーに向かって跳躍します。
+    /// </summary>
     private IEnumerator JumpChargeCoroutine()
     {
         // 溜め中はダメージを受けない敵の状態に
@@ -417,10 +505,10 @@ public class SlimeNormalMoveController : MonoBehaviour, IEnemyResettable
         yield return new WaitForSeconds(jumpChargeTime);
 
         // 待機中にステートが変わっていないか確認
-        if (currentState == SlimeState.PreparingToJump)
+        if (currentState == DrakeState.PreparingToJump)
         {
             // ステートをJumpingに移行
-            currentState = SlimeState.Jumping;
+            currentState = DrakeState.Jumping;
             jumpStartTime = Time.time;
             tag = GameConstants.DamageableEnemyTagName;
 
@@ -432,7 +520,8 @@ public class SlimeNormalMoveController : MonoBehaviour, IEnemyResettable
                 Vector2 dir = playerTransform.position - transform.position;
                 vx = Mathf.Sign(dir.x) * speedX;
                 rbody.AddForce(new Vector2(vx, jumpPower), ForceMode2D.Impulse);
-                sePlayer.Play(SE_EnemyAction.Attack_slime1); // ジャンプ攻撃の効果音を鳴らす
+                //TODO:効果音の差し替えが必要
+                //sePlayer.Play(SE_EnemyAction.Attack_slime1); // ジャンプ攻撃の効果音を鳴らす
             }
             else
             {
@@ -444,9 +533,15 @@ public class SlimeNormalMoveController : MonoBehaviour, IEnemyResettable
         }
     }
 
+    /// <summary>
+    /// ジャンプ後のリカバリー（着地待機）を行うコルーチン。
+    /// Recoveringステートに移行するまで待機します。
+    /// </summary>
     private IEnumerator JumpInterval()
     {
-        yield return new WaitUntil(() => currentState == SlimeState.Recovering);
+        yield return new WaitUntil(() => currentState == DrakeState.Recovering);
+        // リカバリー終了後、次の状態の時間設定を行ってからMovingに戻る
+        SetNextStateDuration();
     }
 
     /// <summary>
@@ -461,7 +556,10 @@ public class SlimeNormalMoveController : MonoBehaviour, IEnemyResettable
             yield return new WaitForSeconds(STUCK_CHECK_INTERVAL);
 
             // 敵が移動状態でない場合や、ポーズ中はタイマーをリセットして次のチェックへ
-            if (currentState != SlimeState.Moving || TimeManager.instance.isEnemyMovePaused)
+            if (currentState != DrakeState.Moving
+            //TODO:一時的にコメントアウト
+            //|| TimeManager.instance.isEnemyMovePaused
+            )
             {
                 timeStuck = 0f;
                 lastCheckedPosition = transform.position;

@@ -75,6 +75,7 @@ public static class SeCueDatabase
             { SE_EnemyAction.SwordThrow1, "SwordThrow1" },
             { SE_EnemyAction.RareEnemyAppear, "RareEnemyAppear" },
             { SE_EnemyAction.Death1, "Death1_Enemy" },
+            { SE_EnemyAction.Walk1, "Walk1_Enemy" },
         };
 
     /// <summary>

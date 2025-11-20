@@ -142,7 +142,7 @@ public class FrontDoor_Event : MonoBehaviour
                     || flagManager.GetBoolFlag(Chapter1TriggeredEvent.WellEnemyDefeated)
                 )
                 {
-                    return DoorTagState.Untagged;
+                    return DoorTagState.Interactable;
                 }
                 break;
             case DoorName.Village_GirlHouse:

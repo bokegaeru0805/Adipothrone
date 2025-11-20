@@ -2,8 +2,10 @@ using System.Collections;
 using System.Collections.Generic;
 using AIE2D;
 using DG.Tweening;
+using Fungus;
 using UnityEngine;
 using UnityEngine.Rendering;
+using MyGame.CameraControl;
 
 /// <summary>
 /// 背景オブジェクトとその目標色を格納するクラス
@@ -1378,6 +1380,8 @@ public class NightBorneMoveController : MonoBehaviour, IEnemyResettable
         afterImage?.SetActive(true);
         // 攻撃アニメーションが終わるのを待つ
         yield return new WaitForSeconds(attackDefaultAnimationTime);
+        // カメラシェイクを再生
+        MyGame.CameraControl.CameraManager.instance?.PlayCustomShake(3.5f, 2.0f, 0.3f);
         //剣の見た目の更新を停止
         StopCoroutine(swordCoroutine);
         swordCoroutine = null;

@@ -120,7 +120,8 @@ public static class GameConstants
     public const string ImmuneEnemyTagName = "ImmuneEnemy"; // ダメージを受けない敵のタグ名
     public const string InteractableObjectTagName = "InteractableObject"; // インタラクト可能なオブジェクトのタグ名
     public const string AreaTransitionTagName = "AreaTransition"; // エリア遷移のタグ名
-    public const string GroundLayerName = "Ground"; // 地面のレイヤーの名前
+    public const string PhysicsLayerName_Ground = "GroundLayer"; // 当たり判定(Layer)用の名前
+    public const string SortingLayerName_Ground = "Ground"; // 描画順(Sorting Layer)用の名前
     public const string MainGlobalVolumeTagName = "MainGlobalVolume"; // メインのGlobal Volumeのタグ名
     public const string SceneName_Title = "TitleScene"; // タイトルシーンの名前
     public const string SceneName_TutorialStart = "TutorialStartScene"; // チュートリアルシーンの名前

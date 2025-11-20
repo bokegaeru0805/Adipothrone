@@ -1,8 +1,8 @@
 using System;
 using System.Collections.Generic;
+using NaughtyAttributes;
 using UnityEngine;
 using UnityEngine.Events;
-using NaughtyAttributes;
 
 // このファイルはMonoBehaviourではないため、どのGameObjectにもアタッチしません。
 // プロジェクト内に存在するだけで、他のスクリプトから参照できます。
@@ -114,7 +114,10 @@ public class StatePro
     [Header("アニメーション")]
     [Tooltip("アニメーションの状態を変更するかどうか")]
     public bool changeAnimation = false;
-    [Tooltip("再生したいアニメーションステートの名前（Animator Controller内のステート名と完全に一致させる）")]
+
+    [Tooltip(
+        "再生したいアニメーションステートの名前（Animator Controller内のステート名と完全に一致させる）"
+    )]
     public string animationStateName;
 
     // [Header("コライダー")]
@@ -166,6 +169,9 @@ public class DialogueCondition
 
     [Tooltip("条件が満たされたときに実行するFungusブロックの名前")]
     public string blockNameToExecute;
+
+    [Tooltip("会話時に吹き出しを表示するか")]
+    public bool showBubble = false;
 
     [Tooltip("この会話がトリガーされたときに実行される追加イベント")]
     public UnityEvent onDialogueTriggered;

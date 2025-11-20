@@ -74,6 +74,7 @@ public enum SE_EnemyAction
     SwordThrow1 = 4070,
     RareEnemyAppear = 4075,
     Death1 = 4080,
+    Walk1 = 4085,
 }
 
 /// <summary>

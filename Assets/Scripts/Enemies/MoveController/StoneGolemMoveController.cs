@@ -1,7 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
-using UnityEngine;
 using MyGame.CameraControl;
+using UnityEngine;
 
 [RequireComponent(typeof(CriWare.Assets.CriAtomSePlayer))]
 public class StoneGolemMoveController : MonoBehaviour
@@ -590,7 +590,7 @@ public class StoneGolemMoveController : MonoBehaviour
         StartCoroutine(UpdateArmForDuration(attackAnimationTime)); // アームの見た目を更新
         yield return new WaitForSeconds(attackAnimationTime * 0.7f); // 攻撃アニメーションの時間を待機1
         sePlayer.Play(SE_EnemyAction.Kick1); // 攻撃の効果音を鳴らす
-        CameraManager.instance?.PlayCustomShake(1.5f, 2.0f, 0.3f); // カメラシェイクを再生
+        CameraManager.instance?.PlayCustomShake(2.5f, 2.0f, 0.3f); // カメラシェイクを再生
         ObjectPooler.SceneInstance.SpawnFromPool(
             punchDustEffectPoolTag,
             transform.position + new Vector3(punchDustEffectOffsetX * dir, 0f, 0f),
@@ -612,7 +612,7 @@ public class StoneGolemMoveController : MonoBehaviour
         StartCoroutine(UpdateArmForDuration(attackAnimationTime)); // アームの見た目を更新
         yield return new WaitForSeconds(attackAnimationTime * 0.7f); // 攻撃アニメーションの時間を待機1
         sePlayer.Play(SE_EnemyAction.Kick1); // 攻撃の効果音を鳴らす
-        CameraManager.instance?.PlayCustomShake(1.5f, 2.0f, 0.3f); // カメラシェイクを再生
+        CameraManager.instance?.PlayCustomShake(2.5f, 2.0f, 0.3f); // カメラシェイクを再生
         ObjectPooler.SceneInstance.SpawnFromPool(
             punchDustEffectPoolTag,
             transform.position + new Vector3(punchDustEffectOffsetX * dir, 0f, 0f),
@@ -761,8 +761,8 @@ public class StoneGolemMoveController : MonoBehaviour
             burstEffect.PlayEffect();
         }
 
-        SpawnDustEffect();  // ダストエフェクトを生成
-        CameraManager.instance?.PlayCustomShake(2.0f, 2.0f, rockWaveInterval * (rockWaves+1)); // カメラシェイクを再生
+        SpawnDustEffect(); // ダストエフェクトを生成
+        CameraManager.instance?.PlayCustomShake(5.0f, 2.0f, rockWaveInterval * (rockWaves + 1)); // カメラシェイクを再生
 
         for (int wave = 0; wave < rockWaves; wave++)
         {
@@ -1183,6 +1183,22 @@ public class StoneGolemMoveController : MonoBehaviour
             Debug.LogError("SlashEffectPrefab に ParticleSystem が見つかりません。");
             ObjectPooler.SceneInstance.ReturnToPoolAfterDelay(slashEffectPoolTag, effectObj, 0); // エフェクトがない場合は削除
             return;
+        }
+    }
+
+    /// <summary>
+    /// Animationによる敵の足音イベントが発生した際に呼び出されます。
+    /// 足音のSEを再生し、現在のコマンドがチャージ攻撃(ChargeAttack)でない場合にカメラシェイクを実行します。
+    /// 決して関数名を変更しないでください。
+    /// </summary>
+    public void OnFootstep()
+    {
+        sePlayer.Play(SE_EnemyAction.Walk1); // 足音の効果音を鳴らす
+
+        //chargeAttack時の振動との競合を避けるため、chargeAttack以外の場合のみ振動を実行
+        if (currentCommand != CommandType.ChargeAttack)
+        {
+            CameraManager.instance?.PlayCustomShake(1.5f, 4.0f, 0.2f); // カメラシェイクを再生
         }
     }
 
