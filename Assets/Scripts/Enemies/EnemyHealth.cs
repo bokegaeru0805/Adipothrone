@@ -4,6 +4,7 @@ using UnityEngine;
 /// 通常敵のHPと死亡処理を管理するクラス。CharacterHealthを継承します。
 /// 元のenemy_HPの全ての機能を持ち、スポナーからの初期化やオブジェクトの再利用に対応します。
 /// </summary>
+[RequireComponent(typeof(Rigidbody2D))]
 public class EnemyHealth : CharacterHealth, IEnemyResettable
 {
     [Header("死亡演出設定 (通常敵)")]
@@ -162,7 +163,7 @@ public class EnemyHealth : CharacterHealth, IEnemyResettable
         if (rbody != null)
         {
             rbody.velocity = Vector2.zero;
-            rbody.isKinematic = true;
+            // rbody.isKinematic = true;
         }
 
         // 元のHPバーの色をリセット
@@ -208,10 +209,10 @@ public class EnemyHealth : CharacterHealth, IEnemyResettable
             animator.SetBool(deathAnimParam, false);
         }
 
-        if (rbody != null)
-        {
-            rbody.isKinematic = false; // 物理挙動を再び有効化
-        }
+        // if (rbody != null)
+        // {
+        //     rbody.isKinematic = false; // 物理挙動を再び有効化
+        // }
     }
 
     // ドロップアイテムの親オブジェクトを返すように上書き

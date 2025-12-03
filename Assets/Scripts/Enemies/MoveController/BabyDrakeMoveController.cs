@@ -4,7 +4,7 @@ using UnityEngine;
 
 [RequireComponent(typeof(Rigidbody2D))]
 [RequireComponent(typeof(Animator))]
-public class DrakeBabyMoveController : MonoBehaviour, IEnemyResettable
+public class BabyDrakeMoveController : MonoBehaviour, IEnemyResettable
 {
     private const float MOVE_RANGE = 10.0f; // ランダムに設定する場合の移動幅
 
@@ -14,7 +14,7 @@ public class DrakeBabyMoveController : MonoBehaviour, IEnemyResettable
 
     [Header("設定項目")]
     [SerializeField]
-    private Transform playerTransform = null; // PlayerのTransform
+    private Transform playerTransform = null;
 
     [SerializeField]
     private EnemyActivator activator = null; // 親のEnemyActivatorコンポーネント
@@ -25,9 +25,6 @@ public class DrakeBabyMoveController : MonoBehaviour, IEnemyResettable
 
     [SerializeField]
     private float attackRange = 1.5f;
-
-    [SerializeField]
-    private float jumpPower = 1.25f;
 
     [Header("待機・移動時間の設定")]
     [SerializeField]
@@ -61,13 +58,6 @@ public class DrakeBabyMoveController : MonoBehaviour, IEnemyResettable
     [SerializeField, ShowIf(nameof(isUseManualBounds))]
     private float rightBound;
 
-    [Header("地面判定用の設定")]
-    [SerializeField]
-    private Transform groundCheck;
-
-    [SerializeField]
-    private float groundCheckRadius = 0.2f;
-
     [Header("配置調整用の設定")]
     [SerializeField]
     private Transform overlapCheckPoint; // 地面に埋まっていないかチェックするTransform
@@ -90,8 +80,6 @@ public class DrakeBabyMoveController : MonoBehaviour, IEnemyResettable
     private float timeToReverseWhenStuck = 2.0f; //動けないと判断してから反転するまでの時間（秒）
     private float stuckDistanceThreshold = 0.1f; //動いていると判断する最低限の移動距離
     private LayerMask GroundLayer;
-    private bool isGrounded =>
-        Physics2D.OverlapCircle(groundCheck.position, groundCheckRadius, GroundLayer);
 
     //埋まり判定用のbool
     private bool isOverlappingGround =>
@@ -115,12 +103,12 @@ public class DrakeBabyMoveController : MonoBehaviour, IEnemyResettable
 
     private enum DrakeState
     {
-        None,
         Idle,
         Moving,
         PreparingToJump,
         Jumping,
         Recovering,
+        Diving,
         AdjustingPosition,
     }
 
@@ -135,16 +123,12 @@ public class DrakeBabyMoveController : MonoBehaviour, IEnemyResettable
         switch (variantType)
         {
             case EnemyVariant.Desert:
-                damage = 23;
+                //TODO:攻撃力を設定
+                // damage = 23;
                 break;
             default:
                 Debug.LogError($"{this.name}のEnemyVariantが設定されていません。");
                 break;
-        }
-
-        if (groundCheck == null || GroundLayer == 0 || groundCheckRadius <= 0)
-        {
-            Debug.LogError($"{this.name}の地面判定用の設定が正しくありません。");
         }
 
         if (overlapCheckPoint == null)
@@ -181,7 +165,16 @@ public class DrakeBabyMoveController : MonoBehaviour, IEnemyResettable
     private void Start()
     {
         contactDamageController = GetComponent<ContactDamageController>();
-        contactDamageController?.SetNormalDamage(damage);
+        if (contactDamageController != null)
+        {
+            contactDamageController?.SetNormalDamage(damage);
+        }
+        else
+        {
+            Debug.LogWarning(
+                $"{this.gameObject.name}にContactDamageControllerコンポーネントがありません。"
+            );
+        }
 
         ResetState();
     }
@@ -212,7 +205,7 @@ public class DrakeBabyMoveController : MonoBehaviour, IEnemyResettable
 
         vx = (Random.value < 0.5f ? -1 : 1) * speedX;
         rightFlag = vx > 0;
-        spriteRenderer.flipX = !rightFlag;
+        spriteRenderer.flipX = rightFlag;
         if (rbody != null)
         {
             rbody.velocity = new Vector2(vx, 0); // 初速を設定
@@ -225,7 +218,7 @@ public class DrakeBabyMoveController : MonoBehaviour, IEnemyResettable
             return;
         }
 
-        tag = GameConstants.ImmuneEnemyTagName;
+        tag = "Untagged"; // タグをリセット
         // 初期状態をMovingにし、タイマーを設定
         currentState = DrakeState.Moving;
         SetNextStateDuration();
@@ -314,8 +307,8 @@ public class DrakeBabyMoveController : MonoBehaviour, IEnemyResettable
             rbody.simulated = true;
             currentState = DrakeState.Moving;
         }
-        //TODO:このアイドルアニメーションの再生方法は暫定的です。後で改善してください。
-        animator?.SetTrigger("IdleTrigger"); // アイドルアニメーションを強制再生
+
+        animator?.SetTrigger("HideTrigger"); // 埋まり調整後にHideアニメーションを再生
     }
 
     private void FixedUpdate()
@@ -329,17 +322,16 @@ public class DrakeBabyMoveController : MonoBehaviour, IEnemyResettable
             return;
         }
 
-        //TODO:一時的にコメントアウト
-        // //敵の動きがポーズされているかどうかを確認
-        // // もしポーズされていればRigidbody2Dを無効化する
-        // if (TimeManager.instance.isEnemyMovePaused)
-        // {
-        //     if (rbody.simulated)
-        //         rbody.simulated = false;
-        //     return;
-        // }
-        // else if (!rbody.simulated)
-        //     rbody.simulated = true;
+        //敵の動きがポーズされているかどうかを確認
+        // もしポーズされていればRigidbody2Dを無効化する
+        if (TimeManager.instance.isEnemyMovePaused)
+        {
+            if (rbody.simulated)
+                rbody.simulated = false;
+            return;
+        }
+        else if (!rbody.simulated)
+            rbody.simulated = true;
 
         // 状態切り替えのロジック (Idle <-> Moving)
         if (currentState == DrakeState.Idle || currentState == DrakeState.Moving)
@@ -369,7 +361,7 @@ public class DrakeBabyMoveController : MonoBehaviour, IEnemyResettable
                 {
                     rightFlag = !rightFlag;
                     vx = speedX * (rightFlag ? 1 : -1);
-                    spriteRenderer.flipX = !rightFlag;
+                    spriteRenderer.flipX = rightFlag;
                 }
                 rbody.velocity = new Vector2(vx, rbody.velocity.y);
 
@@ -384,24 +376,20 @@ public class DrakeBabyMoveController : MonoBehaviour, IEnemyResettable
                 break;
 
             case DrakeState.Jumping:
-                if (
-                    rbody.velocity.y <= 0
-                    && isGrounded
-                    && (Time.time - jumpStartTime > groundIgnoreAfterJumpTime)
-                )
+                if (Time.time - jumpStartTime > groundIgnoreAfterJumpTime)
                 {
                     currentState = DrakeState.Recovering;
                 }
                 break;
 
             case DrakeState.Recovering:
-                tag = GameConstants.ImmuneEnemyTagName;
-                currentState = DrakeState.Moving;
+                // 何もしない（JumpIntervalコルーチンに任せるため）
+                break;
+
+            case DrakeState.Diving:
+                // アニメーション終了待ちのため、ここでは物理挙動以外の処理を行わない
                 break;
         }
-
-        animator?.SetBool("isGrounded", isGrounded);
-        animator?.SetFloat("verticalSpeed", rbody.velocity.y);
     }
 
     //オブジェクトがColliderにぶつかった時の処理
@@ -420,7 +408,7 @@ public class DrakeBabyMoveController : MonoBehaviour, IEnemyResettable
                     // 横方向の衝突であれば、移動方向を反転させる
                     rightFlag = !rightFlag;
                     vx = speedX * (rightFlag ? 1 : -1);
-                    spriteRenderer.flipX = !rightFlag;
+                    spriteRenderer.flipX = rightFlag;
 
                     // 衝突後の滑り落ちを防ぐために速度をリセット（任意）
                     rbody.velocity = new Vector2(vx, rbody.velocity.y);
@@ -515,17 +503,13 @@ public class DrakeBabyMoveController : MonoBehaviour, IEnemyResettable
             // ジャンプアニメーションのトリガーを引く
             animator.SetTrigger("JumpTrigger");
 
+            //TODO:効果音の差し替えが必要
+            //sePlayer.Play(SE_EnemyAction.Attack_slime1); // ジャンプ攻撃の効果音を鳴らす
+
             if (playerTransform != null)
             {
-                Vector2 dir = playerTransform.position - transform.position;
-                vx = Mathf.Sign(dir.x) * speedX;
-                rbody.AddForce(new Vector2(vx, jumpPower), ForceMode2D.Impulse);
-                //TODO:効果音の差し替えが必要
-                //sePlayer.Play(SE_EnemyAction.Attack_slime1); // ジャンプ攻撃の効果音を鳴らす
-            }
-            else
-            {
-                rbody.AddForce(new Vector2(0, jumpPower), ForceMode2D.Impulse);
+                rightFlag = playerTransform.position.x >= transform.position.x;
+                spriteRenderer.flipX = rightFlag;
             }
 
             // ジャンプ後のリカバリー待機コルーチンを開始
@@ -534,13 +518,38 @@ public class DrakeBabyMoveController : MonoBehaviour, IEnemyResettable
     }
 
     /// <summary>
-    /// ジャンプ後のリカバリー（着地待機）を行うコルーチン。
-    /// Recoveringステートに移行するまで待機します。
+    /// ジャンプ後の着地、待機、ダイブ、移動再開までの一連の流れを管理するコルーチン
     /// </summary>
     private IEnumerator JumpInterval()
     {
+        // Recovering（着地）状態になるまで待機
         yield return new WaitUntil(() => currentState == DrakeState.Recovering);
-        // リカバリー終了後、次の状態の時間設定を行ってからMovingに戻る
+
+        tag = GameConstants.ImmuneEnemyTagName;
+
+        float idleWaitTime = Random.Range(minIdleTime, maxIdleTime);
+        yield return new WaitForSeconds(idleWaitTime);
+
+        // DiveTriggerを実行
+        animator.SetTrigger("DiveTrigger");
+        currentState = DrakeState.Diving;
+
+        // アニメーションの状態が切り替わるのを1フレーム待つ
+        yield return null;
+
+        // 現在のアニメーション（Dive）の長さを取得して待機
+        // ※遷移中の場合は遷移先のステート（Dive）の情報を取得する
+        AnimatorStateInfo stateInfo = animator.GetCurrentAnimatorStateInfo(0);
+        if (animator.IsInTransition(0))
+        {
+            stateInfo = animator.GetNextAnimatorStateInfo(0);
+        }
+
+        yield return new WaitForSeconds(stateInfo.length);
+
+        // Moving状態に戻る
+        currentState = DrakeState.Moving;
+        this.tag = "Untagged";
         SetNextStateDuration();
     }
 
@@ -593,7 +602,7 @@ public class DrakeBabyMoveController : MonoBehaviour, IEnemyResettable
                 // 移動方向を反転
                 rightFlag = !rightFlag;
                 vx = speedX * (rightFlag ? 1 : -1);
-                spriteRenderer.flipX = !rightFlag;
+                spriteRenderer.flipX = rightFlag;
                 if (rbody != null)
                 {
                     rbody.velocity = new Vector2(vx, rbody.velocity.y);
@@ -604,13 +613,7 @@ public class DrakeBabyMoveController : MonoBehaviour, IEnemyResettable
 
     private void OnDrawGizmosSelected()
     {
-        if (groundCheck != null)
-        {
-            Gizmos.color = Color.red;
-            Gizmos.DrawWireSphere(groundCheck.position, groundCheckRadius);
-        }
-
-        // 埋まりチェック用のGizmosも表示
+        // 埋まりチェック用のGizmosを表示
         if (overlapCheckPoint != null)
         {
             Gizmos.color = Color.cyan;
@@ -620,10 +623,11 @@ public class DrakeBabyMoveController : MonoBehaviour, IEnemyResettable
 
     private void OnDrawGizmos()
     {
+        // 移動範囲のGizmosを表示
         Gizmos.color = new Color(1f, 0f, 0f, 0.15f);
         Vector3 center = new Vector3(
             (leftBound + rightBound) / 2f,
-            transform.position.y,
+            transform.position.y + 1f,
             transform.position.z
         );
         Vector3 size = new Vector3(rightBound - leftBound, 2f, 0.1f);

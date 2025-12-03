@@ -2,10 +2,8 @@ using System.Collections;
 using System.Collections.Generic;
 using AIE2D;
 using DG.Tweening;
-using Fungus;
 using UnityEngine;
 using UnityEngine.Rendering;
-using MyGame.CameraControl;
 
 /// <summary>
 /// 背景オブジェクトとその目標色を格納するクラス

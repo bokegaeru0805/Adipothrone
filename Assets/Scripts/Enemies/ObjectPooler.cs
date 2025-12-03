@@ -107,6 +107,13 @@ public class ObjectPooler : MonoBehaviour
                 // (poolParentの子として生成し、worldPositionStays: false は正しい)
                 GameObject obj = Instantiate(pool.prefab, poolParent, false);
 
+                //AutoPoolReturnコンポーネントがあればタグを自動設定
+                var autoReturn = obj.GetComponent<AutoPoolReturn>();
+                if (autoReturn != null)
+                {
+                    autoReturn.SetPoolTag(pool.tag);
+                }
+
                 obj.SetActive(false);
                 objectQueue.Enqueue(obj);
             }

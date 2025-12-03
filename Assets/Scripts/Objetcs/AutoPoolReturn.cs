@@ -25,10 +25,6 @@ public class AutoPoolReturn : MonoBehaviour
 {
     [Header("ObjectPooler 設定")]
     [SerializeField]
-    [Tooltip("このオブジェクトの返却先となる ObjectPooler の「タグ」")]
-    private string myPoolTag;
-
-    [SerializeField]
     [Tooltip("返却先のプールの種類（Persistent=永続, Scene=シーン用）")]
     private PoolType returnToPool = PoolType.Persistent; // デフォルトは永続プール
 
@@ -50,24 +46,25 @@ public class AutoPoolReturn : MonoBehaviour
     [Tooltip("ボス戦中に適用するスケール")]
     private float bossScale = 1f;
 
+    private string myPoolTag; //このオブジェクトの返却先となる ObjectPooler の「タグ」
     private Animator animator;
     private SpriteRenderer spriteRenderer;
     private float originalScale;
     private float defaultFadeOutDuration;
 
+    /// <summary>
+    /// ObjectPoolerによって生成された際に、自身のプールタグを自動設定します。
+    /// </summary>
+    /// <param name="tag">設定するプールのタグ名</param>
+    public void SetPoolTag(string tag)
+    {
+        this.myPoolTag = tag;
+    }
+
     private void Awake()
     {
         animator = GetComponent<Animator>();
         spriteRenderer = GetComponent<SpriteRenderer>();
-
-        if (string.IsNullOrEmpty(myPoolTag))
-        {
-            Debug.LogError(
-                $"'{this.gameObject.name}' に myPoolTag が設定されていません！プールに返却できません。",
-                this
-            );
-        }
-
         defaultFadeOutDuration = fadeOutDuration; // デフォルト値を保存
         originalScale = this.transform.localScale.x; // 元のスケールを保存
     }
