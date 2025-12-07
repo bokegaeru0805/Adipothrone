@@ -38,6 +38,7 @@ public class EnemyActivator : MonoBehaviour
         if (targetCameraArea == null)
         {
             Debug.LogError($"{name} に targetCameraArea が設定されていません。", this);
+            return;
         }
 
         // 自身のColliderを取得し、必ずTriggerに設定されているか確認
@@ -113,7 +114,7 @@ public class EnemyActivator : MonoBehaviour
 
             // まず、通常の子オブジェクト（レア敵リストにないもの）を有効化します。
             foreach (Transform child in transform)
-            {
+            {                
                 if (child == null)
                     continue;
 

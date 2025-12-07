@@ -522,6 +522,7 @@ public class SlimeNormalMoveController : MonoBehaviour, IEnemyResettable
 
     private void OnDrawGizmos()
     {
+        // 移動範囲を示すGizmosを描画
         Gizmos.color = new Color(1f, 0f, 0f, 0.15f);
         Vector3 center = new Vector3(
             (leftBound + rightBound) / 2f,

@@ -11,10 +11,6 @@ public class LimitedContactObject : MonoBehaviour
     [SerializeField]
     private int maxContactCount = 1;
 
-    [Tooltip("接触をカウントする対象のレイヤー")]
-    [SerializeField]
-    private LayerMask groundLayer;
-
     [Header("時間制限設定")]
     [SerializeField]
     [Tooltip("出現からの寿命（秒）。0以下の場合は時間で消滅しない。")]
@@ -39,6 +35,12 @@ public class LimitedContactObject : MonoBehaviour
     {
         get => maxContactCount;
         set => maxContactCount = Mathf.Max(0, value);
+    }
+    private LayerMask groundLayer; //接触をカウントする対象のレイヤー
+
+    private void Awake()
+    {
+        groundLayer = LayerMask.GetMask(GameConstants.PhysicsLayerName_Ground); // Groundレイヤーを取得
     }
 
     /// <summary>
@@ -90,7 +92,7 @@ public class LimitedContactObject : MonoBehaviour
     /// <summary>
     /// このオブジェクトを即座にプールに返却（または破棄）します。
     /// </summary>
-    private void ReturnToPoolNow()
+    public void ReturnToPoolNow()
     {
         // プールを使用し、かつタグが設定されていれば、プール返却処理を行う
         if (usePooling && !string.IsNullOrEmpty(myPoolTag))

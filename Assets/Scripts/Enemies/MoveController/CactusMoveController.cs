@@ -106,10 +106,10 @@ public class CactusMoveController : MonoBehaviour, IEnemyResettable
     private CactusState currentState = CactusState.Idle;
     private bool rightFlag = false;
     private bool shouldAttack = false;
-    private Vector2 myPos = Vector2.zero;
     private const float BALL_ATTACK_ANIMATION_TIME = 0.800f; // ボール攻撃のアニメーション時間
     private const string BALL_POOLTAG = "CactusBall"; //ボールのプールタグ名
     private List<SpriteRenderer> allRenderers = new List<SpriteRenderer>(); // 子オブジェクトの位置反転用
+    private List<GameObject> spawnedObjects = new List<GameObject>(); //生成したオブジェクトを管理するリスト
 
     private void Awake()
     {
@@ -215,42 +215,39 @@ public class CactusMoveController : MonoBehaviour, IEnemyResettable
             return;
         }
 
-        tag = "Untagged"; // タグをリセット
+        tag = GameConstants.UntaggedName; // タグをリセット
         currentState = CactusState.Idle; // 初期状態をIdleに設定
 
-        if (activator != null)
+        if (!isUseManualInitialPosition) // 自動設定モードの場合
         {
-            if (!isUseManualInitialPosition) // 自動設定モードの場合
+            if (activator != null)
             {
-                if (activator != null)
+                // activatorが持つCollider2Dの境界を取得する
+                var activatorCollider = activator.GetComponent<Collider2D>();
+                if (activatorCollider != null)
                 {
-                    // activatorが持つCollider2Dの境界を取得する
-                    var activatorCollider = activator.GetComponent<Collider2D>();
-                    if (activatorCollider != null)
-                    {
-                        // Colliderのワールド空間での左端と右端を取得
-                        float activatorLeftBound = activatorCollider.bounds.min.x;
-                        float activatorRightBound = activatorCollider.bounds.max.x;
+                    // Colliderのワールド空間での左端と右端を取得
+                    float activatorLeftBound = activatorCollider.bounds.min.x;
+                    float activatorRightBound = activatorCollider.bounds.max.x;
 
-                        // アクティベーターの検出範囲内でランダムな中心位置を決定
-                        float randomCenter = Random.Range(activatorLeftBound, activatorRightBound);
+                    // アクティベーターの検出範囲内でランダムな中心位置を決定
+                    float randomCenter = Random.Range(activatorLeftBound, activatorRightBound);
 
-                        //初期位置を保存・決定
-                        myPos = transform.position;
-                        transform.position = new Vector2(randomCenter, myPos.y);
-                    }
+                    //初期位置を保存・決定
+                    transform.position = new Vector2(randomCenter, transform.position.y);
                 }
-                else // activaterが見つからない場合
+                else
                 {
                     Debug.LogWarning(
-                        $"{this.name}の親にEnemyActivatorが見つかりませんでした。移動範囲の自動設定は行いません。"
+                        $"{this.name}のEnemyActivatorにCollider2Dが見つかりませんでした。初期位置の自動設定は行いません。"
                     );
                 }
             }
-            else
+            else // activaterが見つからない場合
             {
-                //初期位置を保存
-                myPos = transform.position;
+                Debug.LogWarning(
+                    $"{this.name}の親にEnemyActivatorが見つかりませんでした。移動範囲の自動設定は行いません。"
+                );
             }
         }
 
@@ -351,6 +348,7 @@ public class CactusMoveController : MonoBehaviour, IEnemyResettable
                 {
                     rightFlag = isTargetCurrentlyRight;
                     UpdateFacingDirection(rightFlag); //すべてのパーツの向きを更新
+                    break;
                 }
 
                 // Idle中はプレイヤーとの距離チェックを行い、攻撃範囲に入ったら即座に攻撃へ移行
@@ -368,6 +366,9 @@ public class CactusMoveController : MonoBehaviour, IEnemyResettable
     /// </summary>
     private IEnumerator BallAttack()
     {
+        if (currentState != CactusState.Idle)
+            yield break; // Idle状態でなければ攻撃しない
+        
         currentState = CactusState.Attacking;
         this.tag = GameConstants.ImmuneEnemyTagName;
 
@@ -391,6 +392,7 @@ public class CactusMoveController : MonoBehaviour, IEnemyResettable
             spawnPos,
             Quaternion.identity
         );
+        spawnedObjects.Add(ball); //生成したオブジェクトを管理リストに追加
 
         if (ball == null)
         {
@@ -412,8 +414,6 @@ public class CactusMoveController : MonoBehaviour, IEnemyResettable
         Rigidbody2D ballRb = ball.GetComponent<Rigidbody2D>();
         if (ballRb != null)
         {
-            ballRb.gravityScale = 1.0f; // 重力有効化
-
             Vector3 targetPos =
                 playerTransform != null ? playerTransform.position : transform.position;
 
@@ -454,7 +454,7 @@ public class CactusMoveController : MonoBehaviour, IEnemyResettable
         float afterAttackTime = Random.Range(minAfterAttackTime, maxAfterAttackTime);
         yield return new WaitForSeconds(afterAttackTime);
         rightArmAnimator.SetTrigger("IdleTrigger");
-        this.tag = "Untagged";
+        this.tag = GameConstants.UntaggedName;
         currentState = CactusState.Idle;
     }
 
@@ -477,6 +477,8 @@ public class CactusMoveController : MonoBehaviour, IEnemyResettable
     )
     {
         float gravity = Mathf.Abs(Physics2D.gravity.y);
+        // 重力が0の場合は放物線を描かないため、この計算式は使えない（直線計算などを返すかnull）
+        if (gravity <= 0) return (targetPos - startPos).normalized * speed;
 
         // 予測位置の初期値は現在位置
         Vector3 aimPos = targetPos;
@@ -491,9 +493,16 @@ public class CactusMoveController : MonoBehaviour, IEnemyResettable
             Vector3 dir = aimPos - startPos;
             float h = dir.y;
             dir.y = 0;
+            dir.z = 0;
             float x = dir.magnitude;
+            if (x <= 0.0001f)
+            {
+                // 水平距離がない場合、垂直に撃ち上げる計算などが必要だが、
+                // 簡易的に「わずかにずらす」ことで0除算を回避
+                x = 0.0001f;
+            }
 
-            // --- 物理計算（前回と同じロジック） ---
+            // --- 物理計算 ---
             float v2 = speed * speed;
             float v4 = v2 * v2;
             float discriminant = v4 - gravity * (gravity * x * x + 2 * h * v2);
@@ -523,9 +532,8 @@ public class CactusMoveController : MonoBehaviour, IEnemyResettable
             float t = x / vx;
 
             // ターゲットが時間 t 後にいるはずの場所を再設定して、次のループへ
-            aimPos = targetPos + targetVelocity * t;
+           aimPos = targetPos + targetVelocity * t;
         }
-
         return finalVelocity;
     }
 
@@ -560,7 +568,7 @@ public class CactusMoveController : MonoBehaviour, IEnemyResettable
     {
         if (playerTransform != null)
         {
-            return (Vector2)playerTransform.position - myPos;
+            return (Vector2)playerTransform.position - (Vector2)transform.position;
         }
         return Vector2.zero;
     }
@@ -603,6 +611,36 @@ public class CactusMoveController : MonoBehaviour, IEnemyResettable
         }
     }
 
+    private void OnDisable()
+    {
+        // 実行中のコルーチンをすべて強制停止
+        // (Unityの仕様上、Disableで自動停止しますが、明示的に書くことで意図を明確にします)
+        StopAllCoroutines();
+
+        // 管理リストにある弾を全てプールに返却する
+        foreach (var obj in spawnedObjects)
+        {
+            // オブジェクトが存在し、かつアクティブな場合のみ返却
+            if (obj != null && obj.activeSelf)
+            {
+                var limitedContactObject = obj.GetComponent<LimitedContactObject>();
+                if (limitedContactObject != null)
+                {
+                    // LimitedContactObjectがあれば、プールに返却する
+                    limitedContactObject.ReturnToPoolNow();
+                }
+                else
+                {
+                    // なければ通常のDestroy
+                    Destroy(obj);
+                }
+            }
+        }
+
+        // リストをクリア
+        spawnedObjects.Clear();
+    }
+
     private void OnDrawGizmosSelected()
     {
         // 埋まりチェック用のGizmosを表示
@@ -619,19 +657,19 @@ public class CactusMoveController : MonoBehaviour, IEnemyResettable
         // rightFlagがtrue(右向き)なら、自身の位置から右へ attackRange/2 ずらした場所が中心
         // rightFlagがfalse(左向き)なら、自身の位置から左へ attackRange/2 ずらした場所が中心
         // ※ IsPlayerInAttackRange の判定は「向いている方向へ 0 ～ attackRange の距離」であるため
-        
+
         float direction = rightFlag ? 1f : -1f;
-        
+
         // 判定エリアの中心座標
         Vector3 center = transform.position + new Vector3(attackRange / 2f * direction, 0f, 0f);
-        
+
         // 判定エリアのサイズ
         // 幅は attackRange、高さは適当（ここでは2f）、奥行きは0.1f
         Vector3 size = new Vector3(attackRange, 2f, 0.1f);
 
         Gizmos.color = new Color(1f, 0f, 0f, 0.3f); // 赤色半透明
         Gizmos.DrawCube(center, size);
-        
+
         Gizmos.color = Color.red; // 外枠
         Gizmos.DrawWireCube(center, size);
     }

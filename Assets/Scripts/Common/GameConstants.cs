@@ -114,6 +114,7 @@ public static class GameConstants
 
     public const string PlayerObjectName = "Noeri"; // プレイヤーのオブジェクト名
     public const string RobotObjectName = "Fabo"; // ロボットのオブジェクト名
+    public const string UntaggedName = "Untagged"; // タグ無しの名前
     public const string PlayerTagName = "Player"; // プレイヤーのタグ名
     public const string PlayerAttackTagName = "PlayerAttack"; // プレイヤーの攻撃タグ名
     public const string DamageableEnemyTagName = "DamageableEnemy"; // ダメージを受ける敵のタグ名

@@ -6,6 +6,9 @@ using MyGame.CameraControl;
 using UnityEngine;
 using UnityEngine.Rendering;
 using UnityEngine.Rendering.Universal;
+#if UNITY_EDITOR
+using UnityEngine.SceneManagement;
+#endif
 
 /// <summary>
 /// プレイヤーが特定のエリアに入るとカメラの境界、Volume Profile、2Dライトの形状を設定します。
@@ -122,6 +125,11 @@ public class CameraMoveArea : MonoBehaviour
     // プレイヤーがエリア内にいるかどうかを示すフラグ
     private bool isPlayerInArea = false;
 
+#if UNITY_EDITOR
+    // 開発用フラグ：デバッグシーンかどうか
+    private bool isDebugScene = false;
+#endif
+
     /// <summary>
     /// オブジェクトの初期化を行います。
     /// </summary>
@@ -136,7 +144,7 @@ public class CameraMoveArea : MonoBehaviour
             ?.GetComponent<Volume>();
         if (globalVolume == null)
         {
-            Debug.LogWarning("シーン内にVolumeコンポーネントが見つかりません。", this);
+            Debug.LogError("シーン内にVolumeコンポーネントが見つかりません。", this);
             this.enabled = false; // スクリプトを無効化して終了
             return;
         }
@@ -161,6 +169,11 @@ public class CameraMoveArea : MonoBehaviour
             defaultBackgroundPosition = backGround.transform.position; // 背景の初期位置を保存
             backGround.SetActive(false); // 最初は非アクティブにしておく
         }
+
+#if UNITY_EDITOR
+        // デバッグシーンかどうかを判定
+        isDebugScene = SceneManager.GetActiveScene().name.Contains("Debug");
+#endif
     }
 
     /// <summary>
@@ -218,6 +231,11 @@ public class CameraMoveArea : MonoBehaviour
         // 衝突したのがプレイヤーかチェック
         if (other.CompareTag(GameConstants.PlayerTagName))
         {
+            // 既に自分がアクティブエリアとして認識されているなら、処理をスキップする
+            // これにより、境界線でのチャタリングによる多重実行を防げます
+            if (activeArea == this)
+                return;
+
             // もし他のエリアがアクティブだった場合、そのエリアの終了処理を先に呼び出す
             if (activeArea != null && activeArea != this)
             {
@@ -300,7 +318,15 @@ public class CameraMoveArea : MonoBehaviour
         // CinemachineConfiner2Dが見つからない場合はログを出して終了
         if (confiner == null)
         {
-            Debug.LogError("CinemachineConfiner2Dがメインカメラに見つかりません。");
+#if UNITY_EDITOR
+            if (!isDebugScene)
+            {
+                Debug.LogWarning(
+                    "メインカメラにCinemachineConfiner2Dコンポーネントが見つかりません。",
+                    this
+                );
+            }
+#endif
             yield break;
         }
 
