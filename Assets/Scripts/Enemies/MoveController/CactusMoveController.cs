@@ -84,11 +84,11 @@ public class CactusMoveController : MonoBehaviour, IEnemyResettable
     private int damage = 0; // 攻撃力
     private float verticalAdjustSpeed = 100f; // 地面から抜け出す速度
 
-    private LayerMask GroundLayer;
+    private LayerMask groundLayer;
 
     //埋まり判定用のbool
     private bool isOverlappingGround =>
-        Physics2D.OverlapCircle(overlapCheckPoint.position, overlapCheckRadius, GroundLayer);
+        Physics2D.OverlapCircle(overlapCheckPoint.position, overlapCheckRadius, groundLayer);
 
     private SpriteRenderer spriteRenderer;
     private Rigidbody2D rbody;
@@ -113,7 +113,7 @@ public class CactusMoveController : MonoBehaviour, IEnemyResettable
 
     private void Awake()
     {
-        GroundLayer = LayerMask.GetMask(GameConstants.PhysicsLayerName_Ground); // Groundレイヤーを取得
+        groundLayer = LayerMask.GetMask(GameConstants.PhysicsLayerName_Ground); // Groundレイヤーを取得
 
         if (leftArmObject == null || rightArmObject == null || flowerObject == null)
         {

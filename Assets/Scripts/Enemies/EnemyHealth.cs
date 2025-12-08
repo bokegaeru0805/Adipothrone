@@ -60,7 +60,7 @@ public class EnemyHealth : CharacterHealth, IEnemyResettable
         {
             if (enemyData == null)
             {
-                Debug.LogWarning($"{this.gameObject.name}はEnemyDataが設定されていません");
+                Debug.LogError($"{this.gameObject.name}はEnemyDataが設定されていません");
                 return;
             }
             Initialize(this.enemyData);

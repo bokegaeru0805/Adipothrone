@@ -27,29 +27,33 @@ public class BabyDrakeMoveController : MonoBehaviour, IEnemyResettable
     private float attackRange = 1.5f;
 
     [Header("待機・移動時間の設定")]
-    [SerializeField]
     [Tooltip("待機時間の最小値（秒）")]
+    [SerializeField]
     private float minIdleTime = 1.0f;
 
-    [SerializeField]
     [Tooltip("待機時間の最大値（秒）")]
+    [SerializeField]
     private float maxIdleTime = 3.0f;
 
-    [SerializeField]
     [Tooltip("移動時間の最小値（秒）")]
+    [SerializeField]
     private float minMoveTime = 2.0f;
 
-    [SerializeField]
     [Tooltip("移動時間の最大値（秒）")]
+    [SerializeField]
     private float maxMoveTime = 5.0f;
 
-    [SerializeField]
     [Tooltip("ジャンプ前の溜め時間（秒）")]
+    [SerializeField]
     private float jumpChargeTime = 0.5f;
 
-    [Header("移動範囲の設定")]
+    [Tooltip("攻撃終了後、次の攻撃が可能になるまでの時間（秒）")]
     [SerializeField]
+    private float attackCooldownDuration = 3.0f;
+
+    [Header("移動範囲の設定")]
     [Tooltip("手動で移動範囲を設定するかどうか")]
+    [SerializeField]
     private bool isUseManualBounds = false;
 
     [SerializeField, ShowIf(nameof(isUseManualBounds))]
@@ -79,6 +83,7 @@ public class BabyDrakeMoveController : MonoBehaviour, IEnemyResettable
     private float jumpStartTime;
     private float timeToReverseWhenStuck = 2.0f; //動けないと判断してから反転するまでの時間（秒）
     private float stuckDistanceThreshold = 0.1f; //動いていると判断する最低限の移動距離
+    private float currentAttackCooldown = 0f; // 次に攻撃が可能になる時刻
     private LayerMask GroundLayer;
 
     //埋まり判定用のbool
@@ -203,6 +208,7 @@ public class BabyDrakeMoveController : MonoBehaviour, IEnemyResettable
             Debug.LogWarning($"{this.gameObject.name}にenemy_HPコンポーネントがありません。");
         }
 
+        currentAttackCooldown = 0f; // クールダウンタイマーをリセット（即座に攻撃可能にする）
         vx = (Random.value < 0.5f ? -1 : 1) * speedX;
         rightFlag = vx > 0;
         spriteRenderer.flipX = rightFlag;
@@ -218,7 +224,7 @@ public class BabyDrakeMoveController : MonoBehaviour, IEnemyResettable
             return;
         }
 
-        tag = "Untagged"; // タグをリセット
+        tag = GameConstants.UntaggedName; // タグをリセット
         // 初期状態をMovingにし、タイマーを設定
         currentState = DrakeState.Moving;
         SetNextStateDuration();
@@ -333,6 +339,11 @@ public class BabyDrakeMoveController : MonoBehaviour, IEnemyResettable
         else if (!rbody.simulated)
             rbody.simulated = true;
 
+        if (currentAttackCooldown > 0f)
+        {
+            currentAttackCooldown -= Time.deltaTime;
+        }
+
         // 状態切り替えのロジック (Idle <-> Moving)
         if (currentState == DrakeState.Idle || currentState == DrakeState.Moving)
         {
@@ -350,8 +361,8 @@ public class BabyDrakeMoveController : MonoBehaviour, IEnemyResettable
         {
             case DrakeState.Idle:
                 rbody.velocity = Vector2.zero;
-                // Idle中はプレイヤーとの距離チェックを行い、攻撃範囲に入ったら即座に攻撃へ移行
-                if (IsPlayerInAttackRange(dir))
+                // タイマーが0以下 かつ 範囲内なら攻撃
+                if (currentAttackCooldown <= 0f && IsPlayerInAttackRange(dir))
                 {
                     StartAttack();
                 }
@@ -365,7 +376,8 @@ public class BabyDrakeMoveController : MonoBehaviour, IEnemyResettable
                 }
                 rbody.velocity = new Vector2(vx, rbody.velocity.y);
 
-                if (IsPlayerInAttackRange(dir))
+                // タイマーが0以下 かつ 範囲内なら攻撃
+                if (currentAttackCooldown <= 0f && IsPlayerInAttackRange(dir))
                 {
                     StartAttack();
                 }
@@ -549,8 +561,10 @@ public class BabyDrakeMoveController : MonoBehaviour, IEnemyResettable
 
         // Moving状態に戻る
         currentState = DrakeState.Moving;
-        this.tag = "Untagged";
+        this.tag = GameConstants.UntaggedName;
         SetNextStateDuration();
+
+        currentAttackCooldown = attackCooldownDuration; //クールダウンタイマーに時間をセット（ここから減算が始まる）
     }
 
     /// <summary>
