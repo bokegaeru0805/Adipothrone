@@ -368,7 +368,7 @@ public class CactusMoveController : MonoBehaviour, IEnemyResettable
     {
         if (currentState != CactusState.Idle)
             yield break; // Idle状態でなければ攻撃しない
-        
+
         currentState = CactusState.Attacking;
         this.tag = GameConstants.ImmuneEnemyTagName;
 
@@ -478,7 +478,8 @@ public class CactusMoveController : MonoBehaviour, IEnemyResettable
     {
         float gravity = Mathf.Abs(Physics2D.gravity.y);
         // 重力が0の場合は放物線を描かないため、この計算式は使えない（直線計算などを返すかnull）
-        if (gravity <= 0) return (targetPos - startPos).normalized * speed;
+        if (gravity <= 0)
+            return (targetPos - startPos).normalized * speed;
 
         // 予測位置の初期値は現在位置
         Vector3 aimPos = targetPos;
@@ -532,7 +533,7 @@ public class CactusMoveController : MonoBehaviour, IEnemyResettable
             float t = x / vx;
 
             // ターゲットが時間 t 後にいるはずの場所を再設定して、次のループへ
-           aimPos = targetPos + targetVelocity * t;
+            aimPos = targetPos + targetVelocity * t;
         }
         return finalVelocity;
     }
@@ -623,11 +624,11 @@ public class CactusMoveController : MonoBehaviour, IEnemyResettable
             // オブジェクトが存在し、かつアクティブな場合のみ返却
             if (obj != null && obj.activeSelf)
             {
-                var limitedContactObject = obj.GetComponent<LimitedContactObject>();
-                if (limitedContactObject != null)
+                var poolableObject = obj.GetComponent<PoolableObject>();
+                if (poolableObject != null)
                 {
                     // LimitedContactObjectがあれば、プールに返却する
-                    limitedContactObject.ReturnToPoolNow();
+                    poolableObject.ReturnToPool();
                 }
                 else
                 {

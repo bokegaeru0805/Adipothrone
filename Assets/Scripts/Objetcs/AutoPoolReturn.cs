@@ -4,16 +4,6 @@ using NaughtyAttributes;
 using UnityEngine;
 
 /// <summary>
-/// 返却先のObjectPoolerのインスタンスを指定します
-/// </summary>
-public enum PoolType
-{
-    Persistent, // 永続プール (エフェクトなど)
-    Scene // シーン用プール (敵など)
-    ,
-}
-
-/// <summary>
 /// アニメーションが付いたエフェクトプレハブにアタッチします。
 /// OnEnable時にエフェクトの初期化（アルファ値のリセットや、ボス戦に応じたスケール変更など）を行い、
 /// アニメーション終了後に自動で ObjectPooler に返却されます。
@@ -21,13 +11,8 @@ public enum PoolType
 /// 他スクリプトとの実行順序の問題を避けるためにこのスクリプトに含まれています。)
 /// </summary>
 [RequireComponent(typeof(Animator))]
-public class AutoPoolReturn : MonoBehaviour
+public class AutoPoolReturn : PoolableObject
 {
-    [Header("ObjectPooler 設定")]
-    [SerializeField]
-    [Tooltip("返却先のプールの種類（Persistent=永続, Scene=シーン用）")]
-    private PoolType returnToPool = PoolType.Persistent; // デフォルトは永続プール
-
     [Header("フェードアウト設定")]
     [SerializeField]
     [Tooltip("trueにすると、アニメーション終了後に徐々に消えます")]
@@ -45,21 +30,10 @@ public class AutoPoolReturn : MonoBehaviour
     [SerializeField, ShowIf(nameof(scaleOnBossBattle))]
     [Tooltip("ボス戦中に適用するスケール")]
     private float bossScale = 1f;
-
-    private string myPoolTag; //このオブジェクトの返却先となる ObjectPooler の「タグ」
     private Animator animator;
     private SpriteRenderer spriteRenderer;
     private float originalScale;
     private float defaultFadeOutDuration;
-
-    /// <summary>
-    /// ObjectPoolerによって生成された際に、自身のプールタグを自動設定します。
-    /// </summary>
-    /// <param name="tag">設定するプールのタグ名</param>
-    public void SetPoolTag(string tag)
-    {
-        this.myPoolTag = tag;
-    }
 
     private void Awake()
     {
@@ -120,13 +94,13 @@ public class AutoPoolReturn : MonoBehaviour
         }
 
         // アニメーションの長さだけ待機してからプールに返却する
-        StartCoroutine(ReturnAfterDelay(animationLength));
+        StartCoroutine(ReturnWithFade(animationLength));
     }
 
     /// <summary>
     /// 指定時間後に ObjectPooler.PersistentInstance.ReturnToPool を呼び出すコルーチン
     /// </summary>
-    private IEnumerator ReturnAfterDelay(float delay)
+    private IEnumerator ReturnWithFade(float delay)
     {
         // アニメーションの長さだけ待つ
         yield return new WaitForSeconds(delay);
@@ -138,46 +112,8 @@ public class AutoPoolReturn : MonoBehaviour
             yield return spriteRenderer.DOFade(0f, fadeOutDuration).WaitForCompletion();
         }
 
-        // タグが設定されていない場合は、プール返却を諦めて破棄
-        if (string.IsNullOrEmpty(myPoolTag))
-        {
-            Debug.LogWarning($"'{gameObject.name}' に myPoolTag がないため、破棄します。", this);
-            Destroy(gameObject);
-            yield break; // コルーチンをここで終了
-        }
-
-        bool returned = false; // 返却に成功したか
-
-        // 選択されたプールの種類に応じて、返却先を決定
-        if (returnToPool == PoolType.Persistent)
-        {
-            // 【永続プール】が指定されている場合
-            if (ObjectPooler.PersistentInstance != null)
-            {
-                ObjectPooler.PersistentInstance.ReturnToPool(myPoolTag, this.gameObject);
-                returned = true;
-            }
-        }
-        else // (returnToPool == PoolType.Scene)
-        {
-            // 【シーンプール】が指定されている場合
-            if (ObjectPooler.SceneInstance != null)
-            {
-                ObjectPooler.SceneInstance.ReturnToPool(myPoolTag, this.gameObject);
-                returned = true;
-            }
-        }
-
-        // もし、指定されたプール（Persistent/Scene）が存在しなかった場合
-        if (!returned)
-        {
-            // プールが見つからなかったので、オブジェクトを破棄する
-            Debug.LogWarning(
-                $"返却先の {returnToPool} プール（タグ: {myPoolTag}）が見つかりません。オブジェクトを破棄します。",
-                this
-            );
-            Destroy(gameObject);
-        }
+        // プールに返却
+        ReturnToPool();
     }
 
     /// <summary>

@@ -1,5 +1,5 @@
 fileFormatVersion: 2
-guid: f20675c2ebd5e8d4c98aa9801c0a5ca7
+guid: 6a7daa970b834a848863000f59e987ed
 TextureImporter:
   internalIDToNameTable: []
   externalObjects: {}
@@ -110,64 +110,127 @@ TextureImporter:
     serializedVersion: 2
     sprites:
     - serializedVersion: 2
-      name: DesertTempleBoss-smoke_leftArm_idle
+      name: WaterBall1_0
       rect:
         serializedVersion: 2
         x: 0
         y: 0
-        width: 144
-        height: 128
-      alignment: 0
-      pivot: {x: 0.5, y: 0.5}
+        width: 60
+        height: 40
+      alignment: 9
+      pivot: {x: 0.7, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
       outline: []
       physicsShape: []
       tessellationDetail: 0
       bones: []
-      spriteID: 93180c941a99e464ab65c8508bcaae83
-      internalID: -885297842
+      spriteID: 3d7b1c062ef64c44b985b41f76d84740
+      internalID: 1696429349
       vertices: []
       indices: 
       edges: []
       weights: []
     - serializedVersion: 2
-      name: DesertTempleBoss-smoke_leftArm_attack
+      name: WaterBall1_1
       rect:
         serializedVersion: 2
-        x: 144
+        x: 60
         y: 0
-        width: 144
-        height: 128
-      alignment: 0
-      pivot: {x: 0.5, y: 0.5}
+        width: 60
+        height: 40
+      alignment: 9
+      pivot: {x: 0.7, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
       outline: []
       physicsShape: []
       tessellationDetail: 0
       bones: []
-      spriteID: 0b6b701309b8ac54b91643f4719d8971
-      internalID: -273777752
+      spriteID: deb0b6f9ec0d9c34caf129c557363506
+      internalID: 1337022910
       vertices: []
       indices: 
       edges: []
       weights: []
     - serializedVersion: 2
-      name: DesertTempleBoss-smoke_leftArm_charge
+      name: WaterBall1_2
       rect:
         serializedVersion: 2
-        x: 288
+        x: 120
         y: 0
-        width: 144
-        height: 128
-      alignment: 0
-      pivot: {x: 0, y: 0}
+        width: 60
+        height: 40
+      alignment: 9
+      pivot: {x: 0.7, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
       outline: []
       physicsShape: []
       tessellationDetail: 0
       bones: []
-      spriteID: 0c39f0408f87ea04eb14996a1e6dbca6
-      internalID: -383076401
+      spriteID: cee44a80527ad2d4dba7bec94bf56f0a
+      internalID: -1017044116
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: WaterBall1_3
+      rect:
+        serializedVersion: 2
+        x: 180
+        y: 0
+        width: 60
+        height: 40
+      alignment: 9
+      pivot: {x: 0.7, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 5d706c4874bfa4a4193a6156a44c16ed
+      internalID: 1438673033
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: WaterBall1_4
+      rect:
+        serializedVersion: 2
+        x: 240
+        y: 0
+        width: 60
+        height: 40
+      alignment: 9
+      pivot: {x: 0.7, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 9c4489b8030fed3479d96b6be56fe2af
+      internalID: 847187328
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: WaterBall1_5
+      rect:
+        serializedVersion: 2
+        x: 300
+        y: 0
+        width: 60
+        height: 40
+      alignment: 9
+      pivot: {x: 0.7, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 4a06d02d99332354f9e43331871e9481
+      internalID: -1286635642
       vertices: []
       indices: 
       edges: []
@@ -183,9 +246,12 @@ TextureImporter:
     weights: []
     secondaryTextures: []
     nameFileIdTable:
-      DesertTempleBoss-smoke_leftArm_attack: -273777752
-      DesertTempleBoss-smoke_leftArm_charge: -383076401
-      DesertTempleBoss-smoke_leftArm_idle: -885297842
+      WaterBall1_0: 1696429349
+      WaterBall1_1: 1337022910
+      WaterBall1_2: -1017044116
+      WaterBall1_3: 1438673033
+      WaterBall1_4: 847187328
+      WaterBall1_5: -1286635642
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 

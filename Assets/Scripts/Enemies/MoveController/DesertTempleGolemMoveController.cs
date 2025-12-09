@@ -630,11 +630,11 @@ public class DesertTempleGolemMoveController : MonoBehaviour, IEnemyResettable
             // オブジェクトが存在し、かつアクティブな場合のみ返却
             if (obj != null && obj.activeSelf)
             {
-                var limitedContactObject = obj.GetComponent<LimitedContactObject>();
-                if (limitedContactObject != null)
+                var poolableObject = obj.GetComponent<PoolableObject>();
+                if (poolableObject != null)
                 {
                     // LimitedContactObjectがあれば、プールに返却する
-                    limitedContactObject.ReturnToPoolNow();
+                    poolableObject.ReturnToPool();
                 }
                 else
                 {

@@ -6,7 +6,7 @@ AnimationClip:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_Name: CactusEnmey_rightArm_attack
+  m_Name: CactusEnemy_rightArm_idle
   serializedVersion: 7
   m_Legacy: 0
   m_Compressed: 0
@@ -21,21 +21,13 @@ AnimationClip:
   - serializedVersion: 2
     curve:
     - time: 0
-      value: {fileID: -135782488, guid: 2431691098ba622498b5fa8496b4c28c, type: 3}
-    - time: 0.3
-      value: {fileID: 481603927, guid: 2431691098ba622498b5fa8496b4c28c, type: 3}
-    - time: 0.5
-      value: {fileID: -1533447904, guid: 2431691098ba622498b5fa8496b4c28c, type: 3}
-    - time: 0.6
-      value: {fileID: -42403032, guid: 2431691098ba622498b5fa8496b4c28c, type: 3}
-    - time: 0.7
-      value: {fileID: 1015888793, guid: 2431691098ba622498b5fa8496b4c28c, type: 3}
+      value: {fileID: -2103275928, guid: 2431691098ba622498b5fa8496b4c28c, type: 3}
     attribute: m_Sprite
     path: 
     classID: 212
     script: {fileID: 0}
     flags: 2
-  m_SampleRate: 10
+  m_SampleRate: 12
   m_WrapMode: 0
   m_Bounds:
     m_Center: {x: 0, y: 0, z: 0}
@@ -52,22 +44,18 @@ AnimationClip:
       isIntCurve: 0
       isSerializeReferenceCurve: 0
     pptrCurveMapping:
-    - {fileID: -135782488, guid: 2431691098ba622498b5fa8496b4c28c, type: 3}
-    - {fileID: 481603927, guid: 2431691098ba622498b5fa8496b4c28c, type: 3}
-    - {fileID: -1533447904, guid: 2431691098ba622498b5fa8496b4c28c, type: 3}
-    - {fileID: -42403032, guid: 2431691098ba622498b5fa8496b4c28c, type: 3}
-    - {fileID: 1015888793, guid: 2431691098ba622498b5fa8496b4c28c, type: 3}
+    - {fileID: -2103275928, guid: 2431691098ba622498b5fa8496b4c28c, type: 3}
   m_AnimationClipSettings:
     serializedVersion: 2
     m_AdditiveReferencePoseClip: {fileID: 0}
     m_AdditiveReferencePoseTime: 0
     m_StartTime: 0
-    m_StopTime: 0.8
+    m_StopTime: 0.083333336
     m_OrientationOffsetY: 0
     m_Level: 0
     m_CycleOffset: 0
     m_HasAdditiveReferencePose: 0
-    m_LoopTime: 0
+    m_LoopTime: 1
     m_LoopBlend: 0
     m_LoopBlendOrientation: 0
     m_LoopBlendPositionY: 0

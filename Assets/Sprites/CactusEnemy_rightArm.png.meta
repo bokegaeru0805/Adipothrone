@@ -110,7 +110,7 @@ TextureImporter:
     serializedVersion: 2
     sprites:
     - serializedVersion: 2
-      name: CactusEnmey_rightArm_0
+      name: CactusEnemy_rightArm_0
       rect:
         serializedVersion: 2
         x: 0
@@ -131,7 +131,7 @@ TextureImporter:
       edges: []
       weights: []
     - serializedVersion: 2
-      name: CactusEnmey_rightArm_1
+      name: CactusEnemy_rightArm_1
       rect:
         serializedVersion: 2
         x: 64
@@ -152,7 +152,7 @@ TextureImporter:
       edges: []
       weights: []
     - serializedVersion: 2
-      name: CactusEnmey_rightArm_2
+      name: CactusEnemy_rightArm_2
       rect:
         serializedVersion: 2
         x: 128
@@ -173,7 +173,7 @@ TextureImporter:
       edges: []
       weights: []
     - serializedVersion: 2
-      name: CactusEnmey_rightArm_3
+      name: CactusEnemy_rightArm_3
       rect:
         serializedVersion: 2
         x: 192
@@ -194,7 +194,7 @@ TextureImporter:
       edges: []
       weights: []
     - serializedVersion: 2
-      name: CactusEnmey_rightArm_4
+      name: CactusEnemy_rightArm_4
       rect:
         serializedVersion: 2
         x: 256
@@ -215,7 +215,7 @@ TextureImporter:
       edges: []
       weights: []
     - serializedVersion: 2
-      name: CactusEnmey_rightArm_5
+      name: CactusEnemy_rightArm_5
       rect:
         serializedVersion: 2
         x: 320
@@ -246,12 +246,12 @@ TextureImporter:
     weights: []
     secondaryTextures: []
     nameFileIdTable:
-      CactusEnmey_rightArm_0: -2103275928
-      CactusEnmey_rightArm_1: -135782488
-      CactusEnmey_rightArm_2: 481603927
-      CactusEnmey_rightArm_3: -1533447904
-      CactusEnmey_rightArm_4: -42403032
-      CactusEnmey_rightArm_5: 1015888793
+      CactusEnemy_rightArm_0: -2103275928
+      CactusEnemy_rightArm_1: -135782488
+      CactusEnemy_rightArm_2: 481603927
+      CactusEnemy_rightArm_3: -1533447904
+      CactusEnemy_rightArm_4: -42403032
+      CactusEnemy_rightArm_5: 1015888793
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 

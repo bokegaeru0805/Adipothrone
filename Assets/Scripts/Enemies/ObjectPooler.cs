@@ -46,6 +46,19 @@ public class ObjectPooler : MonoBehaviour
     //アクティブな（貸し出し中の）オブジェクトを追跡するための辞書
     private Dictionary<GameObject, string> activeObjects = new Dictionary<GameObject, string>();
 
+    // 初期状態を保存するための構造体
+    private struct InitialObjectSettings
+    {
+        public Vector3 localScale;
+        public string tag;
+        // 今後ここに追加可能（例: public int layer; public Quaternion defaultRotation; 等）
+    }
+
+    // オブジェクトのInstanceIDをキーにして初期設定を保持する辞書
+    // GameObjectそのものではなくInstanceID(int)をキーにすることで、GC発生を抑え軽量化します
+    private Dictionary<int, InitialObjectSettings> initialSettingsMap =
+        new Dictionary<int, InitialObjectSettings>();
+
     private void Awake()
     {
         if (isPersistent)
@@ -86,8 +99,8 @@ public class ObjectPooler : MonoBehaviour
     private void InitializePools()
     {
         poolDictionary = new Dictionary<string, Queue<GameObject>>();
-
         poolParentDictionary = new Dictionary<string, Transform>();
+        initialSettingsMap = new Dictionary<int, InitialObjectSettings>();
 
         foreach (Pool pool in pools)
         {
@@ -101,17 +114,20 @@ public class ObjectPooler : MonoBehaviour
             //親Transformを辞書に登録
             poolParentDictionary.Add(pool.tag, poolParent);
 
-
             for (int i = 0; i < pool.size; i++)
             {
                 // (poolParentの子として生成し、worldPositionStays: false は正しい)
                 GameObject obj = Instantiate(pool.prefab, poolParent, false);
 
-                //AutoPoolReturnコンポーネントがあればタグを自動設定
-                var autoReturn = obj.GetComponent<AutoPoolReturn>();
-                if (autoReturn != null)
+                //初期状態を保存
+                RegisterInitialSettings(obj);
+
+                // PoolableObjectコンポーネントがあれば、プールタグとタイプを設定
+                var poolable = obj.GetComponent<PoolableObject>();
+                if (poolable != null)
                 {
-                    autoReturn.SetPoolTag(pool.tag);
+                    poolable.SetPoolTag(pool.tag);
+                    poolable.SetPoolType(isPersistent ? PoolType.Persistent : PoolType.Scene);
                 }
 
                 obj.SetActive(false);
@@ -122,18 +138,20 @@ public class ObjectPooler : MonoBehaviour
         }
     }
 
-    // --- 4. OnDestroy を追加（メモリリーク防止） ---
-    private void OnDestroy()
+    /// <summary>
+    /// オブジェクトの初期状態を辞書に登録するメソッド
+    /// </summary>
+    private void RegisterInitialSettings(GameObject obj)
     {
-        // シングルトン参照を解除
-        if (isPersistent && PersistentInstance == this)
+        InitialObjectSettings settings = new InitialObjectSettings
         {
-            PersistentInstance = null;
-        }
-        else if (!isPersistent && SceneInstance == this)
-        {
-            SceneInstance = null;
-        }
+            localScale = obj.transform.localScale,
+            tag = obj.tag,
+            // 将来拡張時はここに追加: layer = obj.layer, etc...
+        };
+
+        // InstanceIDをキーにして保存（高速）
+        initialSettingsMap[obj.GetInstanceID()] = settings;
     }
 
     /// <summary>
@@ -143,7 +161,7 @@ public class ObjectPooler : MonoBehaviour
     {
         if (!poolDictionary.ContainsKey(tag))
         {
-            Debug.LogWarning($"Pool with tag '{tag}' doesn't exist.");
+            Debug.LogWarning($"オブジェクトプール '{tag}' が存在しません。");
             return null;
         }
 
@@ -174,12 +192,28 @@ public class ObjectPooler : MonoBehaviour
             if (pool != null)
             {
                 objectToSpawn = Instantiate(pool.prefab);
+                // 動的に生成した場合も初期状態を登録
+                RegisterInitialSettings(objectToSpawn);
             }
             else
             {
                 // タグに対応するプレハブが見つからない（ありえないが念のため）
                 return null;
             }
+        }
+
+        // 初期状態（スケールやタグ）をリセット
+        // オブジェクトが前回使われた際にスケール変更等されていた場合に元に戻す
+        if (
+            initialSettingsMap.TryGetValue(
+                objectToSpawn.GetInstanceID(),
+                out InitialObjectSettings settings
+            )
+        )
+        {
+            objectToSpawn.transform.localScale = settings.localScale;
+            objectToSpawn.tag = settings.tag;
+            // 将来拡張時はここに追加: objectToSpawn.layer = settings.layer;
         }
 
         objectToSpawn.SetActive(true);
@@ -270,6 +304,19 @@ public class ObjectPooler : MonoBehaviour
         foreach (var pair in activeObjects.ToList())
         {
             ReturnToPool(pair.Value, pair.Key);
+        }
+    }
+
+    private void OnDestroy()
+    {
+        // シングルトン参照を解除
+        if (isPersistent && PersistentInstance == this)
+        {
+            PersistentInstance = null;
+        }
+        else if (!isPersistent && SceneInstance == this)
+        {
+            SceneInstance = null;
         }
     }
 }
