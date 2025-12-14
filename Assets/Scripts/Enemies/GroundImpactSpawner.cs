@@ -3,12 +3,22 @@ using NaughtyAttributes;
 using UnityEngine;
 
 /// <summary>
-/// 地面に接触した際、自身を消去（プール返却）して、
-/// 指定されたオブジェクト群を指定された速度で生成・放出するスクリプト。
+/// 地面に接触した際、指定されたオブジェクト群を指定された速度で生成・放出するスクリプト。
+/// このスクリプトに自動でプールに返却する機能は含まれていません。
+/// 必要に応じて別途PoolableObjectLifecycleなどを併用してください
 /// </summary>
 [RequireComponent(typeof(Collider2D))]
-public class GroundImpactSpawner : PoolableObject
+public class GroundImpactSpawner : MonoBehaviour
 {
+    [InfoBox(
+        "地面に接触した際、指定されたオブジェクト群を指定された速度で生成・放出するスクリプト。\n"
+            + "このスクリプトに自動でプールに返却する機能は含まれていません。\n"
+            + "必要に応じて別途PoolableObjectLifecycleなどを併用してください",EInfoBoxType.Warning
+    )]
+    [ReadOnly]
+    [SerializeField] // ReadOnlyで編集不可にしておくと説明用っぽくなる
+    private string _instruction = "設定不要";
+
     [System.Serializable]
     public class SpawnItem
     {
@@ -55,9 +65,6 @@ public class GroundImpactSpawner : PoolableObject
             return;
 
         SpawnDebris();
-
-        // 自身をプールに返却（PoolableObjectの機能）
-        ReturnToPool();
     }
 
     /// <summary>

@@ -63,6 +63,7 @@ public static class SeCueDatabase
             { SE_EnemyAction.Roar1, "Roar1" },
             { SE_EnemyAction.Shoot1_Enemy, "Shoot1_Enemy" },
             { SE_EnemyAction.Shoot2_Enemy, "Shoot2_Enemy" },
+            { SE_EnemyAction.Shoot_Water1, "Shoot_Water1" },
             { SE_EnemyAction.Impact_iron1, "Impact_iron1" },
             { SE_EnemyAction.Attack_slime1, "Attack_slime1" },
             { SE_EnemyAction.Attack_slime_boss, "Attack_slime_boss" },
@@ -76,6 +77,12 @@ public static class SeCueDatabase
             { SE_EnemyAction.RareEnemyAppear, "RareEnemyAppear" },
             { SE_EnemyAction.Death1, "Death1_Enemy" },
             { SE_EnemyAction.Walk1, "Walk1_Enemy" },
+            { SE_EnemyAction.Attack_wind1, "Attack_wind1" },
+            { SE_EnemyAction.Attack_throw1, "Attack_throw1" },
+            { SE_EnemyAction.SandEmerge, "SandEmerge" },
+            { SE_EnemyAction.SandSubmerge, "SandSubmerge" },
+            { SE_EnemyAction.Drop_Metal, "Drop_Metal" },
+            { SE_EnemyAction.GearTurn, "GearTurn" },
         };
 
     /// <summary>
@@ -104,6 +111,10 @@ public static class SeCueDatabase
         { SE_Field.GroundRumble1, "GroundRumble1" },
         { SE_Field.LiftMove_Wood, "LiftMove_Wood" },
         { SE_Field.FireBurning1, "FireBurning1" },
+        { SE_Field.WindGust, "WindGust" },
+        { SE_Field.Sand1, "Sand1" },
+        { SE_Field.Clash_WaterGlass, "Clash_WaterGlass" },
+        { SE_Field.WaterMove1, "WaterMove1" },
     };
 
     /// <summary>

@@ -4,8 +4,10 @@ using UnityEngine;
 
 [RequireComponent(typeof(Animator))]
 [RequireComponent(typeof(CriWare.Assets.CriAtomSePlayer))]
-public class DustDevilMoveController : MonoBehaviour
+public class DustDevilMoveController : MonoBehaviour, IEnemyResettable
 {
+    private const string WIND_POOLTAG = "DustDevilWind";
+
     [Header("敵のタイプ")]
     [SerializeField]
     private EnemyVariant variantType = EnemyVariant.None;
@@ -66,7 +68,6 @@ public class DustDevilMoveController : MonoBehaviour
     private LayerMask groundLayer;
     private Animator animator;
     private EnemyHealth enemyHP;
-    private ContactDamageController contactDamageController;
     private CriWare.Assets.CriAtomSePlayer sePlayer;
     private Tween floatingTween;
 
@@ -77,7 +78,6 @@ public class DustDevilMoveController : MonoBehaviour
     }
 
     private DustDevilState currentState = DustDevilState.Idle;
-    private const string WIND_POOLTAG = "DustDevilWind";
 
     private void Awake()
     {
@@ -180,7 +180,9 @@ public class DustDevilMoveController : MonoBehaviour
         myPos = this.transform.position; // 現在の位置を保存
         tag = GameConstants.ImmuneEnemyTagName; // タグをリセット
         currentState = DustDevilState.Idle; // 初期状態をIdleに設定
+
         animator.SetTrigger("IdleTrigger"); // アニメーションをIdleに設定
+        sePlayer.Play(SE_Field.WindGust); // 環境音：風の音再生
 
         //古いTweenがあれば破棄（二重再生防止）
         if (floatingTween != null)
@@ -292,6 +294,8 @@ public class DustDevilMoveController : MonoBehaviour
             stateController.SetNormalDamage(damage); // ボールのダメージ量を設定
         }
 
+        sePlayer.Play(SE_EnemyAction.Attack_wind1); // つむじ風攻撃音再生
+
         //windObjectの生成後の管理はAutoPoolReturnスクリプトに委ねる
 
         float afterAttackTime = Random.Range(minAfterAttackTime, maxAfterAttackTime);
@@ -329,6 +333,8 @@ public class DustDevilMoveController : MonoBehaviour
             floatingTween.Kill();
             floatingTween = null;
         }
+
+        sePlayer.Stop();
     }
 
     private void OnDrawGizmos()

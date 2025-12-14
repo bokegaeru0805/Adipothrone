@@ -6,6 +6,7 @@ using UnityEngine;
 
 [RequireComponent(typeof(Rigidbody2D))]
 [RequireComponent(typeof(Animator))]
+[RequireComponent(typeof(CriWare.Assets.CriAtomSePlayer))]
 public class DesertTempleGolemMoveController : MonoBehaviour, IEnemyResettable
 {
     private const float MOVE_RANGE = 10.0f; // ランダムに設定する場合の移動幅
@@ -509,6 +510,9 @@ public class DesertTempleGolemMoveController : MonoBehaviour, IEnemyResettable
 
                     // 発射
                     shootRb.velocity = shootDir * shootSpeed;
+
+                    // 効果音を再生
+                    sePlayer.Play(SE_EnemyAction.Shoot_Water1);
 
                     // 進行方向と速度に応じた回転（スピン）を与える
                     // 進行方向のXがプラス（右）なら時計回り(-)、マイナス（左）なら反時計回り(+)

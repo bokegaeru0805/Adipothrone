@@ -1,7 +1,5 @@
-using System.Collections;
-using System.Collections.Generic;
+using NaughtyAttributes;
 using UnityEngine;
-// [追加] EditorApplicationクラスを使用するために必要
 #if UNITY_EDITOR
 using UnityEditor;
 #endif
@@ -11,6 +9,14 @@ public class PlayerTestMoveController : MonoBehaviour
     // カメラをキャッシュするための変数
     private Camera mainCamera;
     private float zOffset = 10f;
+
+    [Header("移動設定")]
+    [Tooltip("チェックを入れると矢印キーで移動、外すとマウスに追従します")]
+    public bool useKeyboardInput = false;
+
+    [Tooltip("キーボード操作時の移動速度")]
+    [SerializeField, ShowIf(nameof(useKeyboardInput))]
+    private float moveSpeed = 5.0f;
 
     // Playモード停止機能のための設定項目
     [Header("エディタ用デバッグ機能")]
@@ -40,17 +46,31 @@ public class PlayerTestMoveController : MonoBehaviour
 
     void Update()
     {
-        // 1. マウスのスクリーン座標を取得する
-        Vector3 mouseScreenPosition = Input.mousePosition;
+        if (useKeyboardInput)
+        {
+            // --- キーボード移動処理 (矢印キー or WASD) ---
+            float x = Input.GetAxis("Horizontal"); // 左右キー
+            float y = Input.GetAxis("Vertical"); // 上下キー
 
-        // 2. マウスのスクリーン座標のz座標に、カメラからの距離を設定する
-        mouseScreenPosition.z = zOffset;
+            Vector3 movement = new Vector3(x, y, 0) * moveSpeed * Time.deltaTime;
+            transform.position += movement;
+        }
+        else
+        {
+            // --- 従来のマウス追従処理 ---
 
-        // 3. スクリーン座標をワールド座標に変換する
-        Vector3 mouseWorldPosition = mainCamera.ScreenToWorldPoint(mouseScreenPosition);
+            // 1. マウスのスクリーン座標を取得する
+            Vector3 mouseScreenPosition = Input.mousePosition;
 
-        // 4. オブジェクトの位置を、変換したワールド座標に設定する
-        transform.position = mouseWorldPosition;
+            // 2. マウスのスクリーン座標のz座標に、カメラからの距離を設定する
+            mouseScreenPosition.z = zOffset;
+
+            // 3. スクリーン座標をワールド座標に変換する
+            Vector3 mouseWorldPosition = mainCamera.ScreenToWorldPoint(mouseScreenPosition);
+
+            // 4. オブジェクトの位置を、変換したワールド座標に設定する
+            transform.position = mouseWorldPosition;
+        }
 
         // エディタ内でのみ実行するキー連打チェック処理
 #if UNITY_EDITOR

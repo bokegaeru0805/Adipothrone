@@ -4,6 +4,7 @@ using UnityEngine;
 
 [RequireComponent(typeof(Rigidbody2D))]
 [RequireComponent(typeof(Animator))]
+[RequireComponent(typeof(CriWare.Assets.CriAtomSePlayer))]
 public class BabyDrakeMoveController : MonoBehaviour, IEnemyResettable
 {
     private const float MOVE_RANGE = 10.0f; // ランダムに設定する場合の移動幅
@@ -375,6 +376,7 @@ public class BabyDrakeMoveController : MonoBehaviour, IEnemyResettable
                     spriteRenderer.flipX = rightFlag;
                 }
                 rbody.velocity = new Vector2(vx, rbody.velocity.y);
+                sePlayer.Play(SE_Field.Sand1); // 砂埃SEを再生
 
                 // タイマーが0以下 かつ 範囲内なら攻撃
                 if (currentAttackCooldown <= 0f && IsPlayerInAttackRange(dir))
@@ -514,6 +516,8 @@ public class BabyDrakeMoveController : MonoBehaviour, IEnemyResettable
 
             // ジャンプアニメーションのトリガーを引く
             animator.SetTrigger("JumpTrigger");
+            //効果音を再生
+            sePlayer.Play(SE_EnemyAction.SandEmerge);
 
             //TODO:効果音の差し替えが必要
             //sePlayer.Play(SE_EnemyAction.Attack_slime1); // ジャンプ攻撃の効果音を鳴らす
@@ -544,6 +548,8 @@ public class BabyDrakeMoveController : MonoBehaviour, IEnemyResettable
 
         // DiveTriggerを実行
         animator.SetTrigger("DiveTrigger");
+        // 効果音を再生
+        sePlayer.Play(SE_EnemyAction.SandSubmerge);
         currentState = DrakeState.Diving;
 
         // アニメーションの状態が切り替わるのを1フレーム待つ
@@ -579,10 +585,7 @@ public class BabyDrakeMoveController : MonoBehaviour, IEnemyResettable
             yield return new WaitForSeconds(STUCK_CHECK_INTERVAL);
 
             // 敵が移動状態でない場合や、ポーズ中はタイマーをリセットして次のチェックへ
-            if (currentState != DrakeState.Moving
-            //TODO:一時的にコメントアウト
-            //|| TimeManager.instance.isEnemyMovePaused
-            )
+            if (currentState != DrakeState.Moving || TimeManager.instance.isEnemyMovePaused)
             {
                 timeStuck = 0f;
                 lastCheckedPosition = transform.position;

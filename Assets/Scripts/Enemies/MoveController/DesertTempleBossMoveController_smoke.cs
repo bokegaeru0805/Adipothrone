@@ -4,6 +4,7 @@ using DG.Tweening;
 using NaughtyAttributes;
 using UnityEngine;
 
+[RequireComponent(typeof(CriWare.Assets.CriAtomSePlayer))]
 public class DesertTempleBossMoveController_smoke : MonoBehaviour
 {
     private const string RIGHTARM_SHOOT_POOLTAG = "DesertTempleGolemShoot";
@@ -188,6 +189,7 @@ public class DesertTempleBossMoveController_smoke : MonoBehaviour
     private SpriteRenderer spriteRenderer;
     private SpriteRenderer rightArmSpriteRenderer;
     private SpriteRenderer leftArmSpriteRenderer;
+    private CriWare.Assets.CriAtomSePlayer sePlayer;
 
     // Tween管理用変数
     private Tweener leftArmTween;
@@ -216,6 +218,7 @@ public class DesertTempleBossMoveController_smoke : MonoBehaviour
             return;
         }
 
+        sePlayer = GetComponent<CriWare.Assets.CriAtomSePlayer>();
         spriteRenderer = GetComponent<SpriteRenderer>();
 
         // パーツのSpriteRendererを取得
@@ -547,6 +550,9 @@ public class DesertTempleBossMoveController_smoke : MonoBehaviour
             {
                 Debug.LogWarning("弾にRigidbody2Dがついていません");
             }
+
+            // SE再生
+            sePlayer.Play(SE_EnemyAction.Shoot_Water1);
         }
 
         //右腕のスプライトを通常用に戻す
@@ -582,7 +588,7 @@ public class DesertTempleBossMoveController_smoke : MonoBehaviour
         // 左腕の子オブジェクトに設定して追従させる
         bullet.transform.SetParent(leftArmObject.transform);
 
-        // オフセット位置に配置 
+        // オフセット位置に配置
         bullet.transform.localPosition = leftArmAttackSpawnOffset;
 
         // スケールを0にしてから徐々に大きくする (DoTween)
@@ -626,6 +632,9 @@ public class DesertTempleBossMoveController_smoke : MonoBehaviour
             {
                 Debug.LogWarning("弾にRigidbody2Dがついていません");
             }
+
+            // SE再生
+            sePlayer.Play(SE_EnemyAction.Drop_Metal);
         }
 
         // 左腕のスプライトを通常用に戻す
@@ -683,6 +692,8 @@ public class DesertTempleBossMoveController_smoke : MonoBehaviour
 
         while (elapsedTime < bothArmsAttackSpawnTime)
         {
+            sePlayer.Play(SE_EnemyAction.GearTurn); // 回転SEをループ再生
+
             elapsedTime += Time.deltaTime;
             float progress = elapsedTime / bothArmsAttackSpawnTime;
             float easeProgress = DOVirtual.EasedValue(0, 1, progress, Ease.OutCubic); // 拡大のイージング
@@ -726,6 +737,9 @@ public class DesertTempleBossMoveController_smoke : MonoBehaviour
             yield return null;
         }
 
+        // 回転SE停止
+        sePlayer.Stop();
+
         // 発射処理 (法線方向へ飛ばす)
         spawnCenter = transform.position + baseOffset; // 発射時の中心位置
 
@@ -746,6 +760,13 @@ public class DesertTempleBossMoveController_smoke : MonoBehaviour
 
                 rb.velocity = direction * bothArmsAttackSpeed;
                 rb.tag = GameConstants.DamageableEnemyTagName; // 通常の敵弾タグに戻す
+            }
+
+            // 弾ごとのSE再生
+            var bulletSePlayer = b.GetComponent<CriWare.Assets.CriAtomSePlayer>();
+            if (bulletSePlayer != null)
+            {
+                bulletSePlayer.Play(SE_EnemyAction.Shoot_Water1);
             }
         }
 

@@ -374,6 +374,7 @@ public class CactusMoveController : MonoBehaviour, IEnemyResettable
 
         float timer = 0f;
         rightArmAnimator.SetTrigger("BallAttackTrigger");
+        sePlayer.Play(SE_EnemyAction.Attack_throw1); // 攻撃音再生
         while (timer < BALL_ATTACK_ANIMATION_TIME)
         {
             yield return null; // 1フレーム待機

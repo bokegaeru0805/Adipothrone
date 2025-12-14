@@ -20,6 +20,14 @@ public class PoolableObjectLifecycle : PoolableObject
     [SerializeField, ShowIf(nameof(enableContactLimit))]
     private int maxContactCount = 1;
 
+    [Header("SE設定")]
+    [Tooltip("最大接触回数を越えて接触した場合、SEを再生するかどうか")]
+    [SerializeField]
+    private bool playSeOnMaxContact = false;
+
+    [Tooltip("最大接触回数を越えたときに再生するSE")]
+    [SerializeField, ShowIf(nameof(playSeOnMaxContact))]
+    private SeSelector maxContactSe;
     private int currentContactCount = 0;
 
     public int MaxContactCount
@@ -28,13 +36,24 @@ public class PoolableObjectLifecycle : PoolableObject
         set => maxContactCount = Mathf.Max(0, value);
     }
     private LayerMask groundLayer; //接触をカウントする対象のレイヤー
-
-    // 現在実行中の自動消滅コルーチンを保持する変数
-    private Coroutine currentDespawnCoroutine;
+    private Coroutine currentDespawnCoroutine; // 現在実行中の自動消滅コルーチンを保持する変数
+    CriWare.Assets.CriAtomSePlayer sePlayer;
 
     private void Awake()
     {
         groundLayer = LayerMask.GetMask(GameConstants.PhysicsLayerName_Ground); // Groundレイヤーを取得
+
+        if (playSeOnMaxContact)
+        {
+            sePlayer = GetComponent<CriWare.Assets.CriAtomSePlayer>();
+            if (sePlayer == null)
+            {
+                Debug.LogWarning(
+                    "PoolableObjectLifecycle: SEを再生する設定ですが、CriAtomSePlayerコンポーネントがアタッチされていません。"
+                );
+                playSeOnMaxContact = false; // SE再生を無効化
+            }
+        }
     }
 
     private void OnEnable()
@@ -86,6 +105,12 @@ public class PoolableObjectLifecycle : PoolableObject
         {
             // 接触回数が上限に達したらプールに返却
             ReturnToPool();
+
+            // 必要ならSEを再生
+            if (playSeOnMaxContact)
+            {
+                sePlayer.Play(maxContactSe.GetSelectedEnum());
+            }
         }
     }
 }

@@ -5,15 +5,15 @@
  *  ACB  Ver.        : Ver.1.44.1
  *  File Path        : C:/Users/nakae/Desktop/Adipothrone/Assets/SoundData/Public
  *  File Name        : SESheet.h
- *  File Size        : 5392704 bytes
- *  Date Time        : 2025/11/17 23:48:40
+ *  File Size        : 8480256 bytes
+ *  Date Time        : 2025/12/15 01:15:24
  *  Target           : Public
- *  Cues             : 75
+ *  Cues             : 86
  *  CueSheet Comment : 
  *  Stream Awb Path  : C:/Users/nakae/Desktop/Adipothrone/Assets/SoundData/Public/SESheet.awb
  *===========================================================================*/
 
-#define CRI_SESHEET_CUENUM (75)
+#define CRI_SESHEET_CUENUM (86)
 
 /* AISAC Control List (AISAC Control ID) */
 
@@ -93,6 +93,17 @@
 #define CRI_SESHEET_WATERDRIP1           (67) /*  */
 #define CRI_SESHEET_WATERDROP1           (68) /*  */
 #define CRI_SESHEET_WEAPONDECISION1      (69) /*  */
+#define CRI_SESHEET_ATTACK_WIND1         (75) /*  */
+#define CRI_SESHEET_WINDGUST             (76) /*  */
+#define CRI_SESHEET_ATTACK_THROW1        (77) /*  */
+#define CRI_SESHEET_SHOOT_WATER1         (81) /*  */
+#define CRI_SESHEET_SAND1                (78) /*  */
+#define CRI_SESHEET_SANDEMERGE           (79) /*  */
+#define CRI_SESHEET_SANDSUBMERGE         (80) /*  */
+#define CRI_SESHEET_DROP_METAL           (82) /*  */
+#define CRI_SESHEET_GEARTURN             (83) /*  */
+#define CRI_SESHEET_CLASH_WATERGLASS     (84) /*  */
+#define CRI_SESHEET_WATERMOVE1           (85) /*  */
 
 /* Block List (Block Index) */
 

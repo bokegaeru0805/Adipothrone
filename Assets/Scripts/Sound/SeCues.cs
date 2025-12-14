@@ -61,7 +61,8 @@ public enum SE_EnemyAction
     FastMove1 = 4010,
     Roar1 = 4015,
     Shoot1_Enemy = 4020,
-    Shoot2_Enemy = 4030,
+    Shoot2_Enemy = 4021,
+    Shoot_Water1 = 4025,
     Impact_iron1 = 4035,
     Attack_slime1 = 4040,
     Attack_slime_boss = 4041,
@@ -75,6 +76,12 @@ public enum SE_EnemyAction
     RareEnemyAppear = 4075,
     Death1 = 4080,
     Walk1 = 4085,
+    Attack_wind1 = 4090,
+    Attack_throw1 = 4095,
+    SandEmerge = 4100,
+    SandSubmerge = 4101,
+    Drop_Metal = 4102,
+    GearTurn = 4003,
 }
 
 /// <summary>
@@ -87,7 +94,7 @@ public enum SE_Field
     DoorOpenLock = 5010,
     OpenTreasurebox1 = 5015,
     Collapse1 = 5020,
-    Collapse2 = 5025,
+    Collapse2 = 5021,
     Collapse3 = 5022,
     SmallBomb = 5030,
     SmallCollapse = 5035,
@@ -100,6 +107,10 @@ public enum SE_Field
     GroundRumble1 = 5065,
     LiftMove_Wood = 5070,
     FireBurning1 = 5075,
+    WindGust = 5080,
+    Sand1 = 5085,
+    Clash_WaterGlass = 5090,
+    WaterMove1 = 5095,
 }
 
 /// <summary>
