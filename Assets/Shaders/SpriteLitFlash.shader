@@ -6,6 +6,18 @@ Shader "MyShaders/2D/SpriteLitFlash"
         _MaskTex("Mask", 2D) = "white" {}
         _NormalMap("Normal Map", 2D) = "bump" {}
 
+        // --- オーバーレイプロパティ開始 ---
+        [Header(Overlay Effect)]
+        [Toggle(_OVERLAY_ON)] _OverlayOn("Enable Overlay", Float) = 0
+        [Toggle(_OVERLAY_MULT_ON)] _OverlayMultOn("Overlay Multiply Mode", Float) = 0
+        _OverlayTex("Overlay Texture", 2D) = "white" {}
+        _OverlayColor("Overlay Color", Color) = (1, 1, 1, 1)
+        _OverlayGlow("Overlay Glow", Range(0,25)) = 1
+        _OverlayBlend("Overlay Blend", Range(0, 1)) = 1
+        _OverlayTextureScrollXSpeed("Speed X Axis", Range(-5, 5)) = 0.25
+        _OverlayTextureScrollYSpeed("Speed Y Axis", Range(-5, 5)) = 0.25
+        // --- オーバーレイプロパティ終了 ---
+
         [Header(Flash Effect)]
         _FlashAmount ("Flash Amount", Range(0,1)) = 0.0
         _FlashColor ("Flash Color", Color) = (1,1,1,1)
@@ -42,6 +54,11 @@ Shader "MyShaders/2D/SpriteLitFlash"
             #pragma multi_compile USE_SHAPE_LIGHT_TYPE_3 __
             #pragma multi_compile _ DEBUG_DISPLAY
 
+            // --- オーバーレイ機能の有効化スイッチ ---
+            #pragma shader_feature_local _OVERLAY_ON
+            #pragma shader_feature_local _OVERLAY_MULT_ON
+            // ------------------------------------
+
             struct Attributes
             {
                 float3 positionOS   : POSITION;
@@ -74,6 +91,17 @@ Shader "MyShaders/2D/SpriteLitFlash"
 
             half _FlashAmount;
             half4 _FlashColor;
+
+            // --- オーバーレイ用変数定義 ---
+            TEXTURE2D(_OverlayTex);
+            SAMPLER(sampler_OverlayTex);
+            half4 _OverlayTex_ST;
+            half4 _OverlayColor;
+            half _OverlayGlow;
+            half _OverlayBlend;
+            half _OverlayTextureScrollXSpeed;
+            half _OverlayTextureScrollYSpeed;
+            // ---------------------------
 
             #if USE_SHAPE_LIGHT_TYPE_0
             SHAPE_LIGHT(0)
@@ -125,6 +153,31 @@ Shader "MyShaders/2D/SpriteLitFlash"
 
                 // フラッシュの色を合成する
                 finalColor.rgb = lerp(finalColor.rgb, _FlashColor.rgb, _FlashAmount);
+
+                // --- オーバーレイ処理開始 ---
+                #if defined(_OVERLAY_ON)
+                    float2 overlayUvs = i.uv;
+                    // 時間経過によるスクロール計算
+                    overlayUvs.x += (_Time.y * _OverlayTextureScrollXSpeed) % 1.0;
+                    overlayUvs.y += (_Time.y * _OverlayTextureScrollYSpeed) % 1.0;
+                    
+                    // テクスチャのサンプリングとST(Tiling/Offset)の適用
+                    half4 overlayCol = SAMPLE_TEXTURE2D(_OverlayTex, sampler_OverlayTex, TRANSFORM_TEX(overlayUvs, _OverlayTex));
+                    
+                    // 色と発光強度の適用
+                    overlayCol.rgb *= _OverlayColor.rgb * _OverlayGlow;
+
+                    #if !defined(_OVERLAY_MULT_ON)
+                        // 加算合成
+                        overlayCol.rgb *= overlayCol.a * _OverlayColor.rgb * _OverlayColor.a * _OverlayBlend;
+                        finalColor.rgb += overlayCol.rgb;
+                    #else
+                        // 乗算合成
+                        overlayCol.a *= _OverlayColor.a;
+                        finalColor = lerp(finalColor, finalColor * overlayCol, _OverlayBlend);
+                    #endif
+                #endif
+                // --- オーバーレイ処理終了 ---
                 
                 // 合成した色を返す
                 return finalColor;
@@ -205,6 +258,11 @@ Shader "MyShaders/2D/SpriteLitFlash"
             #pragma vertex UnlitVertex
             #pragma fragment UnlitFragment
 
+            // --- オーバーレイ機能の有効化スイッチ ---
+            #pragma shader_feature_local _OVERLAY_ON
+            #pragma shader_feature_local _OVERLAY_MULT_ON
+            //
+
             struct Attributes
             {
                 float3 positionOS   : POSITION;
@@ -233,6 +291,17 @@ Shader "MyShaders/2D/SpriteLitFlash"
             half _FlashAmount;
             half4 _FlashColor;
 
+            // --- オーバーレイ用変数定義 ---
+            TEXTURE2D(_OverlayTex);
+            SAMPLER(sampler_OverlayTex);
+            half4 _OverlayTex_ST;
+            half4 _OverlayColor;
+            half _OverlayGlow;
+            half _OverlayBlend;
+            half _OverlayTextureScrollXSpeed;
+            half _OverlayTextureScrollYSpeed;
+            // ---------------------------
+
             Varyings UnlitVertex(Attributes attributes)
             {
                 Varyings o = (Varyings)0;
@@ -254,6 +323,31 @@ Shader "MyShaders/2D/SpriteLitFlash"
 
                 // フラッシュの色を合成する
                 mainTex.rgb = lerp(mainTex.rgb, _FlashColor.rgb, _FlashAmount);
+
+                // --- オーバーレイ処理開始 ---
+                #if defined(_OVERLAY_ON)
+                    float2 overlayUvs = i.uv;
+                    // 時間経過によるスクロール計算
+                    overlayUvs.x += (_Time.y * _OverlayTextureScrollXSpeed) % 1.0;
+                    overlayUvs.y += (_Time.y * _OverlayTextureScrollYSpeed) % 1.0;
+                    
+                    // テクスチャのサンプリング
+                    half4 overlayCol = SAMPLE_TEXTURE2D(_OverlayTex, sampler_OverlayTex, TRANSFORM_TEX(overlayUvs, _OverlayTex));
+                    
+                    // 色と発光強度の適用
+                    overlayCol.rgb *= _OverlayColor.rgb * _OverlayGlow;
+
+                    #if !defined(_OVERLAY_MULT_ON)
+                        // 加算合成
+                        overlayCol.rgb *= overlayCol.a * _OverlayColor.rgb * _OverlayColor.a * _OverlayBlend;
+                        mainTex.rgb += overlayCol.rgb;
+                    #else
+                        // 乗算合成
+                        overlayCol.a *= _OverlayColor.a;
+                        mainTex = lerp(mainTex, mainTex * overlayCol, _OverlayBlend);
+                    #endif
+                #endif
+                // --- オーバーレイ処理終了 ---
 
                 #if defined(DEBUG_DISPLAY)
                 SurfaceData2D surfaceData;

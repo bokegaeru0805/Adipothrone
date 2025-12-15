@@ -1,7 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using DG.Tweening;
-using NaughtyAttributes;
+using MyGame.CameraControl;
 using UnityEngine;
 
 [RequireComponent(typeof(CriWare.Assets.CriAtomSePlayer))]
@@ -185,8 +185,6 @@ public class DesertTempleBossMoveController_smoke : MonoBehaviour
     }
 
     private MovementPattern movementPattern = MovementPattern.Standard; // 動きのパターン
-
-    private SpriteRenderer spriteRenderer;
     private SpriteRenderer rightArmSpriteRenderer;
     private SpriteRenderer leftArmSpriteRenderer;
     private CriWare.Assets.CriAtomSePlayer sePlayer;
@@ -219,7 +217,6 @@ public class DesertTempleBossMoveController_smoke : MonoBehaviour
         }
 
         sePlayer = GetComponent<CriWare.Assets.CriAtomSePlayer>();
-        spriteRenderer = GetComponent<SpriteRenderer>();
 
         // パーツのSpriteRendererを取得
         rightArmSpriteRenderer = rightArmObject.GetComponent<SpriteRenderer>();
@@ -553,6 +550,7 @@ public class DesertTempleBossMoveController_smoke : MonoBehaviour
 
             // SE再生
             sePlayer.Play(SE_EnemyAction.Shoot_Water1);
+            CameraManager.instance?.PlayCustomShake(1.0f, 2.0f, 0.3f); //カメラ揺れ
         }
 
         //右腕のスプライトを通常用に戻す
@@ -689,6 +687,7 @@ public class DesertTempleBossMoveController_smoke : MonoBehaviour
 
         // 回転・拡大演出
         float elapsedTime = 0f;
+        CameraManager.instance?.PlayCustomShake(0.3f, 8.0f, bothArmsAttackSpawnTime); //カメラ揺れ
 
         while (elapsedTime < bothArmsAttackSpawnTime)
         {
@@ -742,6 +741,7 @@ public class DesertTempleBossMoveController_smoke : MonoBehaviour
 
         // 発射処理 (法線方向へ飛ばす)
         spawnCenter = transform.position + baseOffset; // 発射時の中心位置
+        CameraManager.instance?.PlayCustomShake(3.5f, 2.0f, 0.3f); //カメラ揺れ
 
         foreach (var b in bullets)
         {

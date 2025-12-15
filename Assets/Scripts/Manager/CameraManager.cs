@@ -1,8 +1,8 @@
 using System.Collections;
 using Cinemachine;
 using DG.Tweening;
-using TMPro;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 namespace MyGame.CameraControl
 {
@@ -13,11 +13,11 @@ namespace MyGame.CameraControl
 
         [SerializeField]
         [Tooltip("敵ヒット時の揺れの強さ（振幅）")]
-        private float hitShakeAmplitude = 1.0f;
+        private float hitShakeAmplitude = 0.35f;
 
         [SerializeField]
         [Tooltip("敵ヒット時の揺れの細かさ（周波数）")]
-        private float hitShakeFrequency = 1.0f;
+        private float hitShakeFrequency = 2.0f;
         public static CameraManager instance { get; private set; }
         private Camera cam;
         private CinemachineVirtualCamera virtualCamera;
@@ -28,11 +28,21 @@ namespace MyGame.CameraControl
         private Coroutine shakeCoroutine = null; // 実行中のシェイクコルーチンを管理
         private Coroutine dampingResetCoroutine = null; // 実行中のダンピングリセットコルーチンを管理するための変数
         private bool isPriorityShakeActive = false; // 優先度の高い（カスタム）シェイクが実行中か
+#if UNITY_EDITOR
+        // 開発用フラグ：デバッグシーンかどうか
+        private bool isDebugScene = false;
+#endif
+
         private void Awake()
         {
             if (instance == null)
             {
                 instance = this;
+
+#if UNITY_EDITOR
+                // デバッグシーンかどうかを判定
+                isDebugScene = SceneManager.GetActiveScene().name.Contains("Debug");
+#endif
 
                 // 自動でMain Cameraを取得
                 if (cam == null)
@@ -46,7 +56,16 @@ namespace MyGame.CameraControl
                     boundaryChecker = cam.GetComponent<CameraBoundaryChecker>();
                 }
 
-                if (boundaryChecker == null)
+                if (cam == null)
+                {
+                    Debug.LogError("CameraManagerはMain Cameraを取得できませんでした");
+                }
+
+                if (boundaryChecker == null
+#if UNITY_EDITOR
+                    && !isDebugScene
+#endif
+                )
                 {
                     Debug.LogError("CameraManagerはCameraBoundaryCheckerを取得できませんでした");
                 }
@@ -57,7 +76,7 @@ namespace MyGame.CameraControl
                     virtualCamera = FindObjectOfType<CinemachineVirtualCamera>();
                 }
 
-                if (cam == null || virtualCamera == null)
+                if (virtualCamera == null)
                 {
                     Debug.LogError("CameraManagerはカメラに関する要素を取得できませんでした");
                     return;
@@ -67,6 +86,13 @@ namespace MyGame.CameraControl
                     virtualCamera.enabled = false;
                     // Virtual Cameraを初期状態では無効化
                     //CameraBoundaryCheckerで有効化される
+
+#if UNITY_EDITOR
+                    if (isDebugScene)
+                    {
+                        virtualCamera.enabled = true; // デバッグシーンでは最初から有効化しておく
+                    }
+#endif
                 }
 
                 // CinemachineTransposerを取得
@@ -77,7 +103,14 @@ namespace MyGame.CameraControl
                 }
                 else
                 {
-                    Debug.LogError("CameraManagerはCinemachineTransposerを取得できませんでした");
+#if UNITY_EDITOR
+                    if (!isDebugScene)
+                    {
+                        Debug.LogError(
+                            "CameraManagerはCinemachineTransposerを取得できませんでした"
+                        );
+                    }
+#endif
                 }
 
                 // VCamからNoiseコンポーネントを取得
@@ -86,7 +119,7 @@ namespace MyGame.CameraControl
                 if (perlinNoise == null)
                 {
                     // このエラーが出た場合、VCamにNoiseコンポーネントを追加し、Profileを設定してください
-                    Debug.LogWarning(
+                    Debug.LogError(
                         "CameraManagerはCinemachineBasicMultiChannelPerlinを取得できませんでした。ダメージ時の揺れは機能しません。"
                     );
                 }
@@ -238,7 +271,7 @@ namespace MyGame.CameraControl
             // Noiseを無効化（揺れ停止）
             // perlinNoise.enabled = false;
             perlinNoise.m_NoiseProfile = null;
-            perlinNoise.m_AmplitudeGain  = 0f;
+            perlinNoise.m_AmplitudeGain = 0f;
             perlinNoise.m_FrequencyGain = 0f;
 
             // 管理変数をクリア
