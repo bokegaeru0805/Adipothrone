@@ -12,4 +12,9 @@ public enum EnemyName
     stone_golem = 15011,
     rock_stone_golem = 15012,
     nightBorne = 15013,
+    babyDrake = 15014,
+    cactusEnemy = 15015,
+    dustDevil = 15016,
+    desertTempleGolem = 15017,
+    dustDevilActive = 15018,
 }

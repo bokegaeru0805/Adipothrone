@@ -10,6 +10,11 @@ using UnityEngine;
 /// </summary>
 public abstract class CharacterHealth : MonoBehaviour, IDamageable, IDroppable, IDefeatable
 {
+    // --- シェーダープロパティ・キーワード名 ---
+    private const string SHADER_PROP_FLASH_AMOUNT = "_FlashAmount";
+    private const string SHADER_PROP_OVERLAY_ON = "_OverlayOn";
+    private const string SHADER_KEYWORD_OVERLAY_ON = "_OVERLAY_ON";
+
     // --- プロパティ（継承先クラスから読み書き可能） ---
     public int MaxHP { get; protected set; }
     public int CurrentHP { get; protected set; }
@@ -38,8 +43,13 @@ public abstract class CharacterHealth : MonoBehaviour, IDamageable, IDroppable, 
     [SerializeField]
     protected EnemyData enemyData;
 
+    [Tooltip("このキャラクターがオーバーレイテクスチャ効果を使用するかどうか")]
+    [SerializeField]
+    private bool enableOverlayTexture = false;
+
     // --- 内部参照（継承先クラスで利用） ---
     protected SpriteRenderer spriteRenderer;
+    protected Material material; // マテリアル設定を参照するための変数
     protected Color col;
     protected Animator animator;
 
@@ -69,7 +79,11 @@ public abstract class CharacterHealth : MonoBehaviour, IDamageable, IDroppable, 
         else
         {
             col = spriteRenderer.color;
+            material = spriteRenderer.material;
         }
+
+        // オーバーレイテクスチャ効果の初期設定
+        SetOverlayEnabled(enableOverlayTexture);
 
         // スプライトの画面上でのサイズを計算し、大きいかどうかを判定する
         CalculateSpriteScreenSize();
@@ -140,7 +154,7 @@ public abstract class CharacterHealth : MonoBehaviour, IDamageable, IDroppable, 
         RecordDefeat();
 
         // 共通の死亡時処理
-        this.tag = "Untagged"; // 敵として認識されなくなるようタグを変更
+        this.tag = GameConstants.UntaggedName; // 敵として認識されなくなるようタグを変更
         DropOnDeathHandler.Drop(this); // アイテムドロップ処理を呼び出す
 
         // 固有の死亡演出を呼び出す（中身は継承先クラスで実装）
@@ -183,7 +197,7 @@ public abstract class CharacterHealth : MonoBehaviour, IDamageable, IDroppable, 
 
         Material mat = spriteRenderer.material;
 
-        if (mat.HasProperty("_FlashAmount"))
+        if (mat.HasProperty(SHADER_PROP_FLASH_AMOUNT))
         {
             // isLargeSpriteフラグに応じて、使用するフラッシュの明るさを決定
             float flashAmountToUse = isLargeSprite ? reducedFlashAmount : normalFlashAmount;
@@ -191,12 +205,12 @@ public abstract class CharacterHealth : MonoBehaviour, IDamageable, IDroppable, 
             try
             {
                 // 決定した明るさでフラッシュさせる
-                mat.SetFloat("_FlashAmount", flashAmountToUse);
+                mat.SetFloat(SHADER_PROP_FLASH_AMOUNT, flashAmountToUse);
                 yield return new WaitForSeconds(0.1f);
             }
             finally
             {
-                mat.SetFloat("_FlashAmount", 0.0f);
+                mat.SetFloat(SHADER_PROP_FLASH_AMOUNT, 0.0f);
             }
         }
         else
@@ -233,7 +247,7 @@ public abstract class CharacterHealth : MonoBehaviour, IDamageable, IDroppable, 
             // 閾値と比較してフラグを設定
             isLargeSprite = spriteArea > largeSpriteAreaThreshold;
 
-            // // デバッグ用に計算結果を出力（調整時に便利です）
+            // // デバッグ用に計算結果を出力
             // Debug.Log(
             //     $"[{this.gameObject.name}] Sprite Area: {spriteArea:F0} pixels. Is large? -> {isLargeSprite}",
             //     this
@@ -336,6 +350,56 @@ public abstract class CharacterHealth : MonoBehaviour, IDamageable, IDroppable, 
             // そのまま割り算すると小数点以下が切り捨てられてしまいます。(例: 50 / 100 = 0)
             // (float)とキャスト（型変換）することで、正しい小数点の割合(0.5)を算出します。
             return (float)CurrentHP / MaxHP;
+        }
+    }
+
+    /// <summary>
+    /// シェーダーのオーバーレイ機能を有効または無効にします。
+    /// このメソッドを呼び出すと、このオブジェクトに割り当てられたマテリアルが複製され、設定が独立します。
+    /// </summary>
+    /// <param name="isEnabled">trueでオーバーレイを有効化、falseで無効化します。</param>
+    public void SetOverlayEnabled(bool isEnabled)
+    {
+        if (material == null)
+        {
+            Debug.LogError("マテリアルが見つかりません。");
+            return;
+        }
+
+        if (material.HasProperty(SHADER_PROP_OVERLAY_ON))
+        {
+            if (isEnabled)
+            {
+                // プロパティの数値を1（On）にする
+                if (material.HasProperty(SHADER_PROP_OVERLAY_ON))
+                {
+                    material.SetFloat(SHADER_PROP_OVERLAY_ON, 1.0f);
+                }
+                // シェーダーのキーワードを有効化する（これをしないと描画ロジックが動かない）
+                material.EnableKeyword(SHADER_KEYWORD_OVERLAY_ON);
+            }
+            else
+            {
+                // プロパティの数値を0（Off）にする
+                if (material.HasProperty(SHADER_PROP_OVERLAY_ON))
+                {
+                    material.SetFloat(SHADER_PROP_OVERLAY_ON, 0.0f);
+                }
+                // シェーダーのキーワードを無効化する
+                material.DisableKeyword(SHADER_KEYWORD_OVERLAY_ON);
+            }
+        }
+        else
+        {
+            if (isEnabled)
+            {
+                Debug.LogWarning(
+                    "マテリアルに '"
+                        + SHADER_PROP_OVERLAY_ON
+                        + "' プロパティが存在しません。シェーダーを確認してください。",
+                    this
+                );
+            }
         }
     }
 

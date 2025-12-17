@@ -5,15 +5,15 @@
  *  ACB  Ver.        : Ver.1.44.1
  *  File Path        : C:/Users/nakae/Desktop/Adipothrone/Assets/SoundData/Public
  *  File Name        : SESheet.h
- *  File Size        : 8480256 bytes
- *  Date Time        : 2025/12/15 01:15:24
+ *  File Size        : 8581984 bytes
+ *  Date Time        : 2025/12/17 20:21:43
  *  Target           : Public
- *  Cues             : 86
+ *  Cues             : 87
  *  CueSheet Comment : 
  *  Stream Awb Path  : C:/Users/nakae/Desktop/Adipothrone/Assets/SoundData/Public/SESheet.awb
  *===========================================================================*/
 
-#define CRI_SESHEET_CUENUM (86)
+#define CRI_SESHEET_CUENUM (87)
 
 /* AISAC Control List (AISAC Control ID) */
 
@@ -94,7 +94,8 @@
 #define CRI_SESHEET_WATERDROP1           (68) /*  */
 #define CRI_SESHEET_WEAPONDECISION1      (69) /*  */
 #define CRI_SESHEET_ATTACK_WIND1         (75) /*  */
-#define CRI_SESHEET_WINDGUST             (76) /*  */
+#define CRI_SESHEET_WINDGUST_WEAK        (76) /*  */
+#define CRI_SESHEET_WINDGUST_STRONG      (86) /*  */
 #define CRI_SESHEET_ATTACK_THROW1        (77) /*  */
 #define CRI_SESHEET_SHOOT_WATER1         (81) /*  */
 #define CRI_SESHEET_SAND1                (78) /*  */

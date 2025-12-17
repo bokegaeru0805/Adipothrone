@@ -18,6 +18,20 @@ public class PlayerTestMoveController : MonoBehaviour
     [SerializeField, ShowIf(nameof(useKeyboardInput))]
     private float moveSpeed = 5.0f;
 
+    [Header("ダメージテスト機能")]
+    [Tooltip("ダメージを与える対象のオブジェクト（CharacterHealth継承スクリプトがついているもの）")]
+    [SerializeField]
+    private GameObject targetObject;
+
+    [Tooltip("ダメージを与えるトリガーとなるキー")]
+    [SerializeField]
+    private KeyCode damageKey = KeyCode.D;
+
+    [Tooltip("1回に与えるダメージ量")]
+    [SerializeField]
+    private int damageAmount = 10;
+
+    [Space(100)]
     // Playモード停止機能のための設定項目
     [Header("エディタ用デバッグ機能")]
     [Tooltip("このキーを指定回数連打するとPlayモードを停止します")]
@@ -72,10 +86,45 @@ public class PlayerTestMoveController : MonoBehaviour
             transform.position = mouseWorldPosition;
         }
 
+        // --- ダメージテスト入力の検知 ---
+        if (Input.GetKeyDown(damageKey))
+        {
+            ApplyDamage();
+        }
+
         // エディタ内でのみ実行するキー連打チェック処理
 #if UNITY_EDITOR
         HandleEditorStop();
 #endif
+    }
+
+    /// <summary>
+    /// ターゲットオブジェクトにダメージを与える
+    /// </summary>
+    private void ApplyDamage()
+    {
+        if (targetObject == null)
+        {
+            Debug.LogWarning("ダメージ対象のオブジェクト(Target Object)が設定されていません。");
+            return;
+        }
+
+        // CharacterHealthコンポーネントを取得（継承したクラスも取得可能）
+        var health = targetObject.GetComponent<CharacterHealth>();
+
+        if (health != null)
+        {
+            health.Damage(damageAmount);
+            Debug.Log(
+                $"<color=red>Damage Test:</color> {targetObject.name} に {damageAmount} のダメージを与えました。(CurrentHP: {health.CurrentHP})"
+            );
+        }
+        else
+        {
+            Debug.LogError(
+                $"{targetObject.name} には CharacterHealth を継承したコンポーネントが見つかりません。"
+            );
+        }
     }
 
     // Playモード停止を処理する専用の関数

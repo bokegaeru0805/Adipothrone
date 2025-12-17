@@ -27,11 +27,8 @@ namespace MyGame.CameraControl
         private const float HIT_SHAKE_DURATION = 0.1f; // 敵ヒット時0.1秒間揺らす
         private Coroutine shakeCoroutine = null; // 実行中のシェイクコルーチンを管理
         private Coroutine dampingResetCoroutine = null; // 実行中のダンピングリセットコルーチンを管理するための変数
-        private bool isPriorityShakeActive = false; // 優先度の高い（カスタム）シェイクが実行中か
-#if UNITY_EDITOR
-        // 開発用フラグ：デバッグシーンかどうか
-        private bool isDebugScene = false;
-#endif
+        private bool isPriorityShakeActive = false; // 優先度の高い（カスタム）シェイクが実行中かどうかを示すフラグ
+        private bool isDebugScene = false; // 開発用フラグ：デバッグシーンかどうか
 
         private void Awake()
         {

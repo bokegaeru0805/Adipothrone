@@ -5,7 +5,7 @@ using MyGame.CameraControl;
 using UnityEngine;
 
 [RequireComponent(typeof(CriWare.Assets.CriAtomSePlayer))]
-public class DesertTempleBossMoveController_smoke : MonoBehaviour
+public class DesertTempleBossSmokeMoveController : MonoBehaviour
 {
     private const string RIGHTARM_SHOOT_POOLTAG = "DesertTempleGolemShoot";
     private const string LEFTARM_SHOOT_POOLTAG = "DesertTempleBossShoot1";

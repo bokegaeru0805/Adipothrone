@@ -182,7 +182,7 @@ public class DustDevilMoveController : MonoBehaviour, IEnemyResettable
         currentState = DustDevilState.Idle; // 初期状態をIdleに設定
 
         animator.SetTrigger("IdleTrigger"); // アニメーションをIdleに設定
-        sePlayer.Play(SE_Field.WindGust); // 環境音：風の音再生
+        sePlayer.Play(SE_Field.WindGust_weak); // 環境音：風の音再生
 
         //古いTweenがあれば破棄（二重再生防止）
         if (floatingTween != null)
@@ -327,7 +327,7 @@ public class DustDevilMoveController : MonoBehaviour, IEnemyResettable
 
     private void OnDisable()
     {
-        // オブジェクトが無効化されたらTweenを止める
+        // オブジェクトが非アクティブ化されたらTweenを止める
         if (floatingTween != null)
         {
             floatingTween.Kill();

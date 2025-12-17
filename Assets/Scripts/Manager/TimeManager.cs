@@ -1,5 +1,6 @@
 using System.Collections;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 /// <summary>
 /// ゲーム全体の時間（Time.timeScale）を安全に管理するシングルトンクラス。
@@ -16,6 +17,7 @@ public class TimeManager : MonoBehaviour
     /// ゲーム全体で一意に管理されるため、staticにはしません。
     /// </summary>
     public bool isEnemyMovePaused { get; private set; } = false;
+    private bool isDebugScene = false; // 開発用フラグ：デバッグシーンかどうか
 
     private void Awake()
     {
@@ -23,6 +25,10 @@ public class TimeManager : MonoBehaviour
         {
             instance = this;
             //DontDestroyOnLoad(gameObject); //シーンが変わると破棄されるので、不要
+#if UNITY_EDITOR
+            // デバッグシーンかどうかを判定
+            isDebugScene = SceneManager.GetActiveScene().name.Contains("Debug");
+#endif
         }
         else
         {
@@ -92,4 +98,18 @@ public class TimeManager : MonoBehaviour
     {
         Time.timeScale = 1f;
     }
+
+#if UNITY_EDITOR
+    private void Update()
+    {
+        // デバッグシーンの場合、キーボード入力で時間停止をテスト可能にする
+        if (isDebugScene)
+        {
+            if (Input.GetKeyDown(KeyCode.P))
+            {
+                SetEnemyMovePaused(!isEnemyMovePaused);
+            }
+        }
+    }
+#endif
 }
