@@ -67,156 +67,157 @@ public class ControlGuideUIImageSwitcher : MonoBehaviour
 
     private void Start()
     {
-        //ゲームがまだ開始されていない場合は何もしない
+        // エディタ実行時など、特別なケースへの対応（前の修正に準拠）
         if (!GameManager.isFirstGameSceneOpen)
+            return;
+
+        // すでにロードが完了しているかチェック
+        if (!SaveLoadManager.IsLoading)
         {
+            // ロード済みなら即座に初期化
+            InitializeControlGuide();
+        }
+        else
+        {
+            // ロード中なら、完了イベントを待つ
+            SaveLoadManager.OnLoadingStateChanged += OnLoadingStateChanged;
+
+            // 初期化されるまではUpdateを動かさないようにして負荷を下げる
+            this.enabled = false;
+        }
+    }
+
+    /// <summary>
+    /// ロード状態が変化した時に呼ばれる
+    /// </summary>
+    private void OnLoadingStateChanged(bool isLoading)
+    {
+        if (!isLoading)
+        {
+            // ロード完了！ イベント解除して初期化実行
+            SaveLoadManager.OnLoadingStateChanged -= OnLoadingStateChanged;
+            InitializeControlGuide();
+        }
+    }
+
+    /// <summary>
+    /// 実際の初期化処理を行うメソッド
+    /// </summary>
+    private void InitializeControlGuide()
+    {
+        // 1. SaveLoadManagerの確認
+        SaveLoadManager saveLoadManager = SaveLoadManager.instance;
+        if (saveLoadManager == null)
+        {
+            Debug.LogWarning("SaveLoadManagerが見つかりません。");
             return;
         }
 
-        // SaveLoadManagerから設定を読み込む
-            SaveLoadManager saveLoadManager = SaveLoadManager.instance;
-        if (saveLoadManager != null)
+        // 2. 設定の確認（パフォーマンス最適化の要）
+        // 表示設定がOFFなら、オブジェクトごと非表示にして処理を終了する
+        if (!saveLoadManager.Settings.isShowingControlsGuide)
         {
-            //「操作方法UIを表示する」設定がオフ（false）の場合
-            if (!saveLoadManager.Settings.isShowingControlsGuide)
+            if (controlGuidePanel != null)
             {
-                // パネル全体を非表示にして、このスクリプトの以降の初期化処理をすべて中断する
-                if (controlGuidePanel != null)
-                {
-                    controlGuidePanel.SetActive(false);
-                }
-                return; // ここで処理を終了
+                controlGuidePanel.SetActive(false);
             }
-        }
-        else
-        {
-            Debug.LogWarning(
-                "SaveLoadManagerが見つかりません。操作ガイドの表示設定を読み込めませんでした。",
-                this
-            );
-            // SaveLoadManagerが見つからない場合は、デフォルトで表示する前提で処理を続行
-        }
-
-        // 他コンポーネントのAwake()での初期化を保証するため、イベント購読はStart()で行う。
-        GameManager.OnTalkingStateChanged += OnTalkingStateChanged;
-        playerManager = PlayerManager.instance;
-        if (playerManager == null)
-        {
-            Debug.LogError(
-                "PlayerManagerが見つかりません。ControlGuideUIImageSwitcherは機能しません。"
-            );
+            // コンポーネント自体を無効化し、Updateが走らないようにする（軽量化）
+            this.enabled = false;
             return;
         }
-        else
+
+        // --- ここまで到達したら「表示する」ということなので、各種参照を取得 ---
+
+        // PlayerManagerの取得
+        playerManager = PlayerManager.instance;
+        if (playerManager != null)
         {
             playerManager.OnBoolStatusChanged += OnAnyBoolStatusChanged;
         }
-
-        spotlightController = SpotlightQuickItemController.instance;
-        if (spotlightController == null)
+        else
         {
-            Debug.LogError(
-                "SpotlightQuickItemControllerが見つかりません。ControlGuideUIImageSwitcherは機能しません。"
-            );
+            Debug.LogError("PlayerManagerが見つかりません。");
+            this.enabled = false; // 動けないので無効化
             return;
         }
 
+        // SpotlightControllerの取得
+        spotlightController = SpotlightQuickItemController.instance;
+
+        // GameManagerイベント購読
+        GameManager.OnTalkingStateChanged += OnTalkingStateChanged;
+
+        // プレイヤーとロボットの取得（ロード完了後なので Find で見つかるはず）
         GameObject playerObject = GameObject.FindGameObjectWithTag(GameConstants.PlayerTagName);
         if (playerObject != null)
         {
             playerScript = playerObject.GetComponent<Heroin_move>();
             if (playerScript != null)
             {
-                // プレイヤーの可視状態が変化したときのイベントを購読
                 playerScript.OnPlayerVisibilityChanged += OnPlayerVisibilityChanged;
             }
-            else
-            {
-                Debug.LogWarning(
-                    "プレイヤーのスクリプトが見つかりません。ControlGuideUIImageSwitcherは機能しません。"
-                );
-            }
-        }
 
-        GameObject robotObject = playerObject.transform.GetChild(0).gameObject;
-        if (robotObject != null && robotObject.name == GameConstants.RobotObjectName)
-        {
-            // ロボットの可視状態が変化したときのイベントを購読
-            robotScript = robotObject.GetComponent<Robot_move>();
-            if (robotScript != null)
+            // ロボットの検索（構造依存: Playerの子要素）
+            Transform robotTrans = playerObject.transform.Find(GameConstants.RobotObjectName);
+            // ※ GetChild(0)より名前検索(Find)の方が安全です。構造変化に強いため。
+
+            if (robotTrans != null)
             {
-                robotScript.OnRobotVisibilityChanged += OnRobotVisibilityChanged;
-            }
-            else
-            {
-                Debug.LogWarning(
-                    "ロボットのスクリプトが見つかりません。ControlGuideUIImageSwitcherは機能しません。"
-                );
+                robotScript = robotTrans.GetComponent<Robot_move>();
+                if (robotScript != null)
+                {
+                    robotScript.OnRobotVisibilityChanged += OnRobotVisibilityChanged;
+                }
             }
         }
         else
         {
-            Debug.LogWarning(
-                "ロボットオブジェクトが見つかりません。ControlGuideUIImageSwitcherは機能しません。"
-            );
-        }
-
-        // 現在の状態に基づいて、UIの初期表示を一度だけ設定
-        InitialUISetup();
-    }
-
-    /// <summary>
-    /// このオブジェクトが無効になった時に呼び出されます。
-    /// メモリリークやエラーを防ぐため、購読したイベントを必ず解除します。
-    /// </summary>
-    private void OnDisable()
-    {
-        //ゲームがまだ開始されていない場合は何もしない
-        if (!GameManager.isFirstGameSceneOpen)
+            Debug.LogError("Playerオブジェクトが見つかりません。");
+            this.enabled = false; // 動けないので無効化
             return;
-
-        // イベント購読を解除
-        GameManager.OnTalkingStateChanged -= OnTalkingStateChanged;
-        if (playerManager != null)
-        {
-            playerManager.OnBoolStatusChanged -= OnAnyBoolStatusChanged;
         }
 
-        if (playerScript != null)
-        {
-            // プレイヤーの可視状態が変化したときのイベントを解除
-            playerScript.OnPlayerVisibilityChanged -= OnPlayerVisibilityChanged;
-        }
+        // 3. UIの初期セットアップ
+        InitialUISetup();
 
-        if (robotScript != null)
-        {
-            // ロボットの可視状態が変化したときのイベントを解除
-            robotScript.OnRobotVisibilityChanged -= OnRobotVisibilityChanged;
-        }
+        // 4. Updateを動かすためにコンポーネントを有効化
+        this.enabled = true;
     }
 
     private void Update()
     {
+        // spotlightControllerのnullチェックは Initialize で担保するが、念のため残す
         if (spotlightController == null)
-        {
             return;
-        }
 
-        // 現在のハイライト状態を取得
         bool currentHighlightState = spotlightController.IsHighlighting;
 
-        // 前のフレームから状態が変化していない場合は、何もしない
         if (currentHighlightState == previousQuickItemHighlightState)
-        {
             return;
-        }
 
-        // 状態が変化した場合のみ、オブジェクトの表示/非表示を更新する
         normalControlGuide?.SetActive(!currentHighlightState);
         quickItemHighlightControlGuide?.SetActive(currentHighlightState);
 
-        // 現在の状態を「前の状態」として保存し、次のフレームに備える
         previousQuickItemHighlightState = currentHighlightState;
+    }
+
+    /// <summary>
+    /// 破棄時の処理
+    /// </summary>
+    private void OnDisable()
+    {
+        // イベントの解除漏れを防ぐ
+        SaveLoadManager.OnLoadingStateChanged -= OnLoadingStateChanged;
+        GameManager.OnTalkingStateChanged -= OnTalkingStateChanged;
+
+        if (playerManager != null)
+            playerManager.OnBoolStatusChanged -= OnAnyBoolStatusChanged;
+
+        if (playerScript != null)
+            playerScript.OnPlayerVisibilityChanged -= OnPlayerVisibilityChanged;
+
+        if (robotScript != null)
+            robotScript.OnRobotVisibilityChanged -= OnRobotVisibilityChanged;
     }
 
     // --- イベントハンドラ（イベント発生時に呼び出されるメソッド） ---

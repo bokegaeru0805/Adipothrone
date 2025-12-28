@@ -90,7 +90,7 @@ public class QuickItemPanel : MonoBehaviour
         public Image barFillImage;
     }
 
-    public int currentIndex { get; private set; } = 0;// 現在選択されているクイックスロットのインデックス。
+    public int currentIndex { get; private set; } = 0; // 現在選択されているクイックスロットのインデックス。
 
     private Dictionary<GameObject, (GameObject, Image)> buffUIs;
     private float baseSize = 0; // ボタンのアイテム画像のベースサイズ（初期化時に設定）
@@ -296,15 +296,6 @@ public class QuickItemPanel : MonoBehaviour
                 ChangeAllCountTextImage;
         }
 
-        spotlightController = SpotlightQuickItemController.instance;
-        if (spotlightController == null)
-        {
-            Debug.LogError(
-                "SpotlightQuickItemControllerが見つかりませんでした。QuickItemPanelは正常に動作しません。"
-            );
-            return;
-        }
-
         // 他のマネージャーからのイベントを購読する
         UIManager.OnMenuStateChanged += HandleMenuStateChanged;
         GameManager.OnTalkingStateChanged += HandleTalkingStateChanged;
@@ -354,13 +345,20 @@ public class QuickItemPanel : MonoBehaviour
     {
         if (spotlightController == null)
         {
-            return;
+            spotlightController = SpotlightQuickItemController.instance;
+            if (spotlightController == null)
+            {
+                Debug.LogError(
+                    "SpotlightQuickItemControllerが見つかりませんでした。QuickItemPanelは正常に動作しません。"
+                );
+                return;
+            }
         }
 
         // 1. 一時停止すべきかどうかの条件をチェック
         // UIが開いている、会話中である場合は一時停止
         // この条件を変更する場合は、SpotlightQuickItemControllerのIsHighlightingの条件も変更する必要がある
-        bool shouldBePaused =  isTalking;
+        bool shouldBePaused = isTalking;
 
         // 2. 状態の切り替わりを検知して、適切な処理を一度だけ呼び出す
         if (shouldBePaused && !isUiPaused)

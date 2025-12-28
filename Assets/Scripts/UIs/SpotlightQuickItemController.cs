@@ -21,13 +21,16 @@ public class SpotlightQuickItemController : MonoBehaviour
     private bool isMenuOpen = false; // UIManagerから通知されたメニューの表示状態を保存する変数
     private bool isTalking = false; // 会話状態を保存するローカル変数
 
-    private void Awake()
+    // このスクリプトを持つゲームオブジェクトは非アクティブにしないでください
+    // それを考慮して、Startメソッドでイベントの購読を行います
+    private void Start()
     {
-        //ゲームがまだ開始されていない場合は何もしない
-        if (!GameManager.isFirstGameSceneOpen)
-        {
-            return;
-        }
+        // //ゲームがまだ開始されていない場合は何もしない
+        // //Debug時GameManager.isFirstGameSceneOpenがAwakeでtrueになるときがあるので、Startで判定する
+        // if (!GameManager.isFirstGameSceneOpen)
+        // {
+        //     return;
+        // }
 
         if (instance == null)
         {
@@ -70,12 +73,7 @@ public class SpotlightQuickItemController : MonoBehaviour
 
         // ゲーム開始時は確実に非表示にしておく
         spotlightObject.SetActive(false);
-    }
 
-    // このスクリプトを持つゲームオブジェクトは非アクティブにしないでください
-    // それを考慮して、Startメソッドでイベントの購読を行います
-    private void Start()
-    {
         // イベントを購読する
         UIManager.OnMenuStateChanged += HandleMenuStateChanged;
         GameManager.OnTalkingStateChanged += HandleTalkingStateChanged;

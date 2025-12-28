@@ -562,14 +562,10 @@ public class Heroin_move : MonoBehaviour
         playerEffectManager.OnSpeedEffectChanged += CalculateMoveSpeed;
         playerBodyManager.OnChangeBodyState += GetBodyStateData;
         GameManager.OnTalkingStateChanged += HandleTalkingStateChanged;
+        SaveLoadManager.OnLoadingStateChanged += InitializeStateData;
 
-        // 各状態の初期化
-        GetBodyStateData();
-        CalculateMoveSpeed();
-        OnAnyBoolStatusChanged(
-            PlayerStatusBoolName.isRobotmove,
-            playerManager.GetPlayerBoolStatus(PlayerStatusBoolName.isRobotmove)
-        );
+        // 初期状態の設定
+        InitializeStateData();
 
         // その他の初期化
         spriteRenderer.flipX = true; // 初期状態では右向き
@@ -601,6 +597,7 @@ public class Heroin_move : MonoBehaviour
             playerBodyManager.OnChangeBodyState -= GetBodyStateData;
 
         GameManager.OnTalkingStateChanged -= HandleTalkingStateChanged;
+        SaveLoadManager.OnLoadingStateChanged -= InitializeStateData;
 
         // その他のリセット処理
         move = true; // 操作可能状態に戻す
@@ -622,11 +619,30 @@ public class Heroin_move : MonoBehaviour
         dashSpeed = playerEffectManager.CalculateFinalPlayerMoveSpeed(m_dashDefaultSpeed);
     }
 
+    /// <summary>
+    /// 体形の状態データを取得して設定する
+    /// </summary>
     private void GetBodyStateData()
     {
         BodyState = playerBodyManager.BodyState; //主人公の体形の状態を取得する
         AnimBodyState = playerBodyManager.AnimBodyState; //アニメーションの体形の状態を取得する
         m_animator.SetInteger("BodyState", AnimBodyState); //体形の状態を設定
+    }
+
+    /// <summary>
+    /// 初期状態のデータを設定する
+    /// </summary>
+    private void InitializeStateData(bool _bool = false)
+    {
+        GetBodyStateData();
+        CalculateMoveSpeed();
+
+        GetBodyStateData();
+        CalculateMoveSpeed();
+        OnAnyBoolStatusChanged(
+            PlayerStatusBoolName.isRobotmove,
+            playerManager.GetPlayerBoolStatus(PlayerStatusBoolName.isRobotmove)
+        );
     }
 
     /// <summary>

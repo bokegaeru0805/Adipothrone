@@ -157,7 +157,7 @@ namespace MyGame.CameraControl
 
         /// <summary>
         /// （コルーチン）カメラのY軸追従を即座に行わせ（Damping=0）、ターゲットに十分近づくかカメラが端に達するまで待機し、
-        ///  その後Damping設定を元に戻します。
+        ///  その後Damping設定を元に戻します。タイムアウト付き。
         /// </summary>
         public IEnumerator CameraMove()
         {
@@ -167,22 +167,37 @@ namespace MyGame.CameraControl
                 framing.m_YDamping = 0;
                 yield return null; // 1フレーム待ってCinemachineが位置を更新するのを待つ
 
+                float timeElapsed = 0f;
+                float timeOut = 1.0f; // 最大待機時間（秒）。これを超えたら強制的にループを抜ける
+
                 while (true) // ループ自体は常にtrueにし、中のbreakで抜ける
                 {
+                    timeElapsed += Time.unscaledDeltaTime; // 時間計測
+
                     Vector3 cameraPos = Camera.main.transform.position;
                     Vector3 targetPos = framing.FollowTargetPosition;
 
-                    // 条件1：カメラとターゲットの距離が閾値以下になったらループを抜ける（元の条件）
-                    bool isCloseEnough =
-                        Vector3.Distance(cameraPos, targetPos)
-                        <= GameConstants.PLAYER_CAMERA_FOLLOW_OFFSET.magnitude + 0.1f;
+                    // Z軸を無視してXY平面だけの距離を計算する（2Dゲームの場合、Z軸のズレで判定失敗するのを防ぐ）
+                    float distanceXY = Vector2.Distance(new Vector2(cameraPos.x, cameraPos.y), new Vector2(targetPos.x, targetPos.y));
+
+                    // 条件1：カメラとターゲットの距離が閾値以下になったら
+                    // targetPosはオフセット込みの位置なので、理想的には距離0になるはずだが、余裕を持って判定
+                    bool isCloseEnough = distanceXY <= 0.1f;
 
                     // 条件2：カメラが移動範囲の端におり、かつX座標の差が閾値以下になったらループを抜ける
                     bool isAtEdge = boundaryChecker.CameraAtEdge != null;
 
-                    if (isCloseEnough || isAtEdge)
+                    // 条件3：タイムアウト時間を超えたら強制終了（無限ループ防止）
+                    bool isTimeOut = timeElapsed >= timeOut;
+
+                    if (isCloseEnough || isAtEdge || isTimeOut)
                     {
-                        break; // どちらかの条件を満たしたら待機を終了
+                        if (isTimeOut)
+                        {
+                            // ログを出したくない場合はコメントアウトしてください
+                            Debug.LogWarning("CameraMoveがタイムアウトしました。強制終了します。");
+                        }
+                        break; // いずれかの条件を満たしたら待機を終了
                     }
 
                     yield return null; // 条件を満たさない場合は1フレーム待つ

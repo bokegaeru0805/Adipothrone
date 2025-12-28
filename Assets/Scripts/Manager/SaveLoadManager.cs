@@ -25,13 +25,10 @@ public class SaveSlotInfo
 public class SaveLoadManager : MonoBehaviour
 {
     public static SaveLoadManager instance { get; private set; } //シングルトンインスタンス
-
-    // --- ファイルパスとキーの定義 ---
-    private const string SETTINGS_FILE_PATH = "GameSettings.es3";
+    private const string SETTINGS_FILE_PATH = "GameSettings.es3"; // ファイルパスとキーの定義
+    private const int DEBUG_LOAD_SLOT_NUMBER = -1; //デバッグ用のロードスロット番号
     private Vector2 PlayerStartPos = new Vector2(-110, 0); //プレイヤーの初期座標
-
-    // --- 現在ロードしているデータ ---
-    public GameSettingsSaveData Settings { get; private set; }
+    public GameSettingsSaveData Settings { get; private set; } // 現在ロードしているデータ
     public static float timeSinceLoad; //ロードしてからのプレイ時間を保存する変数
     public static float StartTime; //始まるまでのプレイ時間を保存する変数
     public SaveLoadMode CurrentSaveLoadMode { get; private set; } = SaveLoadMode.Load; //セーブロードの状態を管理する変数
@@ -119,11 +116,11 @@ public class SaveLoadManager : MonoBehaviour
         if (managerStack.Count == 0 || managerStack.Peek() != manager)
         {
             Debug.LogError(
-                $"Managerスタックの登録解除エラー: " + 
-                $"解除しようとした [{manager.GetType().Name}] はスタックの一番上にいません。",
+                $"Managerスタックの登録解除エラー: "
+                    + $"解除しようとした [{manager.GetType().Name}] はスタックの一番上にいません。",
                 manager as MonoBehaviour
             );
-            
+
             // 【堅牢化処理】スタック内に存在する場合は、強制的に取り除く
             // ※通常は起こらないはずだが、安全のため
             if (managerStack.Contains(manager))
@@ -137,7 +134,9 @@ public class SaveLoadManager : MonoBehaviour
                 {
                     managerStack.Push(item);
                 }
-                Debug.LogWarning($"[{manager.GetType().Name}] をスタックの途中から強制的に削除しました。");
+                Debug.LogWarning(
+                    $"[{manager.GetType().Name}] をスタックの途中から強制的に削除しました。"
+                );
             }
             return;
         }
@@ -323,6 +322,22 @@ public class SaveLoadManager : MonoBehaviour
 
     private void Start()
     {
+#if UNITY_EDITOR
+        // エディタ実行時かつ、初回起動であり、現在のシーンがタイトルでない場合
+        if (
+            !GameManager.isFirstGameOpen
+            && SceneManager.GetActiveScene().name != GameConstants.SceneName_Title
+        )
+        {
+            // 即座に実行せず、1フレーム待機するコルーチンを呼び出す
+            StartCoroutine(DebugLoadSequence(DEBUG_LOAD_SLOT_NUMBER));
+            // Debug.Log(
+            //     $"<color=yellow>[Debug]</color> タイトル以外のシーンから開始されました。スロット {DEBUG_LOAD_SLOT_NUMBER} をロードして開始します（シーン遷移なし）。"
+            // );
+            return; // 通常のStart処理は行わない
+        }
+#endif
+
         if (!GameManager.isFirstGameOpen)
         {
             //初めてゲームが開かれたとき
@@ -364,7 +379,10 @@ public class SaveLoadManager : MonoBehaviour
         _timeSinceLastSave += Time.deltaTime;
     }
 
-    public IEnumerator SaveLoad(int file_number)
+    /// <summary>
+    /// セーブまたはロードを実行するコルーチン
+    /// </summary>
+    public IEnumerator SaveLoad(int file_number, bool loadScene = true)
     {
         if (CurrentSaveLoadMode == SaveLoadMode.Save)
         {
@@ -521,34 +539,59 @@ public class SaveLoadManager : MonoBehaviour
                 GameManager.isFirstGameSceneOpen = true; //初回ゲームシーンオープンフラグを立てる
             }
 
+            if (loadScene)
+            {
 #if DEMO_BUILD
-            string sceneName = GameConstants.SceneName_Chapter1; //デモ版の場合、デフォルトのシーン名を変更
+                string sceneName = GameConstants.SceneName_Chapter1; //デモ版の場合、デフォルトのシーン名を変更
 #else
-            string sceneName = GameConstants.SceneName_TutorialStart; //デフォルトのシーン名を設定
+                string sceneName = GameConstants.SceneName_TutorialStart; //デフォルトのシーン名を設定
 #endif
 
-            // セーブデータからシーン名を読み込む（存在チェックも含める）
-            if (ES3.KeyExists("CurrentSceneName", filePath))
-            {
-                sceneName = ES3.Load<string>("CurrentSceneName", filePath);
-            }
+                // セーブデータからシーン名を読み込む（存在チェックも含める）
+                if (ES3.KeyExists("CurrentSceneName", filePath))
+                {
+                    sceneName = ES3.Load<string>("CurrentSceneName", filePath);
+                }
+                
+                AsyncOperation asyncLoad = SceneManager.LoadSceneAsync(sceneName); //Sceneをロード
 
-            AsyncOperation asyncLoad = SceneManager.LoadSceneAsync(sceneName); //Sceneをロード
+                //セーブデータのプレイ時間を更新
+                if (
+                    file_number != GameConstants.NEW_GAME_FILE_NUMBER
+                    && ES3.KeyExists("PlayTime", filePath)
+                )
+                {
+                    SaveLoadManager.StartTime = ES3.Load<float>("PlayTime", filePath);
+                }
+                else
+                {
+                    SaveLoadManager.StartTime = 0f; //開始時間を初期化
+                }
+                //ロードしてからの時間を更新
+                SaveLoadManager.timeSinceLoad = Time.time;
 
-            //セーブデータのプレイ時間を更新
-            if (
-                file_number != GameConstants.NEW_GAME_FILE_NUMBER
-                && ES3.KeyExists("PlayTime", GetSaveFilePath(file_number))
-            )
-            {
-                SaveLoadManager.StartTime = ES3.Load<float>("PlayTime", filePath);
+                //シーンが読み込み完了するまで待つ
+                yield return new WaitUntil(() => asyncLoad.isDone);
             }
             else
             {
-                SaveLoadManager.StartTime = 0f; //開始時間を初期化
+                // シーン遷移しない場合（デバッグ用など）
+                // プレイ時間を同期（シーンロード時の処理と同様に）
+                if (
+                    file_number != GameConstants.NEW_GAME_FILE_NUMBER
+                    && ES3.KeyExists("PlayTime", filePath)
+                )
+                {
+                    SaveLoadManager.StartTime = ES3.Load<float>("PlayTime", filePath);
+                }
+                else
+                {
+                    SaveLoadManager.StartTime = 0f;
+                }
+                SaveLoadManager.timeSinceLoad = Time.time;
+
+                // シーン遷移待ちをスキップ
             }
-            //ロードしてからの時間を更新
-            SaveLoadManager.timeSinceLoad = Time.time;
 
             //プレイヤーの初期座標を初期化
             Vector3 PlayerPosition = new Vector2();
@@ -572,9 +615,6 @@ public class SaveLoadManager : MonoBehaviour
                 PlayerPosition = PlayerStartPos;
 #endif
             }
-
-            //シーンが読み込み完了するまで待つ
-            yield return new WaitUntil(() => asyncLoad.isDone);
 
             //シーンロードが完了したので、"新しいシーンの" PlayerManagerを改めて取得する
             var playerManagerInNewScene = PlayerManager.instance;
@@ -624,8 +664,8 @@ public class SaveLoadManager : MonoBehaviour
             ApplyAudioSettings();
 
             // プレイヤーと敵が同時に出現した場合、即座に物理演算が再開すると
-            // ロード直後にダメージを受ける/敵と接触する などの不具合が起こりうるため
-            yield return null; // 1フレームだけ待機（十分なケースが多い）
+            // ロード直後にダメージを受ける/敵と接触する などの不具合が起こりうるため1フレームだけ待機
+            yield return null;
             TimeManager.instance.ReleasePause(); // 時間の進行を再開
             //会話が発生するようにする
             GameManager.instance.EndTalk(); // 会話中フラグをOFFにする
@@ -640,6 +680,28 @@ public class SaveLoadManager : MonoBehaviour
             _timeSinceLastSave = 0f;
         }
     }
+
+#if UNITY_EDITOR
+    /// <summary>
+    /// デバッグ実行時、他のManagerの初期化(Start)を待ってからロードを行うコルーチン
+    /// </summary>
+    private IEnumerator DebugLoadSequence(int slotNumber)
+    {
+        // 他のManager（特にBGMManager）のStartが走り切るのを1フレーム待つ
+        yield return null;
+
+        Debug.Log(
+            $"<color=yellow>[Debug]</color> タイトル以外のシーンから開始されました。スロット {slotNumber} をロードして開始します（シーン遷移なし）。"
+        );
+
+        GameManager.instance?.ResetState();
+        GameManager.isFirstGameOpen = true;
+        SetToLoadMode();
+
+        // シーン遷移なし(false)でロードを実行
+        yield return StartCoroutine(SaveLoad(slotNumber, false));
+    }
+#endif
 
     /// <summary>
     /// 指定されたファイル番号にゲームデータをセーブする

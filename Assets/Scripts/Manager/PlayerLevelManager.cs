@@ -230,4 +230,27 @@ public class PlayerLevelManager : MonoBehaviour
         }
     }
     #endregion
+    private void OnEnable()
+    {
+        // SaveLoadManagerのロード状態変化イベントを購読
+        SaveLoadManager.OnLoadingStateChanged += HandleLoadingStateChanged;
+    }
+
+    private void OnDisable()
+    {
+        // イベント購読を解除（メモリーリーク防止）
+        SaveLoadManager.OnLoadingStateChanged -= HandleLoadingStateChanged;
+    }
+
+    /// <summary>
+    /// ロード状態が変化した時に呼ばれる処理
+    /// </summary>
+    private void HandleLoadingStateChanged(bool isLoading)
+    {
+        // ロードが完了した(falseになった)タイミングで、データが最新になっているため初期化を実行
+        if (!isLoading)
+        {
+            InitializeLevelFromSaveData();
+        }
+    }
 }

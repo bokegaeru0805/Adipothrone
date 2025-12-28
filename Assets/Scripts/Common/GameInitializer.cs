@@ -5,33 +5,59 @@ using UnityEditor;
 #endif
 
 /// <summary>
-/// ゲーム起動時に初期シーンをロードし、シーンロード後に一度だけ初期化処理を実行するクラス。
-/// Resourcesフォルダ内の'GameInitializeSettings'アセットから設定を読み込みます。
-/// この機能はUnityエディタでのテスト実行時のみ有効です。
+/// ゲーム起動時に初期シーンを強制的にロードするかどうかを制御するクラス。
+/// ToolsメニューからON/OFFを切り替えられます。
 /// </summary>
 public static class GameInitializer
 {
     public static bool IsInitialized { get; private set; } = false;
     private const string FirstSceneName = GameConstants.SceneName_Title;
 
-    // 設定ファイルのパス
-    private const string SETTINGS_PATH = "GameInitializeSettings";
-
 #if UNITY_EDITOR
+    // 設定保存用のキーとメニューパスの定義
+    private const string MENU_NAME = "Tools/Force Title Scene On Play";
+    private const string PREFS_KEY = "GameInitializer_Enabled";
+
+    /// <summary>
+    /// メニューアイテムの実行（ON/OFF切り替え）
+    /// </summary>
+    [MenuItem(MENU_NAME)]
+    private static void ToggleAction()
+    {
+        // 現在の設定を取得（デフォルトは false）
+        bool isEnabled = EditorPrefs.GetBool(PREFS_KEY, false);
+        // 設定を反転して保存
+        EditorPrefs.SetBool(PREFS_KEY, !isEnabled);
+        // チェックマークの状態を即座に反映させるため、強制的に再描画を促す（任意）
+    }
+
+    /// <summary>
+    /// メニューのチェックマーク状態を更新
+    /// </summary>
+    [MenuItem(MENU_NAME, true)]
+    private static bool ValidateToggleAction()
+    {
+        bool isEnabled = EditorPrefs.GetBool(PREFS_KEY, false);
+        Menu.SetChecked(MENU_NAME, isEnabled);
+        return true;
+    }
+
+    // --- ここから下が実行時の処理 ---
+
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
     private static void LoadStartScene()
     {
-        // 設定ファイルを読み込む処理を追加
-        var settings = Resources.Load<GameInitializeSettings>(SETTINGS_PATH);
-        // 設定ファイルが存在し、かつ有効になっている場合のみ処理を実行
-        if (settings == null || !settings.isEnabled)
+        // EditorPrefsから設定を確認（無効なら何もしない）
+        if (!EditorPrefs.GetBool(PREFS_KEY, false))
         {
-            Debug.Log("GameInitializerは無効です。現在のシーンから直接開始します。");
+            // Debug.Log("GameInitializerは無効です。現在のシーンから直接開始します。");
             return;
         }
 
+        // 現在のシーンがタイトルシーンでなければロードする
         if (SceneManager.GetActiveScene().name != FirstSceneName)
         {
+            Debug.Log($"<color=cyan>[GameInitializer]</color> 設定が有効なため、{FirstSceneName} シーンから開始します。");
             SceneManager.LoadScene(FirstSceneName);
         }
     }
@@ -40,10 +66,8 @@ public static class GameInitializer
     private static void InitializeAfterSceneLoad()
     {
         // ここでも設定をチェック
-        var settings = Resources.Load<GameInitializeSettings>(SETTINGS_PATH);
-        if (settings == null || !settings.isEnabled)
+        if (!EditorPrefs.GetBool(PREFS_KEY, false))
         {
-            // 初期化機能が無効な場合は、IsInitializedフラグも立てない
             return;
         }
 
@@ -52,7 +76,11 @@ public static class GameInitializer
 
         if (SceneManager.GetActiveScene().name == FirstSceneName)
         {
-            SaveLoadManager.instance.DisableSave();
+            // SaveLoadManagerが存在する場合のみ実行などの安全策をとっても良い
+            if (SaveLoadManager.instance != null)
+            {
+                SaveLoadManager.instance.DisableSave();
+            }
             IsInitialized = true;
         }
     }
