@@ -33,8 +33,6 @@ public class Robot_blade_move : MonoBehaviour
     private List<CooldownEntry> enemyCooldownsList = new List<CooldownEntry>(32);
     private int bladePower = 0; //剣そのものの攻撃力
     private float cooldownTime = 1.0f; // クールタイム（秒）
-    public float attackTime { get; private set; } = 1.0f;
-    public float moveTime { get; private set; } = 1.0f;
     private float wpCost = 0f; // WP消費量
     private bool rightFlag = true;
     private bool _isInBossBattle = false; // ボス戦闘中かどうか
@@ -85,7 +83,6 @@ public class Robot_blade_move : MonoBehaviour
             bladePower = attack.power;
             wpCost = attack.wpCost;
             cooldownTime = attack.cooldownTime;
-            attackTime = attack.attackTime;
             newColliderOffset = attack.ColliderOffset;
             newColliderSize = attack.ColliderSize;
 

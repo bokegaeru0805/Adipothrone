@@ -1,4 +1,5 @@
 using System.Collections;
+using NaughtyAttributes;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
@@ -8,6 +9,12 @@ using UnityEngine.SceneManagement;
 /// </summary>
 public class TimeManager : MonoBehaviour
 {
+    [InfoBox("このスクリプトはDebugSceneでも用います。\nそのため、プレハブしておいてください。")]
+    [ReadOnly]
+    [SerializeField]
+    private string _instruction = "設定不要";
+
+    // --- シングルトン実装 ---
     public static TimeManager instance { get; private set; }
     private UIManager uiManager = null;
 

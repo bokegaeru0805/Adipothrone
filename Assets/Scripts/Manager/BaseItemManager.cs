@@ -34,6 +34,10 @@ public class BaseItemManager : MonoBehaviour
         {
             return blade.weaponID;
         }
+        else if (item is KeyItemData key)
+        {
+            return key.itemID;
+        }
 
         Debug.LogWarning("対応していないItemDataの型です: " + item.GetType().Name);
         return null;

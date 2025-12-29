@@ -1018,9 +1018,9 @@ public class SaveLoadManager : MonoBehaviour
 
             if (loadedDataVersion < currentGameVersion)
             {
-                Debug.Log(
-                    $"古いセーブデータ（Ver: {loadedDataVersion}）を検出。マイグレーションを開始します。"
-                );
+                // Debug.Log(
+                //     $"古いセーブデータ（Ver: {loadedDataVersion}）を検出。マイグレーションを開始します。"
+                // );
 
                 // --- 段階的マイグレーション ---
                 // 新しいバージョンへの移行処理をここに追加していく
@@ -1040,7 +1040,7 @@ public class SaveLoadManager : MonoBehaviour
 
                 // 全ての移行処理後、セーブデータ内のバージョンを最新に更新
                 saveData.GameVersion = Application.version;
-                Debug.Log("マイグレーションが完了しました。");
+                // Debug.Log("マイグレーションが完了しました。");
             }
         }
         catch (Exception e)

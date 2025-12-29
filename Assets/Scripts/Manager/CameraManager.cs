@@ -1,6 +1,7 @@
 using System.Collections;
 using Cinemachine;
 using DG.Tweening;
+using NaughtyAttributes;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
@@ -8,6 +9,13 @@ namespace MyGame.CameraControl
 {
     public class CameraManager : MonoBehaviour
     {
+        [InfoBox(
+            "このスクリプトはDebugSceneでも用います。\nそのため、プレハブしておいてください。"
+        )]
+        [ReadOnly]
+        [SerializeField]
+        private string _instruction = "設定不要";
+
         [SerializeField]
         private NoiseSettings takeHitNoiseSettings; // 敵ヒット時の揺れ設定をInspectorから割り当てるための変数
 
@@ -178,7 +186,10 @@ namespace MyGame.CameraControl
                     Vector3 targetPos = framing.FollowTargetPosition;
 
                     // Z軸を無視してXY平面だけの距離を計算する（2Dゲームの場合、Z軸のズレで判定失敗するのを防ぐ）
-                    float distanceXY = Vector2.Distance(new Vector2(cameraPos.x, cameraPos.y), new Vector2(targetPos.x, targetPos.y));
+                    float distanceXY = Vector2.Distance(
+                        new Vector2(cameraPos.x, cameraPos.y),
+                        new Vector2(targetPos.x, targetPos.y)
+                    );
 
                     // 条件1：カメラとターゲットの距離が閾値以下になったら
                     // targetPosはオフセット込みの位置なので、理想的には距離0になるはずだが、余裕を持って判定

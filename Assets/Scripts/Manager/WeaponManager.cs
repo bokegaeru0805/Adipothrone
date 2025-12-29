@@ -332,7 +332,8 @@ public class WeaponManager : MonoBehaviour
             //剣の取り回しのバーを表示
             HandlingBar.SetActive(true);
             //剣の取り回しのバーの表示を設定
-            HandlingBarImage.fillAmount = bladeWeapon.attackTime / bladeHandlingLimit;
+            HandlingBarImage.fillAmount =
+                bladeWeapon.attackActionData.HandlingScore / bladeHandlingLimit;
         }
     }
 

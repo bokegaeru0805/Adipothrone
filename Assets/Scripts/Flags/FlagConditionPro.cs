@@ -98,14 +98,20 @@ public class StatePro
 {
     [Header("アクティブ状態")]
     public bool changeActiveState;
+
+    [AllowNesting, ShowIf("changeActiveState")]
     public bool isActive = true;
 
     [Header("スプライト")]
     public bool changeSprite;
+
+    [AllowNesting, ShowIf("changeSprite")]
     public Sprite sprite;
 
     [Header("位置")]
     public bool changePosition;
+
+    [AllowNesting, ShowIf("changePosition")]
     public Vector3 position;
 
     [Tooltip("Trueの場合、次にいずれかのエリアを出るまで位置の変更を遅らせます。")]
@@ -118,6 +124,7 @@ public class StatePro
     [Tooltip(
         "再生したいアニメーションステートの名前（Animator Controller内のステート名と完全に一致させる）"
     )]
+    [AllowNesting, ShowIf("changeAnimation")]
     public string animationStateName;
 
     // [Header("コライダー")]
@@ -130,6 +137,8 @@ public class StatePro
 
     [Header("カスタムイベント")]
     public bool invokeUnityEvent;
+
+    [AllowNesting, ShowIf("invokeUnityEvent")]
     public UnityEvent onStateApply;
 }
 

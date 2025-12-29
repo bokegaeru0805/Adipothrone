@@ -103,17 +103,12 @@ public class Robot_move : MonoBehaviour
     private float floatingAmplitude = 0.25f; //攻撃中でないときの上下の揺れの幅
     private float floatingDuration = 1.5f; //揺れの片道にかかる時間
 
-    // 攻撃関連のパラメータ
-    private int maxAttackCount = 5; // 剣の最大連続攻撃回数
-    private float afterBlade_Sec = 0.4f; // 剣攻撃後の待機時間
-    private float inputWindowTime = 0.5f; // 剣の連続攻撃の入力受付時間
-    private float bladeSwingOffsetRadius = 1.5f; // 剣の振り子半径
-
     // プレイヤー関連のパラメータ
     private int playerWP = 0;
 
     // 内部状態を管理するフラグ
     private PlayerAttackType playerAttackType = PlayerAttackType.Shoot; // 現在のプレイヤーの攻撃方法
+    private BladeAttackActionData currentAttackPattern = null; // 現在の剣の攻撃パターンデータ
     private int attackCount = 0; // 現在の剣の攻撃回数
     private bool isRobotmove = false; // ロボットが動けるかどうかのフラグ
     private bool isRobotattack = false; // ロボットが攻撃できるかどうかのフラグ
@@ -270,7 +265,10 @@ public class Robot_move : MonoBehaviour
         }
     }
 
-    // 注意: このメソッドを IEnumerator にしてコルーチン化すると、弾が正常に発射されないことがある。
+    /// <summary>
+    /// 弾を発射するメソッド
+    /// 注意: このメソッドを IEnumerator にしてコルーチン化すると、弾が正常に発射されないことがある。
+    /// </summary>
     private void Shoot()
     {
         StopFloatingAndReturn(); // ゆらゆらを停止して元の位置へ
@@ -299,94 +297,21 @@ public class Robot_move : MonoBehaviour
         StartCoroutine(BladeAttack());
     }
 
-    // 攻撃ごとの回転角（右向き時）を定義（StartAngle, EndAngle）(プレイヤーが左向きの時)
-    private readonly List<Vector2> rightAttackAngles = new List<Vector2>()
-    {
-        new Vector2(30f, 210f), // 1回目：上から斜めに振り下ろす(時計回り)
-        new Vector2(-60f, 240f), // 2回目：下から薙ぎ払う(反時計回り)
-        new Vector2(120f, 300f), // 3回目：大回転(時計回り)
-        new Vector2(-60f, 240f), // 4回目：再度薙ぎ払い(反時計回り)
-        new Vector2(-30f, -210f), // 5回目：背面フィニッシュ(時計回り)
-    };
-
-    /// <summary>
-    /// 攻撃時の移動タイプを定義します
-    /// </summary>
-    public enum MovementType
-    {
-        None, // 移動しない
-        Linear, // 直線移動
-        Circular // 円周上を移動
-        ,
-    }
-
-    /// <summary>
-    /// 1回の攻撃における移動の設計図
-    /// </summary>
-    [System.Serializable]
-    public class AttackMovementData
-    {
-        public MovementType type = MovementType.None;
-
-        [Header("--- 直線移動用 ---")]
-        public Vector2 startPoint;
-        public Vector2 endPoint;
-
-        [Header("--- 円周移動用 ---")]
-        public Vector2 center;
-        public float radius = 1.0f;
-        public float startAngle;
-        public float endAngle;
-        public bool isClockwise = false;
-    }
-
-    [SerializeField]
-    private List<AttackMovementData> attackMovements = new List<AttackMovementData>()
-    {
-        new AttackMovementData
-        {
-            type = MovementType.Linear,
-            startPoint = new Vector2(-1.5f, 1.5f),
-            endPoint = new Vector2(-2.5f, 0.5f),
-        },
-        new AttackMovementData
-        {
-            type = MovementType.Circular,
-            center = new Vector2(-2f, 2f),
-            radius = 0.5f,
-            startAngle = -60f,
-            endAngle = 240,
-            isClockwise = true,
-        },
-        new AttackMovementData
-        {
-            type = MovementType.Linear,
-            startPoint = new Vector2(-2.5f, 0.5f),
-            endPoint = new Vector2(-1.5f, 1.5f),
-        },
-        new AttackMovementData
-        {
-            type = MovementType.Circular,
-            center = new Vector2(-2f, 2f),
-            radius = 0.5f,
-            startAngle = -60f,
-            endAngle = 240,
-            isClockwise = true,
-        },
-        new AttackMovementData
-        {
-            type = MovementType.Linear,
-            startPoint = new Vector2(-1.5f, 0.5f),
-            endPoint = new Vector2(-4f, 1.5f),
-        },
-    };
-
     /// <summary>
     /// プレイヤーのブレード（剣）による連続攻撃アニメーションと制御を行うコルーチン。
     /// 攻撃回数に応じた角度・方向・入力受付・硬直処理を管理する。
     /// </summary>
     private IEnumerator BladeAttack()
     {
+        // 攻撃データが未設定ならデフォルト動作またはエラー
+        if (currentAttackPattern == null)
+        {
+            Debug.LogError(
+                "BladeAttack: 攻撃パターンデータ(BladeAttackActionData)が設定されていません。"
+            );
+            yield break;
+        }
+
         attackCount = 0; // 攻撃回数を初期化
         if (blade_prefab == null)
         {
@@ -394,186 +319,155 @@ public class Robot_move : MonoBehaviour
             yield break; // 剣のプレハブが設定されていない場合は終了
         }
 
-        float bladeAttackTime = blade_prefab.GetComponent<Robot_blade_move>().attackTime;
-        bladeAttackTime = playerEffectManager.CalculateFinalBladeMoveSpeed(bladeAttackTime);
-
         isBladeSwinging = true; // 攻撃中フラグON
         float startAngle = 0; // 攻撃開始角度を記録
+        int maxSteps = currentAttackPattern.attackSteps.Count; // 定義されている攻撃ステップ数
 
         do
         {
             queuedAttack = false; // 入力受付リセット
             attackCount++; // 今回の攻撃回数をカウントアップ
 
-            // 今回の攻撃に対応する移動データをリストから取得
-            AttackMovementData movementData = null;
-            if (attackCount - 1 < attackMovements.Count)
-            {
-                movementData = attackMovements[attackCount - 1];
-            }
+            // 攻撃回数が定義を超えていたら終了（安全策）
+            if (attackCount > maxSteps)
+                break;
 
-            // プレイヤーの向きに応じて、移動データのX座標を反転させる
-            // ※元のデータを書き換えないようにコピーを作成して処理する
-            AttackMovementData mirroredMovementData = new AttackMovementData();
-            if (movementData != null)
-            {
-                // まず全ての値をコピー
-                mirroredMovementData = new AttackMovementData
-                {
-                    type = movementData.type,
-                    startPoint = movementData.startPoint,
-                    endPoint = movementData.endPoint,
-                    center = movementData.center,
-                    radius = movementData.radius,
-                    startAngle = movementData.startAngle,
-                    endAngle = movementData.endAngle,
-                    isClockwise = movementData.isClockwise,
-                };
+            // ScriptableObjectから現在のステップのデータを取得
+            var currentStep = currentAttackPattern.attackSteps[attackCount - 1];
+            //ステップごとの時間を取得し、攻撃速度バフなどを適用する
+            float baseStepTime = currentStep.attackTime;
+            // PlayerEffectManagerで速度補正（バフ等）をかける
+            float currentStepTime = playerEffectManager.CalculateFinalBladeMoveSpeed(baseStepTime);
 
-                // プレイヤーが右向き(rightFlag=true)の場合、X座標を反転
-                if (rightFlag)
-                {
-                    mirroredMovementData.startPoint.x *= -1;
-                    mirroredMovementData.endPoint.x *= -1;
-                    mirroredMovementData.center.x *= -1;
-                }
-            }
-
-            // 攻撃回数に対応した攻撃角度（開始と終了）を取得（右向き基準）
-            Vector2 angles = rightAttackAngles[
-                Mathf.Clamp(attackCount - 1, 0, rightAttackAngles.Count - 1)
-            ];
+            // 1. 回転角度の計算
+            Vector2 angles = new Vector2(currentStep.startAngle, currentStep.endAngle);
+            bool isClockwiseRot = currentStep.isClockwiseRotation;
 
             // プレイヤーが左向きなら左右反転（180度基準で裏返し）
             if (rightFlag)
             {
                 angles.x = 180f - angles.x;
                 angles.y = 180f - angles.y;
+                // 右向きなら回転方向も反転させる必要がある
+                isClockwiseRot = !isClockwiseRot;
             }
 
             startAngle = angles.x;
             float endAngle = angles.y;
 
-            // 回転方向の決定：5回目は時計回り（それ以外は反時計回り）
-            // プレイヤーの向きによっても回転方向を反転させる
-            bool isClockwise = (attackCount == 5);
-            if (!rightFlag)
+            // 2. 移動データの準備 (コピーして反転処理)
+            // プレイヤーの向きに応じてX座標を反転
+            Vector2 stepStartPoint = currentStep.startPoint;
+            Vector2 stepEndPoint = currentStep.endPoint;
+            Vector2 stepCenter = currentStep.center;
+            float stepMoveStartAngle = currentStep.moveStartAngle;
+            float stepMoveEndAngle = currentStep.moveEndAngle;
+            bool isClockwiseMove = currentStep.isClockwiseMovement;
+
+            if (rightFlag)
             {
-                isClockwise = !isClockwise;
+                stepStartPoint.x *= -1;
+                stepEndPoint.x *= -1;
+                stepCenter.x *= -1;
+                // 円運動の角度や回転方向も反転
+                stepMoveStartAngle = 180f - stepMoveStartAngle;
+                stepMoveEndAngle = 180f - stepMoveEndAngle;
+                isClockwiseMove = !isClockwiseMove;
             }
 
             // 攻撃アニメーションの時間経過処理
             float elapsed = 0f;
-            while (elapsed < bladeAttackTime)
+            while (elapsed < currentStepTime)
             {
-                float t = elapsed / bladeAttackTime; // 時間の正規化
-                float easedT = bladeEaseCurve.Evaluate(t); // 緩急（Ease）をかける
+                float t = elapsed / currentStepTime; // 時間の正規化
+                // SOから取得したカーブを使用
+                float easedT = currentAttackPattern.bladeEaseCurve.Evaluate(t);
 
-                // 回転角度を計算（方向によって補間方法が変わる）
-                float currentAngle = isClockwise
+                // --- 剣の回転 ---
+                float currentAngle = isClockwiseRot
                     ? LerpAngleClockwise(startAngle, endAngle, easedT)
                     : LerpAngleCounterClockwise(startAngle, endAngle, easedT);
 
-                // 剣の角度を適用
                 blade_prefab.transform.rotation = Quaternion.Euler(0f, 0f, currentAngle);
 
-                // ① 角度（Z軸回転）に対して方向ベクトルを算出
-                float radians = currentAngle * Mathf.Deg2Rad; // 度→ラジアン変換
+                // 剣の位置オフセット（SOの半径設定を使用）
+                float radians = currentAngle * Mathf.Deg2Rad;
                 Vector2 direction = new Vector2(Mathf.Cos(radians), Mathf.Sin(radians)).normalized;
+                float offsetT = Mathf.Sin(Mathf.PI * easedT);
+                Vector2 bladeOffset =
+                    direction * currentAttackPattern.bladeSwingOffsetRadius * offsetT;
+                blade_prefab.transform.localPosition = bladeOffset;
 
-                // ② 時間に応じてオフセットを出す（前半で遠ざかり、後半で戻す）
-                float offsetT = Mathf.Sin(Mathf.PI * easedT); // 0→1→0 の動き
-                Vector2 offset = direction * bladeSwingOffsetRadius * offsetT;
-
-                // ③ 剣の位置を更新（ローカル空間で振り子のように動かす）
-                blade_prefab.transform.localPosition = offset;
-
-                if (mirroredMovementData != null && mirroredMovementData.type != MovementType.None)
+                // --- ロボット本体の移動 ---
+                if (currentStep.movementType != BladeAttackActionData.MovementType.None)
                 {
                     Vector2 robotMovementPos = transform.localPosition;
 
-                    switch (mirroredMovementData.type)
+                    switch (currentStep.movementType)
                     {
-                        case MovementType.Linear:
-                            // 直線移動：始点と終点の間を線形補間
-                            robotMovementPos = Vector2.Lerp(
-                                mirroredMovementData.startPoint,
-                                mirroredMovementData.endPoint,
-                                easedT
-                            );
+                        case BladeAttackActionData.MovementType.Linear:
+                            robotMovementPos = Vector2.Lerp(stepStartPoint, stepEndPoint, easedT);
                             break;
 
-                        case MovementType.Circular:
-                            // 円周上移動
-                            float moveAngle = mirroredMovementData.isClockwise
-                                ? LerpAngleClockwise(
-                                    mirroredMovementData.startAngle,
-                                    mirroredMovementData.endAngle,
-                                    easedT
-                                )
+                        case BladeAttackActionData.MovementType.Circular:
+                            float moveAngle = isClockwiseMove
+                                ? LerpAngleClockwise(stepMoveStartAngle, stepMoveEndAngle, easedT)
                                 : LerpAngleCounterClockwise(
-                                    mirroredMovementData.startAngle,
-                                    mirroredMovementData.endAngle,
+                                    stepMoveStartAngle,
+                                    stepMoveEndAngle,
                                     easedT
                                 );
-
-                            // プレイヤーが右向きの場合、角度も反転させる
-                            if (rightFlag)
-                            {
-                                moveAngle = 180f - moveAngle;
-                            }
 
                             float moveRadians = moveAngle * Mathf.Deg2Rad;
                             Vector2 localDirection = new Vector2(
                                 Mathf.Cos(moveRadians),
                                 Mathf.Sin(moveRadians)
                             );
-                            robotMovementPos =
-                                mirroredMovementData.center
-                                + localDirection * mirroredMovementData.radius;
+                            robotMovementPos = stepCenter + localDirection * currentStep.radius;
                             break;
                     }
-
-                    // 計算した座標を自身のローカル座標に適用
                     transform.localPosition = robotMovementPos;
                 }
 
                 elapsed += Time.deltaTime;
-                yield return null; // 次のフレームまで待つ
+                yield return null;
             }
 
             // 最大攻撃数に達したらループを抜ける
-            if (attackCount >= maxAttackCount)
+            if (attackCount >= maxSteps)
                 break;
 
-            // 次の攻撃入力の受付ウィンドウを開く
+            // 次の攻撃入力の受付ウィンドウを開く (SOの設定値を使用)
             isAttackInputWindowOpen = true;
             float inputElapsed = 0f;
-            while (inputElapsed < inputWindowTime)
+            while (inputElapsed < currentAttackPattern.inputWindowTime)
             {
                 if (queuedAttack)
-                    break; // 攻撃入力が来たら即座に次へ
+                    break;
 
                 inputElapsed += Time.deltaTime;
                 yield return null;
             }
             isAttackInputWindowOpen = false;
-        } while (queuedAttack && attackCount < maxAttackCount); // 攻撃入力が継続している限りループ
+        } while (queuedAttack && attackCount < maxSteps);
 
         isBladeSwinging = false; // 攻撃完了
 
         // 攻撃終了後、速やかに基準のY座標に戻る
         transform.DOLocalMoveY(offset.y, 0.2f).SetEase(Ease.OutQuad);
 
-        // 攻撃後の行動不能時間（ヒットストップのような硬直演出）
-        float EnableMove_Sec = bladeAttackTime * EnableMoveTimeAcjuctment;
-        StartCoroutine(AttackStart(EnableMove_Sec, afterBlade_Sec));
+        // 硬直時間計算に、最後のステップの時間を使うか、あるいは固定値を使うか検討が必要です。
+        // ここでは「最後の攻撃にかかった時間」をベースにする例とします。
+        float lastStepTime = currentAttackPattern.attackSteps[attackCount - 1].attackTime;
+        lastStepTime = playerEffectManager.CalculateFinalBladeMoveSpeed(lastStepTime);
+        float EnableMove_Sec = lastStepTime * EnableMoveTimeAcjuctment;
+        StartCoroutine(AttackStart(EnableMove_Sec, currentAttackPattern.afterBladeSec));
 
-        // 攻撃終了後、剣を元の角度（startAngle）へ戻す補間アニメーション
+        // 剣を戻すアニメーション
         float returnTime = 0.1f;
         float returnElapsed = 0f;
         Vector3 startPos = blade_prefab.transform.localPosition;
-        Vector3 endPos = Vector3.zero; // ローカル座標の原点に戻す
+        Vector3 endPos = Vector3.zero;
         Quaternion startRot = blade_prefab.transform.rotation;
         Quaternion endRot = Quaternion.Euler(0f, 0f, startAngle);
         while (returnElapsed < returnTime)
@@ -585,24 +479,30 @@ public class Robot_move : MonoBehaviour
             yield return null;
         }
 
-        // 最後に、微小な待機を挟んで演出に余韻を持たせる（AfterBlade）
-        yield return new WaitForSeconds(afterBlade_Sec);
+        // 余韻 (SOの設定値を使用)
+        yield return new WaitForSeconds(currentAttackPattern.afterBladeSec);
     }
 
     // 時計回り補間（CW）
     private float LerpAngleClockwise(float from, float to, float t)
     {
-        float delta = (to - from + 360f) % 360f;
-        return from + delta * t;
+        float delta = (from - to + 360f) % 360f;
+        return from - delta * t;
     }
 
     // 反時計回り補間（CCW）
     private float LerpAngleCounterClockwise(float from, float to, float t)
     {
-        float delta = (from - to + 360f) % 360f;
-        return from - delta * t;
+        float delta = (to - from + 360f) % 360f;
+        return from + delta * t;
     }
 
+    /// <summary>
+    ///  攻撃後の待機処理を行うコルーチン
+    /// </summary>
+    /// <param name="Enable_Sec">攻撃後の行動不能時間（秒）</param>
+    /// <param name="after_Sec">攻撃後の余韻時間（秒）</param>
+    /// <returns></returns>
     private IEnumerator AttackStart(float Enable_Sec, float after_Sec)
     { //攻撃開始
         yield return new WaitForSeconds(Enable_Sec); //Enable_Secの時間分止める
@@ -821,6 +721,18 @@ public class Robot_move : MonoBehaviour
             {
                 bladeMoveScript.SetBladeData(currentBladeData);
                 bladeWPCost = currentBladeData.wpCost; // 剣のWP消費量を更新
+
+                if (currentBladeData.attackActionData != null)
+                {
+                    currentAttackPattern = currentBladeData.attackActionData;
+                }
+                else
+                {
+                    Debug.LogWarning(
+                        $"BladeID: {bladeID} の BladeWeaponData に BladeAttackActionData が設定されていません。"
+                    );
+                    currentAttackPattern = null;
+                }
             }
             else
             {

@@ -16,7 +16,7 @@ public class GroundImpactSpawner : MonoBehaviour
             + "必要に応じて別途PoolableObjectLifecycleなどを併用してください",EInfoBoxType.Warning
     )]
     [ReadOnly]
-    [SerializeField] // ReadOnlyで編集不可にしておくと説明用っぽくなる
+    [SerializeField]
     private string _instruction = "設定不要";
 
     [System.Serializable]

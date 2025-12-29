@@ -15,6 +15,7 @@ public class HealItemDatabase : ScriptableObject
             return healItems.Find(item => item.itemID == healItemID);
         }
 
+        Debug.LogWarning($"HealItemDatabase: 指定されたID '{id}' はHealItemName型ではありません。");
         return null;
     }
 }

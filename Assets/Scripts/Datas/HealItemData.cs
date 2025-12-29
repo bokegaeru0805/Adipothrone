@@ -1,17 +1,13 @@
-using System;
 using System.Collections.Generic;
 using UnityEngine;
 
 //注意
 //新しい要素を追加したらItemDataEditor.csも修正すること
 
-[System.Serializable]
-public class ItemData : BaseItemData { }
-
 [CreateAssetMenu(fileName = "NewHealItem", menuName = "Items/HealItem")]
-public class HealItemData : ItemData
+public class HealItemData : BaseItemData
 {
-    public HealItemName itemID; // 名前(IDも兼ねる)
+    public HealItemName itemID; //ID
     public int hpHealAmount; // HP回復量
     public int wpHealAmount; // WP回復量
 

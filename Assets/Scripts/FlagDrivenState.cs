@@ -2,10 +2,9 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-using NaughtyAttributes;
 
 /// <summary>
-/// 【Pro版】フラグの状態に基づいて、オブジェクトの状態を多機能に制御する汎用コンポーネント。
+/// フラグの状態に基づいて、オブジェクトの状態を多機能に制御する汎用コンポーネント。
 /// アクティブ状態、スプライト、位置、アニメーション、コライダー、サウンド、カスタムイベントの実行に対応。
 /// 「コントローラー」として常にアクティブなGameObjectにアタッチし、「モデル」となるオブジェクトを制御することを想定しています。
 /// </summary>
@@ -35,7 +34,6 @@ public class FlagDrivenStatePro : MonoBehaviour
     private SpriteRenderer targetSpriteRenderer;
     private Animator targetAnimator;
     private Collider2D targetCollider;
-    private AudioSource audioSource; // このオブジェクトにAudioSourceが必要
 
     // --- 状態変数 ---
     private bool isPositionChangePending = false;
@@ -56,8 +54,6 @@ public class FlagDrivenStatePro : MonoBehaviour
             targetAnimator = targetObject.GetComponent<Animator>();
             targetCollider = targetObject.GetComponent<Collider2D>();
         }
-        // AudioSourceは音を鳴らす本体（このオブジェクト）にアタッチされているものを想定
-        audioSource = GetComponent<AudioSource>();
     }
 
     private void OnEnable()

@@ -8,7 +8,6 @@ using UnityEngine;
 using UnityEditor;
 #endif
 
-
 /// <summary>
 /// CSVの1行分のデータを格納するためのクラス。
 /// </summary>
@@ -41,7 +40,9 @@ public class DialogueUpdater : MonoBehaviour
     //　「ヒロイン」として扱うキーワード
     private const string HEROIN_KEYWORD = "Heroin";
 
-    // [ContextMenu("Update Dialogue Sequentially by BlockName")]
+    /// <summary>
+    /// CSVファイルを読み込み、Flowchartの各Block内のSayコマンドを更新します。
+    /// </summary>
     public void UpdateDialogue()
     {
         if (targetFlowchart == null || csvFiles.Count == 0)
@@ -50,7 +51,6 @@ public class DialogueUpdater : MonoBehaviour
             return;
         }
 
-        // --- Step 1: 全CSVを読み込み、BlockNameごとにセリフのリストを作成 ---
         var dialogueByBlock = new Dictionary<string, List<DialogueLineData>>();
 
         foreach (var csvFile in csvFiles)
@@ -59,29 +59,36 @@ public class DialogueUpdater : MonoBehaviour
                 continue;
 
             StringReader reader = new StringReader(csvFile.text);
-            reader.ReadLine(); // ヘッダーを読み飛ばす
+            reader.ReadLine(); // ヘッダー読み飛ばし
 
             int lineNumber = 1;
             while (reader.Peek() != -1)
             {
                 lineNumber++;
                 string line = reader.ReadLine();
-                string[] values; // values変数をifブロックの外で宣言
 
-                // 1. この行が<sprite>タグを含んでいるかチェック
-                //    CSVの仕様上、タグを含むセルは " で囲まれることが多いため、"<sprite" でチェック
-                if (line.Contains("\"<sprite"))
+                // 行内のダブルクォーテーションの数が奇数の場合、改行を含んだセルの途中であると判断し、
+                // 偶数になる（＝セルが閉じる）まで次の行を読み込んで結合する
+                while (CountChar(line, '"') % 2 != 0 && reader.Peek() != -1)
                 {
-                    // 2. タグを含む行の場合：正規表現を使って、""で囲まれた中のカンマを無視して分割
+                    line += "\n" + reader.ReadLine();
+                    lineNumber++; // 行数カウントも進める
+                }
+                // --------------------------------
+
+                string[] values;
+
+                // 改行を含むセルは必ず " で囲まれているため、" が含まれる場合は正規表現スプリットを使用する
+                if (line.Contains("\""))
+                {
+                    // 正規表現：カンマで分割するが、ダブルクォーテーション内のカンマは無視する
                     values = Regex.Split(line, ",(?=(?:[^\"]*\"[^\"]*\")*[^\"]*$)");
                 }
                 else
                 {
-                    // 3. タグを含まない通常の行の場合：シンプルなカンマ区切りで分割
                     values = line.Split(',');
                 }
 
-                // 定数を使って必要な最大の列インデックスを計算
                 int maxIndex = new[]
                 {
                     COL_BLOCK_NAME,
@@ -92,25 +99,23 @@ public class DialogueUpdater : MonoBehaviour
 
                 if (values.Length <= maxIndex)
                 {
+                    // values.Lengthが足りない場合でも、改行結合のロジックにより
+                    // 単純な改行によるズレは解消されているはずです。
+                    // それでも足りない場合は本当にCSVの列が足りていません。
                     Debug.LogWarning(
-                        $"CSV Warning: {csvFile.name} の {lineNumber}行目の列数が不足しています。スキップします。"
+                        $"CSV Warning: {csvFile.name} の {lineNumber}行目付近の列数が不足しています。スキップします。"
                     );
                     continue;
                 }
 
-                // 4. 取得した各値から、前後の空白と余分な " を取り除く
-                // 定数を使って各列のデータを取得
                 string blockName = SanitizeCsvField(values[COL_BLOCK_NAME]);
                 string characterName = SanitizeCsvField(values[COL_CHARACTER]);
                 string expressionName = SanitizeCsvField(values[COL_EXPRESSION]);
-                string dialogueText = SanitizeCsvField(values[COL_DIALOGUE]);
+                string dialogueText = SanitizeCsvField(values[COL_DIALOGUE]); // ここで改行文字の置換も行う
 
                 if (string.IsNullOrEmpty(blockName) || string.IsNullOrEmpty(characterName))
                     continue;
 
-                // --- 特別ルールの適用 ---
-
-                // 定数を使ってキーワードを比較
                 if (characterName == NARRATIVE_TEXT_KEYWORD)
                 {
                     characterName = "";
@@ -132,14 +137,22 @@ public class DialogueUpdater : MonoBehaviour
             }
         }
 
-        // --- Step 2: Flowchartを走査し、各BlockのSayコマンドを更新 ---
+        // --- Step 2以降のFlowchart更新処理は元のまま ---
+        UpdateFlowchartBlocks(dialogueByBlock);
+    }
+
+    /// <summary>
+    /// Flowchartの各Blockを更新する処理をまとめたメソッドです。
+    /// </summary>
+    /// <param name="dialogueByBlock">Block名をキー、セリフリストを値とする辞書</param>
+    /// <returns>更新されたSayコマンドの総数</returns>
+    private void UpdateFlowchartBlocks(Dictionary<string, List<DialogueLineData>> dialogueByBlock)
+    {
         int totalUpdatedCount = 0;
         bool hasChanged = false;
 
-        // Flowchart内の全Blockをループ
         foreach (Block block in targetFlowchart.GetComponents<Block>())
         {
-            // CSVデータの中に、このBlockと同じ名前のデータが存在するかチェック
             if (
                 dialogueByBlock.TryGetValue(
                     block.BlockName,
@@ -147,34 +160,25 @@ public class DialogueUpdater : MonoBehaviour
                 )
             )
             {
-                // Block内に存在する「Sayコマンドだけ」を順番通りにリストアップ
                 List<Say> sayCommandsInBlock = block.CommandList.OfType<Say>().ToList();
 
-                // CSVの行数とSayコマンドの数が一致しない場合、警告を出す
                 if (csvLinesForBlock.Count != sayCommandsInBlock.Count)
                 {
                     Debug.LogWarning(
-                        $"Mismatch Warning: Block '{block.BlockName}' のSayコマンド数 ({sayCommandsInBlock.Count}個) とCSVの行数 ({csvLinesForBlock.Count}行) が一致しません。"
+                        $"Mismatch Warning: Block '{block.BlockName}' のSayコマンド数 ({sayCommandsInBlock.Count}) とCSV行数 ({csvLinesForBlock.Count}) が不一致。"
                     );
                 }
 
-                // 少ない方の数だけループを回し、エラーを防ぐ
                 int loopCount = Mathf.Min(csvLinesForBlock.Count, sayCommandsInBlock.Count);
                 for (int i = 0; i < loopCount; i++)
                 {
                     Say sayCommand = sayCommandsInBlock[i];
                     DialogueLineData csvLine = csvLinesForBlock[i];
-
-                    // --- 差分更新ロジック ---
                     Character newCharacter = FindCharacter(csvLine.character);
 
-                    // キャラクターがHEROIN_KEYWORDと一致するかどうかで処理を分岐
                     if (csvLine.character == HEROIN_KEYWORD)
                     {
-                        // 【Heroineの場合】PortraitString（文字列）を比較・設定する
                         string newPortraitString = csvLine.expression;
-
-                        // 差分チェック：テキスト、キャラクター、または表情文字列が異なれば更新
                         if (
                             sayCommand.GetStandardText() != csvLine.dialogue
                             || sayCommand._Character != newCharacter
@@ -183,18 +187,15 @@ public class DialogueUpdater : MonoBehaviour
                         {
                             sayCommand.SetStandardText(csvLine.dialogue);
                             sayCommand.SetCharacter(newCharacter);
-                            sayCommand.SetPortraitString(newPortraitString); // 新しい文字列設定メソッドを呼び出す
-                            sayCommand.SetPortrait(null); // 競合を避けるため、Sprite参照はクリアする
+                            sayCommand.SetPortraitString(newPortraitString);
+                            sayCommand.SetPortrait(null);
                             totalUpdatedCount++;
                             hasChanged = true;
                         }
                     }
                     else
                     {
-                        // 【Heroine以外の場合】従来通りPortrait（Sprite）を比較・設定する
                         Sprite newPortrait = FindPortrait(newCharacter, csvLine.expression);
-
-                        // 差分チェック：テキスト、キャラクター、または立ち絵Spriteが異なれば更新
                         if (
                             sayCommand.GetStandardText() != csvLine.dialogue
                             || sayCommand._Character != newCharacter
@@ -203,8 +204,8 @@ public class DialogueUpdater : MonoBehaviour
                         {
                             sayCommand.SetStandardText(csvLine.dialogue);
                             sayCommand.SetCharacter(newCharacter);
-                            sayCommand.SetPortrait(newPortrait); // 従来のSprite設定メソッドを呼び出す
-                            sayCommand.SetPortraitString(""); // 念のため、文字列はクリアする
+                            sayCommand.SetPortrait(newPortrait);
+                            sayCommand.SetPortraitString("");
                             totalUpdatedCount++;
                             hasChanged = true;
                         }
@@ -215,15 +216,31 @@ public class DialogueUpdater : MonoBehaviour
 
         if (hasChanged)
         {
-            // #if UNITY_EDITOR で囲む
 #if UNITY_EDITOR
             EditorUtility.SetDirty(targetFlowchart);
 #endif
         }
-
         Debug.Log($"チェック完了: {totalUpdatedCount}個のSayコマンドを更新しました。");
     }
 
+    /// <summary>
+    /// 指定した文字列内に出現する特定の文字の数をカウントします。
+    /// </summary>
+    /// <param name="str">対象の文字列</param>
+    /// <param name="target">カウントしたい文字</param>
+    /// <returns>指定した文字の出現回数</returns>
+    private int CountChar(string str, char target)
+    {
+        if (string.IsNullOrEmpty(str))
+            return 0;
+        return str.Count(c => c == target);
+    }
+
+    /// <summary>
+    /// シーン内から指定した名前のCharacterコンポーネントを探します。
+    /// </summary>
+    /// <param name="name">探したいCharacterの名前</param>
+    /// <returns>見つかったCharacterコンポーネント、見つからなかった場合はnull</returns>
     private Character FindCharacter(string name)
     {
         if (string.IsNullOrEmpty(name))

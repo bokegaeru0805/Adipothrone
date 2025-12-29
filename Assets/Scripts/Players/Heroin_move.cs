@@ -5,13 +5,6 @@ using UnityEngine;
 
 public class Heroin_move : MonoBehaviour
 {
-    private const float Bound2EffectLength = 1.384f; //揺れる効果音の長さ
-    private GameManager gameManager; // GameManagerのインスタンスを保存する変数
-    private PlayerManager playerManager; // PlayerManagerのインスタンスを保存する変数
-    private PlayerEffectManager playerEffectManager; // PlayerEffectManagerのインスタンスを保存する変数
-    private PlayerBodyManager playerBodyManager; // PlayerBodyManagerのインスタンスを保存する変数
-    private InputManager inputManager; // InputManagerのインスタンスを保存する変数
-
     [Header("必須の子オブジェクト")]
     [SerializeField]
     private GameObject RobotObject;
@@ -25,29 +18,31 @@ public class Heroin_move : MonoBehaviour
     [HideInInspector]
     public Vector2 pos = new Vector2(0, 0); //自分の座標
     public Fungus.Flowchart flowchart = null;
-    public float m_defaultSpeed { get; private set; } = 4.0f; // 通常の歩行速度
-    private float m_dashDefaultSpeed = 8.0f; //通常のダッシュ速度
-    private float jumpHeight = 3.5f; // ジャンプで到達したい高さ
-    private float damageX = 3.0f; //ダメージを食らったときのx軸の移動具合
-    private float MoveStart_Sec = 0.5f; //ダメージを食らったときの硬直時間
-    private float immunityDuration = 2f; //動ける無敵時間
-    private float attackMoveSlowRate = 4.0f; //攻撃中の移動速度の減少率
 
     [SerializeField]
     private float Bound2EffecIntervalTime = 0.2f; //揺れる効果音の間隔の時間
 
     [SerializeField]
-    private LayerMask groundLayer; // 接地判定に使うレイヤー
-
-    [SerializeField]
     private Transform groundCheck; // プレイヤーの足元のTransform
+
+    // --- 調整用パラメータ ---
+    private const float BOUND2EFFECT_LENGHT = 1.384f; //揺れる効果音の長さ
+    private const float DEFAULT_WALK_ANIMATION_DURATION = 0.500f; //元の一回の歩行アニメーションの秒数
+    public float m_defaultSpeed { get; private set; } = 4.0f; // 通常の歩行速度
+    private float m_dashDefaultSpeed = 8.0f; //通常のダッシュ速度
+    private float jumpHeight = 3.5f; // ジャンプで到達したい高さ
+    private float damageX = 3.0f; //ダメージを食らったときのx軸の移動具合
+    private float MoveStart_Sec = 0.5f; //ダメージを食らったときの硬直無敵時間
+    private float immunityDuration = 0.75f; //動ける無敵時間
+    private float attackMoveSlowRate = 4.0f; //攻撃中の移動速度の減少率
+    private float WalkTime = 1.46f; //一回の歩行アニメーションの秒数
+    private float DashTime = 0.72f; //一回のダッシュアニメーションの秒数
+
+    // --- 内部状態変数 ---
     private float vx = 0; //実際のx方向の移動速度
     private float walkSpeed = 0; //歩行の速度
     private float dashSpeed = 0; //ダッシュの速度
     private float jumpForce = 0; // 内部的に計算されるジャンプ力
-    private float OriginalWalkTime = 0.500f; //元の一回の歩行アニメーションの秒数
-    private float WalkTime = 1.46f; //一回の歩行アニメーションの秒数
-    private float DashTime = 0.72f; //一回のダッシュアニメーションの秒数
     private float BoundIntervalTime; //揺れる音を鳴らす間を記録する変数
     private float groundCheckRadius = 0.2f; // 接地判定の半径
     private float gravity; //重力の大きさを保存する変数
@@ -65,21 +60,30 @@ public class Heroin_move : MonoBehaviour
     private bool jumpRequested = false;
     private bool isTalking = false; // 会話状態を保存するローカル変数
     private bool isDead = false; // プレイヤーが死亡しているかどうかのマスターフラグ
-    private Rigidbody2D rbody; // Rigidbody2Dコンポーネント
-    private Animator m_animator; // アニメータコンポーネント
-    private SpriteRenderer spriteRenderer; //SpriteRendererをキャッシュするための変数
-    private Color m_col; //SpriteRendererの色を保存するための変数
+
+    // --- 内部参照 ---
+    private Rigidbody2D _rbody; // Rigidbody2Dコンポーネント
+    private Animator _animator; // アニメータコンポーネント
+    private SpriteRenderer _spriteRenderer;
+    private Color _col; //SpriteRendererの色を保存するための変数
     private Robot_move robotMoveScript;
     private CriWare.Assets.CriAtomSePlayer sePlayer; // SE再生用のCriAtomSePlayerコンポーネント
+    private LayerMask groundLayer; // 接地判定用のレイヤーマスク
     public event Action<bool> OnPlayerVisibilityChanged; // プレイヤーの可視状態が変化したときに呼び出されるイベント
+    private GameManager gameManager;
+    private PlayerManager playerManager;
+    private PlayerEffectManager playerEffectManager;
+    private PlayerBodyManager playerBodyManager;
+    private InputManager inputManager;
 
     private void Awake()
     {
-        m_animator = GetComponent<Animator>();
-        rbody = GetComponent<Rigidbody2D>();
-        spriteRenderer = GetComponent<SpriteRenderer>();
+        groundLayer = LayerMask.GetMask(GameConstants.PhysicsLayerName_Ground); // Groundレイヤーを取得
+        _animator = GetComponent<Animator>();
+        _rbody = GetComponent<Rigidbody2D>();
+        _spriteRenderer = GetComponent<SpriteRenderer>();
         sePlayer = GetComponent<CriWare.Assets.CriAtomSePlayer>();
-        m_col = spriteRenderer.color;
+        _col = _spriteRenderer.color;
 
         if (RobotObject == null)
         {
@@ -98,7 +102,7 @@ public class Heroin_move : MonoBehaviour
     private void Start()
     {
         isFirstGetKey = true;
-        gravity = Mathf.Abs(Physics2D.gravity.y * rbody.gravityScale);
+        gravity = Mathf.Abs(Physics2D.gravity.y * _rbody.gravityScale);
         if (gameObject.name != GameConstants.PlayerObjectName)
         {
             Debug.LogError(
@@ -159,8 +163,8 @@ public class Heroin_move : MonoBehaviour
                 //左右の方向を決定
                 bool movingRight = inputManager.GetPlayerMoveRight();
 
-                spriteRenderer.flipX = movingRight; //画像の左右の向きを設定
-                m_animator.SetInteger("AnimState", 1); //アニメーションの状態を設定
+                _spriteRenderer.flipX = movingRight; //画像の左右の向きを設定
+                _animator.SetInteger("AnimState", 1); //アニメーションの状態を設定
 
                 // ダッシュ判定
                 bool isDashing = inputManager.GetPlayerDash();
@@ -170,9 +174,9 @@ public class Heroin_move : MonoBehaviour
                 vx = vx * direction; //vxを方向に合わせる
 
                 //歩行アニメーションの速度を設定
-                m_animator.SetFloat(
+                _animator.SetFloat(
                     "WalkSpeed",
-                    OriginalWalkTime / (isDashing ? DashTime : WalkTime)
+                    DEFAULT_WALK_ANIMATION_DURATION / (isDashing ? DashTime : WalkTime)
                 );
 
                 if (isGrounded)
@@ -184,7 +188,7 @@ public class Heroin_move : MonoBehaviour
 
                 // 歩行時の効果音の判定
                 if (
-                    BoundIntervalTime >= Bound2EffectLength + Bound2EffecIntervalTime
+                    BoundIntervalTime >= BOUND2EFFECT_LENGHT + Bound2EffecIntervalTime
                     && BodyState == GameConstants.BodyState_Armed2
                 )
                 {
@@ -208,7 +212,7 @@ public class Heroin_move : MonoBehaviour
             {
                 // if (seManager.IsPlayingPlayerActionSE(SE_PlayerAction.Walk1))
                 //     seManager.StopPlayerActionSE(SE_PlayerAction.Walk1); //歩行の効果音を止める
-                m_animator.SetInteger("AnimState", 0);
+                _animator.SetInteger("AnimState", 0);
             }
 
             if (
@@ -223,7 +227,7 @@ public class Heroin_move : MonoBehaviour
         }
         else
         {
-            m_animator.SetInteger("AnimState", 0); //自分のanimationをstand状態にする
+            _animator.SetInteger("AnimState", 0); //自分のanimationをstand状態にする
 
             // 死亡時に不要な入力をクリア
             if (isDead)
@@ -236,8 +240,8 @@ public class Heroin_move : MonoBehaviour
 
     private void FixedUpdate()
     {
-        m_animator.SetBool("IsGrounded", isGrounded); //接地判定を設定
-        m_animator.SetFloat("VerticalSpeed", rbody.velocity.y); //y方向の速度を設定
+        _animator.SetBool("IsGrounded", isGrounded); //接地判定を設定
+        _animator.SetFloat("VerticalSpeed", _rbody.velocity.y); //y方向の速度を設定
 
         if (RobotObject.activeInHierarchy)
         {
@@ -249,12 +253,12 @@ public class Heroin_move : MonoBehaviour
             // 移動する（重力をかけたまま）
             if (!isAttacking && move)
             {
-                rbody.velocity = new Vector2(vx, rbody.velocity.y);
+                _rbody.velocity = new Vector2(vx, _rbody.velocity.y);
             }
             else if (isAttacking && move)
             {
                 vx /= attackMoveSlowRate; //攻撃中は移動速度を減少させる
-                rbody.velocity = new Vector2(vx, rbody.velocity.y);
+                _rbody.velocity = new Vector2(vx, _rbody.velocity.y);
             }
 
             // 接地判定
@@ -269,22 +273,22 @@ public class Heroin_move : MonoBehaviour
             {
                 jumpRequested = false;
                 jumpForce = Mathf.Sqrt(2 * gravity * jumpHeight); // ジャンプ力を計算する
-                rbody.velocity = new Vector2(rbody.velocity.x, jumpForce);
+                _rbody.velocity = new Vector2(_rbody.velocity.x, jumpForce);
                 AnimBodyState = playerBodyManager.AnimBodyState; //アニメーションの体形の状態を取得する
 
                 switch (AnimBodyState)
                 {
                     case GameConstants.AnimBodyState_Normal:
-                        m_animator.ResetTrigger("Normal_JumpTrigger");
-                        m_animator.SetTrigger("Normal_JumpTrigger");
+                        _animator.ResetTrigger("Normal_JumpTrigger");
+                        _animator.SetTrigger("Normal_JumpTrigger");
                         break;
                     case GameConstants.AnimBodyState_Armed1:
-                        m_animator.ResetTrigger("Armed1_JumpTrigger");
-                        m_animator.SetTrigger("Armed1_JumpTrigger");
+                        _animator.ResetTrigger("Armed1_JumpTrigger");
+                        _animator.SetTrigger("Armed1_JumpTrigger");
                         break;
                     case GameConstants.AnimBodyState_Armed2:
-                        m_animator.ResetTrigger("Armed2_JumpTrigger");
-                        m_animator.SetTrigger("Armed2_JumpTrigger");
+                        _animator.ResetTrigger("Armed2_JumpTrigger");
+                        _animator.SetTrigger("Armed2_JumpTrigger");
                         break;
                 }
 
@@ -308,17 +312,17 @@ public class Heroin_move : MonoBehaviour
 
             if (immunity)
             {
-                if (m_col.a <= 0.3f)
+                if (_col.a <= 0.3f)
                 {
                     isFadingOut = false; //不透明度を上げるようにする
                 }
-                else if (m_col.a >= 1.0f)
+                else if (_col.a >= 1.0f)
                 {
                     isFadingOut = true; //不透明度を下げるようにする
                 }
 
-                m_col.a += isFadingOut ? -0.1f : +0.1f; //不透明度を変更する
-                SetColorWithFixedBrightness(m_col); //ヘルパーメソッドを使って色を設定
+                _col.a += isFadingOut ? -0.1f : +0.1f; //不透明度を変更する
+                SetColorWithFixedBrightness(_col); //ヘルパーメソッドを使って色を設定
             }
 
             pos = this.transform.position; //現在の自分の座標を保存
@@ -332,7 +336,7 @@ public class Heroin_move : MonoBehaviour
     /// <param name="newColor">設定したい基本の色</param>
     private void SetColorWithFixedBrightness(Color newColor)
     {
-        if (spriteRenderer == null)
+        if (_spriteRenderer == null)
             return;
 
         // 1. 設定したい色（newColor）をHSVに変換
@@ -351,7 +355,7 @@ public class Heroin_move : MonoBehaviour
         finalColor.a = newColor.a;
 
         // 5. 最終的な色をスプライトに適用
-        spriteRenderer.color = finalColor;
+        _spriteRenderer.color = finalColor;
     }
 
     private void OnTriggerStay2D(Collider2D collision)
@@ -399,11 +403,11 @@ public class Heroin_move : MonoBehaviour
         // ノックバック処理
         if (rightFlag) // 右を向いているとき
         {
-            rbody.velocity = new Vector2(-damageX, rbody.velocity.y);
+            _rbody.velocity = new Vector2(-damageX, _rbody.velocity.y);
         }
         else // 左を向いているとき
         {
-            rbody.velocity = new Vector2(damageX, rbody.velocity.y);
+            _rbody.velocity = new Vector2(damageX, _rbody.velocity.y);
         }
 
         // 無敵時間などを開始するコルーチンを呼び出す
@@ -412,7 +416,7 @@ public class Heroin_move : MonoBehaviour
 
     private IEnumerator MoveStart() //velocity再開
     {
-        m_col = new Color(1.0f, 1.0f, 1.0f, 1.0f); //色を初期化
+        _col = new Color(1.0f, 1.0f, 1.0f, 1.0f); //色を初期化
         immunity = true; //無敵状態にする
         yield return new WaitForSeconds(MoveStart_Sec); //MoveStart_Secの待つ
         //死亡していない場合のみ、moveをtrueに戻す
@@ -422,8 +426,8 @@ public class Heroin_move : MonoBehaviour
         }
         yield return new WaitForSeconds(immunityDuration); //immunityDurationの待つ
         immunity = false; //無敵状態を解除する
-        m_col.a = 1.0f; //不透明度を初期化する
-        SetColorWithFixedBrightness(m_col); // ヘルパーメソッドを使って色を設定
+        _col.a = 1.0f; //不透明度を初期化する
+        SetColorWithFixedBrightness(_col); // ヘルパーメソッドを使って色を設定
     }
 
     public void EnableInvincibility(float time)
@@ -431,14 +435,14 @@ public class Heroin_move : MonoBehaviour
         StartCoroutine(enableinvincibility(time));
     }
 
-    public IEnumerator enableinvincibility(float time)
+    private IEnumerator enableinvincibility(float time)
     {
-        m_col = new Color(1.0f, 1.0f, 1.0f, 1.0f); //色を初期化
+        _col = new Color(1.0f, 1.0f, 1.0f, 1.0f); //色を初期化
         immunity = true; //無敵状態にする
         yield return new WaitForSeconds(time); //time秒待つ
         immunity = false; //無敵状態を解除する
-        m_col.a = 1.0f; //不透明度を初期化する
-        SetColorWithFixedBrightness(m_col); // ヘルパーメソッドを使って色を設定
+        _col.a = 1.0f; //不透明度を初期化する
+        SetColorWithFixedBrightness(_col); // ヘルパーメソッドを使って色を設定
     }
 
     /// <summary>
@@ -461,29 +465,29 @@ public class Heroin_move : MonoBehaviour
         move = false;
 
         // 物理的な挙動を完全に停止させる
-        if (rbody != null)
+        if (_rbody != null)
         {
-            rbody.velocity = Vector2.zero;
-            rbody.isKinematic = true; // 物理演算の影響を受けなくする
+            _rbody.velocity = Vector2.zero;
+            _rbody.isKinematic = true; // 物理演算の影響を受けなくする
         }
 
         // アニメーションを停止させる
-        if (m_animator != null)
+        if (_animator != null)
         {
-            m_animator.enabled = false;
+            _animator.enabled = false;
         }
 
         // 死亡時のスプライトがインスペクターで設定されていれば、それに差し替える
-        if (spriteRenderer != null && deathSprite != null)
+        if (_spriteRenderer != null && deathSprite != null)
         {
-            spriteRenderer.sprite = deathSprite;
+            _spriteRenderer.sprite = deathSprite;
         }
 
         // ダメージ点滅などの視覚効果をリセットし、通常の色に戻す
         immunity = false;
-        if (spriteRenderer != null)
+        if (_spriteRenderer != null)
         {
-            spriteRenderer.color = Color.white;
+            _spriteRenderer.color = Color.white;
         }
     }
 
@@ -499,22 +503,22 @@ public class Heroin_move : MonoBehaviour
         move = true;
 
         // 物理演算を再度有効にする
-        if (rbody != null)
+        if (_rbody != null)
         {
-            rbody.isKinematic = false;
+            _rbody.isKinematic = false;
         }
 
         // アニメーションを再度有効にする
         // これにより、スプライトはAnimatorによって自動的に更新されます
-        if (m_animator != null)
+        if (_animator != null)
         {
-            m_animator.enabled = true;
+            _animator.enabled = true;
         }
 
         // 念のため色を元に戻す
-        if (spriteRenderer != null)
+        if (_spriteRenderer != null)
         {
-            spriteRenderer.color = Color.white;
+            _spriteRenderer.color = Color.white;
         }
     }
 
@@ -568,7 +572,7 @@ public class Heroin_move : MonoBehaviour
         InitializeStateData();
 
         // その他の初期化
-        spriteRenderer.flipX = true; // 初期状態では右向き
+        _spriteRenderer.flipX = true; // 初期状態では右向き
         rightFlag = true; // 初期状態では右向き
         BoundIntervalTime = 0; // 効果音の間隔を初期化
         isAttacking = false; // 初期状態では攻撃中ではない
@@ -603,9 +607,9 @@ public class Heroin_move : MonoBehaviour
         move = true; // 操作可能状態に戻す
         isDead = false; // 死亡状態を解除
         immunity = false; // 無敵状態を解除
-        m_col = new Color(1.0f, 1.0f, 1.0f, 1.0f); // 色を初期化
-        m_col.a = 1.0f; // 不透明度を初期化
-        SetColorWithFixedBrightness(m_col); // ヘルパーメソッドを使って色を設定
+        _col = new Color(1.0f, 1.0f, 1.0f, 1.0f); // 色を初期化
+        _col.a = 1.0f; // 不透明度を初期化
+        SetColorWithFixedBrightness(_col); // ヘルパーメソッドを使って色を設定
         OnPlayerVisibilityChanged?.Invoke(false); // プレイヤーの可視状態を通知
     }
 
@@ -626,7 +630,7 @@ public class Heroin_move : MonoBehaviour
     {
         BodyState = playerBodyManager.BodyState; //主人公の体形の状態を取得する
         AnimBodyState = playerBodyManager.AnimBodyState; //アニメーションの体形の状態を取得する
-        m_animator.SetInteger("BodyState", AnimBodyState); //体形の状態を設定
+        _animator.SetInteger("BodyState", AnimBodyState); //体形の状態を設定
     }
 
     /// <summary>

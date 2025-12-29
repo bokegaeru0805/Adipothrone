@@ -91,9 +91,9 @@ public class ShootWeaponDataEditor : Editor
 public class BladeWeaponDataEditor : Editor
 {
     SerializedProperty weaponID;
+    SerializedProperty attackActionData;
     SerializedProperty power;
     SerializedProperty cooldownTime;
-    SerializedProperty attackTime;
     SerializedProperty colliderOffset;
     SerializedProperty colliderSize;
 
@@ -111,9 +111,9 @@ public class BladeWeaponDataEditor : Editor
     {
         // BladeWeaponData 独自
         weaponID = serializedObject.FindProperty("weaponID");
+        attackActionData = serializedObject.FindProperty("attackActionData");
         power = serializedObject.FindProperty("power");
         cooldownTime = serializedObject.FindProperty("cooldownTime");
-        attackTime = serializedObject.FindProperty("attackTime");
         colliderOffset = serializedObject.FindProperty("ColliderOffset");
         colliderSize = serializedObject.FindProperty("ColliderSize");
 
@@ -147,10 +147,10 @@ public class BladeWeaponDataEditor : Editor
 
         EditorGUILayout.Space();
         EditorGUILayout.LabelField("【近接武器データ】", EditorStyles.boldLabel);
+        EditorGUILayout.PropertyField(attackActionData, new GUIContent("攻撃モーションデータ"));
         EditorGUILayout.PropertyField(power, new GUIContent("攻撃力"));
         EditorGUILayout.PropertyField(wpCost, new GUIContent("WP消費量"));
         EditorGUILayout.PropertyField(cooldownTime, new GUIContent("クールタイム（秒）"));
-        EditorGUILayout.PropertyField(attackTime, new GUIContent("攻撃時間（秒）"));
         EditorGUILayout.PropertyField(colliderSize, new GUIContent("Colliderの大きさ"));
         EditorGUILayout.PropertyField(colliderOffset, new GUIContent("Colliderの座標オフセット"));
 

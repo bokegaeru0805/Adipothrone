@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using NaughtyAttributes;
 using UnityEngine;
 
 /// <summary>
@@ -9,6 +10,11 @@ using UnityEngine;
 /// </summary>
 public class ObjectPooler : MonoBehaviour
 {
+    [InfoBox("このスクリプトはDebugSceneでも用います。\nそのため、プレハブしておいてください。")]
+    [ReadOnly]
+    [SerializeField]
+    private string _instruction = "設定不要";
+
     /// <summary>
     /// シーン固有のオブジェクト（敵など）用プール。
     /// シーン切り替えで破棄されます。

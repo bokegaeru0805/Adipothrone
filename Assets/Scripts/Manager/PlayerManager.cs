@@ -559,7 +559,11 @@ public class PlayerManager : MonoBehaviour
         OnChangeWP?.Invoke(wp); // WPが変化したときに呼び出されるイベントを発火
     }
 
-    // プレイヤーの無敵時間を設定する関数
+    /// <summary>
+    /// 指定した時間だけプレイヤーを無敵状態にします。
+    /// Heroin_moveコンポーネントのEnableInvincibilityメソッドを呼び出します。
+    /// </summary>
+    /// <param name="time">無敵状態にする時間（秒）</param>
     public void EnableInvincibility(float time)
     {
         if (playerGameObject != null)
@@ -567,12 +571,16 @@ public class PlayerManager : MonoBehaviour
             Heroin_move heroin_Move = playerGameObject.GetComponent<Heroin_move>();
             if (heroin_Move != null)
             {
-                StartCoroutine(heroin_Move.enableinvincibility(time));
+                heroin_Move.EnableInvincibility(time);
             }
         }
     }
 
-    //アイテムを使用する関数
+    /// <summary>
+    /// 指定した回復アイテムを使用し、HP・WPの回復および特殊効果を適用します。
+    /// </summary>
+    /// <param name="ID">使用する回復アイテムのID</param>
+    /// <returns>アイテムの使用に成功したかどうか</returns>
     public bool UseHealItem(Enum ID)
     {
         var ItemInventory = GameManager.instance.savedata.ItemInventoryData;
