@@ -320,6 +320,11 @@ public abstract class CharacterHealth : MonoBehaviour, IDamageable, IDroppable, 
         this.gameObject.SetActive(false);
     }
 
+    /// <summary>
+    /// Animatorに指定したパラメーターが存在するかを確認します。
+    /// </summary>
+    /// <param name="paramName">確認したいパラメーター名</param>
+    /// <returns>存在する場合はtrue、存在しない場合はfalseを返します。</returns>
     protected bool HasParameter(string paramName)
     {
         if (animator == null)

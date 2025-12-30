@@ -25,6 +25,7 @@ public class BossHealth : CharacterHealth
         FirstBoss = 10,
         SlimeBoss = 20,
         StoneGolemBoss = 30,
+        DustDevilBoss = 40,
     }
 
     /// <summary>

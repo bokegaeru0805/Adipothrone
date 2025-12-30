@@ -131,4 +131,7 @@ public static class GameConstants
     public const string DefaultNpcDialogueBlockName = "DefaultGreeting"; // NPCのデフォルトの会話ブロック名
     public const float ChargeEffectDefaultDuration = 300f / 60f; // チャージエフェクトの基本持続時間
     public const int BuyMaxQuantity = 99; // 購入時の最大個数
+
+    // ---　プールタグ名 ---
+    public const string EFFECT_ENEMY_SPAWN_POOLTAG = "Effect_Enemy_Spawn";
 }

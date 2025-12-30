@@ -1,3 +1,4 @@
+using System;
 using NaughtyAttributes;
 using UnityEngine;
 
@@ -6,6 +7,11 @@ using UnityEngine;
 /// </summary>
 public class PoolableObjectLifecycle : PoolableObject
 {
+    /// <summary>
+    /// 接触回数制限に達して消滅する直前に呼ばれるイベント
+    /// </summary>
+    public event Action OnContactLimitReached;
+
     [Header("時間制限設定")]
     [SerializeField]
     [Tooltip("出現からの寿命（秒）。0以下の場合は時間で消滅しない。")]
@@ -59,6 +65,10 @@ public class PoolableObjectLifecycle : PoolableObject
     private void OnEnable()
     {
         currentContactCount = 0; // 接触カウントをリセット
+        // イベントの購読者が前回のまま残らないように、OnEnableなどではリセットしませんが、
+        // プールシステムの設計によっては、Spawn時にActionを登録し直す運用が一般的です。
+        // ※このクラス自体はイベントのリセットを行わないため、購読側で適切に解除するか、
+        //   使い捨てのインスタンスでない場合は注意が必要です。
         if (lifetime > 0f)
         {
             // lifetime秒後に自動で返却
@@ -70,6 +80,9 @@ public class PoolableObjectLifecycle : PoolableObject
     {
         // オブジェクトが無効化されたらコルーチンの参照を切る
         currentDespawnCoroutine = null;
+
+        // イベント購読者をクリア
+        OnContactLimitReached = null;
     }
 
     /// <summary>
@@ -103,6 +116,9 @@ public class PoolableObjectLifecycle : PoolableObject
 
         if (currentContactCount >= maxContactCount)
         {
+            // イベント発火
+            OnContactLimitReached?.Invoke();
+
             // 接触回数が上限に達したらプールに返却
             ReturnToPool();
 

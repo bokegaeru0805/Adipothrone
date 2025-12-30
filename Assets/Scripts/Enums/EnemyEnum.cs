@@ -1,6 +1,5 @@
 public enum EnemyName
 {
-    // ここに敵の名前を追加
     enemy1 = 15001,
     enemy2 = 15002,
     tutorial_Golem = 15003,

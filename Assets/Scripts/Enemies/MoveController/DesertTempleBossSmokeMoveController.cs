@@ -274,6 +274,13 @@ public class DesertTempleBossSmokeMoveController : MonoBehaviour
 
     private void FixedUpdate()
     {
+        // 敵の動きがポーズされているかどうかを確認
+        // もしポーズされていれば何もせずに戻る
+        if (TimeManager.instance.isEnemyMovePaused)
+        {
+            return;
+        }
+
         bool isTargetCurrentlyRight = IsTargetToRight();
         if (rightFlag != isTargetCurrentlyRight)
         {
@@ -814,7 +821,7 @@ public class DesertTempleBossSmokeMoveController : MonoBehaviour
     /// <param name="isFacingRight">右を向いているか</param>
     private void UpdateFacingDirection(bool isFacingRight)
     {
-        //弾の子オブジェクトの向きを合わせるたｍ
+        //弾の子オブジェクトの向きを合わせるため
         //SpriteRendererを用いずに、Transformの回転で対応
         this.transform.localRotation = new Quaternion(
             0,

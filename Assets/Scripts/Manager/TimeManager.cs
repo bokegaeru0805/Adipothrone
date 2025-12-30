@@ -115,6 +115,7 @@ public class TimeManager : MonoBehaviour
             if (Input.GetKeyDown(KeyCode.P))
             {
                 SetEnemyMovePaused(!isEnemyMovePaused);
+                Debug.Log($"<color=yellow>TimeManager:</color> Enemy Move Paused set to {isEnemyMovePaused}");
             }
         }
     }
