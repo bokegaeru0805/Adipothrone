@@ -220,7 +220,7 @@ public class BirdNormalMoveController : MonoBehaviour, IEnemyResettable
         if (playerTransform == null)
         {
             playerTransform = GameObject
-                .FindGameObjectWithTag(GameConstants.PlayerTagName)
+                .FindGameObjectWithTag(GameConstants.PLAYER_TAG_NAME)
                 ?.transform;
             if (playerTransform == null)
             {
@@ -242,8 +242,8 @@ public class BirdNormalMoveController : MonoBehaviour, IEnemyResettable
         rbody.velocity = new Vector2(vx, 0); //速度を初期化
         currentState = BirdState.Hovering; // 初期状態をホバリングに設定
 
-        this.tag = GameConstants.ImmuneEnemyTagName; // タグをダメージを受けない敵のタグに初期化
-        contactDamageObject.tag = GameConstants.ImmuneEnemyTagName; // 子オブジェクトもタグをダメージを受けない敵のタグに初期化
+        this.tag = GameConstants.IMMUNE_ENEMY_TAG_NAME; // タグをダメージを受けない敵のタグに初期化
+        contactDamageObject.tag = GameConstants.IMMUNE_ENEMY_TAG_NAME; // 子オブジェクトもタグをダメージを受けない敵のタグに初期化
         if (animator != null && !animator.enabled)
         {
             animator.enabled = true; // Animatorを有効化
@@ -484,8 +484,8 @@ public class BirdNormalMoveController : MonoBehaviour, IEnemyResettable
                     recoverStartPos = transform.position; // 現在位置を記録
                     recoverTimer = 0f; // タイマー初期化
                     currentState = BirdState.None; // ダイブ状態をリセット
-                    this.tag = GameConstants.ImmuneEnemyTagName; // タグをダメージを受けない敵のタグに変更
-                    contactDamageObject.tag = GameConstants.ImmuneEnemyTagName; // 子オブジェクトもタグをダメージを受けない敵のタグに変更
+                    this.tag = GameConstants.IMMUNE_ENEMY_TAG_NAME; // タグをダメージを受けない敵のタグに変更
+                    contactDamageObject.tag = GameConstants.IMMUNE_ENEMY_TAG_NAME; // 子オブジェクトもタグをダメージを受けない敵のタグに変更
                     StartCoroutine(Recover()); // 復帰のコルーチンを開始
                 }
             }
@@ -589,8 +589,8 @@ public class BirdNormalMoveController : MonoBehaviour, IEnemyResettable
         float directionX = Mathf.Sign(targetDiveX - currentPos.x); // プレイヤーの位置に基づいてX方向を決定
         diveVelocity = new Vector2(directionX * diveSpeed, -diveSpeed); // ダイブ速度を設定
         sePlayer.Play(SE_EnemyAction.Attack_fly1); // ダイブ開始時のSEを再生
-        this.tag = GameConstants.DamageableEnemyTagName; // タグをダメージを受ける敵のタグに変更
-        contactDamageObject.tag = GameConstants.DamageableEnemyTagName; // 子オブジェクトもタグをダメージを受ける敵のタグに変更
+        this.tag = GameConstants.DAMAGEABLE_ENEMY_TAG_NAME; // タグをダメージを受ける敵のタグに変更
+        contactDamageObject.tag = GameConstants.DAMAGEABLE_ENEMY_TAG_NAME; // 子オブジェクトもタグをダメージを受ける敵のタグに変更
         spriteRenderer.sprite = glideSprite; // グライドスプライトに変更
         currentState = BirdState.Diving; // 溜めが完了したらダイブ状態に移行
 

@@ -19,7 +19,7 @@ public class ReturnToTitle : Command
     public override void OnEnter()
     {
         // 指定された名前のシーンをロードする
-        SceneManager.LoadScene(GameConstants.SceneName_Title);
+        SceneManager.LoadScene(GameConstants.SCENE_NAME_TITLE);
 
         FadeCanvas.instance.FadeIn(1f); // フェードアウトを開始
 
@@ -32,7 +32,7 @@ public class ReturnToTitle : Command
     /// </summary>
     public override string GetSummary()
     {
-        return "シーンへ移行: " + GameConstants.SceneName_Title;
+        return "シーンへ移行: " + GameConstants.SCENE_NAME_TITLE;
     }
 
     /// <summary>

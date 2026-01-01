@@ -13,8 +13,8 @@ public class PlayerBodyManager : MonoBehaviour
     private PlayerManager playerManager;
 
     // --- プレイヤーの体形関連ステータス ---
-    public int BodyState { get; private set; } = GameConstants.BodyState_Normal; // プレイヤーの体形状態
-    public int AnimBodyState { get; private set; } = GameConstants.AnimBodyState_Normal; // プレイヤーのアニメーション体形状態
+    public int BodyState { get; private set; } = GameConstants.BODY_STATE_NORMAL; // プレイヤーの体形状態
+    public int AnimBodyState { get; private set; } = GameConstants.ANIM_BODY_STATE_NORMAL; // プレイヤーのアニメーション体形状態
     public float attackWpScale { get; private set; } = 0; // 攻撃力のWP倍率
     public float defenseWpScale { get; private set; } = 0; // 防御力のWP倍率
     public float speedWpScale { get; private set; } = 0; // スピードのWP倍率
@@ -116,25 +116,25 @@ public class PlayerBodyManager : MonoBehaviour
     private void SetBodyStates(int playerCurrentWP)
     {
         // WPに応じて体形状態を設定
-        if (playerCurrentWP >= GameConstants.WpThreshold_Armed3)
+        if (playerCurrentWP >= GameConstants.WP_THRESHOLD_ARMED_3)
         {
-            BodyState = GameConstants.BodyState_Armed3;
-            AnimBodyState = GameConstants.AnimBodyState_Armed3;
+            BodyState = GameConstants.BODY_STATE_ARMED_3;
+            AnimBodyState = GameConstants.ANIM_BODY_STATE_ARMED_3;
         }
-        else if (playerCurrentWP >= GameConstants.WpThreshold_Armed2)
+        else if (playerCurrentWP >= GameConstants.WP_THRESHOLD_ARMED_2)
         {
-            BodyState = GameConstants.BodyState_Armed2;
-            AnimBodyState = GameConstants.AnimBodyState_Armed2;
+            BodyState = GameConstants.BODY_STATE_ARMED_2;
+            AnimBodyState = GameConstants.ANIM_BODY_STATE_ARMED_2;
         }
-        else if (playerCurrentWP >= GameConstants.WpThreshold_Armed1)
+        else if (playerCurrentWP >= GameConstants.WP_THRESHOLD_ARMED_1)
         {
-            BodyState = GameConstants.BodyState_Armed1;
-            AnimBodyState = GameConstants.AnimBodyState_Armed1;
+            BodyState = GameConstants.BODY_STATE_ARMED_1;
+            AnimBodyState = GameConstants.ANIM_BODY_STATE_ARMED_1;
         }
         else
         {
-            BodyState = GameConstants.BodyState_Normal;
-            AnimBodyState = GameConstants.AnimBodyState_Normal;
+            BodyState = GameConstants.BODY_STATE_NORMAL;
+            AnimBodyState = GameConstants.ANIM_BODY_STATE_NORMAL;
         }
     }
 
@@ -145,9 +145,9 @@ public class PlayerBodyManager : MonoBehaviour
             playerCurrentWP = 0; // WPがマイナスにならないようにする
         }
         // WPに応じてスケールを設定
-        attackWpScale = 1 + playerCurrentWP * GameConstants.PlayerAttackWpMultiplier;
-        defenseWpScale = 1 + playerCurrentWP * GameConstants.PlayerDefenseWpMultiplier;
-        speedWpScale = 1 + playerCurrentWP * GameConstants.PlayerMoveWpMultiplier;
+        attackWpScale = 1 + playerCurrentWP * GameConstants.PLAYER_ATTACK_WP_MULTIPLIER;
+        defenseWpScale = 1 + playerCurrentWP * GameConstants.PLAYER_DEFENSE_WP_MULTIPLIER;
+        speedWpScale = 1 + playerCurrentWP * GameConstants.PLAYER_MOVE_WP_MULTIPLIER;
     }
 
     private int GetBodyStateFromWP(int currentWP)
@@ -174,19 +174,19 @@ public class PlayerBodyManager : MonoBehaviour
         int playerCurrentWP = playerManager.GetPlayerIntStatus(PlayerStatusIntName.playerCurrentWP);
 
         // WPの値に基づいて、どの体形状態に該当するかを判定
-        if (playerCurrentWP >= GameConstants.WpThreshold_Immobile)
+        if (playerCurrentWP >= GameConstants.WP_THRESHOLD_IMMOBILE)
         {
             return GameConstants.BodyStateEnum.BodyState_Immobile;
         }
-        else if (playerCurrentWP >= GameConstants.WpThreshold_Armed3)
+        else if (playerCurrentWP >= GameConstants.WP_THRESHOLD_ARMED_3)
         {
             return GameConstants.BodyStateEnum.BodyState_Armed3;
         }
-        else if (playerCurrentWP >= GameConstants.WpThreshold_Armed2)
+        else if (playerCurrentWP >= GameConstants.WP_THRESHOLD_ARMED_2)
         {
             return GameConstants.BodyStateEnum.BodyState_Armed2;
         }
-        else if (playerCurrentWP >= GameConstants.WpThreshold_Armed1)
+        else if (playerCurrentWP >= GameConstants.WP_THRESHOLD_ARMED_1)
         {
             return GameConstants.BodyStateEnum.BodyState_Armed1;
         }
@@ -209,16 +209,16 @@ public class PlayerBodyManager : MonoBehaviour
                 newWP = 0;
                 break;
             case GameConstants.BodyStateEnum.BodyState_Armed1:
-                newWP = GameConstants.WpThreshold_Armed1;
+                newWP = GameConstants.WP_THRESHOLD_ARMED_1;
                 break;
             case GameConstants.BodyStateEnum.BodyState_Armed2:
-                newWP = GameConstants.WpThreshold_Armed2;
+                newWP = GameConstants.WP_THRESHOLD_ARMED_2;
                 break;
             case GameConstants.BodyStateEnum.BodyState_Armed3:
-                newWP = GameConstants.WpThreshold_Armed3;
+                newWP = GameConstants.WP_THRESHOLD_ARMED_3;
                 break;
             case GameConstants.BodyStateEnum.BodyState_Immobile:
-                newWP = GameConstants.WpThreshold_Immobile;
+                newWP = GameConstants.WP_THRESHOLD_IMMOBILE;
                 break;
         }
 

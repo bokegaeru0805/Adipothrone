@@ -104,7 +104,7 @@ namespace MyGame.CameraControl
                 framing = virtualCamera.GetCinemachineComponent<CinemachineTransposer>();
                 if (framing != null)
                 {
-                    framing.m_YDamping = GameConstants.CameraFollowDampingY; // 初期のYDamping値を設定
+                    framing.m_YDamping = GameConstants.CAMERA_FOLLOW_DAMPING_Y; // 初期のYDamping値を設定
                 }
                 else
                 {
@@ -214,7 +214,7 @@ namespace MyGame.CameraControl
                     yield return null; // 条件を満たさない場合は1フレーム待つ
                 }
 
-                framing.m_YDamping = GameConstants.CameraFollowDampingY; // 元のYDamping値に戻す
+                framing.m_YDamping = GameConstants.CAMERA_FOLLOW_DAMPING_Y; // 元のYDamping値に戻す
             }
             else
             {
@@ -429,11 +429,14 @@ namespace MyGame.CameraControl
                 yield return new WaitForSecondsRealtime(duration);
 
                 // 元のYDamping値に戻す
-                framing.m_YDamping = GameConstants.CameraFollowDampingY;
+                framing.m_YDamping = GameConstants.CAMERA_FOLLOW_DAMPING_Y;
             }
             else
             {
-                Debug.LogError("CinemachineTransposerが見つかりません。");
+                if (!isDebugScene)
+                {
+                    Debug.LogError("CinemachineTransposerが見つかりません。");
+                }
             }
 
             // コルーチンの管理変数をクリア

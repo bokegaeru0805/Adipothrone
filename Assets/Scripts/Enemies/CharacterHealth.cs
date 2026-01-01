@@ -154,7 +154,7 @@ public abstract class CharacterHealth : MonoBehaviour, IDamageable, IDroppable, 
         RecordDefeat();
 
         // 共通の死亡時処理
-        this.tag = GameConstants.UntaggedName; // 敵として認識されなくなるようタグを変更
+        this.tag = GameConstants.UNTAGGED_TAG_NAME; // 敵として認識されなくなるようタグを変更
         DropOnDeathHandler.Drop(this); // アイテムドロップ処理を呼び出す
 
         // 固有の死亡演出を呼び出す（中身は継承先クラスで実装）

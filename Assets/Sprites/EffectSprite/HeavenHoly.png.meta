@@ -1,5 +1,5 @@
 fileFormatVersion: 2
-guid: 986fd2c86635a4c4d81745bd95d99ac6
+guid: fc0dda730e880dc479ac5635395ad00b
 TextureImporter:
   internalIDToNameTable: []
   externalObjects: {}
@@ -110,13 +110,13 @@ TextureImporter:
     serializedVersion: 2
     sprites:
     - serializedVersion: 2
-      name: EnemySpawnEffect_0
+      name: HeavenHoly_0
       rect:
         serializedVersion: 2
         x: 0
         y: 0
-        width: 44
-        height: 44
+        width: 96
+        height: 320
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -124,20 +124,20 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: 0
       bones: []
-      spriteID: 83b4aedb4f92f90458282ebbdab55b89
-      internalID: 1265550152
+      spriteID: 7161ad9c04f40654ebc7cacb87a13b78
+      internalID: -668135323
       vertices: []
       indices: 
       edges: []
       weights: []
     - serializedVersion: 2
-      name: EnemySpawnEffect_1
+      name: HeavenHoly_1
       rect:
         serializedVersion: 2
-        x: 44
+        x: 96
         y: 0
-        width: 44
-        height: 44
+        width: 96
+        height: 320
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -145,20 +145,20 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: 0
       bones: []
-      spriteID: 1e4505dfa215c7c419eca1c656aeb073
-      internalID: 1627597031
+      spriteID: b3a1fd9fcd0ddd24c8be161e35ba7a09
+      internalID: 584724764
       vertices: []
       indices: 
       edges: []
       weights: []
     - serializedVersion: 2
-      name: EnemySpawnEffect_2
+      name: HeavenHoly_2
       rect:
         serializedVersion: 2
-        x: 88
+        x: 288
         y: 0
-        width: 44
-        height: 44
+        width: 96
+        height: 320
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -166,20 +166,20 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: 0
       bones: []
-      spriteID: a01e26b4767607d48807d0fc8ab727e4
-      internalID: 869100477
+      spriteID: aa01d25309cbb2641b7ee2c14c9eb02f
+      internalID: 684659643
       vertices: []
       indices: 
       edges: []
       weights: []
     - serializedVersion: 2
-      name: EnemySpawnEffect_3
+      name: HeavenHoly_3
       rect:
         serializedVersion: 2
-        x: 132
+        x: 384
         y: 0
-        width: 44
-        height: 44
+        width: 96
+        height: 320
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -187,20 +187,20 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: 0
       bones: []
-      spriteID: f9ecb288a504a4e41b98829f1bbb7270
-      internalID: -2011298939
+      spriteID: f8b487b306eeb104d87854ce59a08350
+      internalID: -745798313
       vertices: []
       indices: 
       edges: []
       weights: []
     - serializedVersion: 2
-      name: EnemySpawnEffect_4
+      name: HeavenHoly_4
       rect:
         serializedVersion: 2
-        x: 176
+        x: 480
         y: 0
-        width: 44
-        height: 44
+        width: 96
+        height: 320
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -208,20 +208,20 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: 0
       bones: []
-      spriteID: 40b3cd730565c4f41894fcdba33cb538
-      internalID: -936540885
+      spriteID: 2f37ebaf99d024f4eb945da8e537741e
+      internalID: -582910933
       vertices: []
       indices: 
       edges: []
       weights: []
     - serializedVersion: 2
-      name: EnemySpawnEffect_5
+      name: HeavenHoly_5
       rect:
         serializedVersion: 2
-        x: 220
+        x: 576
         y: 0
-        width: 44
-        height: 44
+        width: 96
+        height: 320
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -229,20 +229,20 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: 0
       bones: []
-      spriteID: 409de0511a5223848b563644c0100096
-      internalID: 1600978713
+      spriteID: ec3e8c4bf11eb894abaa2acd6ae92ef3
+      internalID: -1922406011
       vertices: []
       indices: 
       edges: []
       weights: []
     - serializedVersion: 2
-      name: EnemySpawnEffect_6
+      name: HeavenHoly_6
       rect:
         serializedVersion: 2
-        x: 264
+        x: 672
         y: 0
-        width: 44
-        height: 44
+        width: 96
+        height: 320
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -250,20 +250,20 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: 0
       bones: []
-      spriteID: 8a9c0ce7c0fe705499fba450762fe971
-      internalID: -1931434834
+      spriteID: c39c9391c84a44141b9a7d829c64cf89
+      internalID: 1298911796
       vertices: []
       indices: 
       edges: []
       weights: []
     - serializedVersion: 2
-      name: EnemySpawnEffect_7
+      name: HeavenHoly_7
       rect:
         serializedVersion: 2
-        x: 308
+        x: 768
         y: 0
-        width: 44
-        height: 44
+        width: 96
+        height: 320
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -271,20 +271,20 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: 0
       bones: []
-      spriteID: 5db6827cda8af924b936e9c09eaced84
-      internalID: -494777342
+      spriteID: d0e8061ec675eda47b730435a9a3d3ca
+      internalID: 989981604
       vertices: []
       indices: 
       edges: []
       weights: []
     - serializedVersion: 2
-      name: EnemySpawnEffect_8
+      name: HeavenHoly_8
       rect:
         serializedVersion: 2
-        x: 352
+        x: 864
         y: 0
-        width: 44
-        height: 44
+        width: 96
+        height: 320
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -292,8 +292,50 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: 0
       bones: []
-      spriteID: eec584145af6dd04dbeba95d1bde37eb
-      internalID: 2068661139
+      spriteID: ce1b7ab66bd4a70458a9269dc56204f0
+      internalID: 914382663
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: HeavenHoly_9
+      rect:
+        serializedVersion: 2
+        x: 960
+        y: 0
+        width: 96
+        height: 320
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 2e19694498cd78b48a6b25577e78a68a
+      internalID: -1011744236
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: HeavenHoly_10
+      rect:
+        serializedVersion: 2
+        x: 1056
+        y: 0
+        width: 96
+        height: 320
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 721a00404eb1fd14ab3895932d6b9f0a
+      internalID: 1175982151
       vertices: []
       indices: 
       edges: []
@@ -309,15 +351,17 @@ TextureImporter:
     weights: []
     secondaryTextures: []
     nameFileIdTable:
-      EnemySpawnEffect_0: 1265550152
-      EnemySpawnEffect_1: 1627597031
-      EnemySpawnEffect_2: 869100477
-      EnemySpawnEffect_3: -2011298939
-      EnemySpawnEffect_4: -936540885
-      EnemySpawnEffect_5: 1600978713
-      EnemySpawnEffect_6: -1931434834
-      EnemySpawnEffect_7: -494777342
-      EnemySpawnEffect_8: 2068661139
+      HeavenHoly_0: -668135323
+      HeavenHoly_1: 584724764
+      HeavenHoly_10: 1175982151
+      HeavenHoly_2: 684659643
+      HeavenHoly_3: -745798313
+      HeavenHoly_4: -582910933
+      HeavenHoly_5: -1922406011
+      HeavenHoly_6: 1298911796
+      HeavenHoly_7: 989981604
+      HeavenHoly_8: 914382663
+      HeavenHoly_9: -1011744236
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 

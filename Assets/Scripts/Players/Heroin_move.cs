@@ -78,7 +78,7 @@ public class Heroin_move : MonoBehaviour
 
     private void Awake()
     {
-        groundLayer = LayerMask.GetMask(GameConstants.PhysicsLayerName_Ground); // Groundレイヤーを取得
+        groundLayer = LayerMask.GetMask(GameConstants.PHYSICS_LAYER_NAME_GROUND); // Groundレイヤーを取得
         _animator = GetComponent<Animator>();
         _rbody = GetComponent<Rigidbody2D>();
         _spriteRenderer = GetComponent<SpriteRenderer>();
@@ -103,17 +103,17 @@ public class Heroin_move : MonoBehaviour
     {
         isFirstGetKey = true;
         gravity = Mathf.Abs(Physics2D.gravity.y * _rbody.gravityScale);
-        if (gameObject.name != GameConstants.PlayerObjectName)
+        if (gameObject.name != GameConstants.PLAYER_OBJECT_NAME)
         {
             Debug.LogError(
-                $"{gameObject.name}の名前がGameConstants.PlayerObjectNameと一致しません。"
+                $"{gameObject.name}の名前がGameConstants.PLAYER_OBJECT_NAMEと一致しません。"
             ); // プレイヤーのオブジェクト名が一致しない場合のエラーメッセージ
         }
 
-        if (this.tag != GameConstants.PlayerTagName)
+        if (this.tag != GameConstants.PLAYER_TAG_NAME)
         {
             Debug.LogError(
-                $"{this.gameObject.name}のタグがGameConstants.PlayerTagNameと一致しません。"
+                $"{this.gameObject.name}のタグがGameConstants.PLAYER_TAG_NAMEと一致しません。"
             ); // プレイヤーのタグ名が一致しない場合のエラーメッセージ
         }
     }
@@ -189,13 +189,13 @@ public class Heroin_move : MonoBehaviour
                 // 歩行時の効果音の判定
                 if (
                     BoundIntervalTime >= BOUND2EFFECT_LENGHT + Bound2EffecIntervalTime
-                    && BodyState == GameConstants.BodyState_Armed2
+                    && BodyState == GameConstants.BODY_STATE_ARMED_2
                 )
                 {
                     sePlayer.Play(SE_PlayerAction.Bound2);
                     BoundIntervalTime = 0f;
                 }
-                else if (BoundIntervalTime >= 3.448f && BodyState == GameConstants.BodyState_Armed1)
+                else if (BoundIntervalTime >= 3.448f && BodyState == GameConstants.BODY_STATE_ARMED_1)
                 {
                     sePlayer.Play(SE_PlayerAction.GichiGichi1);
                     BoundIntervalTime = 0f;
@@ -278,15 +278,15 @@ public class Heroin_move : MonoBehaviour
 
                 switch (AnimBodyState)
                 {
-                    case GameConstants.AnimBodyState_Normal:
+                    case GameConstants.ANIM_BODY_STATE_NORMAL:
                         _animator.ResetTrigger("Normal_JumpTrigger");
                         _animator.SetTrigger("Normal_JumpTrigger");
                         break;
-                    case GameConstants.AnimBodyState_Armed1:
+                    case GameConstants.ANIM_BODY_STATE_ARMED_1:
                         _animator.ResetTrigger("Armed1_JumpTrigger");
                         _animator.SetTrigger("Armed1_JumpTrigger");
                         break;
-                    case GameConstants.AnimBodyState_Armed2:
+                    case GameConstants.ANIM_BODY_STATE_ARMED_2:
                         _animator.ResetTrigger("Armed2_JumpTrigger");
                         _animator.SetTrigger("Armed2_JumpTrigger");
                         break;
@@ -299,11 +299,11 @@ public class Heroin_move : MonoBehaviour
             if (!wasGroundedLastFrame && isGrounded)
             {
                 sePlayer.Play(SE_PlayerAction.Land1); //着地の効果音を鳴らす
-                if (BodyState == GameConstants.BodyState_Armed2)
+                if (BodyState == GameConstants.BODY_STATE_ARMED_2)
                 {
                     sePlayer.Play(SE_PlayerAction.Bound1);
                 }
-                else if (BodyState == GameConstants.BodyState_Armed1)
+                else if (BodyState == GameConstants.BODY_STATE_ARMED_1)
                 {
                     sePlayer.Play(SE_PlayerAction.Bound3);
                 }

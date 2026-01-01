@@ -50,7 +50,7 @@ public class FieldEvent_Chapter1 : MonoBehaviour
     private void OnTriggerStay2D(Collider2D collision)
     {
         bool canTriggerEvent =
-            collision.CompareTag(GameConstants.PlayerTagName) // プレイヤーがトリガーに触れているか
+            collision.CompareTag(GameConstants.PLAYER_TAG_NAME) // プレイヤーがトリガーに触れているか
             && Time.timeScale > 0 // ゲームが一時停止していないか
             && !isEventTriggered // イベントがまだトリガーされていないか
             && (PlayerManager.instance?.isControlLocked ?? false) == false; // プレイヤーの操作がロックされていないか

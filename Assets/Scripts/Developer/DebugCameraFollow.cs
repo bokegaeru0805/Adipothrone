@@ -33,7 +33,7 @@ public class DebugCameraFollow : MonoBehaviour
         // ターゲットが未設定の場合、"Player"タグのついたオブジェクトを自動検索する（デバッグ用機能）
         if (target == null)
         {
-            GameObject playerObj = GameObject.FindGameObjectWithTag(GameConstants.PlayerTagName);
+            GameObject playerObj = GameObject.FindGameObjectWithTag(GameConstants.PLAYER_TAG_NAME);
             if (playerObj != null)
             {
                 target = playerObj.transform;

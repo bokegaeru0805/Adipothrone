@@ -57,7 +57,7 @@ public class MovingPlatform : MonoBehaviour
         // 必要に応じて他の種類を追加
     }
 
-    private string sortingLayerName = GameConstants.SortingLayerName_Ground;
+    private string sortingLayerName = GameConstants.SORTING_LAYER_NAME_GROUND;
     private int orderInLayer = 0;
     private Vector2 targetWorldPosition; // リフトの現在の目標位置（ワールド座標）
     private bool movingToEnd = true; // 現在の移動方向 (始点→終点: true, 終点→始点: false)
@@ -239,7 +239,7 @@ public class MovingPlatform : MonoBehaviour
     private void OnTriggerEnter2D(Collider2D other)
     {
         // プレイヤーに"Player"タグが設定されていることを前提とします。
-        if (other.CompareTag(GameConstants.PlayerTagName))
+        if (other.CompareTag(GameConstants.PLAYER_TAG_NAME))
         {
             // プレイヤーをリフトの子オブジェクトにする
             other.transform.SetParent(this.transform);
@@ -252,7 +252,7 @@ public class MovingPlatform : MonoBehaviour
     /// <param name="other">衝突が終了したCollider2D</param>
     private void OnTriggerExit2D(Collider2D other)
     {
-        if (other.CompareTag(GameConstants.PlayerTagName))
+        if (other.CompareTag(GameConstants.PLAYER_TAG_NAME))
         {
             // プレイヤーの親オブジェクトを解除
             other.transform.SetParent(null);

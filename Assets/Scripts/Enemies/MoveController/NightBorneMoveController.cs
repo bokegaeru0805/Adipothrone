@@ -363,7 +363,7 @@ public class NightBorneMoveController : MonoBehaviour, IEnemyResettable
                 );
             }
 
-            swordObject.tag = GameConstants.DamageableEnemyTagName; // 剣のタグを設定
+            swordObject.tag = GameConstants.DAMAGEABLE_ENEMY_TAG_NAME; // 剣のタグを設定
             swordObject.SetActive(false); // 初期状態では剣オブジェクトを非表示にする
         }
         else
@@ -452,7 +452,7 @@ public class NightBorneMoveController : MonoBehaviour, IEnemyResettable
         {
             // FindGameObjectWithTagは負荷が高い場合があるので、?演算子でnullチェックをしています
             playerTransform = GameObject
-                .FindGameObjectWithTag(GameConstants.PlayerTagName)
+                .FindGameObjectWithTag(GameConstants.PLAYER_TAG_NAME)
                 ?.transform;
             if (playerTransform == null)
             {
@@ -469,7 +469,7 @@ public class NightBorneMoveController : MonoBehaviour, IEnemyResettable
         {
             // FindGameObjectWithTagは負荷が高い場合があるので、?演算子でnullチェックをしています
             playerTransform = GameObject
-                .FindGameObjectWithTag(GameConstants.PlayerTagName)
+                .FindGameObjectWithTag(GameConstants.PLAYER_TAG_NAME)
                 ?.transform;
             if (playerTransform == null)
             {
@@ -487,7 +487,7 @@ public class NightBorneMoveController : MonoBehaviour, IEnemyResettable
         isDefeated = false; // ボスが倒されたフラグをリセット
         animator.enabled = false; // Animatorを無効にする
         spriteRenderer.sprite = defaultSprite; // デフォルトのスプライトに設定
-        swordObject.tag = GameConstants.DamageableEnemyTagName; // 剣のタグを設定
+        swordObject.tag = GameConstants.DAMAGEABLE_ENEMY_TAG_NAME; // 剣のタグを設定
         swordObject.SetActive(false); // 初期状態では剣オブジェクトを非表示にする
 
         //攻撃関係のフラグをリセット
@@ -618,7 +618,7 @@ public class NightBorneMoveController : MonoBehaviour, IEnemyResettable
         if (isPlayerInFront)
         {
             isMoveStarted = true; // 起動フラグを立てる
-            this.tag = GameConstants.ImmuneEnemyTagName; // タグをダメージを受けない敵のタグに設定
+            this.tag = GameConstants.IMMUNE_ENEMY_TAG_NAME; // タグをダメージを受けない敵のタグに設定
             animator.enabled = true; // Animatorを有効にする
             bossHealth?.ActivateBattle(); // ボス戦を開始する
             // ファンネルをアニメーションに同期してフェードインさせるコルーチンを開始
@@ -1399,7 +1399,7 @@ public class NightBorneMoveController : MonoBehaviour, IEnemyResettable
     private IEnumerator UpdateSword()
     {
         previousBodySprite = spriteRenderer.sprite;
-        swordObject.tag = GameConstants.DamageableEnemyTagName; // 剣のタグをダメージを受ける敵のタグに設定
+        swordObject.tag = GameConstants.DAMAGEABLE_ENEMY_TAG_NAME; // 剣のタグをダメージを受ける敵のタグに設定
 
         while (true)
         {

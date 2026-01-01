@@ -249,7 +249,7 @@ public class StoneGolemMoveController : MonoBehaviour
             {
                 armStateController.SetNormalDamage(meleeAttackDamage); // アームのダメージ量を設定
             }
-            armObject.tag = GameConstants.DamageableEnemyTagName; // アームのタグを設定
+            armObject.tag = GameConstants.DAMAGEABLE_ENEMY_TAG_NAME; // アームのタグを設定
             armObject.SetActive(false); // 初期状態ではアームオブジェクトを非表示にする
         }
         else
@@ -275,7 +275,7 @@ public class StoneGolemMoveController : MonoBehaviour
             {
                 stateController.SetNormalDamage(hammerDamage); // ハンマーのダメージ量を設定
             }
-            hammerObject.tag = GameConstants.DamageableEnemyTagName; // ハンマーのタグを設定
+            hammerObject.tag = GameConstants.DAMAGEABLE_ENEMY_TAG_NAME; // ハンマーのタグを設定
             hammerObject.SetActive(false); // 初期状態ではハンマーオブジェクトを非表示にする
         }
         else
@@ -322,7 +322,7 @@ public class StoneGolemMoveController : MonoBehaviour
         if (playerTransform == null)
         {
             playerTransform = GameObject
-                .FindGameObjectWithTag(GameConstants.PlayerTagName)
+                .FindGameObjectWithTag(GameConstants.PLAYER_TAG_NAME)
                 .transform;
             if (playerTransform == null)
             {
@@ -409,7 +409,7 @@ public class StoneGolemMoveController : MonoBehaviour
         if (playerTransform == null)
         {
             playerTransform = GameObject
-                .FindGameObjectWithTag(GameConstants.PlayerTagName)
+                .FindGameObjectWithTag(GameConstants.PLAYER_TAG_NAME)
                 .transform;
             if (playerTransform == null)
             {
@@ -440,7 +440,7 @@ public class StoneGolemMoveController : MonoBehaviour
             var bossHealth = this.GetComponent<BossHealth>();
             bossHealth.enabled = true; // BossHealthスクリプトを有効化
             bossHealth.InitializeBossSpecifics(); // ボス固有の初期化を実行
-            this.tag = GameConstants.ImmuneEnemyTagName; // タグをダメージを受けない敵のタグに変更
+            this.tag = GameConstants.IMMUNE_ENEMY_TAG_NAME; // タグをダメージを受けない敵のタグに変更
             isMoveStarted = true;
         }
 
@@ -633,7 +633,7 @@ public class StoneGolemMoveController : MonoBehaviour
             yield break; // プールから取得できなかった場合は中断
         }
 
-        crawlingRock.tag = GameConstants.DamageableEnemyTagName; //這う岩のタグを設定
+        crawlingRock.tag = GameConstants.DAMAGEABLE_ENEMY_TAG_NAME; //這う岩のタグを設定
         ContactDamageController stateController =
             crawlingRock.GetComponent<ContactDamageController>();
         if (stateController == null)
@@ -744,7 +744,7 @@ public class StoneGolemMoveController : MonoBehaviour
             yield return null;
         }
 
-        hammerObject.tag = GameConstants.DamageableEnemyTagName; // ハンマーのタグをダメージを受ける敵のタグに戻す
+        hammerObject.tag = GameConstants.DAMAGEABLE_ENEMY_TAG_NAME; // ハンマーのタグをダメージを受ける敵のタグに戻す
         // ハンマー攻撃アニメーションをトリガー
         animator.SetTrigger("hammerAttackTrigger");
         // スラッシュエフェクトを生成
@@ -788,7 +788,7 @@ public class StoneGolemMoveController : MonoBehaviour
                 {
                     rockHPscript.Initialize(rockEnemyData); // 岩の敵データを設定
                 }
-                rock.tag = GameConstants.DamageableEnemyTagName; // 岩のタグを設定
+                rock.tag = GameConstants.DAMAGEABLE_ENEMY_TAG_NAME; // 岩のタグを設定
                 ContactDamageController stateController =
                     rock.GetComponent<ContactDamageController>();
                 if (stateController == null)
@@ -870,7 +870,7 @@ public class StoneGolemMoveController : MonoBehaviour
 
             if (wave == 0)
             {
-                hammerObject.tag = GameConstants.ImmuneEnemyTagName; // ハンマーのタグをダメージを受けない敵のタグに設定
+                hammerObject.tag = GameConstants.IMMUNE_ENEMY_TAG_NAME; // ハンマーのタグをダメージを受けない敵のタグに設定
             }
         }
 
@@ -896,7 +896,7 @@ public class StoneGolemMoveController : MonoBehaviour
         float elapsed = 0f;
         previousBodySprite = spriteRenderer.sprite;
         armObject.SetActive(true); // アームオブジェクトを有効化
-        armObject.tag = GameConstants.ImmuneEnemyTagName; // アームのタグをダメージを受けない敵のタグに設定
+        armObject.tag = GameConstants.IMMUNE_ENEMY_TAG_NAME; // アームのタグをダメージを受けない敵のタグに設定
 
         while (elapsed < duration)
         {
@@ -941,19 +941,19 @@ public class StoneGolemMoveController : MonoBehaviour
                     //腕の当たり判定の調整
                     if (
                         config == configs[0]
-                        && armObject.tag == GameConstants.DamageableEnemyTagName
+                        && armObject.tag == GameConstants.DAMAGEABLE_ENEMY_TAG_NAME
                     )
                     {
                         // アームのタグをダメージを受けない敵のタグに設定
-                        armObject.tag = GameConstants.ImmuneEnemyTagName;
+                        armObject.tag = GameConstants.IMMUNE_ENEMY_TAG_NAME;
                     }
                     else if (
                         config != configs[0]
-                        && armObject.tag == GameConstants.ImmuneEnemyTagName
+                        && armObject.tag == GameConstants.IMMUNE_ENEMY_TAG_NAME
                     )
                     {
                         // アームのタグをダメージを受ける敵のタグに戻す
-                        armObject.tag = GameConstants.DamageableEnemyTagName;
+                        armObject.tag = GameConstants.DAMAGEABLE_ENEMY_TAG_NAME;
                     }
 
                     previousBodySprite = config.bodySprite;

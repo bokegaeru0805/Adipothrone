@@ -124,7 +124,7 @@ public class BabyDrakeMoveController : MonoBehaviour, IEnemyResettable
 
     private void Awake()
     {
-        GroundLayer = LayerMask.GetMask(GameConstants.PhysicsLayerName_Ground); // Groundレイヤーを取得
+        GroundLayer = LayerMask.GetMask(GameConstants.PHYSICS_LAYER_NAME_GROUND); // Groundレイヤーを取得
 
         switch (variantType)
         {
@@ -190,7 +190,7 @@ public class BabyDrakeMoveController : MonoBehaviour, IEnemyResettable
         if (playerTransform == null)
         {
             playerTransform = GameObject
-                .FindGameObjectWithTag(GameConstants.PlayerTagName)
+                .FindGameObjectWithTag(GameConstants.PLAYER_TAG_NAME)
                 ?.transform;
             if (playerTransform == null)
             {
@@ -225,7 +225,7 @@ public class BabyDrakeMoveController : MonoBehaviour, IEnemyResettable
             return;
         }
 
-        tag = GameConstants.UntaggedName; // タグをリセット
+        tag = GameConstants.UNTAGGED_TAG_NAME; // タグをリセット
         // 初期状態をMovingにし、タイマーを設定
         currentState = DrakeState.Moving;
         SetNextStateDuration();
@@ -501,7 +501,7 @@ public class BabyDrakeMoveController : MonoBehaviour, IEnemyResettable
     private IEnumerator JumpChargeCoroutine()
     {
         // 溜め中はダメージを受けない敵の状態に
-        tag = GameConstants.ImmuneEnemyTagName;
+        tag = GameConstants.IMMUNE_ENEMY_TAG_NAME;
 
         // 指定された溜め時間待機
         yield return new WaitForSeconds(jumpChargeTime);
@@ -512,7 +512,7 @@ public class BabyDrakeMoveController : MonoBehaviour, IEnemyResettable
             // ステートをJumpingに移行
             currentState = DrakeState.Jumping;
             jumpStartTime = Time.time;
-            tag = GameConstants.DamageableEnemyTagName;
+            tag = GameConstants.DAMAGEABLE_ENEMY_TAG_NAME;
 
             // ジャンプアニメーションのトリガーを引く
             animator.SetTrigger("JumpTrigger");
@@ -541,7 +541,7 @@ public class BabyDrakeMoveController : MonoBehaviour, IEnemyResettable
         // Recovering（着地）状態になるまで待機
         yield return new WaitUntil(() => currentState == DrakeState.Recovering);
 
-        tag = GameConstants.ImmuneEnemyTagName;
+        tag = GameConstants.IMMUNE_ENEMY_TAG_NAME;
 
         float idleWaitTime = Random.Range(minIdleTime, maxIdleTime);
         yield return new WaitForSeconds(idleWaitTime);
@@ -567,7 +567,7 @@ public class BabyDrakeMoveController : MonoBehaviour, IEnemyResettable
 
         // Moving状態に戻る
         currentState = DrakeState.Moving;
-        this.tag = GameConstants.UntaggedName;
+        this.tag = GameConstants.UNTAGGED_TAG_NAME;
         SetNextStateDuration();
 
         currentAttackCooldown = attackCooldownDuration; //クールダウンタイマーに時間をセット（ここから減算が始まる）

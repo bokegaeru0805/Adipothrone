@@ -164,7 +164,7 @@ public class GameUIManager : MonoBehaviour
                 uiRefs.PlayerHPHealthBarImage.fillAmount,
                 (float)playerHP / (float)playerMaxHP,
                 ref _playerCurrentHPVelocity,
-                GameConstants.GaugeSmoothTime,
+                GameConstants.GAUGE_SMOOTH_TIME,
                 _maxSpeed,
                 Time.unscaledDeltaTime
             );
@@ -177,7 +177,7 @@ public class GameUIManager : MonoBehaviour
                 uiRefs.PlayerWPHealthBarImage.fillAmount,
                 (float)playerWP / (float)playerMaxWP,
                 ref _playerCurrentWPVelocity,
-                GameConstants.GaugeSmoothTime,
+                GameConstants.GAUGE_SMOOTH_TIME,
                 _maxSpeed,
                 Time.unscaledDeltaTime
             );
@@ -211,7 +211,7 @@ public class GameUIManager : MonoBehaviour
                 uiRefs.BossHealthBarImage.fillAmount,
                 (float)bossHP / (float)bossMaxHP,
                 ref _bossCurrentVelocity,
-                GameConstants.GaugeSmoothTime,
+                GameConstants.GAUGE_SMOOTH_TIME,
                 _maxSpeed,
                 Time.unscaledDeltaTime
             );

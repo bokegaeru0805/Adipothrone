@@ -19,14 +19,6 @@ public class PlayerTestMoveController : MonoBehaviour
     private float moveSpeed = 5.0f;
 
     [Header("ダメージテスト機能")]
-    [Tooltip("ダメージを与える対象のオブジェクト（CharacterHealth継承スクリプトがついているもの）")]
-    [SerializeField]
-    private GameObject targetObject;
-
-    [Tooltip("ダメージを与えるトリガーとなるキー")]
-    [SerializeField]
-    private KeyCode damageKey = KeyCode.D;
-
     [Tooltip("1回に与えるダメージ量")]
     [SerializeField]
     private int damageAmount = 10;
@@ -86,10 +78,10 @@ public class PlayerTestMoveController : MonoBehaviour
             transform.position = mouseWorldPosition;
         }
 
-        // --- ダメージテスト入力の検知 ---
-        if (Input.GetKeyDown(damageKey))
+        // --- ダメージテスト入力の検知（マウスクリック） ---
+        if (Input.GetMouseButtonDown(0)) // 0は左クリック
         {
-            ApplyDamage();
+            ApplyDamageAtMousePosition();
         }
 
         // エディタ内でのみ実行するキー連打チェック処理
@@ -99,31 +91,33 @@ public class PlayerTestMoveController : MonoBehaviour
     }
 
     /// <summary>
-    /// ターゲットオブジェクトにダメージを与える
+    /// マウス位置にあるオブジェクトを検出し、ダメージを与える
     /// </summary>
-    private void ApplyDamage()
+    private void ApplyDamageAtMousePosition()
     {
-        if (targetObject == null)
-        {
-            Debug.LogWarning("ダメージ対象のオブジェクト(Target Object)が設定されていません。");
-            return;
-        }
+        // マウスのスクリーン座標をワールド座標に変換
+        Vector2 mouseWorldPos = mainCamera.ScreenToWorldPoint(Input.mousePosition);
 
-        // CharacterHealthコンポーネントを取得（継承したクラスも取得可能）
-        var health = targetObject.GetComponent<CharacterHealth>();
+        // その地点にあるCollider2Dを取得（重なっている場合は手前のもの）
+        Collider2D hitCollider = Physics2D.OverlapPoint(mouseWorldPos);
 
-        if (health != null)
+        if (hitCollider != null)
         {
-            health.Damage(damageAmount);
-            Debug.Log(
-                $"<color=red>Damage Test:</color> {targetObject.name} に {damageAmount} のダメージを与えました。(CurrentHP: {health.CurrentHP})"
-            );
-        }
-        else
-        {
-            Debug.LogError(
-                $"{targetObject.name} には CharacterHealth を継承したコンポーネントが見つかりません。"
-            );
+            // CharacterHealthコンポーネントを取得（継承したクラスも取得可能）
+            var health = hitCollider.GetComponent<CharacterHealth>();
+
+            if (health != null)
+            {
+                health.Damage(damageAmount);
+                Debug.Log(
+                    $"<color=red>Damage Test:</color> {hitCollider.name} に {damageAmount} のダメージを与えました。(CurrentHP: {health.CurrentHP})"
+                );
+            }
+            else
+            {
+                // クリックした対象がCharacterHealthを持っていなかった場合（必要ならコメントアウト解除）
+                // Debug.Log($"クリックした対象 ({hitCollider.name}) には CharacterHealth がありません。");
+            }
         }
     }
 
@@ -149,12 +143,6 @@ public class PlayerTestMoveController : MonoBehaviour
             // 連打カウントが必要な回数に達したら
             if (currentPressCount >= requiredPressCount)
             {
-                // Debug.Log(
-                //     $"'{stopKey}'キーが{requiredPressCount}回連打されたため、Playモードを停止します。"
-                // );
-                // Playモードを停止する
-                //EditorApplication.isPlaying = false;
-
                 EditorApplication.isPaused = true;
             }
         }

@@ -134,7 +134,7 @@ public class DesertTempleGolemMoveController : MonoBehaviour, IEnemyResettable
 
     private void Awake()
     {
-        groundLayer = LayerMask.GetMask(GameConstants.PhysicsLayerName_Ground); // Groundレイヤーを取得
+        groundLayer = LayerMask.GetMask(GameConstants.PHYSICS_LAYER_NAME_GROUND); // Groundレイヤーを取得
 
         if (activator == null)
         {
@@ -196,7 +196,7 @@ public class DesertTempleGolemMoveController : MonoBehaviour, IEnemyResettable
         if (playerTransform == null)
         {
             playerTransform = GameObject
-                .FindGameObjectWithTag(GameConstants.PlayerTagName)
+                .FindGameObjectWithTag(GameConstants.PLAYER_TAG_NAME)
                 ?.transform;
             if (playerTransform == null)
             {
@@ -226,7 +226,7 @@ public class DesertTempleGolemMoveController : MonoBehaviour, IEnemyResettable
             Debug.LogWarning($"{this.gameObject.name}にenemy_HPコンポーネントがありません。");
         }
 
-        tag = GameConstants.ImmuneEnemyTagName; // タグをリセット
+        tag = GameConstants.IMMUNE_ENEMY_TAG_NAME; // タグをリセット
         currentState = DesertTempleGolemState.Moving; // 初期状態をMovingに設定
 
         // leftBoundとrightBoundが共に0の場合、ランダムに範囲を設定

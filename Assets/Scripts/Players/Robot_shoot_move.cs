@@ -289,7 +289,7 @@ public class Robot_shoot_move : MonoBehaviour
 
         if (!collision.isTrigger)
         {
-            if (collision.CompareTag(GameConstants.PlayerTagName))
+            if (collision.CompareTag(GameConstants.PLAYER_TAG_NAME))
             {
                 //プレイヤーに当たった場合は何もしない
                 return;

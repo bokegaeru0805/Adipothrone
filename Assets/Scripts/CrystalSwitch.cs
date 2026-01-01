@@ -42,7 +42,7 @@ public class CrystalSwitch : MonoBehaviour
         spriteRenderer = GetComponent<SpriteRenderer>();
         sprite1 = spriteRenderer.sprite; // 初期スプライトを保存
         spriteRenderer.color = SwitchInactiveColor; // 初期色を設定
-        this.tag = GameConstants.InteractableObjectTagName; // 初期タグを設定
+        this.tag = GameConstants.INTERACTABLE_OBJECT_TAG_NAME; // 初期タグを設定
         initialPosition = transform.position; // 初期位置を保存
     }
 
@@ -58,7 +58,7 @@ public class CrystalSwitch : MonoBehaviour
             if (
                 !isPush
                 && InputManager.instance.GetInteract()
-                && collision.CompareTag(GameConstants.PlayerTagName)
+                && collision.CompareTag(GameConstants.PLAYER_TAG_NAME)
             )
             {
                 switch (objectname)

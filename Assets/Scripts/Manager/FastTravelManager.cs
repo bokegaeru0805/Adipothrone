@@ -94,7 +94,7 @@ public class FastTravelManager : MonoBehaviour
     {
         // チュートリアルを実行するかどうかを判定
         shouldRunDeathFastTravelTutorial =
-            SceneManager.GetActiveScene().name != GameConstants.SceneName_TutorialStart
+            SceneManager.GetActiveScene().name != GameConstants.SCENE_NAME_TUTORIAL_START
             && !FlagManager.instance.GetBoolFlag(TutorialEvent.DeathFastTravelTutorialComplete);
 
         // 最後に使用したファストトラベルポイントIDを取得

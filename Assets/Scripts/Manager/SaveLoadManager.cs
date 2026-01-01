@@ -326,7 +326,7 @@ public class SaveLoadManager : MonoBehaviour
         // エディタ実行時かつ、初回起動であり、現在のシーンがタイトルでない場合
         if (
             !GameManager.isFirstGameOpen
-            && SceneManager.GetActiveScene().name != GameConstants.SceneName_Title
+            && SceneManager.GetActiveScene().name != GameConstants.SCENE_NAME_TITLE
         )
         {
             // 即座に実行せず、1フレーム待機するコルーチンを呼び出す
@@ -542,9 +542,9 @@ public class SaveLoadManager : MonoBehaviour
             if (loadScene)
             {
 #if DEMO_BUILD
-                string sceneName = GameConstants.SceneName_Chapter1; //デモ版の場合、デフォルトのシーン名を変更
+                string sceneName = GameConstants.SCENE_NAME_CHAPTER_1; //デモ版の場合、デフォルトのシーン名を変更
 #else
-                string sceneName = GameConstants.SceneName_TutorialStart; //デフォルトのシーン名を設定
+                string sceneName = GameConstants.SCENE_NAME_TUTORIAL_START; //デフォルトのシーン名を設定
 #endif
 
                 // セーブデータからシーン名を読み込む（存在チェックも含める）

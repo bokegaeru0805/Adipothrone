@@ -114,7 +114,7 @@ public class PlayerLevelManager : MonoBehaviour
         }
 
         int nextLevel = playerLv + 1;
-        if (nextLevel > GameConstants.PlayerMaxLevel)
+        if (nextLevel > GameConstants.PLAYER_MAX_LEVEL)
             return false;
         if (!GameConstants.LevelExpRequirements.ContainsKey(nextLevel))
             return false;
@@ -185,9 +185,9 @@ public class PlayerLevelManager : MonoBehaviour
         }
 
         // 最大レベルを超えないように丸める (CanLevelUpの処理に合わせる)
-        if (determinedLevel > GameConstants.PlayerMaxLevel)
+        if (determinedLevel > GameConstants.PLAYER_MAX_LEVEL)
         {
-            determinedLevel = GameConstants.PlayerMaxLevel;
+            determinedLevel = GameConstants.PLAYER_MAX_LEVEL;
         }
 
         return determinedLevel;
@@ -205,7 +205,7 @@ public class PlayerLevelManager : MonoBehaviour
         }
 
         //レベルに応じた実際の攻撃力と防御力の変化値を計算し、自身のプロパティを更新
-        attackLvActualDeltaValue = playerLv * GameConstants.levelAttackBonus;
+        attackLvActualDeltaValue = playerLv * GameConstants.LEVEL_ATTACK_BONUS;
         defenseLvActualDeltaValue = GameConstants.GetDefense(playerLv);
 
         // --- ここからPlayerManagerへの反映処理 ---

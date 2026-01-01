@@ -94,11 +94,11 @@ public class InteractableObject_Prologue : MonoBehaviour
             Time.timeScale > 0
             && !isTalking
             && InputManager.instance.GetInteract()
-            && collision.CompareTag(GameConstants.PlayerTagName)
+            && collision.CompareTag(GameConstants.PLAYER_TAG_NAME)
         )
         {
             // このオブジェクトが操作可能な場合のみ処理
-            if (tag == GameConstants.InteractableObjectTagName)
+            if (tag == GameConstants.INTERACTABLE_OBJECT_TAG_NAME)
             {
                 switch (objectname)
                 {

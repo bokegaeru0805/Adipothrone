@@ -31,9 +31,9 @@ public class FastTravelPointData : ScriptableObject
         switch (sceneEnum)
         {
             case SceneNameEnum.TutorialStart:
-                return GameConstants.SceneName_TutorialStart;
+                return GameConstants.SCENE_NAME_TUTORIAL_START;
             case SceneNameEnum.Chapter1:
-                return GameConstants.SceneName_Chapter1;
+                return GameConstants.SCENE_NAME_CHAPTER_1;
             case SceneNameEnum.None:
             default:
                 return string.Empty;

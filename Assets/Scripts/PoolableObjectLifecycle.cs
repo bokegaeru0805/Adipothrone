@@ -47,7 +47,7 @@ public class PoolableObjectLifecycle : PoolableObject
 
     private void Awake()
     {
-        groundLayer = LayerMask.GetMask(GameConstants.PhysicsLayerName_Ground); // Groundレイヤーを取得
+        groundLayer = LayerMask.GetMask(GameConstants.PHYSICS_LAYER_NAME_GROUND); // Groundレイヤーを取得
 
         if (playSeOnMaxContact)
         {

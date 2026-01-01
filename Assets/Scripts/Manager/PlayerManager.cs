@@ -88,7 +88,7 @@ public class PlayerManager : MonoBehaviour
     {
         if (playerGameObject == null)
         {
-            playerGameObject = GameObject.FindGameObjectWithTag(GameConstants.PlayerTagName);
+            playerGameObject = GameObject.FindGameObjectWithTag(GameConstants.PLAYER_TAG_NAME);
             if (playerGameObject == null)
             {
                 Debug.LogError("PlayerGameObjectが見つかりません");
@@ -241,7 +241,7 @@ public class PlayerManager : MonoBehaviour
     {
         if (playerGameObject == null)
         {
-            playerGameObject = GameObject.FindGameObjectWithTag(GameConstants.PlayerTagName);
+            playerGameObject = GameObject.FindGameObjectWithTag(GameConstants.PLAYER_TAG_NAME);
             if (playerGameObject == null)
             {
                 Debug.LogError("PlayerGameObjectが見つかりません");
@@ -343,7 +343,7 @@ public class PlayerManager : MonoBehaviour
 
         // HPがGutsEffectThresholdの閾値以上あるかどうかの条件を確認
         bool hasGutsEffect =
-            (float)hpBeforeDamage / playerCurrentMaxHP >= GameConstants.GutsEffectThreshold;
+            (float)hpBeforeDamage / playerCurrentMaxHP >= GameConstants.GUTS_EFFECT_THRESHOLD;
 
         SEManager.instance?.PlayPlayerActionSE(SE_PlayerAction.Damage1); //ダメージの効果音を鳴らす
         SetPlayerIntStatus(PlayerStatusIntName.playerCurrentHP, hpBeforeDamage - damage); //HPを更新
@@ -647,7 +647,7 @@ public class PlayerManager : MonoBehaviour
         // playerGameObjectがまだキャッシュされていなければ、念のため探す
         if (playerGameObject == null)
         {
-            playerGameObject = GameObject.FindGameObjectWithTag(GameConstants.PlayerTagName);
+            playerGameObject = GameObject.FindGameObjectWithTag(GameConstants.PLAYER_TAG_NAME);
         }
 
         // それでも見つからなければ、警告を出してデフォルト値を返す

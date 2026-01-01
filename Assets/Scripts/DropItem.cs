@@ -186,7 +186,7 @@ public class DropItem : MonoBehaviour
         spriteRenderer.sprite = _currentTargetCloseSprite;
 
         spriteRenderer.sortingOrder = TreasuresortingOrder; //画像の表示順を設定
-        this.tag = GameConstants.InteractableObjectTagName; //タグを変更
+        this.tag = GameConstants.INTERACTABLE_OBJECT_TAG_NAME; //タグを変更
         mycollider.radius = originalTreasureColliderRadius; //当たり判定のcolliderの半径を調整
         groundCheckerCollider.offset = new Vector2(0, GroundCheckerColliderOffsetY); //地面当たり判定のcolliderのoffsetを調整
         // //  宝箱は手動で配置するため、座標調整は行わない
@@ -336,12 +336,12 @@ public class DropItem : MonoBehaviour
 
     private void OnTriggerStay2D(Collider2D collision)
     {
-        if (Time.timeScale > 0 && this.CompareTag(GameConstants.InteractableObjectTagName))
+        if (Time.timeScale > 0 && this.CompareTag(GameConstants.INTERACTABLE_OBJECT_TAG_NAME))
         {
             //プレイヤーの所得動作との兼合いで、Tagで判断する
             if (
                 InputManager.instance.GetInteract()
-                && collision.CompareTag(GameConstants.PlayerTagName)
+                && collision.CompareTag(GameConstants.PLAYER_TAG_NAME)
             )
             {
                 var treasureData = GameManager.instance.savedata.TreasureData;

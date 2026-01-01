@@ -34,7 +34,7 @@ public class FunnelProjectile : MonoBehaviour
             afterImage.SetActive(false); //初期状態では残像を無効化
         }
 
-        this.tag = GameConstants.ImmuneEnemyTagName;
+        this.tag = GameConstants.IMMUNE_ENEMY_TAG_NAME;
         sePlayer = GetComponent<CriWare.Assets.CriAtomSePlayer>();
 
         // 最初は無効化しておく
@@ -66,7 +66,7 @@ public class FunnelProjectile : MonoBehaviour
         this.ownerController = controller;
         this.moveDirection = direction.normalized; // 方向を正規化
         this.moveSpeed = speed;
-        this.tag = GameConstants.DamageableEnemyTagName;
+        this.tag = GameConstants.DAMAGEABLE_ENEMY_TAG_NAME;
 
         // スクリプトを有効化し、コルーチンを開始させる
         this.enabled = true;
@@ -152,7 +152,7 @@ public class FunnelProjectile : MonoBehaviour
         if (!areaBounds.Value.Contains(transform.position))
         {
             // 4. 範囲外に出たので、元々OnBecameInvisibleにあった処理を実行
-            this.tag = GameConstants.ImmuneEnemyTagName;
+            this.tag = GameConstants.IMMUNE_ENEMY_TAG_NAME;
 
             if (ownerController != null)
             {

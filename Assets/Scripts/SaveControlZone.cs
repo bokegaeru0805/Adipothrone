@@ -26,7 +26,7 @@ public class SaveControlZone : MonoBehaviour
     /// </summary>
     private void OnTriggerEnter2D(Collider2D other)
     {
-        if (other.CompareTag(GameConstants.PlayerTagName))
+        if (other.CompareTag(GameConstants.PLAYER_TAG_NAME))
         {
             SaveLoadManager.instance.DisableSave();
         }
@@ -37,7 +37,7 @@ public class SaveControlZone : MonoBehaviour
     /// </summary>
     private void OnTriggerExit2D(Collider2D other)
     {
-        if (other.CompareTag(GameConstants.PlayerTagName))
+        if (other.CompareTag(GameConstants.PLAYER_TAG_NAME))
         {
             SaveLoadManager.instance.EnableSave();
         }

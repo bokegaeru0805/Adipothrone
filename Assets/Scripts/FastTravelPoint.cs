@@ -110,7 +110,7 @@ public class FastTravelPoint : MonoBehaviour
         {
             if (
                 InputManager.instance.GetInteract()
-                && collision.CompareTag(GameConstants.PlayerTagName)
+                && collision.CompareTag(GameConstants.PLAYER_TAG_NAME)
             )
             {
                 if (!isUnLocked)

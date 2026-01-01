@@ -97,7 +97,7 @@ public class RainSource : MonoBehaviour
     private void Start()
     {
         if (PlayerObject == null)
-            PlayerObject = GameObject.FindGameObjectWithTag(GameConstants.PlayerTagName);
+            PlayerObject = GameObject.FindGameObjectWithTag(GameConstants.PLAYER_TAG_NAME);
         // プレイヤーオブジェクトを探して格納
         if (PlayerObject == null)
         {

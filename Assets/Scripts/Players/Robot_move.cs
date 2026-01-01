@@ -135,10 +135,10 @@ public class Robot_move : MonoBehaviour
     {
         isEnable = false; //初期化の準備
         spriteRenderer = GetComponent<SpriteRenderer>(); // SpriteRendererの取得
-        if (this.gameObject.name != GameConstants.RobotObjectName)
+        if (this.gameObject.name != GameConstants.ROBOT_OBJECT_NAME)
         {
             Debug.LogError(
-                $"{this.gameObject.name}の名前がGameConstants.RobotObjectNameと一致しません。"
+                $"{this.gameObject.name}の名前がGameConstants.ROBOT_OBJECT_NAMEと一致しません。"
             ); // ロボットのオブジェクト名が一致しない場合のエラーメッセージ
         }
 
@@ -603,7 +603,7 @@ public class Robot_move : MonoBehaviour
         isEnableNextAttack = true; //攻撃を再開する
         isAttacking = false; //プレイヤーが動けるようにする
         if (PlayerObject == null)
-            PlayerObject = GameObject.FindGameObjectWithTag(GameConstants.PlayerTagName); //Playerを取得
+            PlayerObject = GameObject.FindGameObjectWithTag(GameConstants.PLAYER_TAG_NAME); //Playerを取得
         this.transform.localPosition = new Vector2(0, 0); //ローカル座標を初期化
         rightFlag = PlayerObject.GetComponent<Heroin_move>().rightFlag; //左右の向きを初期化
         OnRobotVisibilityChanged?.Invoke(true); // ロボットの可視状態を表示にする

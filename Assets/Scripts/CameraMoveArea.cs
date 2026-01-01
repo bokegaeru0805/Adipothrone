@@ -140,7 +140,7 @@ public class CameraMoveArea : MonoBehaviour
 
         // シーン内のVolumeコンポーネントを検索してキャッシュ
         globalVolume = GameObject
-            .FindGameObjectWithTag(GameConstants.MainGlobalVolumeTagName)
+            .FindGameObjectWithTag(GameConstants.MAIN_GLOBAL_VOLUME_TAG_NAME)
             ?.GetComponent<Volume>();
         if (globalVolume == null)
         {
@@ -229,7 +229,7 @@ public class CameraMoveArea : MonoBehaviour
     private void OnTriggerEnter2D(Collider2D other)
     {
         // 衝突したのがプレイヤーかチェック
-        if (other.CompareTag(GameConstants.PlayerTagName))
+        if (other.CompareTag(GameConstants.PLAYER_TAG_NAME))
         {
             // 既に自分がアクティブエリアとして認識されているなら、処理をスキップする
             // これにより、境界線でのチャタリングによる多重実行を防げます

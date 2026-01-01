@@ -23,7 +23,7 @@ public class Tutorial_Golem_AfterDeath : MonoBehaviour
     {
         if (PlayerObject == null)
         {
-            PlayerObject = GameObject.FindGameObjectWithTag(GameConstants.PlayerTagName); // Playerオブジェクトを取得
+            PlayerObject = GameObject.FindGameObjectWithTag(GameConstants.PLAYER_TAG_NAME); // Playerオブジェクトを取得
         }
     }
 
@@ -103,7 +103,7 @@ public class Tutorial_Golem_AfterDeath : MonoBehaviour
         {
             if (
                 InputManager.instance.GetInteract()
-                && collision.CompareTag(GameConstants.PlayerTagName)
+                && collision.CompareTag(GameConstants.PLAYER_TAG_NAME)
             )
             {
                 FungusHelper.ExecuteBlock(flowchart, "TutorialGolemBadEndStart");

@@ -123,7 +123,7 @@ public class TutorialGolemMoveController : MonoBehaviour
             if (playerTransform == null)
             {
                 playerTransform = GameObject
-                    .FindGameObjectWithTag(GameConstants.PlayerTagName)
+                    .FindGameObjectWithTag(GameConstants.PLAYER_TAG_NAME)
                     .transform; //PlayerのTransformを取得
             }
 

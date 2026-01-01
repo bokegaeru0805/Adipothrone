@@ -122,7 +122,7 @@ public class EventManager_Second : MonoBehaviour
             playerFirstPosition.y,
             eventPlayer.transform.position.z
         );
-        playerAnimator.SetInteger("BodyState", GameConstants.AnimBodyState_Armed2);
+        playerAnimator.SetInteger("BodyState", GameConstants.ANIM_BODY_STATE_ARMED_2);
 
         Camera.main.GetComponent<CinemachineBrain>().enabled = false;
         Camera.main.transform.position = new Vector3(
@@ -234,6 +234,6 @@ public class EventManager_Second : MonoBehaviour
         // -----------------------------------------
 
         // 演出②：非同期でシーンのロードを開始する
-        AsyncOperation asyncLoad = SceneManager.LoadSceneAsync(GameConstants.SceneName_Chapter1);
+        AsyncOperation asyncLoad = SceneManager.LoadSceneAsync(GameConstants.SCENE_NAME_CHAPTER_1);
     }
 }

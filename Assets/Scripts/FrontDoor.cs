@@ -71,7 +71,7 @@ public class FrontDoor : MonoBehaviour
             if (
                 !PlayerManager.instance.isControlLocked
                 && InputManager.instance.GetInteract()
-                && collision.CompareTag(GameConstants.PlayerTagName)
+                && collision.CompareTag(GameConstants.PLAYER_TAG_NAME)
             )
             {
                 DoorOpener.OpenDoor(movepos, this, doorType);

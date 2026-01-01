@@ -92,7 +92,7 @@ public class TitlePromptButton : MonoBehaviour
         BGMManager.instance?.GetComponent<BGMManager>().Stop(); //BGMを停止
         SEManager.instance?.GetComponent<SEManager>().StopAllSE(); //全てのSEを停止
         SaveLoadManager.instance.DisableSave(); //セーブできないようにする
-        SceneManager.LoadScene(GameConstants.SceneName_Title); //Titleシーンに戻る
+        SceneManager.LoadScene(GameConstants.SCENE_NAME_TITLE); //Titleシーンに戻る
     }
 
     private void HandleNo()

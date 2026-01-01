@@ -41,11 +41,11 @@ public class FastTravelPanelActive : MonoBehaviour
             return;
         }
 
-        if (this.name != GameConstants.UIName_FastTravelPanel)
+        if (this.name != GameConstants.UI_NAME_FAST_TRAVEL_PANEL)
         {
             Debug.LogError(
                 "FastTravelPanelActiveは"
-                    + GameConstants.UIName_FastTravelPanel
+                    + GameConstants.UI_NAME_FAST_TRAVEL_PANEL
                     + "という名前である必要があります"
             );
             return;

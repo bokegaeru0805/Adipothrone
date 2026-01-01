@@ -161,7 +161,7 @@ public class SlimeBossMoveController : MonoBehaviour
         if (PlayerTransform == null)
         {
             PlayerTransform = GameObject
-                .FindGameObjectWithTag(GameConstants.PlayerTagName)
+                .FindGameObjectWithTag(GameConstants.PLAYER_TAG_NAME)
                 ?.transform;
             if (PlayerTransform == null)
             {
@@ -226,7 +226,7 @@ public class SlimeBossMoveController : MonoBehaviour
             if (dir.magnitude <= startDetectRange)
             {
                 isMoveStarted = true;
-                tag = GameConstants.ImmuneEnemyTagName; // ダメージ判定を有効化
+                tag = GameConstants.IMMUNE_ENEMY_TAG_NAME; // ダメージ判定を有効化
                 var bossHealth = this.GetComponent<BossHealth>();
                 bossHealth.enabled = true; // BossHealthのスクリプトを有効化
                 bossHealth.InitializeBossSpecifics(); // ボス固有の初期化を実行
@@ -259,7 +259,7 @@ public class SlimeBossMoveController : MonoBehaviour
                 {
                     currentState = SlimeState.Jumping;
                     jumpStartTime = Time.time;
-                    tag = GameConstants.DamageableEnemyTagName;
+                    tag = GameConstants.DAMAGEABLE_ENEMY_TAG_NAME;
                     animator.SetTrigger("jumpTriggered");
 
                     if (isHPbelowHalf)
@@ -347,14 +347,14 @@ public class SlimeBossMoveController : MonoBehaviour
 
     private IEnumerator RecoverFromJump()
     {
-        tag = GameConstants.ImmuneEnemyTagName;
+        tag = GameConstants.IMMUNE_ENEMY_TAG_NAME;
         yield return new WaitForSeconds(jumpCooldown);
         currentState = SlimeState.Moving;
     }
 
     private IEnumerator RecoverFromHighJump()
     {
-        tag = GameConstants.ImmuneEnemyTagName;
+        tag = GameConstants.IMMUNE_ENEMY_TAG_NAME;
         yield return new WaitForSeconds(highJumpCooldown);
         currentState = SlimeState.Moving;
     }

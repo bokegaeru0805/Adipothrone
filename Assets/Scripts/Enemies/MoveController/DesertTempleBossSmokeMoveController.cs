@@ -237,7 +237,7 @@ public class DesertTempleBossSmokeMoveController : MonoBehaviour
         if (playerTransform == null)
         {
             playerTransform = GameObject
-                .FindGameObjectWithTag(GameConstants.PlayerTagName)
+                .FindGameObjectWithTag(GameConstants.PLAYER_TAG_NAME)
                 ?.transform;
             if (playerTransform == null)
             {
@@ -688,7 +688,7 @@ public class DesertTempleBossSmokeMoveController : MonoBehaviour
                 b.transform.localScale = Vector3.zero; // 最初は極小
                 bullets.Add(b);
                 bulletTransforms.Add(b.transform);
-                b.tag = GameConstants.ImmuneEnemyTagName;
+                b.tag = GameConstants.IMMUNE_ENEMY_TAG_NAME;
             }
         }
 
@@ -766,7 +766,7 @@ public class DesertTempleBossSmokeMoveController : MonoBehaviour
                     direction = Vector2.up;
 
                 rb.velocity = direction * bothArmsAttackSpeed;
-                rb.tag = GameConstants.DamageableEnemyTagName; // 通常の敵弾タグに戻す
+                rb.tag = GameConstants.DAMAGEABLE_ENEMY_TAG_NAME; // 通常の敵弾タグに戻す
             }
 
             // 弾ごとのSE再生

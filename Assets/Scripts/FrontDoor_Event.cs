@@ -177,7 +177,7 @@ public class FrontDoor_Event : MonoBehaviour
         {
             case DoorName.Tutorial:
                 // チュートリアルの扉は、特定のボディステート以上であるか、一度開けたフラグが立っていれば開ける
-                return PlayerBodyManager.instance.BodyState >= GameConstants.BodyState_Armed2
+                return PlayerBodyManager.instance.BodyState >= GameConstants.BODY_STATE_ARMED_2
                     || flagManager.GetBoolFlag(PrologueTriggeredEvent.TutorialEventDoorOpened);
 
             case DoorName.Village_Well:
@@ -215,10 +215,10 @@ public class FrontDoor_Event : MonoBehaviour
         switch (newState)
         {
             case DoorTagState.AreaTransition:
-                this.gameObject.tag = GameConstants.AreaTransitionTagName;
+                this.gameObject.tag = GameConstants.AREA_TRANSITION_TAG_NAME;
                 break;
             case DoorTagState.Interactable:
-                this.gameObject.tag = GameConstants.InteractableObjectTagName;
+                this.gameObject.tag = GameConstants.INTERACTABLE_OBJECT_TAG_NAME;
                 break;
             case DoorTagState.Untagged:
                 this.gameObject.tag = "Untagged";
@@ -232,7 +232,7 @@ public class FrontDoor_Event : MonoBehaviour
         { // ゲームが一時停止していない、かつトーク中でない場合
             if (
                 InputManager.instance.GetInteract()
-                && collision.gameObject.CompareTag(GameConstants.PlayerTagName)
+                && collision.gameObject.CompareTag(GameConstants.PLAYER_TAG_NAME)
             )
             {
                 switch (doorname)
@@ -258,7 +258,7 @@ public class FrontDoor_Event : MonoBehaviour
     // --- 各ドアごとの個別イベント処理 ---
     private void HandleTutorialDoorEvent()
     {
-        if (PlayerBodyManager.instance.BodyState < GameConstants.BodyState_Armed2)
+        if (PlayerBodyManager.instance.BodyState < GameConstants.BODY_STATE_ARMED_2)
         {
             flowchart.SetBooleanVariable("isTutorialEventDoorOpen", false);
             FungusHelper.ExecuteBlock(flowchart, "TutorialEventDoor"); // Fungusのブロックを実行

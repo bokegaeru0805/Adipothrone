@@ -4,7 +4,7 @@ using UnityEngine;
 public static class GameConstants
 {
     public static readonly Vector3 PLAYER_CAMERA_FOLLOW_OFFSET = new Vector3(0f, 4.5f, -10f);
-    public const float CameraFollowDampingY = 20f; // カメラのY軸追従ダンピング値
+    public const float CAMERA_FOLLOW_DAMPING_Y = 20f; // カメラのY軸追従ダンピング値
     public static readonly int PIXELS_PER_UNIT = 16;
     public static readonly int MaxSaveLoadFiles = 12; // 最大セーブデータ数
     public const int AUTO_SAVE_FILE_NUMBER = 0; // オートセーブ用のファイル番号
@@ -47,13 +47,13 @@ public static class GameConstants
         return Mathf.RoundToInt(96.8f * Mathf.Sqrt(level) - 94.8f * Mathf.Log(level + 1) - 26.6f);
     }
 
-    public const int PlayerMaxLevel = 10; // 上限レベル
-    public const float levelAttackBonus = 0.01f; // レベルアップ時の攻撃力ボーナス
-    public const int BodyState_Normal = 0; //通常状態
-    public const int BodyState_Armed1 = 1; //体形変化状態1
-    public const int BodyState_Armed2 = 2; //体形変化状態2
-    public const int BodyState_Armed3 = 3; //体形変化状態3
-    public const int BodyState_Immobile = 3; //動けない状態(現在はBodyState_Armed3と同じ)
+    public const int PLAYER_MAX_LEVEL = 10; // 上限レベル
+    public const float LEVEL_ATTACK_BONUS = 0.01f; // レベルアップ時の攻撃力ボーナス
+    public const int BODY_STATE_NORMAL = 0; //通常状態
+    public const int BODY_STATE_ARMED_1 = 1; //体形変化状態1
+    public const int BODY_STATE_ARMED_2 = 2; //体形変化状態2
+    public const int BODY_STATE_ARMED_3 = 3; //体形変化状態3
+    public const int BODY_STATE_IMMOBILE = 3; //動けない状態(現在はBodyState_Armed3と同じ)
 
     //変更したら、SetBodyState_Fungus.csのBodyStateEnumも変更すること
     public enum BodyStateEnum
@@ -65,72 +65,72 @@ public static class GameConstants
         BodyState_Immobile = 40,
     }; // 体形状態の列挙型
 
-    public const int AnimBodyState_Normal = 1; //通常状態のアニメーション
-    public const int AnimBodyState_Armed1 = 2; //体形変化状態1のアニメーション
-    public const int AnimBodyState_Armed2 = 3; //体形変化状態2のアニメーション
-    public const int AnimBodyState_Armed3 = 4; //体形変化状態3のアニメーション
-    public const int AnimBodyState_Immobile = 4; //動けない状態のアニメーション
+    public const int ANIM_BODY_STATE_NORMAL = 1; //通常状態のアニメーション
+    public const int ANIM_BODY_STATE_ARMED_1 = 2; //体形変化状態1のアニメーション
+    public const int ANIM_BODY_STATE_ARMED_2 = 3; //体形変化状態2のアニメーション
+    public const int ANIM_BODY_STATE_ARMED_3 = 4; //体形変化状態3のアニメーション
+    public const int ANIM_BODY_STATE_IMMOBILE = 4; //動けない状態のアニメーション
     public static readonly int[] WpThresholds =
     {
         0,
-        WpThreshold_Armed1,
-        WpThreshold_Armed2,
-        WpThreshold_Armed3,
-        WpThreshold_Immobile
+        WP_THRESHOLD_ARMED_1,
+        WP_THRESHOLD_ARMED_2,
+        WP_THRESHOLD_ARMED_3,
+        WP_THRESHOLD_IMMOBILE,
     }; // 各体形状態のWP閾値
-    public const int WpThreshold_Armed1 = 15; // 体形変化状態1になるWP
-    public const int WpThreshold_Armed2 = 50; // 体形変化状態2になるWP
-    public const int WpThreshold_Armed3 = 200; // 体形変化状態3になるWP
-    public const int WpThreshold_Immobile = 200; // 動けない状態になるWP
-    public const float PlayerAttackEffectMultiplier = 0.005f; // プレイヤーの攻撃力バフの倍率
-    public const float PlayerDefenseEffectMultiplier = 0.5f; // プレイヤーの防御力バフの倍率
-    public const float PlayerMoveSpeedEffectMultiplier = 0.002f; // プレイヤーの移動速度バフの倍率
-    public const float PlayerWeaponSpeedEffectMultiplier = 0.01f; // プレイヤーの武器速度バフの倍率
-    public const float PlayerAttackWpMultiplier = 0.1f / 15; // プレイヤーの攻撃力WP倍率
-    public const float PlayerDefenseWpMultiplier = 0.1f / 15; // プレイヤーの防御力WP倍率
-    public const float PlayerMoveWpMultiplier = 0.1f / 15; // プレイヤーの移動速度WP倍率
-    public const float PlayerWeaponSpeedWpMultiplier = 0.005f; // プレイヤーの武器速度WP倍率
-    public const float AttackBuffValuePerLevel = 1f; // 攻撃力バフのレベルごとの増加量
-    public const float DefenseBuffValuePerLevel = 1f; // 防御力バフのレベルごとの増加量
-    public const float SpeedBuffValuePerLevel = 1f; // スピードバフのレベルごとの増加量
-    public const float LuckBuffValuePerLevel = 1f; // 運バフのレベルごとの増加量
-    public const int DefaultAttackBuffLimitLevel = 10; // 攻撃力バフのデフォルト上限レベル
-    public const int DefaultDefenseBuffLimitLevel = 10; // 防御力バフのデフォルト上限レベル
-    public const int DefaultSpeedBuffLimitLevel = 10; // スピードバフのデフォルト上限レベル
-    public const int DefaultLuckBuffLimitLevel = 10; // 運バフのデフォルト上限レベル
-    public const float MinAttackPowerMultiplier = 0.01f; // 攻撃力の倍率が0以下にならないようにする最小値
-    public const float PlayerMoveMaxSpeed = 50.0f; // プレイヤーの最大移動速度
-    public const float PlayerBladeMinSpeed = 0.05f; // プレイヤーの剣の最小速度
-    public const float GutsEffectThreshold = 0.9f; // 「耐える」効果が発動するHP割合の閾値
-    public const float GaugeSmoothTime = 0.15f; // ゲージのスムーズな更新にかかる時間
-    public const float PlayerBaseHeight = 3.0f; // プレイヤーの基準高さ
-    public const float PlayerJumpPeakHeight = PlayerBaseHeight + PlayerJumpHeight; // プレイヤーのジャンプ頂点高さ
-    public const float PlayerJumpHeight = 3.5f; // プレイヤーのジャンプ高さ
-    public const float RobotBaseHeight = 2.0f; // ロボットの基準高さ
-    public const float RobotJumpPeakHeight = RobotBaseHeight + PlayerJumpHeight; // ロボットのジャンプ頂点高さ
-    public const string UIColorTagGold = "<color=#C6A34C>{0}</color>";
+    public const int WP_THRESHOLD_ARMED_1 = 15; // 体形変化状態1になるWP
+    public const int WP_THRESHOLD_ARMED_2 = 50; // 体形変化状態2になるWP
+    public const int WP_THRESHOLD_ARMED_3 = 200; // 体形変化状態3になるWP
+    public const int WP_THRESHOLD_IMMOBILE = 200; // 動けない状態になるWP
+    public const float PLAYER_ATTACK_EFFECT_MULTIPLIER = 0.005f; // プレイヤーの攻撃力バフの倍率
+    public const float PLAYER_DEFENSE_EFFECT_MULTIPLIER = 0.5f; // プレイヤーの防御力バフの倍率
+    public const float PLAYER_MOVE_SPEED_EFFECT_MULTIPLIER = 0.002f; // プレイヤーの移動速度バフの倍率
+    public const float PLAYER_WEAPON_SPEED_EFFECT_MULTIPLIER = 0.01f; // プレイヤーの武器速度バフの倍率
+    public const float PLAYER_ATTACK_WP_MULTIPLIER = 0.1f / 15; // プレイヤーの攻撃力WP倍率
+    public const float PLAYER_DEFENSE_WP_MULTIPLIER = 0.1f / 15; // プレイヤーの防御力WP倍率
+    public const float PLAYER_MOVE_WP_MULTIPLIER = 0.1f / 15; // プレイヤーの移動速度WP倍率
+    public const float PLAYER_WEAPON_SPEED_WP_MULTIPLIER = 0.005f; // プレイヤーの武器速度WP倍率
+    public const float ATTACK_BUFF_VALUE_PER_LEVEL = 1f; // 攻撃力バフのレベルごとの増加量
+    public const float DEFENSE_BUFF_VALUE_PER_LEVEL = 1f; // 防御力バフのレベルごとの増加量
+    public const float SPEED_BUFF_VALUE_PER_LEVEL = 1f; // スピードバフのレベルごとの増加量
+    public const float LUCK_BUFF_VALUE_PER_LEVEL = 1f; // 運バフのレベルごとの増加量
+    public const int DEFAULT_ATTACK_BUFF_LIMIT_LEVEL = 10; // 攻撃力バフのデフォルト上限レベル
+    public const int DEFAULT_DEFENSE_BUFF_LIMIT_LEVEL = 10; // 防御力バフのデフォルト上限レベル
+    public const int DEFAULT_SPEED_BUFF_LIMIT_LEVEL = 10; // スピードバフのデフォルト上限レベル
+    public const int DEFAULT_LUCK_BUFF_LIMIT_LEVEL = 10; // 運バフのデフォルト上限レベル
+    public const float MIN_ATTACK_POWER_MULTIPLIER = 0.01f; // 攻撃力の倍率が0以下にならないようにする最小値
+    public const float PLAYER_MOVE_MAX_SPEED = 50.0f; // プレイヤーの最大移動速度
+    public const float PLAYER_BLADE_MIN_SPEED = 0.05f; // プレイヤーの剣の最小速度
+    public const float GUTS_EFFECT_THRESHOLD = 0.9f; // 「耐える」効果が発動するHP割合の閾値
+    public const float GAUGE_SMOOTH_TIME = 0.15f; // ゲージのスムーズな更新にかかる時間
+    public const float PLAYER_BASE_HEIGHT = 3.0f; // プレイヤーの基準高さ
+    public const float PLAYER_JUMP_PEAK_HEIGHT = PLAYER_BASE_HEIGHT + PLAYER_JUMP_HEIGHT; // プレイヤーのジャンプ頂点高さ
+    public const float PLAYER_JUMP_HEIGHT = 3.5f; // プレイヤーのジャンプ高さ
+    public const float ROBOT_BASE_HEIGHT = 2.0f; // ロボットの基準高さ
+    public const float ROBOT_JUMP_PEAK_HEIGHT = ROBOT_BASE_HEIGHT + PLAYER_JUMP_HEIGHT; // ロボットのジャンプ頂点高さ
+    public const string UI_COLOR_TAG_GOLD = "<color=#C6A34C>{0}</color>"; // ゴールド色のUIテキストタグのフォーマット文字列
 
-    //string coloredText = string.Format(GameConstants.UIColorTagGold, "攻撃力");のようにして使用
+    //string coloredText = string.Format(GameConstants.UI_COLOR_TAG_GOLD, "攻撃力");のようにして使用
 
-    public const string PlayerObjectName = "Noeri"; // プレイヤーのオブジェクト名
-    public const string RobotObjectName = "Fabo"; // ロボットのオブジェクト名
-    public const string UntaggedName = "Untagged"; // タグ無しの名前
-    public const string PlayerTagName = "Player"; // プレイヤーのタグ名
-    public const string PlayerAttackTagName = "PlayerAttack"; // プレイヤーの攻撃タグ名
-    public const string DamageableEnemyTagName = "DamageableEnemy"; // ダメージを受ける敵のタグ名
-    public const string ImmuneEnemyTagName = "ImmuneEnemy"; // ダメージを受けない敵のタグ名
-    public const string InteractableObjectTagName = "InteractableObject"; // インタラクト可能なオブジェクトのタグ名
-    public const string AreaTransitionTagName = "AreaTransition"; // エリア遷移のタグ名
-    public const string PhysicsLayerName_Ground = "GroundLayer"; // 当たり判定(Layer)用の名前
-    public const string SortingLayerName_Ground = "Ground"; // 描画順(Sorting Layer)用の名前
-    public const string MainGlobalVolumeTagName = "MainGlobalVolume"; // メインのGlobal Volumeのタグ名
-    public const string SceneName_Title = "TitleScene"; // タイトルシーンの名前
-    public const string SceneName_TutorialStart = "TutorialStartScene"; // チュートリアルシーンの名前
-    public const string SceneName_Chapter1 = "Chapter1Scene"; // 第1章のシーン名
-    public const string UIName_FastTravelPanel = "FastTravelPanel"; // ファストトラベルパネルのUI名
-    public const string DefaultNpcDialogueBlockName = "DefaultGreeting"; // NPCのデフォルトの会話ブロック名
-    public const float ChargeEffectDefaultDuration = 300f / 60f; // チャージエフェクトの基本持続時間
-    public const int BuyMaxQuantity = 99; // 購入時の最大個数
+    public const string PLAYER_OBJECT_NAME = "Noeri"; // プレイヤーのオブジェクト名
+    public const string ROBOT_OBJECT_NAME = "Fabo"; // ロボットのオブジェクト名
+    public const string UNTAGGED_TAG_NAME = "Untagged"; // タグ無しの名前
+    public const string PLAYER_TAG_NAME = "Player"; // プレイヤーのタグ名
+    public const string PLAYER_ATTACK_TAG_NAME = "PlayerAttack"; // プレイヤーの攻撃タグ名
+    public const string DAMAGEABLE_ENEMY_TAG_NAME = "DamageableEnemy"; // ダメージを受ける敵のタグ名
+    public const string IMMUNE_ENEMY_TAG_NAME = "ImmuneEnemy"; // ダメージを受けない敵のタグ名
+    public const string INTERACTABLE_OBJECT_TAG_NAME = "InteractableObject"; // インタラクト可能なオブジェクトのタグ名
+    public const string AREA_TRANSITION_TAG_NAME = "AreaTransition"; // エリア遷移のタグ名
+    public const string PHYSICS_LAYER_NAME_GROUND = "GroundLayer"; // 当たり判定(Layer)用の名前
+    public const string SORTING_LAYER_NAME_GROUND = "Ground"; // 描画順(Sorting Layer)用の名前
+    public const string MAIN_GLOBAL_VOLUME_TAG_NAME = "MainGlobalVolume"; // メインのGlobal Volumeのタグ名
+    public const string SCENE_NAME_TITLE = "TitleScene"; // タイトルシーンの名前
+    public const string SCENE_NAME_TUTORIAL_START = "TutorialStartScene"; // チュートリアルシーンの名前
+    public const string SCENE_NAME_CHAPTER_1 = "Chapter1Scene"; // 第1章のシーン名
+    public const string UI_NAME_FAST_TRAVEL_PANEL = "FastTravelPanel"; // ファストトラベルパネルのUI名
+    public const string DEFAULT_NPC_DIALOGUE_BLOCK_NAME = "DefaultGreeting"; // NPCのデフォルトの会話ブロック名
+    public const float CHARGE_EFFECT_DEFAULT_DURATION = 300f / 60f; // チャージエフェクトの基本持続時間
+    public const int BUY_MAX_QUANTITY = 99; // 購入時の最大個数
 
     // ---　プールタグ名 ---
     public const string EFFECT_ENEMY_SPAWN_POOLTAG = "Effect_Enemy_Spawn";

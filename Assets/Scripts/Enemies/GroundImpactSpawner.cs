@@ -50,7 +50,7 @@ public class GroundImpactSpawner : MonoBehaviour
     private void Awake()
     {
         // Groundレイヤーを取得
-        groundLayer = LayerMask.GetMask(GameConstants.PhysicsLayerName_Ground);
+        groundLayer = LayerMask.GetMask(GameConstants.PHYSICS_LAYER_NAME_GROUND);
         spriteRenderer = GetComponent<SpriteRenderer>();
     }
 

@@ -120,7 +120,7 @@ public class DustDevilBossMoveController : MonoBehaviour, IEnemyResettable
 
     private void Awake()
     {
-        groundLayer = LayerMask.GetMask(GameConstants.PhysicsLayerName_Ground);
+        groundLayer = LayerMask.GetMask(GameConstants.PHYSICS_LAYER_NAME_GROUND);
 
         _spriteRenderer = GetComponent<SpriteRenderer>();
         _rbody = GetComponent<Rigidbody2D>();
@@ -145,7 +145,7 @@ public class DustDevilBossMoveController : MonoBehaviour, IEnemyResettable
         if (playerTransform == null)
         {
             playerTransform = GameObject
-                .FindGameObjectWithTag(GameConstants.PlayerTagName)
+                .FindGameObjectWithTag(GameConstants.PLAYER_TAG_NAME)
                 ?.transform;
         }
 
@@ -156,7 +156,7 @@ public class DustDevilBossMoveController : MonoBehaviour, IEnemyResettable
 
         _rbody.velocity = new Vector2(currentVx, 0);
 
-        this.tag = GameConstants.UntaggedName;
+        this.tag = GameConstants.UNTAGGED_TAG_NAME;
         _sePlayer.Play(SE_Field.WindGust_strong);
         AdjustHeight();
         _animator.SetTrigger("IdleTrigger");

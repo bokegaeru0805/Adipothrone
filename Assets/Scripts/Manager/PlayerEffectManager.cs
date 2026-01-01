@@ -23,11 +23,11 @@ public class PlayerEffectManager : MonoBehaviour
 
     // 各ステータスのバフ上限値
     public int attackBuffLimitLevel { get; private set; } =
-        GameConstants.DefaultAttackBuffLimitLevel; // 攻撃力バフの上限
+        GameConstants.DEFAULT_ATTACK_BUFF_LIMIT_LEVEL; // 攻撃力バフの上限
     public int defenceBuffLimitLevel { get; private set; } =
-        GameConstants.DefaultDefenseBuffLimitLevel; // 防御力バフの上限
-    public int speedBuffLimitLevel { get; private set; } = GameConstants.DefaultSpeedBuffLimitLevel; // スピードバフの上限
-    public int luckBuffLimitLevel { get; private set; } = GameConstants.DefaultLuckBuffLimitLevel; // 運バフの上限
+        GameConstants.DEFAULT_DEFENSE_BUFF_LIMIT_LEVEL; // 防御力バフの上限
+    public int speedBuffLimitLevel { get; private set; } = GameConstants.DEFAULT_SPEED_BUFF_LIMIT_LEVEL; // スピードバフの上限
+    public int luckBuffLimitLevel { get; private set; } = GameConstants.DEFAULT_LUCK_BUFF_LIMIT_LEVEL; // 運バフの上限
 
     private Coroutine poisonCoroutine = null; // 毒の効果を管理するコルーチン
     #region Events
@@ -261,28 +261,28 @@ public class PlayerEffectManager : MonoBehaviour
             case StatusEffectType.Attack:
                 effectAmount = Mathf.Min(
                     effectAmount + multiplier,
-                    attackBuffLimitLevel * GameConstants.AttackBuffValuePerLevel
+                    attackBuffLimitLevel * GameConstants.ATTACK_BUFF_VALUE_PER_LEVEL
                 );
                 OnBuffApplied?.Invoke(statusEffectType); // バフが適用されたときにイベントを発火
                 break;
             case StatusEffectType.Defense:
                 effectAmount = Mathf.Min(
                     effectAmount + multiplier,
-                    defenceBuffLimitLevel * GameConstants.DefenseBuffValuePerLevel
+                    defenceBuffLimitLevel * GameConstants.DEFENSE_BUFF_VALUE_PER_LEVEL
                 );
                 OnBuffApplied?.Invoke(statusEffectType); // バフが適用されたときにイベントを発火
                 break;
             case StatusEffectType.Speed:
                 effectAmount = Mathf.Min(
                     effectAmount + multiplier,
-                    speedBuffLimitLevel * GameConstants.SpeedBuffValuePerLevel
+                    speedBuffLimitLevel * GameConstants.SPEED_BUFF_VALUE_PER_LEVEL
                 );
                 OnBuffApplied?.Invoke(statusEffectType); // バフが適用されたときにイベントを発火
                 break;
             case StatusEffectType.Luck:
                 effectAmount = Mathf.Min(
                     effectAmount + multiplier,
-                    luckBuffLimitLevel * GameConstants.LuckBuffValuePerLevel
+                    luckBuffLimitLevel * GameConstants.LUCK_BUFF_VALUE_PER_LEVEL
                 );
                 OnBuffApplied?.Invoke(statusEffectType); // バフが適用されたときにイベントを発火
                 break;
@@ -410,7 +410,7 @@ public class PlayerEffectManager : MonoBehaviour
     {
         float multiplier = 1;
         float effectDelta =
-            GameConstants.PlayerAttackEffectMultiplier * GetDeltaValue(StatusEffectType.Attack);
+            GameConstants.PLAYER_ATTACK_EFFECT_MULTIPLIER * GetDeltaValue(StatusEffectType.Attack);
 
         // PlayerManagerからレベル補正値を取得し、バフ効果と合算
         multiplier += playerLevelManager.attackLvActualDeltaValue + effectDelta;
@@ -422,7 +422,7 @@ public class PlayerEffectManager : MonoBehaviour
         }
         else if (multiplier <= 0)
         {
-            multiplier = GameConstants.MinAttackPowerMultiplier;
+            multiplier = GameConstants.MIN_ATTACK_POWER_MULTIPLIER;
         }
 
         int totalDamage = (int)(baseAttackPower * multiplier);
@@ -436,7 +436,7 @@ public class PlayerEffectManager : MonoBehaviour
     {
         int totalDefense = 0;
         int effectDelta = (int)(
-            GameConstants.PlayerDefenseEffectMultiplier * GetDeltaValue(StatusEffectType.Defense)
+            GameConstants.PLAYER_DEFENSE_EFFECT_MULTIPLIER * GetDeltaValue(StatusEffectType.Defense)
         );
 
         // PlayerLevelManagerからレベル補正値を取得し、バフ効果と合算
@@ -465,12 +465,12 @@ public class PlayerEffectManager : MonoBehaviour
             return baseSpeed;
         }
 
-        float effectDelta = GameConstants.PlayerMoveSpeedEffectMultiplier * deltaValue;
+        float effectDelta = GameConstants.PLAYER_MOVE_SPEED_EFFECT_MULTIPLIER * deltaValue;
 
         // PlayerBodyManagerからWP倍率を取得して反映
         float finalSpeed = baseSpeed * playerBodyManager.speedWpScale * (1f + effectDelta);
 
-        return Mathf.Min(finalSpeed, GameConstants.PlayerMoveMaxSpeed); // 最大速度を超えないようにする
+        return Mathf.Min(finalSpeed, GameConstants.PLAYER_MOVE_MAX_SPEED); // 最大速度を超えないようにする
     }
 
     /// <summary>
@@ -487,12 +487,12 @@ public class PlayerEffectManager : MonoBehaviour
             return baseSpeed;
         }
 
-        float effectDelta = GameConstants.PlayerWeaponSpeedEffectMultiplier * deltaValue;
+        float effectDelta = GameConstants.PLAYER_WEAPON_SPEED_EFFECT_MULTIPLIER * deltaValue;
 
         // PlayerBodyManagerからWP倍率を取得して反映
         float finalSpeed = baseSpeed / (playerBodyManager.speedWpScale * (1f + effectDelta));
 
-        return Mathf.Max(finalSpeed, GameConstants.PlayerBladeMinSpeed); // 最小速度を下回らないようにする
+        return Mathf.Max(finalSpeed, GameConstants.PLAYER_BLADE_MIN_SPEED); // 最小速度を下回らないようにする
     }
     #endregion
 

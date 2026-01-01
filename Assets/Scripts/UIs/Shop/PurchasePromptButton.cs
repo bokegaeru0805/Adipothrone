@@ -250,10 +250,10 @@ public class PurchasePromptButton : MonoBehaviour, ISelectHandler, IDeselectHand
                 int playerMoney = playerManager.GetPlayerIntStatus(PlayerStatusIntName.playerMoney);
                 // プレイヤーが購入可能な最大個数を計算
                 int maxPurchasableQuantity =
-                    (buyPrice > 0) ? playerMoney / buyPrice : GameConstants.BuyMaxQuantity;
+                    (buyPrice > 0) ? playerMoney / buyPrice : GameConstants.BUY_MAX_QUANTITY;
                 // 購入可能限界個数と購入可能な個数のうち、小さい方を上限とする
                 int effectiveMaxQuantity = Mathf.Min(
-                    GameConstants.BuyMaxQuantity,
+                    GameConstants.BUY_MAX_QUANTITY,
                     maxPurchasableQuantity
                 );
 

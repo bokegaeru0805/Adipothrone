@@ -50,8 +50,8 @@ public class OutlineController : MonoBehaviour
     private void LateUpdate()
     {
         // CompareTag() はGCを発生させないため、タグの状態をチェックする
-        bool isCurrentlyDamageable = parentObject.CompareTag(GameConstants.DamageableEnemyTagName);
-        bool isCurrentlyImmune = parentObject.CompareTag(GameConstants.ImmuneEnemyTagName);
+        bool isCurrentlyDamageable = parentObject.CompareTag(GameConstants.DAMAGEABLE_ENEMY_TAG_NAME);
+        bool isCurrentlyImmune = parentObject.CompareTag(GameConstants.IMMUNE_ENEMY_TAG_NAME);
 
         // タグの状態が前回から変更されたか (bool同士の比較)
         bool tagStateChanged =

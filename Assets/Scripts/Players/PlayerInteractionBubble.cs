@@ -55,11 +55,11 @@ public class PlayerInteractionBubble : MonoBehaviour
         bubbleDictionary = new Dictionary<string, Sprite>();
         if (interactableBubbleSprite != null)
         {
-            bubbleDictionary[GameConstants.InteractableObjectTagName] = interactableBubbleSprite;
+            bubbleDictionary[GameConstants.INTERACTABLE_OBJECT_TAG_NAME] = interactableBubbleSprite;
         }
         if (areaTransitionBubbleSprite != null)
         {
-            bubbleDictionary[GameConstants.AreaTransitionTagName] = areaTransitionBubbleSprite;
+            bubbleDictionary[GameConstants.AREA_TRANSITION_TAG_NAME] = areaTransitionBubbleSprite;
         }
 
         // 初期位置を保存

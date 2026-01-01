@@ -76,7 +76,7 @@ public class TreasureBoxController : MonoBehaviour
         {
             if (
                 InputManager.instance.GetInteract()
-                && collision.CompareTag(GameConstants.PlayerTagName)
+                && collision.CompareTag(GameConstants.PLAYER_TAG_NAME)
             )
             {
                 var treasureData = GameManager.instance.savedata.TreasureData;

@@ -59,7 +59,7 @@ public class NPCDialogueTrigger : MonoBehaviour
             Time.timeScale > 0
             && !isTalking
             && InputManager.instance.GetInteract()
-            && collision.gameObject.CompareTag(GameConstants.PlayerTagName)
+            && collision.gameObject.CompareTag(GameConstants.PLAYER_TAG_NAME)
         )
         {
             // TryExecuteDialogue()は、無効化された後でも呼び出される

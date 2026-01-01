@@ -58,11 +58,11 @@ public class ContactDamageController : MonoBehaviour
     private void OnTriggerEnter2D(Collider2D other)
     {
         // 自分のタグが "DamageableEnemy" でなければ何もしない
-        if (this.tag != GameConstants.DamageableEnemyTagName)
+        if (this.tag != GameConstants.DAMAGEABLE_ENEMY_TAG_NAME)
             return;
 
         // 接触した相手がプレイヤーかチェック
-        if (other.CompareTag(GameConstants.PlayerTagName))
+        if (other.CompareTag(GameConstants.PLAYER_TAG_NAME))
         {
             // PlayerManagerのインスタンスがなければ処理を中断
             if (PlayerManager.instance == null)

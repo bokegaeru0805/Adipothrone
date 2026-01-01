@@ -178,7 +178,7 @@ public class SlimeNormalMoveController : MonoBehaviour, IEnemyResettable
         if (playerTransform == null)
         {
             playerTransform = GameObject
-                .FindGameObjectWithTag(GameConstants.PlayerTagName)
+                .FindGameObjectWithTag(GameConstants.PLAYER_TAG_NAME)
                 ?.transform;
             if (playerTransform == null)
             {
@@ -211,7 +211,7 @@ public class SlimeNormalMoveController : MonoBehaviour, IEnemyResettable
             return;
         }
 
-        tag = GameConstants.ImmuneEnemyTagName;
+        tag = GameConstants.IMMUNE_ENEMY_TAG_NAME;
         currentState = SlimeState.Moving;
 
         // スタック検出用の変数を初期化
@@ -367,7 +367,7 @@ public class SlimeNormalMoveController : MonoBehaviour, IEnemyResettable
 
             case SlimeState.Recovering:
                 stateInfo = animator.GetCurrentAnimatorStateInfo(0);
-                tag = GameConstants.ImmuneEnemyTagName;
+                tag = GameConstants.IMMUNE_ENEMY_TAG_NAME;
                 if (stateInfo.shortNameHash == IdleHash)
                 {
                     currentState = SlimeState.Moving;
@@ -411,7 +411,7 @@ public class SlimeNormalMoveController : MonoBehaviour, IEnemyResettable
     private IEnumerator JumpChargeCoroutine()
     {
         // 溜め中はダメージを受けない敵の状態に
-        tag = GameConstants.ImmuneEnemyTagName;
+        tag = GameConstants.IMMUNE_ENEMY_TAG_NAME;
 
         // 指定された溜め時間待機
         yield return new WaitForSeconds(jumpChargeTime);
@@ -422,7 +422,7 @@ public class SlimeNormalMoveController : MonoBehaviour, IEnemyResettable
             // ステートをJumpingに移行
             currentState = SlimeState.Jumping;
             jumpStartTime = Time.time;
-            tag = GameConstants.DamageableEnemyTagName;
+            tag = GameConstants.DAMAGEABLE_ENEMY_TAG_NAME;
 
             // ジャンプアニメーションのトリガーを引く
             animator.SetTrigger("JumpTrigger");

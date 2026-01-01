@@ -148,7 +148,7 @@ public class ControlGuideUIImageSwitcher : MonoBehaviour
         GameManager.OnTalkingStateChanged += OnTalkingStateChanged;
 
         // プレイヤーとロボットの取得（ロード完了後なので Find で見つかるはず）
-        GameObject playerObject = GameObject.FindGameObjectWithTag(GameConstants.PlayerTagName);
+        GameObject playerObject = GameObject.FindGameObjectWithTag(GameConstants.PLAYER_TAG_NAME);
         if (playerObject != null)
         {
             playerScript = playerObject.GetComponent<Heroin_move>();
@@ -158,7 +158,7 @@ public class ControlGuideUIImageSwitcher : MonoBehaviour
             }
 
             // ロボットの検索（構造依存: Playerの子要素）
-            Transform robotTrans = playerObject.transform.Find(GameConstants.RobotObjectName);
+            Transform robotTrans = playerObject.transform.Find(GameConstants.ROBOT_OBJECT_NAME);
             // ※ GetChild(0)より名前検索(Find)の方が安全です。構造変化に強いため。
 
             if (robotTrans != null)

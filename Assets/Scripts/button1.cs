@@ -142,7 +142,7 @@ public class button1 : MonoBehaviour
     {
         if (Time.timeScale > 0)
         {
-            if (other.gameObject.tag == GameConstants.PlayerAttackTagName && !isPush)
+            if (other.gameObject.tag == GameConstants.PLAYER_ATTACK_TAG_NAME && !isPush)
             {
                 // ▼▼▼【変更】直接FlagManagerにアクセスしてフラグを立てる ▼▼▼
                 FlagManager.instance.SetKeyOpened(button_number, true);

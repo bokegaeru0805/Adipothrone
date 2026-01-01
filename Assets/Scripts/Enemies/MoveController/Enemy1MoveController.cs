@@ -146,7 +146,7 @@ public class Enemy1MoveController : MonoBehaviour, IEnemyResettable
         spriteRenderer.flipX = true; //画像の左右の向きを初期化する
         swingtime = 0; //y軸移動の時間の初期化
         movingRight = true; // 右に移動中に初期化
-        this.tag = GameConstants.DamageableEnemyTagName; // タグを初期化
+        this.tag = GameConstants.DAMAGEABLE_ENEMY_TAG_NAME; // タグを初期化
 
         if (rbody != null)
         {

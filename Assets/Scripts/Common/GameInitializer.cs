@@ -11,7 +11,7 @@ using UnityEditor;
 public static class GameInitializer
 {
     public static bool IsInitialized { get; private set; } = false;
-    private const string FirstSceneName = GameConstants.SceneName_Title;
+    private const string FirstSceneName = GameConstants.SCENE_NAME_TITLE;
 
 #if UNITY_EDITOR
     // 設定保存用のキーとメニューパスの定義

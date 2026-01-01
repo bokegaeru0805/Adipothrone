@@ -172,7 +172,7 @@ public class GhostwolfMoveController : MonoBehaviour
     private void Start()
     {
         if (PlayerObject == null)
-            PlayerObject = GameObject.FindGameObjectWithTag(GameConstants.PlayerTagName); // プレイヤーオブジェクトを探して格納
+            PlayerObject = GameObject.FindGameObjectWithTag(GameConstants.PLAYER_TAG_NAME); // プレイヤーオブジェクトを探して格納
 
         animator.SetFloat("stay_speed", 0.250f / staySec); //stayアニメーションの時間を調整
         hpscript = this.GetComponent<BossHealth>(); //hpのscriptを取得
@@ -281,7 +281,7 @@ public class GhostwolfMoveController : MonoBehaviour
         newPos.y += shoot_offsetX; //弾のy座標を調整
         GameObject newGameObject = Instantiate(shoot_prefab1) as GameObject; // 弾1のプレハブを生成
         newGameObject.transform.SetParent(this.transform); // 弾の親をこのオブジェクトに設定
-        newGameObject.tag = GameConstants.DamageableEnemyTagName; //弾のタグを設定
+        newGameObject.tag = GameConstants.DAMAGEABLE_ENEMY_TAG_NAME; //弾のタグを設定
         var script = newGameObject.GetComponent<ContactDamageController>(); //ダメージに関するスクリプトを取得
         if (script != null)
         {
@@ -328,7 +328,7 @@ public class GhostwolfMoveController : MonoBehaviour
         {
             GameObject newGameObject = Instantiate(shoot_prefab1) as GameObject; // 弾1のプレハブを生成
             newGameObject.transform.SetParent(this.transform); // 弾の親をこのオブジェクトに設定
-            newGameObject.tag = GameConstants.DamageableEnemyTagName; //弾のタグを設定
+            newGameObject.tag = GameConstants.DAMAGEABLE_ENEMY_TAG_NAME; //弾のタグを設定
             var script = newGameObject.GetComponent<ContactDamageController>(); //ダメージに関するスクリプトを取得
             if (script != null)
             {
@@ -382,7 +382,7 @@ public class GhostwolfMoveController : MonoBehaviour
         {
             GameObject newGameObject = Instantiate(shoot_prefab2) as GameObject; // 弾2のプレハブを生成
             newGameObject.transform.SetParent(this.transform); // 弾の親をこのオブジェクトに設定
-            newGameObject.tag = GameConstants.DamageableEnemyTagName; //弾のタグを設定
+            newGameObject.tag = GameConstants.DAMAGEABLE_ENEMY_TAG_NAME; //弾のタグを設定
             var script = newGameObject.GetComponent<ContactDamageController>(); //ダメージに関するスクリプトを取得
             if (script != null)
             {
@@ -429,7 +429,7 @@ public class GhostwolfMoveController : MonoBehaviour
             GameObject newGameObject = Instantiate(shoot_prefab3) as GameObject; // 弾4のプレハブを生成
             newGameObject.transform.localScale = Vector3.one * 2.5f; //弾のサイズを調整(子オブジェクトにする前に行う)
             newGameObject.transform.SetParent(this.transform); // 弾の親をこのオブジェクトに設定
-            newGameObject.tag = GameConstants.DamageableEnemyTagName; //弾のタグを設定
+            newGameObject.tag = GameConstants.DAMAGEABLE_ENEMY_TAG_NAME; //弾のタグを設定
             var script = newGameObject.GetComponent<ContactDamageController>(); //ダメージに関するスクリプトを取得
             if (script != null)
             {
@@ -500,7 +500,7 @@ public class GhostwolfMoveController : MonoBehaviour
             GameObject newGameObject = Instantiate(shoot_prefab3) as GameObject; // 弾5のプレハブを生成
             newGameObject.transform.localScale = Vector3.one * 2.5f; //弾のサイズを調整(子オブジェクトにする前に行う)
             newGameObject.transform.SetParent(this.transform); // 弾の親をこのオブジェクトに設定
-            newGameObject.tag = GameConstants.DamageableEnemyTagName; //弾のタグを設定
+            newGameObject.tag = GameConstants.DAMAGEABLE_ENEMY_TAG_NAME; //弾のタグを設定
             var script = newGameObject.GetComponent<ContactDamageController>(); //ダメージに関するスクリプトを取得
             if (script != null)
             {

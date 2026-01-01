@@ -125,7 +125,7 @@ public class WeaponSelectButton : MonoBehaviour, IItemAssignable
             // ランクの文字列を取得
             String weaponRankString = itemRank.ToString();
             // ランクの文字列を色付け
-            weaponRankString = string.Format(GameConstants.UIColorTagGold, weaponRankString);
+            weaponRankString = string.Format(GameConstants.UI_COLOR_TAG_GOLD, weaponRankString);
             // ランクの文字列をTextMeshProに設定
             weaponRankText.text = weaponRankString;
         }

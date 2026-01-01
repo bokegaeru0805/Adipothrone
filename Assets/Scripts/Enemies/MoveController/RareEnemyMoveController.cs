@@ -126,7 +126,7 @@ public class RareEnemyMoveController : MonoBehaviour, IEnemyResettable
             }
         }
 
-        this.tag = GameConstants.ImmuneEnemyTagName;
+        this.tag = GameConstants.IMMUNE_ENEMY_TAG_NAME;
     }
 
     private void Start()
@@ -139,7 +139,7 @@ public class RareEnemyMoveController : MonoBehaviour, IEnemyResettable
         if (playerTransform == null)
         {
             playerTransform = GameObject
-                .FindGameObjectWithTag(GameConstants.PlayerTagName)
+                .FindGameObjectWithTag(GameConstants.PLAYER_TAG_NAME)
                 ?.transform;
             if (playerTransform == null)
             {

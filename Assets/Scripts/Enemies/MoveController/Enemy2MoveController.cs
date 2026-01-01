@@ -114,7 +114,7 @@ public class Enemy2MoveController : MonoBehaviour, IEnemyResettable
         if (playerTransform == null)
         {
             playerTransform = GameObject
-                .FindGameObjectWithTag(GameConstants.PlayerTagName)
+                .FindGameObjectWithTag(GameConstants.PLAYER_TAG_NAME)
                 ?.transform;
             if (playerTransform == null)
             {
@@ -181,7 +181,7 @@ public class Enemy2MoveController : MonoBehaviour, IEnemyResettable
             Debug.LogWarning($"{this.gameObject.name}にenemy_HPコンポーネントがありません。");
         }
 
-        float upperBound = lowerBound + GameConstants.RobotJumpPeakHeight + UpperBoundOffset; //自分の一番上の座標を設定
+        float upperBound = lowerBound + GameConstants.ROBOT_JUMP_PEAK_HEIGHT + UpperBoundOffset; //自分の一番上の座標を設定
         PositionY = Random.Range(lowerBound, upperBound); //自分のy座標をランダムに設定
 
         rightFlag = Random.value < 0.5f; // ランダムに左右を決定（trueなら右、falseなら左）
@@ -197,7 +197,7 @@ public class Enemy2MoveController : MonoBehaviour, IEnemyResettable
         // スプライトの初期化
         spriteRenderer.sprite = normalSprite; //通常の画像に変更
         spriteRenderer.flipX = rightFlag; //スプライトの向きを設定
-        this.tag = GameConstants.ImmuneEnemyTagName; // タグを初期化
+        this.tag = GameConstants.IMMUNE_ENEMY_TAG_NAME; // タグを初期化
 
         wait_Sec = 0.7f; //待機時間を設定
         this.transform.position = new Vector2(

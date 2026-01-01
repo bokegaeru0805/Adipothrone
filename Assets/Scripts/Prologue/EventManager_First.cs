@@ -78,7 +78,7 @@ public class EventManager_First : MonoBehaviour
         FadeCanvas.instance.FadeOut(1.0f); //画面を暗転させる
         BGMManager.instance.Play(BGMCategory.Field_Quiet);
         yield return new WaitForSecondsRealtime(1.0f);
-        PlayerObject = GameObject.FindGameObjectWithTag(GameConstants.PlayerTagName); //Playerオブジェクトを取得
+        PlayerObject = GameObject.FindGameObjectWithTag(GameConstants.PLAYER_TAG_NAME); //Playerオブジェクトを取得
         PlayerWalkSpeed = PlayerObject.GetComponent<Heroin_move>().m_defaultSpeed; //Playerの歩行速度を取得
         PlayerObject.SetActive(false); //操作可能なPlayerオブジェクトを非表示化
 
@@ -88,7 +88,7 @@ public class EventManager_First : MonoBehaviour
             PlayerFirstPosition.y,
             Player.transform.position.z
         );
-        PlayerAnimator.SetInteger("BodyState", GameConstants.AnimBodyState_Armed2); //playerの体形Armed2に設定
+        PlayerAnimator.SetInteger("BodyState", GameConstants.ANIM_BODY_STATE_ARMED_2); //playerの体形Armed2に設定
 
         Robot.SetActive(true); //操作不可能なRobotオブジェクトを表示
         Robot.transform.position = new Vector3(
@@ -167,7 +167,7 @@ public class EventManager_First : MonoBehaviour
     public void HeroinInflation()
     {
         PlayerAnimator.enabled = true;
-        PlayerAnimator.SetInteger("BodyState", GameConstants.AnimBodyState_Immobile); //playerの体形をImmobileに設定
+        PlayerAnimator.SetInteger("BodyState", GameConstants.ANIM_BODY_STATE_IMMOBILE); //playerの体形をImmobileに設定
         //WPの数値を体形に応じて設定し、ステータスを更新
         PlayerBodyManager.instance?.SetWPFromBodyState(GameConstants.BodyStateEnum.BodyState_Immobile);
         SEManager.instance?.PlayPlayerActionSE(SE_PlayerAction.Bound1);

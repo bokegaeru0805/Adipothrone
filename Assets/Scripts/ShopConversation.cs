@@ -66,7 +66,7 @@ public class ShopConversation : MonoBehaviour, IShopConversation
                     "FlagManager.instance が見つかりません。デフォルトの会話ブロック名を返します。",
                     this
                 );
-                return GameConstants.DefaultNpcDialogueBlockName; // デフォルトの会話ブロック名を返す
+                return GameConstants.DEFAULT_NPC_DIALOGUE_BLOCK_NAME; // デフォルトの会話ブロック名を返す
             }
         }
 
@@ -80,7 +80,7 @@ public class ShopConversation : MonoBehaviour, IShopConversation
                     $"未定義のショップ名: {shop} です。デフォルトの会話ブロック名を返します。",
                     this
                 );
-                return GameConstants.DefaultNpcDialogueBlockName; // デフォルトの会話ブロック名を返す
+                return GameConstants.DEFAULT_NPC_DIALOGUE_BLOCK_NAME; // デフォルトの会話ブロック名を返す
         }
     }
 

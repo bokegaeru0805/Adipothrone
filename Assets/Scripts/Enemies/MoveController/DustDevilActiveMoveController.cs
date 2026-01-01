@@ -103,7 +103,7 @@ public class DustDevilActiveMoveController : MonoBehaviour, IEnemyResettable
 
     private void Awake()
     {
-        groundLayer = LayerMask.GetMask(GameConstants.PhysicsLayerName_Ground); // Groundレイヤーを取得
+        groundLayer = LayerMask.GetMask(GameConstants.PHYSICS_LAYER_NAME_GROUND); // Groundレイヤーを取得
 
         switch (variantType)
         {
@@ -144,7 +144,7 @@ public class DustDevilActiveMoveController : MonoBehaviour, IEnemyResettable
         enemyHP.ResetState(); // 自分のHPをリセット
         contactDamageController?.SetNormalDamage(damage); // 攻撃力をリセット
         stateChangeTimer = 0f; // タイマーをリセット
-        tag = GameConstants.ImmuneEnemyTagName; // タグをリセット
+        tag = GameConstants.IMMUNE_ENEMY_TAG_NAME; // タグをリセット
         currentState = DustDevilActiveState.Idle; // 初期状態をIdleに設定
 
         animator.SetTrigger("IdleTrigger"); // アニメーションをIdleに設定
@@ -343,7 +343,7 @@ public class DustDevilActiveMoveController : MonoBehaviour, IEnemyResettable
             // 攻撃開始直前の処理
             moveSequence.AppendCallback(() =>
             {
-                this.tag = GameConstants.DamageableEnemyTagName; // 攻撃を受けるタグに変更
+                this.tag = GameConstants.DAMAGEABLE_ENEMY_TAG_NAME; // 攻撃を受けるタグに変更
                 animator.SetTrigger("AttackTrigger"); // 突進アニメ再生
                 currentState = DustDevilActiveState.Attacking; // ステート変更
                 sePlayer.player.SetFadeOutTime((int)(moveDuration * 1000)); // ミリ秒単位でフェードアウト時間を設定
@@ -356,7 +356,7 @@ public class DustDevilActiveMoveController : MonoBehaviour, IEnemyResettable
             // 終了処理（移動完了時）
             moveSequence.OnComplete(() =>
             {
-                this.tag = GameConstants.ImmuneEnemyTagName; // 無敵タグに戻す
+                this.tag = GameConstants.IMMUNE_ENEMY_TAG_NAME; // 無敵タグに戻す
                 animator.SetTrigger("IdleTrigger"); // 待機アニメへ
                 currentState = DustDevilActiveState.Idle; // ステートをIdleへ
                 sePlayer.player.ResetFaderParameters(); // フェーダーパラメータをリセット

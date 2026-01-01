@@ -81,7 +81,7 @@ public class DustDevilMoveController : MonoBehaviour, IEnemyResettable
 
     private void Awake()
     {
-        groundLayer = LayerMask.GetMask(GameConstants.PhysicsLayerName_Ground); // Groundレイヤーを取得
+        groundLayer = LayerMask.GetMask(GameConstants.PHYSICS_LAYER_NAME_GROUND); // Groundレイヤーを取得
 
         switch (variantType)
         {
@@ -126,7 +126,7 @@ public class DustDevilMoveController : MonoBehaviour, IEnemyResettable
         if (playerTransform == null)
         {
             playerTransform = GameObject
-                .FindGameObjectWithTag(GameConstants.PlayerTagName)
+                .FindGameObjectWithTag(GameConstants.PLAYER_TAG_NAME)
                 ?.transform;
             if (playerTransform == null)
             {
@@ -178,7 +178,7 @@ public class DustDevilMoveController : MonoBehaviour, IEnemyResettable
 
         AdjustHeight(); // 高さを調整
         myPos = this.transform.position; // 現在の位置を保存
-        tag = GameConstants.ImmuneEnemyTagName; // タグをリセット
+        tag = GameConstants.IMMUNE_ENEMY_TAG_NAME; // タグをリセット
         currentState = DustDevilState.Idle; // 初期状態をIdleに設定
 
         animator.SetTrigger("IdleTrigger"); // アニメーションをIdleに設定

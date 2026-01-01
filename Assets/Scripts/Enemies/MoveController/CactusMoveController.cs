@@ -113,7 +113,7 @@ public class CactusMoveController : MonoBehaviour, IEnemyResettable
 
     private void Awake()
     {
-        groundLayer = LayerMask.GetMask(GameConstants.PhysicsLayerName_Ground); // Groundレイヤーを取得
+        groundLayer = LayerMask.GetMask(GameConstants.PHYSICS_LAYER_NAME_GROUND); // Groundレイヤーを取得
 
         if (leftArmObject == null || rightArmObject == null || flowerObject == null)
         {
@@ -195,7 +195,7 @@ public class CactusMoveController : MonoBehaviour, IEnemyResettable
         if (playerTransform == null)
         {
             playerTransform = GameObject
-                .FindGameObjectWithTag(GameConstants.PlayerTagName)
+                .FindGameObjectWithTag(GameConstants.PLAYER_TAG_NAME)
                 ?.transform;
             if (playerTransform == null)
             {
@@ -215,7 +215,7 @@ public class CactusMoveController : MonoBehaviour, IEnemyResettable
             return;
         }
 
-        tag = GameConstants.UntaggedName; // タグをリセット
+        tag = GameConstants.UNTAGGED_TAG_NAME; // タグをリセット
         currentState = CactusState.Idle; // 初期状態をIdleに設定
 
         if (!isUseManualInitialPosition) // 自動設定モードの場合
@@ -370,7 +370,7 @@ public class CactusMoveController : MonoBehaviour, IEnemyResettable
             yield break; // Idle状態でなければ攻撃しない
 
         currentState = CactusState.Attacking;
-        this.tag = GameConstants.ImmuneEnemyTagName;
+        this.tag = GameConstants.IMMUNE_ENEMY_TAG_NAME;
 
         float timer = 0f;
         rightArmAnimator.SetTrigger("BallAttackTrigger");
@@ -455,7 +455,7 @@ public class CactusMoveController : MonoBehaviour, IEnemyResettable
         float afterAttackTime = Random.Range(minAfterAttackTime, maxAfterAttackTime);
         yield return new WaitForSeconds(afterAttackTime);
         rightArmAnimator.SetTrigger("IdleTrigger");
-        this.tag = GameConstants.UntaggedName;
+        this.tag = GameConstants.UNTAGGED_TAG_NAME;
         currentState = CactusState.Idle;
     }
 
