@@ -67,7 +67,7 @@ public class ControlGuideUIImageSwitcher : MonoBehaviour
 
     private void Start()
     {
-        // エディタ実行時など、特別なケースへの対応（前の修正に準拠）
+        // エディタ実行時など、特別なケースへの対応
         if (!GameManager.isFirstGameSceneOpen)
             return;
 
@@ -81,9 +81,6 @@ public class ControlGuideUIImageSwitcher : MonoBehaviour
         {
             // ロード中なら、完了イベントを待つ
             SaveLoadManager.OnLoadingStateChanged += OnLoadingStateChanged;
-
-            // 初期化されるまではUpdateを動かさないようにして負荷を下げる
-            this.enabled = false;
         }
     }
 
@@ -143,6 +140,12 @@ public class ControlGuideUIImageSwitcher : MonoBehaviour
 
         // SpotlightControllerの取得
         spotlightController = SpotlightQuickItemController.instance;
+        if( spotlightController == null)
+        {
+            Debug.LogError("SpotlightQuickItemControllerが見つかりません。");
+            this.enabled = false; // 動けないので無効化
+            return;
+        }
 
         // GameManagerイベント購読
         GameManager.OnTalkingStateChanged += OnTalkingStateChanged;

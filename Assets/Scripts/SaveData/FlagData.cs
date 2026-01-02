@@ -98,6 +98,7 @@ public enum Chapter1TriggeredEvent
     ShopGirlMissing = 1201, // ショップの女の子がいなくなった
     ShopGirlFirstMet = 1202, // ショップの女の子と初めて会った
     Girl2ItemReceived1 = 1205, // 女の子2からアイテムを受け取った1
+    TalkedToShopGirlAfterCaveBoss = 1206, // 洞窟のボス後にショップの女の子と話した
 
     // 敵・ボスイベント
     WellEnemyEncounter = 1301, // 井戸の敵と遭遇

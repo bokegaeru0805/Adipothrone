@@ -9,6 +9,7 @@ public enum BladeName
     blade_iron = 1004,
     blade_NightBorne = 1005,
     blade_FlareSeraphim = 1010,
+    blade_Debug = 1999,
 }
 
 public enum ShootName

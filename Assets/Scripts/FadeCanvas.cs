@@ -75,4 +75,23 @@ public class FadeCanvas : MonoBehaviour
                 fadeImage.gameObject.SetActive(false);
             });
     }
+
+    /// <summary>
+    /// フェードの透明度を直接設定します
+    /// /// </summary>
+    public void SetAlpha(float alpha)
+    {
+        
+        if (fadeImage != null)
+        {
+            // 念のためDOTweenを止める（Timeline優先）
+            fadeImage.DOKill();
+
+            Color c = fadeImage.color;
+            c.a = alpha;
+            fadeImage.color = c;
+            // Alphaが0より大きければ表示、0なら非表示（最適化）
+            fadeImage.gameObject.SetActive(alpha > 0);
+        }
+    }
 }

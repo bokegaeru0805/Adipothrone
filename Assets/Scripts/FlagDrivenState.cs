@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using NaughtyAttributes;
 using UnityEngine;
 
 /// <summary>
@@ -22,6 +23,7 @@ public class FlagDrivenStatePro : MonoBehaviour
     [SerializeField]
     private StatePro defaultState;
 
+    [InfoBox("時系列が後の条件を上に配置してください。")]
     [Tooltip(
         "条件と、それが満たされたときに適用される状態のリスト。上から順に評価され、最初に一致した条件が適用されます。"
     )]
@@ -191,7 +193,7 @@ public class FlagDrivenStatePro : MonoBehaviour
             // アニメーションステート名が指定されている場合のみ、チェックと再生処理に進む
             if (!string.IsNullOrEmpty(state.animationStateName))
             {
-                //エラーチェック1: Animatorコンポーネントの存在を確認 
+                //エラーチェック1: Animatorコンポーネントの存在を確認
                 if (targetAnimator == null)
                 {
                     // Animatorがないのにアニメーションを再生しようとした場合は、エラーを出す

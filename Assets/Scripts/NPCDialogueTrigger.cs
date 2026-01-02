@@ -1,8 +1,9 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using Fungus;
+using NaughtyAttributes;
 using UnityEngine;
-using System;
 
 /// <summary>
 /// NPCとの会話をトリガーする汎用コンポーネント。
@@ -21,6 +22,7 @@ public class NPCDialogueTrigger : MonoBehaviour
     [SerializeField]
     private string defaultBlockName;
 
+    [InfoBox("時系列が後の条件を上に配置してください。")]
     [Tooltip("会話の条件リスト。上から順に評価され、最初に一致したものが実行されます。")]
     [SerializeField]
     private List<DialogueCondition> dialogueConditions = new List<DialogueCondition>();
