@@ -88,6 +88,7 @@ public enum Chapter1TriggeredEvent
     RiverQuestReceived = 1009, // 川のクエストを受け取った
     RockDestructionRequested = 1012, // 岩の破壊を依頼した
     HeardRumorAboutShopGirl = 1015, // ショップの女の子についての噂を聞いた
+    LeftVillageForDesert = 1016, // 砂漠へ村を出発した
 
     // マップ系イベント
     FirstEnteredVillage = 1002, // 初めて村に入った

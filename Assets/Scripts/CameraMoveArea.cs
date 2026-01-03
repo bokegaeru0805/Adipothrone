@@ -449,9 +449,52 @@ public class CameraMoveArea : MonoBehaviour
         return defaultBgm;
     }
 
+    #region Timeline
     /// <summary>
-    /// 開発用に、エリアの境界をSceneビューに描画します。
+    /// Timelineなどから強制的にこのエリアをアクティブにします。
+    /// カメラだけが移動し、プレイヤーが移動しない場合に使用します。
     /// </summary>
+    public void ActivateFromTimeline()
+    {
+        // 既に自分がアクティブなら何もしない
+        if (activeArea == this)
+            return;
+
+        // 前のアクティブなエリアがあれば、終了処理（消灯など）をさせる
+        if (activeArea != null)
+        {
+            activeArea.HandlePlayerExit();
+        }
+
+        // 自分をアクティブに設定
+        activeArea = this;
+
+        // --- 進入時処理の再現 ---
+
+        // 1. ライトをつける
+        if (areaLight != null)
+        {
+            areaLight.gameObject.SetActive(true); // Light2Dをアクティブにする
+        }    
+
+        // 2. Volume ProfileやConfinerの設定を適用
+        ApplyAreaSettings();
+
+        // 3. 【修正】背景を表示し、カメラ位置に合わせる
+        if (backGround != null)
+        {
+            backGround.SetActive(true);
+
+            // カメラのX座標に合わせて背景を移動（Yは背景の元の位置を維持）
+            // これをやらないと、背景が遠く離れた場所に表示されてしまう可能性があります
+            float camX = Camera.main.transform.position.x;
+            backGround.transform.position = new Vector2(camX, backGround.transform.position.y);
+        }
+
+        // Debug.Log("CameraMoveArea: Timelineからエリアをアクティブ化しました。", this);
+    }
+    #endregion
+
     private void OnDrawGizmos()
     {
         // ギズモの描画色と透明度を設定（半透明のマゼンタ）

@@ -442,5 +442,40 @@ namespace MyGame.CameraControl
             // コルーチンの管理変数をクリア
             dampingResetCoroutine = null;
         }
+
+        #region Timeline Control
+        /// <summary>
+        /// Timelineによるカメラ制御モードを設定します。
+        /// Timeline操作中はCinemachine Brainを無効化し、Timeline外では有効化します。
+        /// </summary>
+        /// <param name="isTimelineControlling"></param>
+        public void SetTimelineControlMode(bool isTimelineControlling)
+        {
+            if (cam == null)
+                return;
+
+            var brain = cam.GetComponent<CinemachineBrain>();
+            if (brain != null)
+            {
+                // Timeline操作中はBrainを無効化
+                brain.enabled = !isTimelineControlling;
+            }
+        }
+
+        /// <summary>
+        /// カメラの位置を指定の座標に移動させます。
+        /// </summary>
+        /// <param name="position"></param>
+        public void SetCameraPosition(Vector2 position)
+        {
+            if (cam == null)
+                return;
+
+            // Z座標は維持して移動
+            Vector3 newPos = new Vector3(position.x, position.y, cam.transform.position.z);
+            cam.transform.position = newPos;
+        }
+
+        #endregion
     }
 }

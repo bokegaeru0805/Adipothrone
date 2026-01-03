@@ -180,7 +180,7 @@ public class ItemSelectButton : MonoBehaviour, IItemAssignable
 
         if (ItemPanel != null)
         {
-            var script = ItemPanel.GetComponent<ItemPanelActive>();
+            var script = ItemPanel.GetComponent<HealItemPanelActive>();
             if (script != null)
             {
                 script.SetPromptPanel(assignedItemID, this.GetComponent<Button>());

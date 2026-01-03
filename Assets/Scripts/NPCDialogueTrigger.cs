@@ -149,6 +149,8 @@ public class NPCDialogueTrigger : MonoBehaviour
     private void HandleTalkingStateChanged(bool talkState)
     {
         isTalking = talkState;
+        // 会話状態が変わったら、即座に吹き出しの表示状態も更新する
+        UpdateBubbleState();
     }
 
     /// <summary>
@@ -166,6 +168,16 @@ public class NPCDialogueTrigger : MonoBehaviour
     {
         if (speechBubbleObject == null)
             return;
+
+        // 会話中は強制的に吹き出しを非表示にする
+        if (isTalking)
+        {
+            if (speechBubbleObject.activeSelf)
+            {
+                speechBubbleObject.SetActive(false);
+            }
+            return;
+        }
 
         bool shouldShow = false; // 初期値は非表示
 

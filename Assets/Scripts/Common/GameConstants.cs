@@ -112,8 +112,11 @@ public static class GameConstants
 
     //string coloredText = string.Format(GameConstants.UI_COLOR_TAG_GOLD, "攻撃力");のようにして使用
 
+    #region オブジェクト名
     public const string PLAYER_OBJECT_NAME = "Noeri"; // プレイヤーのオブジェクト名
     public const string ROBOT_OBJECT_NAME = "Fabo"; // ロボットのオブジェクト名
+    #endregion
+    #region タグ名
     public const string UNTAGGED_TAG_NAME = "Untagged"; // タグ無しの名前
     public const string PLAYER_TAG_NAME = "Player"; // プレイヤーのタグ名
     public const string PLAYER_ATTACK_TAG_NAME = "PlayerAttack"; // プレイヤーの攻撃タグ名
@@ -121,12 +124,18 @@ public static class GameConstants
     public const string IMMUNE_ENEMY_TAG_NAME = "ImmuneEnemy"; // ダメージを受けない敵のタグ名
     public const string INTERACTABLE_OBJECT_TAG_NAME = "InteractableObject"; // インタラクト可能なオブジェクトのタグ名
     public const string AREA_TRANSITION_TAG_NAME = "AreaTransition"; // エリア遷移のタグ名
+    #endregion
+    #region レイヤー名
     public const string PHYSICS_LAYER_NAME_GROUND = "GroundLayer"; // 当たり判定(Layer)用の名前
     public const string SORTING_LAYER_NAME_GROUND = "Ground"; // 描画順(Sorting Layer)用の名前
     public const string MAIN_GLOBAL_VOLUME_TAG_NAME = "MainGlobalVolume"; // メインのGlobal Volumeのタグ名
+    #endregion
+    #region シーン名
     public const string SCENE_NAME_TITLE = "TitleScene"; // タイトルシーンの名前
     public const string SCENE_NAME_TUTORIAL_START = "TutorialStartScene"; // チュートリアルシーンの名前
     public const string SCENE_NAME_CHAPTER_1 = "Chapter1Scene"; // 第1章のシーン名
+    public const string SCENE_NAME_DESERT = "DesertScene"; // 砂漠エリアのシーン名
+    #endregion
     public const string UI_NAME_FAST_TRAVEL_PANEL = "FastTravelPanel"; // ファストトラベルパネルのUI名
     public const string DEFAULT_NPC_DIALOGUE_BLOCK_NAME = "DefaultGreeting"; // NPCのデフォルトの会話ブロック名
     public const float CHARGE_EFFECT_DEFAULT_DURATION = 300f / 60f; // チャージエフェクトの基本持続時間

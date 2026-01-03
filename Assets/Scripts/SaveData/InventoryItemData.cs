@@ -26,10 +26,15 @@ public class InventoryItemData
     public enum ItemType
     {
         HealItem = 8,
+        KeyItem = 12,
     }
 
     private readonly Dictionary<ItemType, int> itemTypeDigits =
-        new() { { ItemType.HealItem, (int)TypeID.HealItem } };
+        new()
+        {
+            { ItemType.HealItem, (int)TypeID.HealItem },
+            { ItemType.KeyItem, (int)TypeID.KeyItem },
+        };
     public event Action OnItemCountChanged; //アイテムの所持数が変更されたときのイベント
 
     // アイテムを追加
