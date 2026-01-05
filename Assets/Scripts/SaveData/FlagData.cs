@@ -128,7 +128,9 @@ public enum Chapter1CountedEvent
 public enum Chapter2TriggeredEvent
 {
     Chapter2Start = 2001, // 第二章が始まった
-    CoachmanMet = 2002, // 馬車の御者と会った
+    FirstEnteredVillage = 2002, // 初めて村に入った
+    FirstMetCoachman = 2005, // 初めて御者に会った
+    OasisSpringBossDefeated = 2011, // オアシスの源泉ボスを撃破した
 }
 
 /// <summary>

@@ -22,6 +22,11 @@ public class FastTravelManager : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// ファストトラベルポイントのデータをIDから取得します。
+    /// </summary>
+    /// <param name="fastTravelName">ファストトラベルポイントの名前</param>
+    /// <returns>対応するファストトラベルポイントのデータ</returns>
     public FastTravelPointData GetFastTravelPointData(FastTravelName fastTravelName)
     {
         if (fastTravelPointDataBase == null)
@@ -34,7 +39,12 @@ public class FastTravelManager : MonoBehaviour
         return fastTravelPointDataBase.GetFastTravelPointByID(fastTravelName);
     }
 
-    public void ExecuteFastTravel(Enum fastTravelID)
+    /// <summary>
+    /// 指定されたファストトラベルポイントへ移動します。
+    /// </summary>
+    /// <param name="fastTravelID">移動先のID</param>
+    /// <param name="forceReload">trueの場合、同一シーンでも強制的にリロードします（死亡時の状態リセット用）</param>
+    public void ExecuteFastTravel(Enum fastTravelID, bool forceReload = false)
     {
         // 選択されたファストトラベルIDを取得
         FastTravelName selectedFastTravelID = (FastTravelName)fastTravelID;
@@ -59,22 +69,28 @@ public class FastTravelManager : MonoBehaviour
             return;
         }
 
-        if (sceneName != SceneManager.GetActiveScene().name)
+        // 設計変更: シーンが異なる場合、または死亡リスポーン時（forceReload=true）は
+        // 敵やギミックの状態を確実に初期化するため、強制的にシーンロードを行う
+        if (sceneName != SceneManager.GetActiveScene().name || forceReload)
         {
             // プレイヤーのスポーンポイントを設定
             GameManager.instance.crossScenePlayerSpawnPoint =
                 selectedFastTravelPoint.targetPosition;
-            // シーンが異なる場合はシーンをロード
+            // シーンをロード
             SceneManager.LoadScene(sceneName);
         }
         else
         {
-            // 同じシーン内でのファストトラベルの場合は、プレイヤーの位置を更新
+            // 同一シーンで、かつリロード不要な場合（手動トラベルなど）
             DoorOpener.OpenDoor(
                 selectedFastTravelPoint.targetPosition,
                 this,
-                DoorOpener.DoorType.None // ドアの種類は特に指定しない
+                DoorOpener.DoorType.None
             );
+
+            // もしリロードしない方針を貫くなら、ここで
+            // SceneManager.GetActiveScene().GetRootGameObjects() から
+            // IEnemyResettable を探して全リセットする処理が必要になります。
         }
 
         if (shouldRunDeathFastTravelTutorial)
@@ -90,6 +106,9 @@ public class FastTravelManager : MonoBehaviour
         GameManager.instance.TriggerJumpCooldown(); // 会話終了後のジャンプ入力クールダウンを開始
     }
 
+    /// <summary>
+    /// 死亡時のファストトラベルを実行します。
+    /// </summary>
     public void ExecuteDeathFastTravel()
     {
         // チュートリアルを実行するかどうかを判定
@@ -111,6 +130,7 @@ public class FastTravelManager : MonoBehaviour
             selectedFastTravelID = defaultFastTravelPointID;
         }
 
-        ExecuteFastTravel(selectedFastTravelID);
+        // 死亡時は強制リロードを有効にして呼び出し、盤面をリセットする
+        ExecuteFastTravel(selectedFastTravelID, forceReload: true);
     }
 }

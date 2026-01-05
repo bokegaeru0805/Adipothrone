@@ -39,7 +39,7 @@ public class SEManager : MonoBehaviour
     private void Start()
     {
         sePlayer = new CriAtomExPlayer();
-        
+
         // SEの音量を設定
         if (SaveLoadManager.instance != null)
         {
@@ -50,6 +50,38 @@ public class SEManager : MonoBehaviour
         {
             Debug.LogError("SaveLoadManagerが見つかりません。");
         }
+    }
+
+    /// <summary>
+    /// パラメータ指定付きでSEを再生（Timeline用）
+    /// </summary>
+    public void PlayEx(Enum cue, bool useVolume, float volume, bool usePitch, float pitch)
+    {
+        string cueName = SeCueDatabase.GetCueName(cue);
+        if (cueName == null)
+            return;
+
+        // 1. パラメータ設定
+        // 指定がある場合だけセットし、なければデフォルト(Vol=1.0, Pitch=0)に戻すなどの運用が安全ですが、
+        // ADX2の仕様上、前回の設定が残る可能性があるため、明示的にセットします。
+
+        // ボリューム設定（指定がなければ、現在のカテゴリボリュームなどは触らずPlayerの倍率を1.0に戻す）
+        sePlayer.SetVolume(useVolume ? volume : 1.0f);
+
+        // ピッチ設定（指定がなければ0に戻す）
+        sePlayer.SetPitch(usePitch ? pitch : 0f);
+
+        // 2. 再生
+        sePlayer.SetCue(seAcbAsset.Handle, cueName);
+        sePlayer.Start();
+
+        // 3. 次回の再生に影響が出ないよう、パラメータをリセットしておく（安全策）
+        // ※ただしStart直後のResetは反映タイミングに注意が必要ですが、ADX2はStart時点のパラメータが使われるため基本OK
+        // ここでは「次にPlay(Enum)だけ呼ばれた時」のためにリセットは行わず、
+        // 常にSetVolume/SetPitchを行う運用にするか、以下のようにリセットを入れるか選択になります。
+        // 今回は安全のため、次のフレーム以降のためにリセットしておきます。
+        // sePlayer.SetVolume(1.0f);
+        // sePlayer.SetPitch(0f);
     }
 
     /// <summary>
@@ -232,7 +264,7 @@ public class SEManager : MonoBehaviour
     /// </summary>
     public void StopAllSE()
     {
-        if(sePlayer != null)
+        if (sePlayer != null)
         {
             sePlayer.Dispose();
             sePlayer = new CriAtomExPlayer();

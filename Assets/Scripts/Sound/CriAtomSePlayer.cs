@@ -250,5 +250,34 @@ namespace CriWare.Assets
             Status currentStatus = this.status;
             return (currentStatus == Status.Prep || currentStatus == Status.Playing);
         }
+
+        /// <summary>
+        /// パラメータ指定付きで再生（Timeline用）
+        /// </summary>
+        public void PlayEx(Enum cue, bool useVolume, float volume, bool usePitch, float pitch)
+        {
+            string cueName = SeCueDatabase.GetCueName(cue);
+            if (cueName == null)
+                return;
+
+            // パラメータ適用
+            if (useVolume)
+                player.SetVolume(volume);
+            if (usePitch)
+                player.SetPitch(pitch);
+
+            player.UpdateAll(); // パラメータ反映
+
+            // 再生（基底クラスのPlay呼び出し）
+            this.Play(cueName);
+
+            // 次回のためにリセット
+            if (useVolume)
+                player.SetVolume(1.0f);
+            if (usePitch)
+                player.SetPitch(0f);
+
+            player.UpdateAll();
+        }
     }
 }
