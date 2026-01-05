@@ -310,6 +310,8 @@ public class GameManager : MonoBehaviour
     /// <summary>
     /// 指定されたIDに対応するアイテムを取得して、インベントリから削除します。
     /// </summary>
+    /// <param name="ID">削除したいアイテムのID（Enum）</param>
+    /// <param name="amount">削除する数量</param>
     public void RemoveAllTypeIDFromInventory(Enum ID, int amount = 1)
     {
         //Enumから、タイプを判別する数に変更
@@ -348,6 +350,8 @@ public class GameManager : MonoBehaviour
     /// <summary>
     /// 指定されたIDに対応するアイテムの所持数を取得します。
     /// </summary>
+    /// <param name="ID">取得したいアイテムのID（Enum）</param>
+    /// <returns>指定されたアイテムの所持数</returns>
     public int GetAllTypeIDToAmount(Enum ID)
     {
         // Enumから、タイプを判別する数に変更

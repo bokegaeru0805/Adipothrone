@@ -475,7 +475,7 @@ public class CameraMoveArea : MonoBehaviour
         if (areaLight != null)
         {
             areaLight.gameObject.SetActive(true); // Light2Dをアクティブにする
-        }    
+        }
 
         // 2. Volume ProfileやConfinerの設定を適用
         ApplyAreaSettings();
@@ -506,12 +506,13 @@ public class CameraMoveArea : MonoBehaviour
         if (box2D == null)
             return;
 
+        // Gizmoの中心位置を計算（既存のコードに合わせています）
+        // ※回転がある場合は transform.TransformPoint(box2D.offset) の方が正確ですが、
+        // ここでは元の描画ロジックとズレないように元の計算式を使用します。
+        Vector3 centerPos = transform.position + (Vector3)box2D.offset;
+
         // Gizmoの描画行列を設定し、オブジェクトの回転やスケールを考慮
-        Gizmos.matrix = Matrix4x4.TRS(
-            transform.position + (Vector3)box2D.offset,
-            transform.rotation,
-            transform.lossyScale
-        );
+        Gizmos.matrix = Matrix4x4.TRS(centerPos, transform.rotation, transform.lossyScale);
 
         // 塗りつぶしの立方体を描画
         Gizmos.color = fillColor;
@@ -520,5 +521,27 @@ public class CameraMoveArea : MonoBehaviour
         // 輪郭線を描画
         Gizmos.color = borderColor;
         Gizmos.DrawWireCube(Vector3.zero, (Vector3)box2D.size);
+
+        // --- 追加: 文字ラベルの表示 ---
+#if UNITY_EDITOR
+        // オブジェクト名から表示する文字列を作成
+        string labelText = gameObject.name;
+        // "_" で分割し、最後の部分を取得する（例: "CameraMoveArea_Village" -> "Village"）
+        string[] splitName = labelText.Split('_');
+        if (splitName.Length > 1)
+        {
+            labelText = splitName[splitName.Length - 1];
+        }
+
+        // ラベルのスタイル設定
+        GUIStyle style = new GUIStyle();
+        style.normal.textColor = Color.white; // 文字色
+        style.alignment = TextAnchor.MiddleCenter; // 中央揃え
+        style.fontSize = 12; // フォントサイズ
+        style.fontStyle = FontStyle.Bold; // 太字
+
+        // ハンドルを使って文字を描画 (HandlesはGizmos.matrixの影響を受けないのでワールド座標centerPosを使用)
+        UnityEditor.Handles.Label(centerPos, labelText, style);
+#endif
     }
 }

@@ -8,6 +8,7 @@ public class FastTravelPointData : ScriptableObject
         None = 0,
         TutorialStart = 10,
         Chapter1 = 20,
+        Desert = 30,
         // 追加可能
     }
 
@@ -34,6 +35,8 @@ public class FastTravelPointData : ScriptableObject
                 return GameConstants.SCENE_NAME_TUTORIAL_START;
             case SceneNameEnum.Chapter1:
                 return GameConstants.SCENE_NAME_CHAPTER_1;
+            case SceneNameEnum.Desert:
+                return GameConstants.SCENE_NAME_DESERT;
             case SceneNameEnum.None:
             default:
                 return string.Empty;

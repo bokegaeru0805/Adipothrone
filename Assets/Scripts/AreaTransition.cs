@@ -1,16 +1,16 @@
 using UnityEngine;
-using UnityEngine.SceneManagement; // シーン管理のために必要
 
 public class AreaTransition : MonoBehaviour
 {
+    [Tooltip("移動先の座標")]
     [SerializeField]
-    private Vector2 movePos; //移動位置を保存する変数
+    private Vector2 movePos;
 
     private void Awake()
     {
         if (movePos == Vector2.zero)
         {
-            Debug.LogError($"{this.name}のmovePosが設定されていません");
+            Debug.LogError($"MovePosが設定されていません", this);
         }
     }
 
@@ -35,26 +35,35 @@ public class AreaTransition : MonoBehaviour
     {
         // トリガーゾーンのギズモ描画 (transformの位置とスケールを使用)
         Vector3 gizmoCenter = transform.position;
-        Vector3 gizmoSize = transform.localScale; // transformのscaleを直接サイズとして使用
+        Vector3 gizmoSize = transform.localScale;
 
-        // 塗りつぶし色を設定 (青で透明度0.2)
-        Gizmos.color = new Color(0f, 0f, 1f, 0.2f); // new Color(R, G, B, A) -> (青, 透明度0.2)
-        Gizmos.DrawCube(gizmoCenter, gizmoSize); // 塗りつぶし立方体
+        // 1. トリガーエリアの描画
+        // 塗りつぶし色 (青で透明度0.2)
+        Gizmos.color = new Color(0f, 0f, 1f, 0.2f);
+        Gizmos.DrawCube(gizmoCenter, gizmoSize);
 
-        // 輪郭線色を設定 (純粋な青)
+        // 輪郭線 (純粋な青)
         Gizmos.color = Color.blue;
-        Gizmos.DrawWireCube(gizmoCenter, gizmoSize); // 輪郭線立方体
+        Gizmos.DrawWireCube(gizmoCenter, gizmoSize);
 
-        // ギズモの色を設定
-        Gizmos.color = Color.green; // 例えば緑色にする
-
-        // このオブジェクトのワールド座標を取得
+        // 2. 移動先への線とポイント描画
+        // このオブジェクトのワールド座標
         Vector3 startPosition = transform.position;
-
-        // movePosはVector2なので、Z座標を0としてVector3に変換
+        // 移動先 (Z座標は現在のオブジェクトと同じにする)
         Vector3 endPosition = new Vector3(movePos.x, movePos.y, startPosition.z);
 
-        // オブジェクトの座標からmovePosまで線を引く
+        // 線を描画 (緑色)
+        Gizmos.color = Color.green;
         Gizmos.DrawLine(startPosition, endPosition);
+
+        // --- 追加: 移動先のポイント描画 ---
+
+        // 移動先に球体を描画 (半透明の緑)
+        Gizmos.color = new Color(0f, 1f, 0f, 0.4f);
+        Gizmos.DrawSphere(endPosition, 0.5f);
+
+        // 球体の枠線 (不透明の緑)
+        Gizmos.color = Color.green;
+        Gizmos.DrawWireSphere(endPosition, 0.5f);
     }
 }

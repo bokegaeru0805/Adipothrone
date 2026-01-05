@@ -29,6 +29,7 @@ public enum KeyID
 /// 2. LoadFlagData に LoadBoolFlags / LoadIntFlags の呼び出しを追加（セーブから復元される）
 /// 3. SaveFlagData は型を問わずEnum→int変換で自動対応するため、追加は不要
 /// 4. FlagConditionDrawerPro.cs の boolEnumTypes / intEnumTypes に新しいEnum型を追加
+/// 5. FungusSetGameBoolFlag.cs の FlagCategory enum と各章のフラグ変数を追加
 
 
 /// <summary>
@@ -120,6 +121,20 @@ public enum Chapter1CountedEvent
 {
     // 進行イベント
 }
+
+/// <summary>
+/// 第二章ステージのbool型のフラグ
+/// </summary>
+public enum Chapter2TriggeredEvent
+{
+    Chapter2Start = 2001, // 第二章が始まった
+    CoachmanMet = 2002, // 馬車の御者と会った
+}
+
+/// <summary>
+/// 第二章ステージのint型のフラグ
+/// </summary>
+public enum Chapter2CountedEvent { }
 
 /// <summary>
 /// チュートリアルのbool型のフラグ

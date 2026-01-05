@@ -21,4 +21,9 @@ public class ShootWeaponData : WeaponData
         Straight = 10, // 直線
         Parallel3Way = 20, // 3方向に平行散弾
     }
+
+    public override System.Enum GetItemID()
+    {
+        return weaponID;
+    }
 }

@@ -61,7 +61,7 @@ public class FrontDoor_Event : MonoBehaviour
             //ゲームシーンがまだ開かれていない場合は何もしない
             return;
         }
-        
+
         // 他のコンポーネントの初期化を待ってから処理を開始する
         StartCoroutine(DelayedInitialization());
     }
@@ -92,7 +92,6 @@ public class FrontDoor_Event : MonoBehaviour
 
         GameManager.OnTalkingStateChanged += HandleTalkingStateChanged;
 
-
         // パネルが有効になった際に、一度現在の状態でタグを更新する
         UpdateDoorTag();
     }
@@ -108,7 +107,6 @@ public class FrontDoor_Event : MonoBehaviour
         // オブジェクトが無効になる際に、イベントの登録を解除（メモリリーク防止）
         FlagManager.OnBoolFlagChanged -= HandleFlagChange;
         GameManager.OnTalkingStateChanged -= HandleTalkingStateChanged;
-
     }
 
     /// <summary>
@@ -255,7 +253,9 @@ public class FrontDoor_Event : MonoBehaviour
         }
     }
 
-    // --- 各ドアごとの個別イベント処理 ---
+    /// <summary>
+    /// チュートリアルのドアイベント処理
+    /// </summary>
     private void HandleTutorialDoorEvent()
     {
         if (PlayerBodyManager.instance.BodyState < GameConstants.BODY_STATE_ARMED_2)
@@ -282,6 +282,9 @@ public class FrontDoor_Event : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// 井戸のドアイベント処理
+    /// </summary>
     private void HandleVillageWellDoorEvent()
     {
         if (IsDoorOpenable())
@@ -294,6 +297,9 @@ public class FrontDoor_Event : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// 少女の家のドアイベント処理
+    /// </summary>
     private void HandleVillageGirlHouseDoorEvent()
     {
         if (IsDoorOpenable())
@@ -342,5 +348,15 @@ public class FrontDoor_Event : MonoBehaviour
 
         // オブジェクトの座標からmovePosまで線を引く
         Gizmos.DrawLine(startPosition, endPosition);
+
+        // --- 移動先のポイント描画 ---
+
+        // 移動先に球体を描画 (半透明の緑)
+        Gizmos.color = new Color(0f, 1f, 0f, 0.4f);
+        Gizmos.DrawSphere(endPosition, 0.5f);
+
+        // 球体の枠線 (不透明の緑)
+        Gizmos.color = Color.green;
+        Gizmos.DrawWireSphere(endPosition, 0.5f);
     }
 }

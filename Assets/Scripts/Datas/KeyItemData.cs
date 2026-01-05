@@ -4,4 +4,9 @@ using UnityEngine;
 public class KeyItemData : BaseItemData
 {
     public KeyItemName itemID; //ID
+
+    public override System.Enum GetItemID()
+    {
+        return itemID;
+    }
 }

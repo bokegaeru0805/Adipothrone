@@ -220,6 +220,10 @@ public class FlagManager : MonoBehaviour
         // 第一章ステージのフラグ読み込み
         LoadBoolFlags<Chapter1TriggeredEvent>(data.boolFlags);
         LoadIntFlags<Chapter1CountedEvent>(data.intFlags);
+        // 第二章ステージのフラグ読み込み
+        LoadBoolFlags<Chapter2TriggeredEvent>(data.boolFlags);
+        LoadIntFlags<Chapter2CountedEvent>(data.intFlags);
+        // チュートリアルイベントのフラグ読み込み
         LoadBoolFlags<TutorialEvent>(data.boolFlags);
 
         foreach (var kvp in data.keyOpenStatus)
@@ -338,6 +342,9 @@ public class FlagManager : MonoBehaviour
         // 第一章のフラグの初期化
         InitializeBoolEnum<Chapter1TriggeredEvent>();
         InitializeIntEnum<Chapter1CountedEvent>();
+        // 第二章のフラグの初期化
+        InitializeBoolEnum<Chapter2TriggeredEvent>();
+        InitializeIntEnum<Chapter2CountedEvent>();
 
         InitializeKeyOpenStatus();
     }
@@ -371,6 +378,11 @@ public class FlagManager : MonoBehaviour
         SetBoolFlag(flag, value);
     }
 
+    public void SetChapter2TriggeredEvent(Chapter2TriggeredEvent flag, bool value)
+    {
+        SetBoolFlag(flag, value);
+    }
+
     // --- Int型フラグ用ラッパー ---
 
     public void SetPrologueCountedEvent(PrologueCountedEvent flag, int value)
@@ -379,6 +391,11 @@ public class FlagManager : MonoBehaviour
     }
 
     public void SetChapter1CountedEvent(Chapter1CountedEvent flag, int value)
+    {
+        SetIntFlag(flag, value);
+    }
+
+    public void SetChapter2CountedEvent(Chapter2CountedEvent flag, int value)
     {
         SetIntFlag(flag, value);
     }

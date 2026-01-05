@@ -13,4 +13,9 @@ public class HealItemData : BaseItemData
 
     // バフ効果をスクリプトで定義したクラスから選ぶようにする
     public List<PlayerBuffDebuffEffect> buffEffects = new List<PlayerBuffDebuffEffect>();
+
+    public override System.Enum GetItemID()
+    {
+        return itemID;
+    }
 }

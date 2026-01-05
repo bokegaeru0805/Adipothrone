@@ -13,4 +13,9 @@ public class BladeWeaponData : WeaponData
     public float cooldownTime;
     public Vector2 ColliderOffset; //Colliderの座標offset
     public Vector2 ColliderSize; //Colliderの大きさ
+
+    public override System.Enum GetItemID()
+    {
+        return weaponID;
+    }
 }

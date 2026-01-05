@@ -99,7 +99,7 @@ public class FrontDoor : MonoBehaviour
 
         // このオブジェクトのワールド座標を取得
         Vector3 startPosition = transform.position;
-        // Y座標にオフセットを加える
+        // Y座標にオフセットを加える（ドアの中心から線を引くため）
         startPosition.y += yOffset;
 
         // movePosはVector2なので、Z座標を0としてVector3に変換し、オフセットを加える
@@ -107,5 +107,15 @@ public class FrontDoor : MonoBehaviour
 
         // オブジェクトの座標からmovePosまで線を引く
         Gizmos.DrawLine(startPosition, endPosition);
+
+        // --- 移動先のポイント描画 ---
+
+        // 移動先に球体を描画 (半透明の緑)
+        Gizmos.color = new Color(0f, 1f, 0f, 0.4f);
+        Gizmos.DrawSphere(endPosition, 0.5f);
+
+        // 球体の枠線 (不透明の緑)
+        Gizmos.color = Color.green;
+        Gizmos.DrawWireSphere(endPosition, 0.5f);
     }
 }

@@ -11,6 +11,12 @@ public abstract class BaseItemData : ScriptableObject
 
     [TextArea]
     public string description;
+
+    /// <summary>
+    /// 派生クラスごとに異なるEnum型のID（HealItemName, KeyItemNameなど）を、
+    /// 型を問わず統一的に取得するための抽象メソッド。
+    /// </summary>
+    public abstract System.Enum GetItemID();
 }
 
 public enum ItemRank

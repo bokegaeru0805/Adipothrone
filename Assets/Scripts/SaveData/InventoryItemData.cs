@@ -37,7 +37,11 @@ public class InventoryItemData
         };
     public event Action OnItemCountChanged; //アイテムの所持数が変更されたときのイベント
 
-    // アイテムを追加
+    /// <summary>
+    /// アイテムを追加
+    /// </summary>
+    /// <param name="itemID">追加したいアイテムのID（Enum）</param>
+    /// <param name="amount">追加する数量</param>
     public void AddItem(Enum itemID, int amount = 1)
     {
         int itemIDNumber = EnumIDUtility.ToID(itemID);
@@ -63,10 +67,15 @@ public class InventoryItemData
         OnItemCountChanged?.Invoke();
     }
 
-    // アイテムを使用（削除を含む）
-    // アイテムの効果は別のクラスで実装することを想定
-    // 具体的には、PlayerManagerのUseHealItemメソッドなどで使用される
-    // ここでは所持数を減らすだけ
+    /// <summary>
+    /// アイテムを使用（削除を含む）
+    /// アイテムの効果は別のクラスで実装することを想定
+    /// 具体的には、PlayerManagerのUseHealItemメソッドなどで使用される
+    /// ここでは所持数を減らすだけ
+    /// </summary>
+    /// <param name="itemID">使用したいアイテムのID（Enum）</param>
+    /// <param name="amount">使用する数量</param>
+    /// <returns>使用に成功したかどうか</returns>
     public bool UseItem(Enum itemID, int amount = 1)
     {
         int itemIDNumber = EnumIDUtility.ToID(itemID);
@@ -83,7 +92,11 @@ public class InventoryItemData
         return false;
     }
 
-    // 所持数を取得
+    /// <summary>
+    /// 指定されたアイテムの所持数を取得します。
+    /// </summary>
+    /// <param name="itemID"> 取得したいアイテムのID（Enum）</param>
+    /// <returns>指定されたアイテムの所持数</returns>
     public int GetItemAmount(Enum itemID)
     {
         int itemIDNumber = EnumIDUtility.ToID(itemID);
@@ -91,7 +104,11 @@ public class InventoryItemData
         return entry?.count ?? 0;
     }
 
-    // 所持中の特定タイプのアイテムを順番付きで取得
+    /// <summary>
+    /// 指定されたタイプの全アイテムを取得します。
+    /// </summary>
+    /// <param name="type">取得したいアイテムのタイプ</param>
+    /// <returns>指定されたタイプの全アイテムのリスト</returns>
     public List<ItemEntry> GetAllItemByType(ItemType type)
     {
         // タイプに対応する桁番号を取得
@@ -100,7 +117,9 @@ public class InventoryItemData
         return ownedItems.Where(e => EnumIDUtility.ExtractTypeID(e.itemID) == typeDigit).ToList();
     }
 
-    // ID順に並び替え
+    /// <summary>
+    /// アイテムリストをID順にソートします。
+    /// </summary>
     public void SortByID()
     {
         ownedItems = ownedItems.OrderBy(e => e.itemID).ToList();
