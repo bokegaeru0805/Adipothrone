@@ -6,7 +6,7 @@ public static class GameConstants
     public static readonly Vector3 PLAYER_CAMERA_FOLLOW_OFFSET = new Vector3(0f, 4.5f, -10f);
     public const float CAMERA_FOLLOW_DAMPING_Y = 20f; // カメラのY軸追従ダンピング値
     public static readonly int PIXELS_PER_UNIT = 16;
-    public static readonly int MaxSaveLoadFiles = 12; // 最大セーブデータ数
+    public static readonly int MaxSaveLoadFiles = 20; // 最大セーブデータ数
     public const int AUTO_SAVE_FILE_NUMBER = 0; // オートセーブ用のファイル番号
     public const int MAX_AUTOSAVE_FOLDERS = 1; //オートセーブ用のフォルダの個数
     public const int NEW_GAME_FILE_NUMBER = 10000; // 新規ゲーム用のファイル番号
@@ -131,6 +131,7 @@ public static class GameConstants
     public const string MAIN_GLOBAL_VOLUME_TAG_NAME = "MainGlobalVolume"; // メインのGlobal Volumeのタグ名
     #endregion
     #region シーン名
+    // 追加したら、SceneChangeCommand.csのSceneType Enumも変更すること
     public const string SCENE_NAME_TITLE = "TitleScene"; // タイトルシーンの名前
     public const string SCENE_NAME_TUTORIAL_START = "TutorialStartScene"; // チュートリアルシーンの名前
     public const string SCENE_NAME_CHAPTER_1 = "Chapter1Scene"; // 第1章のシーン名

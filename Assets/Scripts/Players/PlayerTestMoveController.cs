@@ -1,5 +1,6 @@
 using NaughtyAttributes;
 using UnityEngine;
+using UnityEngine.Playables;
 #if UNITY_EDITOR
 using UnityEditor;
 #endif
@@ -22,6 +23,8 @@ public class PlayerTestMoveController : MonoBehaviour
     [Tooltip("1回に与えるダメージ量")]
     [SerializeField]
     private int damageAmount = 10;
+    [SerializeField]
+    private PlayableDirector director;
 
     [Space(100)]
     // Playモード停止機能のための設定項目
@@ -48,6 +51,12 @@ public class PlayerTestMoveController : MonoBehaviour
         mainCamera = Camera.main;
         // 連打カウントを初期化
         currentPressCount = 0;
+
+        if(director != null)
+        {
+            director.Play();
+            Debug.Log($"Timeline Started: {director.name}");
+        }
     }
 
     void Update()

@@ -218,7 +218,7 @@ public class GameManager : MonoBehaviour
             // ブロック内の最初のSayコマンドを探してテキストを設定
             foreach (Command command in TreasureBlock.CommandList)
             {
-                if (command is AddItem_Fungus addItemCommand)
+                if (command is AddItemCommand addItemCommand)
                 {
                     addItemCommand.SetItemData(itemData, itemAmount);
                     break; // 最初のSayを見つけたらループを抜ける

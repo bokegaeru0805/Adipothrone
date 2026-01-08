@@ -12,7 +12,7 @@ public class FieldEvent_Chapter2 : BaseFieldEvent
         // Chapter2StartField = 1, // 第二章開始フィールド
         VillageEntranceField = 2, // 村の入り口フィールド
         CoachmanField = 3, // 馬車の御者フィールド
-        OasisSourceField = 4, // オアシスの源泉フィールド
+        WaterSourceField = 4, // オアシスの源泉フィールド
     }
 
     protected override string EventName => fieldname.ToString();
@@ -49,11 +49,11 @@ public class FieldEvent_Chapter2 : BaseFieldEvent
                     FungusHelper.ExecuteBlock(targetFlowchart, "FirstMetCoachman");
                 }
                 break;
-            case FieldName.OasisSourceField:
+            case FieldName.WaterSourceField:
                 if (!flagManager.GetBoolFlag(Chapter2TriggeredEvent.OasisSpringBossDefeated))
                 {
                     isEventTriggered = true; // イベントがトリガーされたことを記録
-                    FungusHelper.ExecuteBlock(targetFlowchart, "OasisSpringBossDefeated");
+                    FungusHelper.ExecuteBlock(targetFlowchart, "FirstMetFill");
                 }
                 break;
         }

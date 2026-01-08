@@ -16,7 +16,8 @@ public class SEManager : MonoBehaviour
     private CriAtomAcbAsset seAcbAsset;
     public static SEManager instance { get; private set; }
     private CriAtomExPlayer sePlayer;
-    private const string SECategoryName = "SE"; // SEカテゴリのパラメータ名
+    private const string SE_CATEGORY_NAME = "SE"; // SEカテゴリのパラメータ名
+    public bool IsTimelineMuted { get; set; } = false; //Timeline操作中などにSEをミュートするためのフラグ
 
     private void Awake()
     {
@@ -57,6 +58,10 @@ public class SEManager : MonoBehaviour
     /// </summary>
     public void PlayEx(Enum cue, bool useVolume, float volume, bool usePitch, float pitch)
     {
+        // ミュート中は何もせず戻る
+        if (IsTimelineMuted)
+            return;
+
         string cueName = SeCueDatabase.GetCueName(cue);
         if (cueName == null)
             return;
@@ -124,6 +129,9 @@ public class SEManager : MonoBehaviour
     /// <param name="cue">再生したいSEのenum（例：SE_UI.Decision1）</param>
     public void Play(Enum cue)
     {
+        // ミュート中は何もせず戻る
+        if (IsTimelineMuted) return;
+
         // 辞書からキュー名（string）を取得
         string cueName = SeCueDatabase.GetCueName(cue);
         if (cueName == null)
@@ -276,7 +284,7 @@ public class SEManager : MonoBehaviour
     /// </summary>
     public void AdjustAllSEVolume(float ratio)
     {
-        CriAtom.SetCategoryVolume(SECategoryName, ratio);
+        CriAtom.SetCategoryVolume(SE_CATEGORY_NAME, ratio);
     }
 
     /// <summary>
@@ -284,6 +292,6 @@ public class SEManager : MonoBehaviour
     /// </summary>
     public float GetAllVolume()
     {
-        return CriAtom.GetCategoryVolume(SECategoryName);
+        return CriAtom.GetCategoryVolume(SE_CATEGORY_NAME);
     }
 }

@@ -12,7 +12,23 @@ public class FadeCanvas : MonoBehaviour
     [Tooltip("フェードに使用するImageコンポーネントを持つUI要素")]
     private Image fadeImage;
 
-    private Canvas canvas;
+    private Canvas canvas; // フェード用Canvasコンポーネント
+
+    /// <summary>
+    /// 現在のフェードのアルファ値（不透明度）を取得します。
+    /// Timelineのスキップ判定などで使用します。
+    /// </summary>
+    public float CurrentAlpha
+    {
+        get
+        {
+            if (fadeImage != null)
+            {
+                return fadeImage.color.a;
+            }
+            return 0f;
+        }
+    }
 
     private void Awake()
     {
@@ -81,7 +97,6 @@ public class FadeCanvas : MonoBehaviour
     /// /// </summary>
     public void SetAlpha(float alpha)
     {
-        
         if (fadeImage != null)
         {
             // 念のためDOTweenを止める（Timeline優先）

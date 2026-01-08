@@ -480,7 +480,7 @@ public class CameraMoveArea : MonoBehaviour
         // 2. Volume ProfileやConfinerの設定を適用
         ApplyAreaSettings();
 
-        // 3. 【修正】背景を表示し、カメラ位置に合わせる
+        // 3. 背景を表示し、カメラ位置に合わせる
         if (backGround != null)
         {
             backGround.SetActive(true);

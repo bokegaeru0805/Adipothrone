@@ -176,7 +176,7 @@ namespace MyGame.CameraControl
                 yield return null; // 1フレーム待ってCinemachineが位置を更新するのを待つ
 
                 float timeElapsed = 0f;
-                float timeOut = 1.0f; // 最大待機時間（秒）。これを超えたら強制的にループを抜ける
+                float timeOut = 0.5f; // 最大待機時間（秒）。これを超えたら強制的にループを抜ける
 
                 while (true) // ループ自体は常にtrueにし、中のbreakで抜ける
                 {
@@ -460,6 +460,8 @@ namespace MyGame.CameraControl
                 // Timeline操作中はBrainを無効化
                 brain.enabled = !isTimelineControlling;
             }
+
+            // Debug.Log($"[CameraManager] SetTimelineControlMode: {isTimelineControlling},Time:{Time.time}");
         }
 
         /// <summary>
@@ -474,6 +476,8 @@ namespace MyGame.CameraControl
             // Z座標は維持して移動
             Vector3 newPos = new Vector3(position.x, position.y, cam.transform.position.z);
             cam.transform.position = newPos;
+
+            // Debug.Log($"[CameraManager] SetCameraPosition to {newPos}, Time:{Time.time}");
         }
 
         #endregion

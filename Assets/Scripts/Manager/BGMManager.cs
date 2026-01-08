@@ -19,8 +19,8 @@ public class BGMManager : MonoBehaviour
     private CriAtomExPlayer player2;
     private CriAtomExPlayer currentPlayer; // 現在メインで再生しているプレイヤー
     private BGMCategory currentCategory = BGMCategory.None;
-    private const string duckingAisacName = "DuckingControl"; // ダッキング用のAISAC名
-    private const string BGMCategoryName = "BGM"; // BGMカテゴリのパラメータ名
+    private const string DUCKING_AISAC_NAME = "DuckingControl"; // ダッキング用のAISAC名
+    private const string BGM_CATEGORY_NAME = "BGM"; // BGMカテゴリのパラメータ名
     private float duckingLevel = 0.5f; // ダッキング時に下げる音量レベル (0.0 - 1.0)
     private Coroutine activeFadeCoroutine = null; // 現在実行中のフェードコルーチンを追跡するための変数
 
@@ -374,7 +374,7 @@ public class BGMManager : MonoBehaviour
     /// </summary>
     public void AdjustAllVolume(float ratio)
     {
-        CriAtom.SetCategoryVolume(BGMCategoryName, ratio);
+        CriAtom.SetCategoryVolume(BGM_CATEGORY_NAME, ratio);
     }
 
     /// <summary>
@@ -392,7 +392,7 @@ public class BGMManager : MonoBehaviour
     /// </summary>
     public float GetAllVolume()
     {
-        return CriAtom.GetCategoryVolume(BGMCategoryName);
+        return CriAtom.GetCategoryVolume(BGM_CATEGORY_NAME);
     }
 
     /// <summary>
@@ -412,7 +412,7 @@ public class BGMManager : MonoBehaviour
         float targetValue = isDucking ? duckingLevel : 0.0f;
 
         // AISACコントロールを設定してBGMの音量を変化させる
-        currentPlayer.SetAisacControl(duckingAisacName, targetValue);
+        currentPlayer.SetAisacControl(DUCKING_AISAC_NAME, targetValue);
         currentPlayer.UpdateAll(); // 変更を即座に反映
     }
 }
