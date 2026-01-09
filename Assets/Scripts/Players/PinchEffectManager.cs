@@ -25,12 +25,12 @@ public class PinchEffectManager : MonoBehaviour
     [SerializeField, Tooltip("脈動の速さ")]
     private float pulsationSpeed = 2.0f;
 
-
     // --- 内部で管理する変数 ---
     private PlayerManager playerManager;
     private Vignette vignette; // Volume内のVignetteプロファイルをキャッシュ
     private Coroutine pulsationCoroutine; // 実行中のコルーチンを保持
     private bool isEffectActive = false; // エフェクトが現在アクティブかどうかのフラグ
+    private bool isTalking = false; // 会話状態を保存するローカル変数
 
     private void Start()
     {
@@ -38,7 +38,9 @@ public class PinchEffectManager : MonoBehaviour
         playerManager = PlayerManager.instance;
         if (playerManager == null)
         {
-            Debug.LogError("PlayerManagerのインスタンスが見つかりません。このスクリプトは機能しません。");
+            Debug.LogError(
+                "PlayerManagerのインスタンスが見つかりません。このスクリプトは機能しません。"
+            );
             this.enabled = false; // スクリプトを無効化
             return;
         }
@@ -62,9 +64,12 @@ public class PinchEffectManager : MonoBehaviour
         // 初期状態ではエフェクトを非表示にする
         globalVolume.weight = 0f;
         isEffectActive = false;
+        isTalking = false;
 
         // PlayerManagerのHP変更イベントを購読
         playerManager.OnChangeHP += HandleHPChange;
+        // GameManagerの会話状態変更イベントを購読
+        GameManager.OnTalkingStateChanged += HandleTalkingStateChanged;
 
         // 初期HPで一度チェックを実行
         HandleHPChange(playerManager.GetPlayerIntStatus(PlayerStatusIntName.playerCurrentHP));
@@ -77,6 +82,8 @@ public class PinchEffectManager : MonoBehaviour
         {
             playerManager.OnChangeHP -= HandleHPChange;
         }
+
+        GameManager.OnTalkingStateChanged -= HandleTalkingStateChanged;
     }
 
     /// <summary>
@@ -86,18 +93,19 @@ public class PinchEffectManager : MonoBehaviour
     private void HandleHPChange(int currentHP)
     {
         // 最大HPが0の場合はゼロ除算を避ける
-        if (playerManager.playerMaxHP <= 0) return;
+        if (playerManager.playerMaxHP <= 0)
+            return;
 
         // 現在のHP割合を計算
         float healthRatio = (float)currentHP / playerManager.playerMaxHP;
 
-        // HPがしきい値を下回り、かつエフェクトが非アクティブな場合
-        if (healthRatio <= healthThreshold && !isEffectActive)
+        // HPがしきい値を下回り、かつエフェクトが非アクティブ、かつ会話中ではない場合
+        if (healthRatio <= healthThreshold && !isEffectActive && !isTalking)
         {
             StartPinchEffect();
         }
-        // HPがしきい値を上回り、かつエフェクトがアクティブな場合
-        else if (healthRatio > healthThreshold && isEffectActive)
+        // (HPがしきい値を上回った または 会話中になった) かつ エフェクトがアクティブな場合
+        else if ((healthRatio > healthThreshold || isTalking) && isEffectActive)
         {
             StopPinchEffect();
         }
@@ -156,6 +164,20 @@ public class PinchEffectManager : MonoBehaviour
 
             // 次のフレームまで待機
             yield return null;
+        }
+    }
+
+    /// <summary>
+    /// GameManagerから会話状態の変更通知を受け取る
+    /// </summary>
+    private void HandleTalkingStateChanged(bool talkState)
+    {
+        isTalking = talkState;
+
+        // 会話状態が変わったタイミングで、現在のHPを取得してエフェクトの状態を再評価する
+        if (playerManager != null)
+        {
+            HandleHPChange(playerManager.GetPlayerIntStatus(PlayerStatusIntName.playerCurrentHP));
         }
     }
 }

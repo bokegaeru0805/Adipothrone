@@ -1,4 +1,5 @@
 using System;
+using System.Collections; // コルーチンを使用するために必要
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
@@ -6,11 +7,12 @@ public class FastTravelManager : MonoBehaviour
 {
     [Header("ファストトラベルポイントのデータベース")]
     [SerializeField]
-    private FastTravelPointDataBase fastTravelPointDataBase; //ファストトラベルポイントのデータベース
+    private FastTravelPointDataBase fastTravelPointDataBase; // ファストトラベルポイントのデータベース
 
     [Header("デフォルトのファストトラベルポイントID")]
     [SerializeField]
     private FastTravelName defaultFastTravelPointID; // デフォルトのファストトラベルポイントID
+
     private bool shouldRunDeathFastTravelTutorial = false; // 死亡ファストトラベルチュートリアルを実行するかどうか
 
     private void Awake()
@@ -69,15 +71,14 @@ public class FastTravelManager : MonoBehaviour
             return;
         }
 
-        // 設計変更: シーンが異なる場合、または死亡リスポーン時（forceReload=true）は
+        // シーンが異なる場合、または死亡リスポーン時（forceReload=true）は
         // 敵やギミックの状態を確実に初期化するため、強制的にシーンロードを行う
-        if (sceneName != SceneManager.GetActiveScene().name || forceReload)
+        bool isSceneTransition = (sceneName != SceneManager.GetActiveScene().name) || forceReload;
+
+        if (isSceneTransition)
         {
-            // プレイヤーのスポーンポイントを設定
-            GameManager.instance.crossScenePlayerSpawnPoint =
-                selectedFastTravelPoint.targetPosition;
-            // シーンをロード
-            SceneManager.LoadScene(sceneName);
+            // ロード完了を待ってからフェードインするため、コルーチンを開始
+            StartCoroutine(LoadSceneAndFadeIn(sceneName, selectedFastTravelPoint.targetPosition));
         }
         else
         {
@@ -88,11 +89,48 @@ public class FastTravelManager : MonoBehaviour
                 DoorOpener.DoorType.None
             );
 
-            // もしリロードしない方針を貫くなら、ここで
-            // SceneManager.GetActiveScene().GetRootGameObjects() から
-            // IEnemyResettable を探して全リセットする処理が必要になります。
+            // シーン遷移がないため、即座に完了処理を実行
+            OnFastTravelComplete();
+        }
+    }
+
+    /// <summary>
+    /// シーンを非同期でロードし、完了を待機してからフェードインを行います。
+    /// </summary>
+    /// <param name="sceneName">ロードするシーン名</param>
+    /// <param name="targetPos">プレイヤーの移動先座標</param>
+    private IEnumerator LoadSceneAndFadeIn(string sceneName, Vector3 targetPos)
+    {
+        // 次のシーンでのプレイヤーのスポーンポイントを設定
+        GameManager.instance.crossScenePlayerSpawnPoint = targetPos;
+
+        // シーンの非同期ロードを開始
+        AsyncOperation asyncLoad = SceneManager.LoadSceneAsync(sceneName);
+
+        // ロードが完了するまで待機（暗転中の裏読み込み）
+        while (!asyncLoad.isDone)
+        {
+            yield return null;
         }
 
+        // ロード完了後、念のため1フレーム待機して初期化漏れを防ぐ
+        yield return null;
+
+        Debug.Log($"ファストトラベル先へ移動完了: {sceneName}");
+
+        // ロード完了を確認してからフェードインを開始
+        FadeCanvas.instance.FadeIn(1f / 60f);
+
+        // 移動完了後の共通処理（チュートリアル等）を実行
+        OnFastTravelComplete();
+    }
+
+    /// <summary>
+    /// ファストトラベル移動完了後に実行される共通処理。
+    /// チュートリアルの実行やクールダウンの設定を行います。
+    /// </summary>
+    private void OnFastTravelComplete()
+    {
         if (shouldRunDeathFastTravelTutorial)
         {
             FlagManager.instance.SetBoolFlag(TutorialEvent.DeathFastTravelTutorialComplete, true); // チュートリアル完了フラグを設定

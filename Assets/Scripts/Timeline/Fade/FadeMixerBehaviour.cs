@@ -27,32 +27,29 @@ public class FadeMixerBehaviour : PlayableBehaviour
             if (duration > 0)
                 progress = (float)(time / duration);
 
-            // ★修正点1: 進行度を確実に0～1にクランプ
+            // 進行度を確実に0～1にクランプ
             progress = Mathf.Clamp01(progress);
 
-            // ★修正点2: もしHold状態で時間がDurationを超えている、かつWeightが下がってきているなら
-            // Weightを強制的に1とみなして計算に参加させる（Ease Out事故防止）
-            if (progress >= 1.0f && inputWeight < 1.0f)
-            {
-                // ここで強制的にウェイトを戻すことで、EaseOutによる消失を防ぐ
-                // ただし、クロスフェード中は邪魔になる可能性があるので、
-                // 「単一クリップ」の時などに有効な安全策です。
-                inputWeight = 1.0f;
-            }
+            // ここにあった「Ease Out事故防止」の強制ウェイト変更処理を削除しました
+            // ウェイトの計算を歪めると、正規化（割り算）の計算がおかしくなります。
 
             float currentAlpha = Mathf.Lerp(input.startAlpha, input.endAlpha, progress);
 
-            if (inputWeight > 0f)
-            {
-                finalAlpha += currentAlpha * inputWeight;
-                totalWeight += inputWeight;
-            }
+            finalAlpha += currentAlpha * inputWeight;
+            totalWeight += inputWeight;
         }
 
-        // 正規化処理
-        if (totalWeight > 0f)
+        // 正規化処理（加重平均）
+        if (totalWeight > 0.001f) // 0除算防止
         {
             finalAlpha /= totalWeight;
+        }
+        else
+        {
+            // 何も再生されていない時は、最後に設定された値を維持するか、
+            // 明示的に0にするか等の仕様によりますが、ここでは影響を与えないようにします
+            // 必要であれば FadeCanvas.instance.GetAlpha() を使うなどしてください
+            return;
         }
 
         FadeCanvas.instance.SetAlpha(finalAlpha);

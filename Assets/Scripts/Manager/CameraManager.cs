@@ -223,7 +223,7 @@ namespace MyGame.CameraControl
         }
 
         /// <summary>
-        /// （コルーチン）Cinemachine Brainを一時的に無効化し、DOTweenを使用してカメラを指定のターゲット地点まで指定時間で移動させます。
+        /// Cinemachine Brainを一時的に無効化し、DOTweenを使用してカメラを指定のターゲット地点まで指定時間で移動させます。
         /// </summary>
         /// <param name="targetPoint">移動先の座標</param>
         /// <param name="reachTime">移動にかかる時間（秒）</param>

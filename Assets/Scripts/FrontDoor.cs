@@ -1,5 +1,3 @@
-using System.Collections.Generic;
-using System.Linq;
 using UnityEngine;
 
 public class FrontDoor : MonoBehaviour
@@ -9,16 +7,6 @@ public class FrontDoor : MonoBehaviour
 
     [SerializeField]
     private DoorOpener.DoorType doorType = DoorOpener.DoorType.None; //ドアの種類
-
-    [SerializeField]
-    private List<DoorSpriteData> doorSprites;
-
-    [System.Serializable]
-    public class DoorSpriteData
-    {
-        public DoorOpener.DoorType doorType;
-        public Sprite sprite;
-    }
 
     private void Awake()
     {
@@ -30,36 +18,6 @@ public class FrontDoor : MonoBehaviour
         if (doorType == DoorOpener.DoorType.None)
         {
             Debug.LogError($"{this.name}のdoorTypeが設定されていません");
-        }
-        else
-        {
-            // 現在のdoorTypeに対応するスプライトデータをリストから検索
-            DoorSpriteData foundSpriteData = doorSprites.FirstOrDefault(data =>
-                data.doorType == doorType
-            );
-
-            if (foundSpriteData != null)
-            {
-                // 対応するスプライトデータが見つかった場合、SpriteRendererに設定
-                SpriteRenderer spriteRenderer = this.GetComponent<SpriteRenderer>();
-                if (spriteRenderer != null)
-                {
-                    spriteRenderer.sprite = foundSpriteData.sprite;
-                }
-                else
-                {
-                    Debug.LogWarning(
-                        $"{this.name} に SpriteRenderer が見つかりません。スプライトを設定できませんでした。"
-                    );
-                }
-            }
-            else
-            {
-                // 対応するスプライトデータが見つからなかった場合
-                Debug.LogWarning(
-                    $"{this.name} に設定されたドアタイプ ({doorType}) に対応するスプライトが 'Door Sprites' リスト内に見つかりません。"
-                );
-            }
         }
     }
 
@@ -79,7 +37,6 @@ public class FrontDoor : MonoBehaviour
         }
     }
 
-    // Gizmosを描画するためのメソッド
     private void OnDrawGizmos()
     {
         // ギズモの色を設定

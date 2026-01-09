@@ -111,13 +111,12 @@ public class DesertTempleGolemMoveController : MonoBehaviour, IEnemyResettable
     private float shootRotationMultiplier = 200f;
 
     private float rayLength = 20.0f; //地面を探すレイの長さ
-    private float attackAnimationTime = 0.5f; // 攻撃アニメーションの時間
-    private bool rightFlag = false; // 右向きかどうか
+    private float attackAnimationTime = 0.5f; // 攻撃アニメーションの時間(秒)、デフォルト値。Awakeでアニメーションクリップから取得して上書きされる
+    private bool rightFlag = false;
     private SpriteRenderer spriteRenderer;
     private Rigidbody2D rbody;
     private Animator animator;
     private EnemyHealth enemyHP;
-    private ContactDamageController contactDamageController;
     private CriWare.Assets.CriAtomSePlayer sePlayer;
     private LayerMask groundLayer;
 
@@ -418,7 +417,15 @@ public class DesertTempleGolemMoveController : MonoBehaviour, IEnemyResettable
                 // ダメージ設定などがあればここで行う
                 var damageCtrl = shoots[i].GetComponent<ContactDamageController>();
                 if (damageCtrl != null)
+                {
                     damageCtrl.SetNormalDamage(damage);
+                }
+                else
+                {
+                    Debug.LogWarning(
+                        $"{this.name}の弾オブジェクトにContactDamageControllerが見つかりません。"
+                    );
+                }
             }
         }
 

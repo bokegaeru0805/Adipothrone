@@ -25,7 +25,7 @@ MonoBehaviour:
     m_Start: 0
     m_ClipIn: 0
     m_Asset: {fileID: -4928163624621962064}
-    m_Duration: 1
+    m_Duration: 0.5
     m_TimeScale: 1
     m_ParentTrack: {fileID: -9008780746670674103}
     m_EaseInDuration: 0
@@ -91,10 +91,10 @@ MonoBehaviour:
     m_PreExtrapolationTime: 0
     m_DisplayName: FadeClip
   - m_Version: 1
-    m_Start: 1.5
+    m_Start: 1
     m_ClipIn: 0
     m_Asset: {fileID: -7040360541017782241}
-    m_Duration: 1
+    m_Duration: 0.5
     m_TimeScale: 1
     m_ParentTrack: {fileID: -9008780746670674103}
     m_EaseInDuration: 0
@@ -283,10 +283,10 @@ MonoBehaviour:
   m_Children: []
   m_Clips:
   - m_Version: 1
-    m_Start: 1
+    m_Start: 0.5
     m_ClipIn: 0
     m_Asset: {fileID: 4532490955536641945}
-    m_Duration: 1.5
+    m_Duration: 1.2499999999999998
     m_TimeScale: 1
     m_ParentTrack: {fileID: -3231392186219773754}
     m_EaseInDuration: 0
@@ -349,7 +349,7 @@ MonoBehaviour:
     m_PostExtrapolationMode: 1
     m_PreExtrapolationMode: 0
     m_PostExtrapolationTime: Infinity
-    m_PreExtrapolationTime: 1
+    m_PreExtrapolationTime: 0.5
     m_DisplayName: CameraMoveClip
   m_Markers:
     m_Objects: []
@@ -535,10 +535,10 @@ MonoBehaviour:
   m_Children: []
   m_Clips:
   - m_Version: 1
-    m_Start: 1.05
+    m_Start: 0.5
     m_ClipIn: 0
     m_Asset: {fileID: -7000481128731247461}
-    m_Duration: 1.45
+    m_Duration: 1.25
     m_TimeScale: 1
     m_ParentTrack: {fileID: 3744336997213242715}
     m_EaseInDuration: 0
@@ -705,10 +705,10 @@ MonoBehaviour:
   m_Children: []
   m_Clips:
   - m_Version: 1
-    m_Start: 1.1
+    m_Start: 0.5
     m_ClipIn: 0
     m_Asset: {fileID: 6439484471621770760}
-    m_Duration: 1.4
+    m_Duration: 1.2499999999999996
     m_TimeScale: 1
     m_ParentTrack: {fileID: 7208929434979404566}
     m_EaseInDuration: 0

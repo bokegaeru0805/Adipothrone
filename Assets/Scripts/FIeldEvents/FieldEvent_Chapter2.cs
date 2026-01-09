@@ -39,6 +39,9 @@ public class FieldEvent_Chapter2 : BaseFieldEvent
                 {
                     flagManager.SetBoolFlag(Chapter2TriggeredEvent.FirstEnteredVillage, true);
                     isEventTriggered = true; // イベントがトリガーされたことを記録
+                    GameManager.instance.savedata.FastTravelData.RegisterFastTravelData(
+                        FastTravelName.DesertVillage
+                    ); // ファストトラベル地点を登録
                     FungusHelper.ExecuteBlock(targetFlowchart, "FirstEnteredVillage");
                 }
                 break;
@@ -50,7 +53,7 @@ public class FieldEvent_Chapter2 : BaseFieldEvent
                 }
                 break;
             case FieldName.WaterSourceField:
-                if (!flagManager.GetBoolFlag(Chapter2TriggeredEvent.OasisSpringBossDefeated))
+                if (!flagManager.GetBoolFlag(Chapter2TriggeredEvent.OasisSpringEnemiesDefeated))
                 {
                     isEventTriggered = true; // イベントがトリガーされたことを記録
                     FungusHelper.ExecuteBlock(targetFlowchart, "FirstMetFill");

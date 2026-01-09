@@ -148,8 +148,8 @@ public class TimelineSkipManager : MonoBehaviour
 
         // 2. 時間のジャンプ
         // 完全に duration にするとクリップの判定外(Weight=0)になることがあるため、
-        // ほんの少しだけ手前(0.01秒前)にする。
-        activeDirector.time = System.Math.Max(0, activeDirector.duration - 0.01);
+        // ほんの少しだけ手前(0.05秒前)にする。
+        activeDirector.time = System.Math.Max(0, activeDirector.duration - 0.05);
 
         // 3. 状態の確定 (Evaluate)
         // ここが重要：時間を飛ばしただけではオブジェクトの位置などが更新されないため、
@@ -201,23 +201,23 @@ public class TimelineSkipManager : MonoBehaviour
     // 本番環境ではInputSystemやUIボタンイベントから呼び出してください。
     private void Update()
     {
-        // Rキー長押しで早送り
-        if (Input.GetKeyDown(KeyCode.R))
+        // Zキー長押しで早送り
+        if (Input.GetKeyDown(KeyCode.Z))
         {
             SetFastForward(true);
-            Debug.Log("Fast Forward Started");
+            // Debug.Log("Fast Forward Started");
         }
-        if (Input.GetKeyUp(KeyCode.R))
+        if (Input.GetKeyUp(KeyCode.Z))
         {
             SetFastForward(false);
-            Debug.Log("Fast Forward Stopped");
+            //Debug.Log("Fast Forward Stopped");
         }
 
         // Tキーで全スキップ
         if (Input.GetKeyDown(KeyCode.T))
         {
             SkipActiveTimeline();
-            Debug.Log("Timeline Skipped");
+            // Debug.Log("Timeline Skipped");
         }
     }
 }

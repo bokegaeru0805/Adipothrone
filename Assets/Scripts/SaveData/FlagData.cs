@@ -130,7 +130,7 @@ public enum Chapter2TriggeredEvent
     Chapter2Start = 2001, // 第二章が始まった
     FirstEnteredVillage = 2002, // 初めて村に入った
     FirstMetCoachman = 2005, // 初めて御者に会った
-    OasisSpringBossDefeated = 2011, // オアシスの源泉ボスを撃破した
+    OasisSpringEnemiesDefeated = 2008, // オアシスの源泉の敵を全て倒した
 }
 
 /// <summary>

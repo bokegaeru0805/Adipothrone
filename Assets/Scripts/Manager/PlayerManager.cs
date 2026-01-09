@@ -19,10 +19,7 @@ public class PlayerManager : MonoBehaviour
 
     [SerializeField]
     private HealItemDatabase healItemDatabase;
-
-    [SerializeField]
-    private FastTravelManager fastTravelManager; // ファストトラベルマネージャー
-
+    private FastTravelManager fastTravelManager;
     private GameObject playerGameObject;
     private Heroin_move heroinMove;
     public int playerMaxHP { get; private set; } = GameConstants.GetMaxHP(1); // プレイヤーの最大HP
@@ -77,8 +74,6 @@ public class PlayerManager : MonoBehaviour
 
         if (healItemDatabase == null)
             Debug.LogError("HealItemDatabaseが設定されていません");
-        if (fastTravelManager == null)
-            Debug.LogError("FastTravelManagerが設定されていません");
 
         //Awakeの最後に、ソート順マップの初期化処理を追加
         InitializeItemSortOrderMap();
@@ -97,6 +92,12 @@ public class PlayerManager : MonoBehaviour
             {
                 heroinMove = playerGameObject.GetComponent<Heroin_move>();
             }
+        }
+
+        fastTravelManager = PersistentManagers.instance.GetComponentInChildren<FastTravelManager>();
+        if(fastTravelManager == null)
+        {
+            Debug.LogError("FastTravelManagerが見つかりません");
         }
 
         // シーン後の遷移先座標が設定されていれば移動
