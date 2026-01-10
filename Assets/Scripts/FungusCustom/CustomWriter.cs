@@ -1,12 +1,8 @@
 using System.Collections.Generic;
-using System.Threading.Tasks;
-using Fungus;
 using UnityEngine;
 
-// Fungusの名前空間内にクラスを定義するか、あるいはFungus.Writerと明記します
 namespace Fungus
 {
-    // Writerクラスを継承したCustomWriterクラスを作成
     public class CustomWriter : Writer
     {
         private Dictionary<MessageSpeed, float> speedToCharPerSecond = new Dictionary<
@@ -35,6 +31,17 @@ namespace Fungus
             }
 
             writingSpeed = speedToCharPerSecond[settings.messageSpeed]; // 1秒あたりの文字数を設定
+        }
+
+        
+        /// <summary>
+        /// メッセージの表示を強制的に進める
+        ///  Writerの内部フラグを操作して、クリックされたことにする
+        /// </summary>
+        public void ForceAdvance()
+        {
+            // Writerの内部フラグを操作して、クリックされたことにする
+            this.inputFlag = true;
         }
     }
 }

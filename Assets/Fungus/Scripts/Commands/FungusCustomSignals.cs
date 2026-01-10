@@ -17,6 +17,9 @@ namespace Fungus
         // Blockの種別を通知するためのイベント
         public static event Action<BlockType> OnTalkBlockStart;
 
+        // isSkippableを取得するためのイベント
+        public static event Action<bool> OnTalkBlockIsSkippable;
+
         /// <summary>
         /// Sayコマンドなどから呼び出し、立ち絵表示のリクエストを通知します。
         /// </summary>
@@ -39,6 +42,15 @@ namespace Fungus
         public static void DoTalkBlockStart(BlockType blockType)
         {
             OnTalkBlockStart?.Invoke(blockType);
+        }
+
+        /// <summary>
+        /// TalkStartコマンドなどから呼び出し、現在のブロックがスキップ可能かどうかを通知します。
+        /// </summary>
+        /// <param name="isSkippable"></param>
+        public static void DoTalkBlockIsSkippable(bool isSkippable)
+        {
+            OnTalkBlockIsSkippable?.Invoke(isSkippable);
         }
     }
 }

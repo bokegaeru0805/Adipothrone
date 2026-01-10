@@ -19,7 +19,7 @@ public class CutsceneHook : MonoBehaviour
             director.played += OnPlay;
             director.stopped += OnStop;
 
-            // 2. 【安全策】すでに再生中なら、手動で登録処理を走らせる
+            // 2. すでに再生中なら、手動で登録処理を走らせる
             // (Play On Awakeや、Disable/Enableでの復帰対策)
             if (director.state == PlayState.Playing)
             {

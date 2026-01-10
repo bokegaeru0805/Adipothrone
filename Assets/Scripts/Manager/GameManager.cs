@@ -167,6 +167,8 @@ public class GameManager : MonoBehaviour
 
         // 会話終了後に入力クールダウンを開始する
         TriggerJumpCooldown();
+
+        //Debug.Log("会話状態を終了しました");
     }
 
     /// <summary>

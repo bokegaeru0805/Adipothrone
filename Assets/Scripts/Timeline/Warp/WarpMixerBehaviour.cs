@@ -69,6 +69,8 @@ public class WarpMixerBehaviour : PlayableBehaviour
                     trackBinding.position = newPos; // エディタ編集用、または物理なし用
                 }
 
+                //Debug.Log($"[WarpMixerBehaviour] {trackBinding.name} moved to {newPos}");
+
                 // 1つのクリップが見つかったら、他のクリップは無視して終了
                 return;
             }

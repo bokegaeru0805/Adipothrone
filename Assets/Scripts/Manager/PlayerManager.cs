@@ -21,6 +21,20 @@ public class PlayerManager : MonoBehaviour
     private HealItemDatabase healItemDatabase;
     private FastTravelManager fastTravelManager;
     private GameObject playerGameObject;
+
+    /// <summary>
+    /// プレイヤーのGameObjectへの参照を取得します。
+    /// 最初のアクセス時にタグ検索で見つけてキャッシュします。
+    /// </summary>
+    public GameObject PlayerGameObject
+    {
+        get
+        {
+            if (playerGameObject == null)
+                playerGameObject = GameObject.FindGameObjectWithTag(GameConstants.PLAYER_TAG_NAME);
+            return playerGameObject;
+        }
+    }
     private Heroin_move heroinMove;
     public int playerMaxHP { get; private set; } = GameConstants.GetMaxHP(1); // プレイヤーの最大HP
     public int playerMaxWP { get; private set; } = GameConstants.GetMaxWP(1); // プレイヤーの最大WP
@@ -95,7 +109,7 @@ public class PlayerManager : MonoBehaviour
         }
 
         fastTravelManager = PersistentManagers.instance.GetComponentInChildren<FastTravelManager>();
-        if(fastTravelManager == null)
+        if (fastTravelManager == null)
         {
             Debug.LogError("FastTravelManagerが見つかりません");
         }
@@ -748,16 +762,52 @@ public class PlayerManager : MonoBehaviour
     #endregion
 
     #region Control Lock
-    // 強制移動などの開始
+    /// <summary>
+    /// 強制移動などの開始
+    /// </summary>
     public void LockControl()
     {
         isControlLocked = true;
     }
 
-    // 強制移動などの終了
+    /// <summary>
+    /// 強制移動などの終了
+    /// </summary>
     public void UnlockControl()
     {
         isControlLocked = false;
+    }
+
+    /// <summary>
+    /// プレイヤーの物理挙動（移動・ジャンプなど）を有効/無効に切り替えます。
+    /// Heroin_moveコンポーネントとRigidbody2DのisKinematicを操作します。
+    /// </summary>
+    /// <param name="isActive">trueで有効化、falseで無効化</param>
+    public void SetPlayerPhysicsActive(bool isActive)
+    {
+        // if (heroinMove != null)
+        // {
+        //     heroinMove.enabled = isActive;
+        // }
+        // else
+        // {
+        //     Debug.LogWarning("Heroin_moveコンポーネントが見つかりません。");
+        // }
+
+        var rb = PlayerGameObject?.GetComponent<Rigidbody2D>();
+        if (rb != null)
+        {
+            if (!isActive)
+            {
+                rb.isKinematic = true;
+                rb.velocity = Vector2.zero;
+            }
+            else
+            {
+                rb.isKinematic = false; // 必要なら元の状態を保存して復元するロジックにする
+                rb.velocity = Vector2.zero;
+            }
+        }
     }
     #endregion
 }

@@ -52,6 +52,10 @@ namespace Fungus
         [SerializeField]
         protected BlockType blockType = BlockType.Default;
 
+        [Tooltip("このブロック実行中にスキップ機能を許可するかどうか")]
+        [SerializeField]
+        protected bool isSkippable = true; // デフォルトは許可
+
         [FormerlySerializedAs("sequenceName")] // 以前のバージョンとの互換性のため、古い変数名("sequenceName")からでもデータを読み込めるようにする属性です。
         [Tooltip("Flowchartウィンドウに表示されるブロックの名前です。")]
         [SerializeField]
@@ -191,6 +195,14 @@ namespace Fungus
         public virtual BlockType TypeOfBlock
         {
             get { return blockType; }
+        }
+
+        /// <summary>
+        /// このブロックがスキップ可能かどうかを返します
+        /// </summary>
+        public virtual bool IsSkippable
+        {
+            get { return isSkippable; }
         }
 
         /// <summary>

@@ -173,10 +173,10 @@ namespace Fungus.EditorUtils
             // このブロックが現在選択されている場合にのみ、詳細設定を表示します。
             if (block == flowchart.SelectedBlock)
             {
-
                 // --- ブロックタイプの選択UI ---
                 EditorGUILayout.PropertyField(serializedObject.FindProperty("blockType"));
-                
+                EditorGUILayout.PropertyField(serializedObject.FindProperty("isSkippable"));
+
                 // ブロックのカスタムカラー設定
                 SerializedProperty useCustomTintProp = serializedObject.FindProperty(
                     "useCustomTint"

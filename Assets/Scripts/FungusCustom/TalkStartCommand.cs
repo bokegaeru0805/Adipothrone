@@ -61,7 +61,9 @@ public class TalkStartCommand : Command
         {
             parentBlockType = currentBlock.TypeOfBlock; // BlockTypeを取得
             FungusCustomSignals.DoTalkBlockStart(parentBlockType); // BlockTypeをHeroinPortraitControllerに通知する
-            if(parentBlockType == BlockType.Story)
+            FungusCustomSignals.DoTalkBlockIsSkippable(currentBlock.IsSkippable); // Blockのスキップ可能情報をFungusSkipControllerに通知する
+
+            if (parentBlockType == BlockType.Story)
             {
                 BGMManager.instance.SetDucking(true); // ストーリーブロックならBGMをダッキングする
             }
@@ -69,7 +71,9 @@ public class TalkStartCommand : Command
 
         // 2. 同じブロック内にある If, ElseIf, Else コマンドの合計数をLINQで数える
         int conditionalCommandCount = currentBlock.CommandList.Count(command =>
-            command is IfDialogueSeedCommand || command is ElseIfDialogueSeedCommand || command is Else
+            command is IfDialogueSeedCommand
+            || command is ElseIfDialogueSeedCommand
+            || command is Else
         );
 
         // 3. 条件分岐コマンドが1つ以上存在する場合のみ、乱数を生成して変数を設定

@@ -500,7 +500,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4c31d58d5bb04024fbe171efad747d3f, type: 3}
   m_Name: WarpClip
   m_EditorClassIdentifier: 
-  targetPosition: {x: 220, y: -99.9}
+  targetPosition: {x: 220, y: -100}
 --- !u!114 &2936391586795168955
 MonoBehaviour:
   m_ObjectHideFlags: 1

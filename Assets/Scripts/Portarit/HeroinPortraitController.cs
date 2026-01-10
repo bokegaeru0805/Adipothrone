@@ -341,6 +341,10 @@ public class HeroinPortraitController : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// 会話のBlockが開始されたときに呼ばれるハンドラ
+    /// </summary>
+    /// <param name="blockType">開始されたBlockの種類</param>
     private void HandleBlockStart(BlockType blockType)
     {
         //現在のBlockTypeを更新

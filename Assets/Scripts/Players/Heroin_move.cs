@@ -120,24 +120,14 @@ public class Heroin_move : MonoBehaviour
 
     private void Update()
     {
-#if UNITY_EDITOR
-        if (Input.GetKeyDown(KeyCode.LeftAlt))
-        {
-            // 再生/停止の切り替え
-            EditorApplication.isPaused = EditorApplication.isPaused ? false : true;
-        }
-        else if (Input.GetKeyDown(KeyCode.Period))
-        {
-            EditorApplication.Step(); // 1フレーム進める
-        }
-#endif
-
         if (inputManager == null)
         {
             return; // InputManagerがまだ初期化されていない場合は何もしない
         }
 
         vx = 0; //x方向の速度を初期化
+
+        //Debug.Log($"[Heroin_move] isTalking: {isTalking}, isDead: {isDead}", this); //デバッグ用ログ
 
         if (Time.timeScale > 0f && !isTalking && !isDead)
         {
@@ -195,7 +185,10 @@ public class Heroin_move : MonoBehaviour
                     sePlayer.Play(SE_PlayerAction.Bound2);
                     BoundIntervalTime = 0f;
                 }
-                else if (BoundIntervalTime >= 3.448f && BodyState == GameConstants.BODY_STATE_ARMED_1)
+                else if (
+                    BoundIntervalTime >= 3.448f
+                    && BodyState == GameConstants.BODY_STATE_ARMED_1
+                )
                 {
                     sePlayer.Play(SE_PlayerAction.GichiGichi1);
                     BoundIntervalTime = 0f;
