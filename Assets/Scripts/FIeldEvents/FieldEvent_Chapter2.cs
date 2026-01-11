@@ -13,6 +13,7 @@ public class FieldEvent_Chapter2 : BaseFieldEvent
         VillageEntranceField = 2, // 村の入り口フィールド
         CoachmanField = 3, // 馬車の御者フィールド
         WaterSourceField = 4, // オアシスの源泉フィールド
+        TempleEntranceField = 5, // 砂漠の神殿入口フィールド
     }
 
     protected override string EventName => fieldname.ToString();
@@ -51,12 +52,36 @@ public class FieldEvent_Chapter2 : BaseFieldEvent
                     flagManager.SetBoolFlag(Chapter2TriggeredEvent.FirstMetCoachman, true);
                     FungusHelper.ExecuteBlock(targetFlowchart, "FirstMetCoachman");
                 }
+                else if (
+                    flagManager.GetBoolFlag(Chapter2TriggeredEvent.OasisSpringEnemiesDefeated)
+                    && !flagManager.GetBoolFlag(
+                        Chapter2TriggeredEvent.ReportedCoachmanQuestComplete
+                    )
+                )
+                {
+                    flagManager.SetBoolFlag(
+                        Chapter2TriggeredEvent.ReportedCoachmanQuestComplete,
+                        true
+                    );
+                    FungusHelper.ExecuteBlock(targetFlowchart, "ReportCoachManQuestComplete");
+                }
+
                 break;
             case FieldName.WaterSourceField:
                 if (!flagManager.GetBoolFlag(Chapter2TriggeredEvent.OasisSpringEnemiesDefeated))
                 {
                     isEventTriggered = true; // イベントがトリガーされたことを記録
                     FungusHelper.ExecuteBlock(targetFlowchart, "FirstMetFill");
+                }
+                break;
+            case FieldName.TempleEntranceField:
+                if (
+                    flagManager.GetBoolFlag(Chapter2TriggeredEvent.ReportedCoachmanQuestComplete)
+                    && !flagManager.GetBoolFlag(Chapter2TriggeredEvent.FirstMetDesertTempleBoss)
+                )
+                {
+                    flagManager.SetBoolFlag(Chapter2TriggeredEvent.FirstMetDesertTempleBoss, true);
+                    FungusHelper.ExecuteBlock(targetFlowchart, "FirstMetDesertTempleBoss");
                 }
                 break;
         }

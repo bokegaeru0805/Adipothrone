@@ -8,11 +8,14 @@ public class FadeCanvas : MonoBehaviour
 {
     public static FadeCanvas instance;
 
+    [Header("Images")]
     [SerializeField]
-    [Tooltip("フェードに使用するImageコンポーネントを持つUI要素")]
+    [Tooltip("暗転用の黒画像 (Hierarchyの上の方＝奥に表示)")]
     private Image fadeImage;
 
-    private Canvas canvas; // フェード用Canvasコンポーネント
+    [SerializeField]
+    [Tooltip("発光用の白画像 (Hierarchyの下の方＝手前に表示)")]
+    private Image flashImage;
 
     /// <summary>
     /// 現在のフェードのアルファ値（不透明度）を取得します。
@@ -44,18 +47,30 @@ public class FadeCanvas : MonoBehaviour
             return;
         }
 
-        canvas = this.GetComponent<Canvas>();
-        if (fadeImage == null)
+        // --- 黒画像の初期化 ---
+        if (fadeImage != null)
         {
-            Debug.LogError("Fade ImageがInspectorから設定されていません。", this);
-            return;
+            fadeImage.color = new Color(0f, 0f, 0f, 0f);
+            fadeImage.gameObject.SetActive(false);
+        }
+        else
+        {
+            Debug.LogError("Fade Image (Black) が設定されていません。", this);
         }
 
-        // 初期状態を設定
-        fadeImage.color = new Color(0f, 0f, 0f, 0f);
-        fadeImage.gameObject.SetActive(false);
+        // --- 白画像の初期化 ---
+        if (flashImage != null)
+        {
+            flashImage.color = new Color(1f, 1f, 1f, 0f);
+            flashImage.gameObject.SetActive(false);
+        }
+        else
+        {
+            Debug.LogError("Flash Image (White) が設定されていません。", this);
+        }
     }
 
+    #region  Fade Image (Black) Methods
     /// <summary>
     /// 画面を暗転させます（フェードアウト）
     /// </summary>
@@ -109,4 +124,55 @@ public class FadeCanvas : MonoBehaviour
             fadeImage.gameObject.SetActive(alpha > 0);
         }
     }
+
+    #endregion
+
+    #region Flash Image (White) Methods
+
+    /// <summary>
+    /// 白フェードの透明度を直接設定します (Timeline用)
+    /// </summary>
+    public void SetFlashAlpha(float alpha)
+    {
+        if (flashImage != null)
+        {
+            flashImage.DOKill(); // Tweenが走っていたら止める
+            Color c = flashImage.color;
+            c.a = alpha;
+            flashImage.color = c;
+            flashImage.gameObject.SetActive(alpha > 0);
+        }
+    }
+
+    /// <summary>
+    /// 画面を白く飛ばします（フラッシュアウト）
+    /// </summary>
+    public void FlashOut(float duration)
+    {
+        if (flashImage == null)
+            return;
+        flashImage.gameObject.SetActive(true);
+        flashImage.DOKill();
+        flashImage.DOFade(1.0f, duration).SetUpdate(true);
+    }
+
+    /// <summary>
+    /// 白い画面から通常に戻ります（フラッシュイン）
+    /// </summary>
+    public void FlashIn(float duration)
+    {
+        if (flashImage == null)
+            return;
+        flashImage.gameObject.SetActive(true);
+        flashImage.DOKill();
+        flashImage
+            .DOFade(0.0f, duration)
+            .SetUpdate(true)
+            .OnComplete(() =>
+            {
+                flashImage.gameObject.SetActive(false);
+            });
+    }
+
+    #endregion
 }

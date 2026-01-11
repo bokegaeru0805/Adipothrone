@@ -30,6 +30,7 @@ public enum KeyID
 /// 3. SaveFlagData は型を問わずEnum→int変換で自動対応するため、追加は不要
 /// 4. FlagConditionDrawerPro.cs の boolEnumTypes / intEnumTypes に新しいEnum型を追加
 /// 5. FungusSetGameBoolFlag.cs の FlagCategory enum と各章のフラグ変数を追加
+/// 6. Timeline/BoolFlagフォルダ内の各スクリプトに新しいEnum型とフラグ変数を追加
 
 
 /// <summary>
@@ -131,6 +132,9 @@ public enum Chapter2TriggeredEvent
     FirstEnteredVillage = 2002, // 初めて村に入った
     FirstMetCoachman = 2005, // 初めて御者に会った
     OasisSpringEnemiesDefeated = 2008, // オアシスの源泉の敵を全て倒した
+    ReportedCoachmanQuestComplete = 2011, // 御者にクエスト完了の報告をした
+    FirstMetDesertTempleBoss = 2015, // 砂漠の神殿のボスと初めて会った
+    OasisDriedUpByDesertTempleBoss = 2016, // 砂漠の神殿のボスによってオアシスが干上がった
 }
 
 /// <summary>

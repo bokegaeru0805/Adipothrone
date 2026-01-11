@@ -461,7 +461,7 @@ namespace MyGame.CameraControl
                 brain.enabled = !isTimelineControlling;
             }
 
-            // Debug.Log($"[CameraManager] SetTimelineControlMode: {isTimelineControlling},Time:{Time.time}");
+            //Debug.Log($"[CameraManager] SetTimelineControlMode: {isTimelineControlling},Time:{Time.time}");
         }
 
         /// <summary>

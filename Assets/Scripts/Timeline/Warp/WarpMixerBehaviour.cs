@@ -79,15 +79,19 @@ public class WarpMixerBehaviour : PlayableBehaviour
 
     public override void OnGraphStop(Playable playable)
     {
+
+        // 以下の機能はコメントアウトしました。
+        // Control Trackの仕様上、Timeline再生終了時に元の位置に戻ってしまうためです。
+
         // エディタでのプレビュー中（非再生中）のみ、位置を元に戻す
         // これにより、ゲーム中は「移動しっぱなし」になり、Timeline終了後もその場に留まることができます。
-        if (!Application.isPlaying)
-        {
-            if (hasCapturedInitialPosition && trackBinding != null)
-            {
-                trackBinding.position = initialPosition;
-            }
-        }
+        // if (!Application.isPlaying)
+        // {
+        //     if (hasCapturedInitialPosition && trackBinding != null)
+        //     {
+        //         trackBinding.position = initialPosition;
+        //     }
+        // }
 
         // ゲーム中（Application.isPlaying == true）は何もしない＝Warp先に留まる
 

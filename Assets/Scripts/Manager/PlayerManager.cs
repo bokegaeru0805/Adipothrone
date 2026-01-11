@@ -808,6 +808,8 @@ public class PlayerManager : MonoBehaviour
                 rb.velocity = Vector2.zero;
             }
         }
+
+        // Debug.Log("SetPlayerPhysicsActive: " + isActive);
     }
     #endregion
 }

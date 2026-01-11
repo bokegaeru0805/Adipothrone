@@ -559,10 +559,10 @@ public class Heroin_move : MonoBehaviour
         playerEffectManager.OnSpeedEffectChanged += CalculateMoveSpeed;
         playerBodyManager.OnChangeBodyState += GetBodyStateData;
         GameManager.OnTalkingStateChanged += HandleTalkingStateChanged;
-        SaveLoadManager.OnLoadingStateChanged += InitializeStateData;
+        SaveLoadManager.OnLoadingStateChanged += HandleLoadingStateChanged;
 
         // 初期状態の設定
-        InitializeStateData();
+        HandleLoadingStateChanged(false); // ロード完了時の初期化処理を実行
 
         // その他の初期化
         _spriteRenderer.flipX = true; // 初期状態では右向き
@@ -594,7 +594,7 @@ public class Heroin_move : MonoBehaviour
             playerBodyManager.OnChangeBodyState -= GetBodyStateData;
 
         GameManager.OnTalkingStateChanged -= HandleTalkingStateChanged;
-        SaveLoadManager.OnLoadingStateChanged -= InitializeStateData;
+        SaveLoadManager.OnLoadingStateChanged -= HandleLoadingStateChanged;
 
         // その他のリセット処理
         move = true; // 操作可能状態に戻す
@@ -629,17 +629,21 @@ public class Heroin_move : MonoBehaviour
     /// <summary>
     /// 初期状態のデータを設定する
     /// </summary>
-    private void InitializeStateData(bool _bool = false)
+    private void HandleLoadingStateChanged(bool isLoading)
     {
-        GetBodyStateData();
-        CalculateMoveSpeed();
+        // ロードが完了した(falseになった)タイミングで、データが最新になっているため初期化を実行
+        if (!isLoading)
+        {
+            GetBodyStateData();
+            CalculateMoveSpeed();
 
-        GetBodyStateData();
-        CalculateMoveSpeed();
-        OnAnyBoolStatusChanged(
-            PlayerStatusBoolName.isRobotmove,
-            playerManager.GetPlayerBoolStatus(PlayerStatusBoolName.isRobotmove)
-        );
+            GetBodyStateData();
+            CalculateMoveSpeed();
+            OnAnyBoolStatusChanged(
+                PlayerStatusBoolName.isRobotmove,
+                playerManager.GetPlayerBoolStatus(PlayerStatusBoolName.isRobotmove)
+            );
+        }
     }
 
     /// <summary>

@@ -132,6 +132,8 @@ public class FlagDrivenStatePro : MonoBehaviour
     /// </summary>
     private void EvaluateAndApplyState()
     {
+        //Debug.Log("[FlagDrivenStatePro] Evaluating state based on flags.", this);
+
         // 条件リストを上から（＝優先度が高いものから）順にチェックします。
         foreach (var condition in stateConditions)
         {
@@ -165,6 +167,10 @@ public class FlagDrivenStatePro : MonoBehaviour
         if (state.changeSprite && targetSpriteRenderer != null)
         {
             targetSpriteRenderer.sprite = state.sprite;
+            Debug.Log(
+                $"[FlagDrivenStatePro] Changed sprite of '{targetObject.name}' to '{state.sprite.name}'.",
+                targetObject
+            );
         }
 
         // 【位置の変更】ロジック

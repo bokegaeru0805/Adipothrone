@@ -1,57 +1,71 @@
 using UnityEngine;
 using UnityEngine.Playables;
 
-// 複数のクリップを混ぜ合わせて計算するクラス
 public class FadeMixerBehaviour : PlayableBehaviour
 {
     public override void ProcessFrame(Playable playable, FrameData info, object playerData)
     {
-        if (FadeCanvas.instance == null)
-            return;
+        if (FadeCanvas.instance == null) return;
 
         int inputCount = playable.GetInputCount();
-        float finalAlpha = 0f;
-        float totalWeight = 0f;
+
+        float totalBlackAlpha = 0f;
+        float totalWhiteAlpha = 0f;
 
         for (int i = 0; i < inputCount; i++)
         {
             float inputWeight = playable.GetInputWeight(i);
-            var inputPlayable = (ScriptPlayable<FadePlayableBehaviour>)playable.GetInput(i);
-            FadePlayableBehaviour input = inputPlayable.GetBehaviour();
+            
+            // ウェイトが0より大きいクリップのみ計算
+            if (inputWeight > 0f)
+            {
+                var inputPlayable = (ScriptPlayable<FadePlayableBehaviour>)playable.GetInput(i);
+                var input = inputPlayable.GetBehaviour();
 
-            double time = inputPlayable.GetTime();
-            double duration = inputPlayable.GetDuration();
+                // クリップごとのアルファ値 = ウェイト * 設定最大値
+                float alpha = inputWeight * input.targetAlpha;
 
-            // 進行度計算
-            float progress = 0f;
-            if (duration > 0)
-                progress = (float)(time / duration);
-
-            // 進行度を確実に0～1にクランプ
-            progress = Mathf.Clamp01(progress);
-
-            // ここにあった「Ease Out事故防止」の強制ウェイト変更処理を削除しました
-            // ウェイトの計算を歪めると、正規化（割り算）の計算がおかしくなります。
-
-            float currentAlpha = Mathf.Lerp(input.startAlpha, input.endAlpha, progress);
-
-            finalAlpha += currentAlpha * inputWeight;
-            totalWeight += inputWeight;
+                if (input.colorType == FadeClip.FadeColorType.Black)
+                {
+                    // 黒フェードは最大値を採用するか加算するか選べますが、
+                    // フェードの重ね合わせを考慮して「一番濃い値を採用」または「加算」します。
+                    // ここでは加算し、1.0でキャップします。
+                    totalBlackAlpha += alpha;
+                }
+                else
+                {
+                    totalWhiteAlpha += alpha;
+                }
+            }
         }
 
-        // 正規化処理（加重平均）
-        if (totalWeight > 0.001f) // 0除算防止
+        // --- 適用 ---
+        
+        // 1.0を超えないようにクランプ
+        totalBlackAlpha = Mathf.Clamp01(totalBlackAlpha);
+        totalWhiteAlpha = Mathf.Clamp01(totalWhiteAlpha);
+
+        // FadeCanvasにそれぞれの値を送る
+        FadeCanvas.instance.SetAlpha(totalBlackAlpha);
+        FadeCanvas.instance.SetFlashAlpha(totalWhiteAlpha);
+    }
+
+    public override void OnGraphStop(Playable playable)
+    {
+        // Timeline終了時はフェードを解除（安全策）
+        if (FadeCanvas.instance != null)
         {
-            finalAlpha /= totalWeight;
+            // ここで0に戻すかどうかは仕様次第ですが、
+            // 演出として「黒いまま終わる」こともあるので、
+            // 強制解除はせず、Timelineの設定（Extrapolation: Holdなど）に委ねるのが基本です。
+            
+            // ただし、エディタでのプレビュー終了時に画面が真っ暗なままにならないように
+            // アプリケーション再生中でなければリセットする手もあります。
+            if (!Application.isPlaying)
+            {
+                FadeCanvas.instance.SetAlpha(0f);
+                FadeCanvas.instance.SetFlashAlpha(0f);
+            }
         }
-        else
-        {
-            // 何も再生されていない時は、最後に設定された値を維持するか、
-            // 明示的に0にするか等の仕様によりますが、ここでは影響を与えないようにします
-            // 必要であれば FadeCanvas.instance.GetAlpha() を使うなどしてください
-            return;
-        }
-
-        FadeCanvas.instance.SetAlpha(finalAlpha);
     }
 }
