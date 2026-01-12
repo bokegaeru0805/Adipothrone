@@ -356,36 +356,42 @@ public class CameraMoveArea : MonoBehaviour
     /// </summary>
     private IEnumerator MoveBackgroundWithCamera()
     {
-        while (isPlayerInArea)
+        // ★修正: ループ条件を変更
+        // 「プレイヤーがいる」または「自分がアクティブなエリアである（Timelineでの指定含む）」間は回し続ける
+        while (isPlayerInArea || activeArea == this)
         {
             if (backGround != null)
             {
-                // 背景が非アクティブならアクティブにする
                 if (!backGround.activeSelf)
-                {
                     backGround.SetActive(true);
-                }
 
-                // カメラの位置情報を取得し、背景の位置を更新
                 Vector3 cameraPosition = Camera.main.transform.position;
                 Vector3 playerPosition =
                     (playerTransform != null) ? playerTransform.position : Vector3.zero;
 
-                // カメラの追従が有効な場合
-                if (Camera.main.GetComponent<CinemachineBrain>().enabled)
+                // ★修正: 背景追従ロジックの判定
+                // 1. Brainが無効（手動Tween中など）
+                // 2. または、Timeline制御モード中（Brain有効だがダミー追従中）
+                // これらいずれかの場合は、プレイヤーではなく「カメラ座標」を直接追う
+
+                bool isBrainEnabled = Camera.main.GetComponent<CinemachineBrain>().enabled;
+                bool isTimelineMode = (
+                    CameraManager.instance != null && CameraManager.instance.IsTimelineControlMode
+                );
+
+                // 「Brainが有効」かつ「通常プレイ（非Timeline）」の時だけ、プレイヤー位置基準で計算する
+                if (isBrainEnabled && !isTimelineMode)
                 {
-                    // カメラの境界情報を取得
+                    // --- 既存のロジック（プレイヤー追従 & 端っこ補正） ---
                     string cameraAtEdge = Camera
                         .main.GetComponent<CameraBoundaryChecker>()
                         .CameraAtEdge;
 
                     if (playerTransform != null)
                     {
-                        // プレイヤーのy座標をカメラオフセットで調整
                         Vector3 adjustedPlayerPos = playerPosition;
                         adjustedPlayerPos.y += cameraOffsetY;
 
-                        // カメラが境界に達しているかチェックし、背景の移動を調整
                         if (cameraAtEdge == "left")
                         {
                             adjustedPlayerPos.x = areaCollider.bounds.min.x + cameraHalfWidth;
@@ -395,23 +401,23 @@ public class CameraMoveArea : MonoBehaviour
                             adjustedPlayerPos.x = areaCollider.bounds.max.x - cameraHalfWidth;
                         }
 
-                        // 背景のx座標をプレイヤーの位置に設定
                         backGround.transform.position = new Vector2(
                             adjustedPlayerPos.x,
                             backGround.transform.position.y
                         );
                     }
                 }
-                else // カメラの追従が無効な場合（手動カメラ移動など）
+                else
                 {
-                    // 単純にカメラのx座標に背景を追従させる
+                    // --- Timeline中 または Brain無効時 ---
+                    // カメラのX座標にそのまま追従させる（Timelineでカメラが遠くに行ってもついていく）
                     backGround.transform.position = new Vector2(
                         cameraPosition.x,
                         backGround.transform.position.y
                     );
                 }
             }
-            yield return null; // 1フレーム待機
+            yield return null;
         }
 
         backgroundMoveCoroutine = null;
@@ -485,10 +491,11 @@ public class CameraMoveArea : MonoBehaviour
         {
             backGround.SetActive(true);
 
-            // カメラのX座標に合わせて背景を移動（Yは背景の元の位置を維持）
-            // これをやらないと、背景が遠く離れた場所に表示されてしまう可能性があります
-            float camX = Camera.main.transform.position.x;
-            backGround.transform.position = new Vector2(camX, backGround.transform.position.y);
+            // 背景移動コルーチンが動いていなければ開始させる
+            if (backgroundMoveCoroutine == null)
+            {
+                backgroundMoveCoroutine = StartCoroutine(MoveBackgroundWithCamera());
+            }
         }
 
         // Debug.Log("CameraMoveArea: Timelineからエリアをアクティブ化しました。", this);

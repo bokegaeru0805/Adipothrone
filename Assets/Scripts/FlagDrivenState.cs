@@ -167,10 +167,10 @@ public class FlagDrivenStatePro : MonoBehaviour
         if (state.changeSprite && targetSpriteRenderer != null)
         {
             targetSpriteRenderer.sprite = state.sprite;
-            Debug.Log(
-                $"[FlagDrivenStatePro] Changed sprite of '{targetObject.name}' to '{state.sprite.name}'.",
-                targetObject
-            );
+            // Debug.Log(
+            //     $"[FlagDrivenStatePro] Changed sprite of '{targetObject.name}' to '{state.sprite.name}'.",
+            //     targetObject
+            // );
         }
 
         // 【位置の変更】ロジック

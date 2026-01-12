@@ -36,6 +36,15 @@ namespace MyGame.CameraControl
         private Coroutine shakeCoroutine = null; // 実行中のシェイクコルーチンを管理
         private Coroutine dampingResetCoroutine = null; // 実行中のダンピングリセットコルーチンを管理するための変数
         private bool isPriorityShakeActive = false; // 優先度の高い（カスタム）シェイクが実行中かどうかを示すフラグ
+        public bool IsTimelineControlMode { get; private set; } = false; // 外部からTimelineモードかを確認するためのプロパティ
+
+        // --- タイムライン制御用変数 ---
+        private float timelineAmplitude = 0f;
+        private float timelineFrequency = 0f;
+        private GameObject timelineTargetObject; // Timeline追従用のダミーオブジェクト
+        private Transform originalFollowTarget; // 元の追尾対象（プレイヤー等）
+        private float originalXDamping; // 元のDamping設定保存用
+        private float originalYDamping; // 元のDamping設定保存用
         private bool isDebugScene = false; // 開発用フラグ：デバッグシーンかどうか
 
         private void Awake()
@@ -91,6 +100,9 @@ namespace MyGame.CameraControl
                     virtualCamera.enabled = false;
                     // Virtual Cameraを初期状態では無効化
                     //CameraBoundaryCheckerで有効化される
+
+                    timelineTargetObject = new GameObject("TimelineCameraTarget");
+                    timelineTargetObject.transform.SetParent(this.transform);
 
 #if UNITY_EDITOR
                     if (isDebugScene)
@@ -446,40 +458,114 @@ namespace MyGame.CameraControl
         #region Timeline Control
         /// <summary>
         /// Timelineによるカメラ制御モードを設定します。
-        /// Timeline操作中はCinemachine Brainを無効化し、Timeline外では有効化します。
+        /// Brainは切らず、Followターゲットをダミーに差し替えることで制御権を奪います。
         /// </summary>
-        /// <param name="isTimelineControlling"></param>
         public void SetTimelineControlMode(bool isTimelineControlling)
         {
-            if (cam == null)
+            if (virtualCamera == null || framing == null || timelineTargetObject == null)
                 return;
 
-            var brain = cam.GetComponent<CinemachineBrain>();
-            if (brain != null)
+            IsTimelineControlMode = isTimelineControlling; // 外部から確認できるようにプロパティにセット
+
+            if (isTimelineControlling)
             {
-                // Timeline操作中はBrainを無効化
-                brain.enabled = !isTimelineControlling;
+                // まだTimelineモードでなければ（初回突入時）、現在の設定を保存して切り替え
+                if (virtualCamera.Follow != timelineTargetObject.transform)
+                {
+                    // 1. 現在の状態を保存
+                    originalFollowTarget = virtualCamera.Follow;
+                    originalXDamping = framing.m_XDamping;
+                    originalYDamping = framing.m_YDamping;
+
+                    // 2. ダミーを現在のカメラ位置（またはターゲット位置）に同期させる
+                    // ※カメラ位置に合わせるのが一番ズレない
+                    Vector3 currentPos = cam.transform.position;
+                    currentPos.z = GameConstants.PLAYER_CAMERA_FOLLOW_OFFSET.z; // Zは規定値に戻す
+                    timelineTargetObject.transform.position = currentPos;
+
+                    // 3. 追尾対象をダミーに変更
+                    virtualCamera.Follow = timelineTargetObject.transform;
+
+                    // 4. Timelineの動きに即座に反応させるため、Damping（遅延）をゼロにする
+                    framing.m_XDamping = 0f;
+                    framing.m_YDamping = 0f;
+                }
+            }
+            else
+            {
+                // Timelineモード終了。元に戻す
+                if (originalFollowTarget != null)
+                {
+                    virtualCamera.Follow = originalFollowTarget;
+                }
+
+                // Dampingを復元
+                framing.m_XDamping = originalXDamping;
+                framing.m_YDamping = originalYDamping;
             }
 
-            //Debug.Log($"[CameraManager] SetTimelineControlMode: {isTimelineControlling},Time:{Time.time}");
+            // Debug.Log($"[CameraManager] TimelineMode: {isTimelineControlling}");
         }
 
         /// <summary>
-        /// カメラの位置を指定の座標に移動させます。
+        /// カメラ（の追尾対象）を指定の座標に移動させます。
         /// </summary>
-        /// <param name="position"></param>
         public void SetCameraPosition(Vector2 position)
         {
-            if (cam == null)
+            if (timelineTargetObject == null)
                 return;
 
-            // Z座標は維持して移動
-            Vector3 newPos = new Vector3(position.x, position.y, cam.transform.position.z);
-            cam.transform.position = newPos;
-
-            // Debug.Log($"[CameraManager] SetCameraPosition to {newPos}, Time:{Time.time}");
+            // ダミーオブジェクトを移動させる
+            // Cinemachineがこれを追うので、カメラも動く
+            Vector3 newPos = new Vector3(
+                position.x,
+                position.y,
+                timelineTargetObject.transform.position.z
+            );
+            timelineTargetObject.transform.position = newPos;
         }
 
+        /// <summary>
+        /// Timelineからの振動指示
+        /// Brainが生きているので、単純にパラメータをセットするだけでOK
+        /// </summary>
+        public void SetTimelineShake(float amplitude, float frequency)
+        {
+            timelineAmplitude = amplitude;
+            timelineFrequency = frequency;
+            ApplyShake();
+        }
+
+        /// <summary>
+        /// Timelineからの振動指示を適用します。
+        /// </summary>
+        private void ApplyShake()
+        {
+            if (perlinNoise == null)
+                return;
+
+            // Timelineの指定があれば適用
+            if (timelineAmplitude > 0.001f)
+            {
+                perlinNoise.m_AmplitudeGain = timelineAmplitude;
+                perlinNoise.m_FrequencyGain = timelineFrequency;
+
+                // プロファイルがなければセット
+                if (perlinNoise.m_NoiseProfile == null && takeHitNoiseSettings != null)
+                {
+                    perlinNoise.m_NoiseProfile = takeHitNoiseSettings;
+                }
+            }
+            else
+            {
+                // Timeline指定なし、かつヒットシェイクもなければ0にする
+                if (shakeCoroutine == null && !isPriorityShakeActive)
+                {
+                    perlinNoise.m_AmplitudeGain = 0f;
+                    perlinNoise.m_FrequencyGain = 0f;
+                }
+            }
+        }
         #endregion
     }
 }

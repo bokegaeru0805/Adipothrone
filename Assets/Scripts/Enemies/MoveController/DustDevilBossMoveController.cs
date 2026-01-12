@@ -1,3 +1,4 @@
+using DG.Tweening;
 using UnityEngine;
 
 [RequireComponent(typeof(CriWare.Assets.CriAtomSePlayer))]
@@ -86,6 +87,10 @@ public class DustDevilBossMoveController : MonoBehaviour, IEnemyResettable
     [SerializeField]
     private float targetHeightFromGround = 0.0f;
 
+    [Tooltip("SpiralWindEffectを持つ子オブジェクト")]
+    [SerializeField]
+    private GameObject spiralWindEffectObject;
+
     // --- 内部変数 ---
     private float currentVx = 0; // 現在の移動速度Xを保持
     private float maxCheckDistance = 20.0f; // 地面を探す最大距離
@@ -170,6 +175,9 @@ public class DustDevilBossMoveController : MonoBehaviour, IEnemyResettable
         stateTimer = 0f;
 
         currentState = DustDevilBossState.Idle;
+
+        // 初期状態は不透明（Alpha 1）で表示
+        ControlSpiralEffectFade(1f, 0f);
     }
 
     /// <summary>
@@ -245,6 +253,10 @@ public class DustDevilBossMoveController : MonoBehaviour, IEnemyResettable
                     currentState = DustDevilBossState.Idle;
                     _rbody.velocity = new Vector2(currentVx, 0); // 移動再開
                     _animator.SetTrigger("IdleTrigger");
+
+                    // 移動再開時にフェードインで戻す (0.5秒かけて表示)
+                    ControlSpiralEffectFade(1f, 0.5f);
+
                     ResetCloseAttackTimer(); // クールダウン開始
                 }
                 break;
@@ -295,6 +307,13 @@ public class DustDevilBossMoveController : MonoBehaviour, IEnemyResettable
                 _animator.SetTrigger("ChargeTrigger");
                 _rbody.velocity = Vector2.zero; // 停止
                 stateTimer = 0f;
+
+                // 攻撃準備（チャージ）に入ったらエフェクトを消す（もし必要なら）
+                // ※ ここで消すか、攻撃実行時(ExecuteCloseRangeAttack)で消すかは演出次第ですが、
+                // 今回は「近距離攻撃中」に消すという要望と解釈して、攻撃実行時に消します。
+                // もしチャージ中も消したい場合はここに記述してください。
+                //攻撃準備時間(closeAttackPreWaitTime)をかけてフェードアウトさせる
+                ControlSpiralEffectFade(0f, closeAttackPreWaitTime);
             }
         }
 
@@ -463,6 +482,35 @@ public class DustDevilBossMoveController : MonoBehaviour, IEnemyResettable
         {
             Debug.LogError($"{DUST_DEVIL_POOL_TAG}の取得に失敗しました。");
         }
+    }
+
+    /// <summary>
+    /// SpiralWindEffectの透明度をDoTweenで制御するヘルパーメソッド
+    /// </summary>
+    /// <param name="targetAlpha">目標の透明度 (0~1)</param>
+    /// <param name="duration">変化にかかる時間</param>
+    private void ControlSpiralEffectFade(float targetAlpha, float duration)
+    {
+        if (spiralWindEffectObject == null)
+            return;
+
+        // フェードインしようとしているなら、まずはActiveにする
+        if (targetAlpha > 0f)
+        {
+            spiralWindEffectObject.SetActive(true);
+        }
+
+        // 子オブジェクトに含まれる全てのSpriteRendererを取得してフェード
+        var renderers = spiralWindEffectObject.GetComponentsInChildren<SpriteRenderer>();
+        foreach (var sr in renderers)
+        {
+            sr.DOKill(); // 重複動作を防ぐためTweenをリセット
+            sr.DOFade(targetAlpha, duration).SetUpdate(false); // TimeScaleの影響を受けるように
+        }
+
+        // 完全に消える(0f)設定で、かつ時間が経過した後ならSetActive(false)にしても良いが、
+        // アニメーションループを維持したい場合はActiveのままAlpha0にするのが安全。
+        // ここではAlpha操作のみ行います。
     }
 
     /// <summary>
