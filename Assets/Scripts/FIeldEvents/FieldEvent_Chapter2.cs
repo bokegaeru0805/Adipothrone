@@ -14,6 +14,7 @@ public class FieldEvent_Chapter2 : BaseFieldEvent
         CoachmanField = 3, // 馬車の御者フィールド
         WaterSourceField = 4, // オアシスの源泉フィールド
         TempleEntranceField = 5, // 砂漠の神殿入口フィールド
+        DustWindBossField = 6, // 砂嵐のボスフィールド
     }
 
     protected override string EventName => fieldname.ToString();
@@ -82,6 +83,15 @@ public class FieldEvent_Chapter2 : BaseFieldEvent
                 {
                     flagManager.SetBoolFlag(Chapter2TriggeredEvent.FirstMetDesertTempleBoss, true);
                     FungusHelper.ExecuteBlock(targetFlowchart, "FirstMetDesertTempleBoss");
+                }
+                break;
+            case FieldName.DustWindBossField:
+                if (
+                    !flagManager.GetBoolFlag(Chapter2TriggeredEvent.DustDevilBossDefeated)
+                )
+                {
+                    isEventTriggered = true; // イベントがトリガーされたことを記録
+                    FungusHelper.ExecuteBlock(targetFlowchart, "DustDevilBossAppear");
                 }
                 break;
         }

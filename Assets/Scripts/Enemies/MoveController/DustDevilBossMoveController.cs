@@ -140,10 +140,10 @@ public class DustDevilBossMoveController : MonoBehaviour, IEnemyResettable
         }
     }
 
-    private void Start()
-    {
-        ResetState();
-    }
+    // private void Start()
+    // {
+    //     ResetState();
+    // }
 
     public void ResetState()
     {
@@ -161,7 +161,7 @@ public class DustDevilBossMoveController : MonoBehaviour, IEnemyResettable
 
         _rbody.velocity = new Vector2(currentVx, 0);
 
-        this.tag = GameConstants.UNTAGGED_TAG_NAME;
+        this.tag = GameConstants.IMMUNE_ENEMY_TAG_NAME;
         _sePlayer.Play(SE_Field.WindGust_strong);
         AdjustHeight();
         _animator.SetTrigger("IdleTrigger");
@@ -534,6 +534,10 @@ public class DustDevilBossMoveController : MonoBehaviour, IEnemyResettable
         return dir.x < 0;
     }
 
+    /// <summary>
+    /// HP変化時の処理
+    /// </summary>
+    /// <param name="_currentHp">現在のHP</param>
     private void HandleHpChanged(int _currentHp)
     {
         float normalizedHp = _characterHpScript.NormalizedHP;
@@ -602,6 +606,35 @@ public class DustDevilBossMoveController : MonoBehaviour, IEnemyResettable
             aimPos = targetPos + targetVelocity * t;
         }
         return finalVelocity;
+    }
+
+    private void OnEnable()
+    {
+        // プレイヤーの参照がまだない場合は取得を試みる
+        if (playerTransform == null)
+        {
+            playerTransform = GameObject
+                .FindGameObjectWithTag(GameConstants.PLAYER_TAG_NAME)
+                ?.transform;
+        }
+
+        // プレイヤーが見つかった場合、その方向を向く
+        if (playerTransform != null)
+        {
+            // プレイヤーが左にいるかどうか
+            bool isTargetLeft = IsTargetToLeft();
+            
+            // フラグ更新
+            leftFlag = isTargetLeft;
+            
+            // スプライトの向き反映
+            if (_spriteRenderer != null)
+            {
+                _spriteRenderer.flipX = leftFlag;
+            }
+        }
+
+        this.tag = GameConstants.UNTAGGED_TAG_NAME; // タグをリセット
     }
 
     private void OnDrawGizmosSelected()

@@ -1,7 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
 using DG.Tweening;
-using UnityEditor.EditorTools;
 using UnityEngine;
 
 [RequireComponent(typeof(CriWare.Assets.CriAtomSePlayer))]
@@ -218,6 +217,9 @@ public class DesertTempleBossMoveController : MonoBehaviour
     private GameObject sparkEffectObject; // スパークエフェクトオブジェクト
 
     [SerializeField]
+    private GameObject auraEffectObject; // オーラエフェクトオブジェクト
+
+    [SerializeField]
     private GameObject clonePrefab; // 分身のプレハブ
 
     [Tooltip("光輪の座標のオフセット(左向き時)")]
@@ -309,6 +311,11 @@ public class DesertTempleBossMoveController : MonoBehaviour
             sparkEffectTransform = sparkEffectObject.transform;
             sparkEffectAnimator = sparkEffectObject.GetComponent<Animator>();
             sparkEffectObject.SetActive(false);
+        }
+
+        if(auraEffectObject != null)
+        {
+            auraEffectObject.SetActive(true);
         }
 
         bodySpriteRenderer = GetComponent<SpriteRenderer>();
@@ -911,6 +918,7 @@ public class DesertTempleBossMoveController : MonoBehaviour
         if (haloSpriteRenderer)
             fadeOutSeq.Join(haloSpriteRenderer.DOFade(0f, 0.5f));
         this.tag = GameConstants.UNTAGGED_TAG_NAME; // Outlineを消すためにタグを外す
+        auraEffectObject.SetActive(false); // オーラを非表示
 
         // TODO: 消失SE再生
         yield return fadeOutSeq.SetEase(Ease.OutQuad).WaitForCompletion();
@@ -943,6 +951,7 @@ public class DesertTempleBossMoveController : MonoBehaviour
         if (haloSpriteRenderer)
             fadeInSeq.Join(haloSpriteRenderer.DOFade(1f, 0.5f));
         this.tag = GameConstants.IMMUNE_ENEMY_TAG_NAME; // Outline用にタグを戻す
+
         fadeInSeq.SetEase(Ease.InQuad); // 再生開始(待機はしない)
         //TODO: 出現SE再生
 
@@ -993,14 +1002,15 @@ public class DesertTempleBossMoveController : MonoBehaviour
             StartCoroutine(clone.AttackSequence(randomDelay));
         }
 
-        // 6. 存在時間待機 (変更なし)
+        // 6. 存在時間待機
         yield return StartCoroutine(WaitForTime(cloneExistDuration));
 
-        // 7. 終了処理 (変更あり)
+        // 7. 終了処理
         CleanupClones();
 
-        // 8. 復帰 (変更なし)
+        // 8. 復帰
         currentState = DesertTempleBossState.Idle;
+        auraEffectObject.SetActive(true); // オーラを再表示
         isHorizontalMoveActive = true;
         StartRightArmAttack();
     }

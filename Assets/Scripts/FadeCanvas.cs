@@ -33,6 +33,21 @@ public class FadeCanvas : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// 現在の白フェード（フラッシュ）のアルファ値を取得します。
+    /// </summary>
+    public float CurrentFlashAlpha
+    {
+        get
+        {
+            if (flashImage != null)
+            {
+                return flashImage.color.a;
+            }
+            return 0f;
+        }
+    }
+
     private void Awake()
     {
         // シングルトン設定
@@ -122,6 +137,8 @@ public class FadeCanvas : MonoBehaviour
             fadeImage.color = c;
             // Alphaが0より大きければ表示、0なら非表示（最適化）
             fadeImage.gameObject.SetActive(alpha > 0);
+
+            //Debug.Log($"SetAlpha: {alpha}", this);
         }
     }
 
