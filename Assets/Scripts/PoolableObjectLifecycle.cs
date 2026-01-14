@@ -7,6 +7,11 @@ using UnityEngine;
 /// </summary>
 public class PoolableObjectLifecycle : PoolableObject
 {
+    [InfoBox("ColliderのIs TriggerをONにしてください")]
+    [ReadOnly]
+    [SerializeField]
+    private string _instruction = "設定不要";
+
     /// <summary>
     /// 接触回数制限に達して消滅する直前に呼ばれるイベント
     /// </summary>

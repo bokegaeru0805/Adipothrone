@@ -53,6 +53,10 @@ public abstract class CharacterHealth : MonoBehaviour, IDamageable, IDroppable, 
     protected Color col;
     protected Animator animator;
 
+    // --- プール管理用変数 ---
+    private string poolTag;
+    private PoolType poolType;
+
     // --- 被弾エフェクト設定 ---
     //この面積（ピクセル単位）を超えたら大きいと判断し、フラッシュを弱くします
     private float largeSpriteAreaThreshold = 50000f; // 例: 約223x223ピクセル
@@ -317,7 +321,28 @@ public abstract class CharacterHealth : MonoBehaviour, IDamageable, IDroppable, 
     protected virtual IEnumerator DeactivateAfterTime(float time)
     {
         yield return new WaitForSeconds(time);
-        this.gameObject.SetActive(false);
+
+        // プールタグが設定されていればプールに戻す
+        if (!string.IsNullOrEmpty(poolTag))
+        {
+            if (poolType == PoolType.Scene)
+            {
+                ObjectPooler.SceneInstance?.ReturnToPool(poolTag, this.gameObject);
+            }
+            else if (poolType == PoolType.Persistent)
+            {
+                ObjectPooler.PersistentInstance?.ReturnToPool(poolTag, this.gameObject);
+            }
+            else
+            {
+                Debug.LogError("不明なプールタイプです。直接非アクティブ化します。", this);
+                this.gameObject.SetActive(false);
+            }
+        }
+        else
+        {
+            this.gameObject.SetActive(false);
+        }
     }
 
     /// <summary>
@@ -407,6 +432,11 @@ public abstract class CharacterHealth : MonoBehaviour, IDamageable, IDroppable, 
             }
         }
     }
+
+    // --- プール情報のセッター ---
+    public void SetPoolTag(string tag) => this.poolTag = tag;
+
+    public void SetPoolType(PoolType type) => this.poolType = type;
 
     #region Interface Implementations
     // --- インターフェースの共通実装 ---

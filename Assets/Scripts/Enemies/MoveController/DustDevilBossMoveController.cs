@@ -82,6 +82,12 @@ public class DustDevilBossMoveController : MonoBehaviour, IEnemyResettable
     [SerializeField, Range(0f, 1f)]
     private float spawnEnemyProbabilityWhenHpBelowHalf = 0.2f;
 
+    [Tooltip(
+        "DustDevilEnemyの同時最大出現数。これを超えている場合は生成確率に関わらず出現しません。"
+    )]
+    [SerializeField]
+    private int maxActiveEnemyCount = 5;
+
     [Header("その他の設定")]
     [Tooltip("地面から浮かせたい高さ（Y座標のオフセット）")]
     [SerializeField]
@@ -352,6 +358,18 @@ public class DustDevilBossMoveController : MonoBehaviour, IEnemyResettable
                 // イベントに登録 (PoolableObjectLifecycle側でOnDisable時に解除されるため、登録だけでOK)
                 lifecycle.OnContactLimitReached += () =>
                 {
+                    // --- 最大出現数チェック ---
+                    // 現在アクティブな敵の数を取得
+                    int currentEnemyCount = ObjectPooler.SceneInstance.GetActiveCount(
+                        DUST_DEVIL_ENEMY_POOL_TAG
+                    );
+
+                    // 上限に達していたら生成しない
+                    if (currentEnemyCount >= maxActiveEnemyCount)
+                    {
+                        return;
+                    }
+
                     // 確率判定
                     if (
                         Random.value
@@ -623,10 +641,10 @@ public class DustDevilBossMoveController : MonoBehaviour, IEnemyResettable
         {
             // プレイヤーが左にいるかどうか
             bool isTargetLeft = IsTargetToLeft();
-            
+
             // フラグ更新
             leftFlag = isTargetLeft;
-            
+
             // スプライトの向き反映
             if (_spriteRenderer != null)
             {

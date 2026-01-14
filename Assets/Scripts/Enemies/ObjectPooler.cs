@@ -136,6 +136,16 @@ public class ObjectPooler : MonoBehaviour
                     poolable.SetPoolType(isPersistent ? PoolType.Persistent : PoolType.Scene);
                 }
 
+                // CharacterHealthコンポーネントがあれば、プールタグとタイプを設定
+                var characterHealth = obj.GetComponent<CharacterHealth>();
+                if (characterHealth != null)
+                {
+                    characterHealth.SetPoolTag(pool.tag);
+                    characterHealth.SetPoolType(
+                        isPersistent ? PoolType.Persistent : PoolType.Scene
+                    );
+                }
+
                 obj.SetActive(false);
                 objectQueue.Enqueue(obj);
             }
@@ -311,6 +321,18 @@ public class ObjectPooler : MonoBehaviour
         {
             ReturnToPool(pair.Value, pair.Key);
         }
+    }
+
+    /// <summary>
+    /// 指定したタグのオブジェクトが現在いくつアクティブ（出現中）かを返します。
+    /// </summary>
+    /// <param name="tag">確認したいプールのタグ</param>
+    /// <returns>アクティブなオブジェクトの数</returns>
+    public int GetActiveCount(string tag)
+    {
+        // activeObjectsには貸し出し中のオブジェクトとタグのペアが登録されています。
+        // Values(タグ)の中から、引数のtagと一致するものの個数を数えて返します。
+        return activeObjects.Values.Count(t => t == tag);
     }
 
     private void OnDestroy()
