@@ -3,7 +3,9 @@ using UnityEngine;
 
 public static class GameConstants
 {
-    public static readonly Vector3 PLAYER_CAMERA_FOLLOW_OFFSET = new Vector3(0f, 4.5f, -10f);
+    public static readonly Vector3 PLAYER_CAMERA_FOLLOW_OFFSET = new Vector3(0f, 4.5f, -10f); // プレイヤーカメラの追従オフセット
+    public const float DEFAULT_CAMERA_ORTHO_SIZE = 10.0f; // カメラのデフォルトOrthoSize
+    public const float DEFAULT_CAMERA_NEAR_CLIP = 0.3f; // カメラのデフォルトNearClipPlane
     public const float CAMERA_FOLLOW_DAMPING_Y = 20f; // カメラのY軸追従ダンピング値
     public static readonly int PIXELS_PER_UNIT = 16;
     public static readonly int MaxSaveLoadFiles = 20; // 最大セーブデータ数
@@ -124,6 +126,7 @@ public static class GameConstants
     public const string IMMUNE_ENEMY_TAG_NAME = "ImmuneEnemy"; // ダメージを受けない敵のタグ名
     public const string INTERACTABLE_OBJECT_TAG_NAME = "InteractableObject"; // インタラクト可能なオブジェクトのタグ名
     public const string AREA_TRANSITION_TAG_NAME = "AreaTransition"; // エリア遷移のタグ名
+    public const string PHYSICS_OBJECT_TAG_NAME = "PhysicsObject"; // オブジェクトの地面判定タグ名
     #endregion
     #region レイヤー名
     public const string PHYSICS_LAYER_NAME_GROUND = "GroundLayer"; // 当たり判定(Layer)用の名前

@@ -8,7 +8,7 @@ using UnityEngine;
 /// HPの増減、被弾時の共通エフェクトやサウンド、死亡判定の基本フローなど、
 /// 敵とボスで完全に共通する機能のみを定義します。
 /// </summary>
-public abstract class CharacterHealth : MonoBehaviour, IDamageable, IDroppable, IDefeatable
+public abstract class CharacterHealth : PoolableObject, IDamageable, IDroppable, IDefeatable
 {
     // --- シェーダープロパティ・キーワード名 ---
     private const string SHADER_PROP_FLASH_AMOUNT = "_FlashAmount";
@@ -49,13 +49,9 @@ public abstract class CharacterHealth : MonoBehaviour, IDamageable, IDroppable, 
 
     // --- 内部参照（継承先クラスで利用） ---
     protected SpriteRenderer spriteRenderer;
-    protected Material material; // マテリアル設定を参照するための変数
+    protected Material material;
     protected Color col;
     protected Animator animator;
-
-    // --- プール管理用変数 ---
-    private string poolTag;
-    private PoolType poolType;
 
     // --- 被弾エフェクト設定 ---
     //この面積（ピクセル単位）を超えたら大きいと判断し、フラッシュを弱くします
@@ -323,21 +319,9 @@ public abstract class CharacterHealth : MonoBehaviour, IDamageable, IDroppable, 
         yield return new WaitForSeconds(time);
 
         // プールタグが設定されていればプールに戻す
-        if (!string.IsNullOrEmpty(poolTag))
+        if (!string.IsNullOrEmpty(myPoolTag))
         {
-            if (poolType == PoolType.Scene)
-            {
-                ObjectPooler.SceneInstance?.ReturnToPool(poolTag, this.gameObject);
-            }
-            else if (poolType == PoolType.Persistent)
-            {
-                ObjectPooler.PersistentInstance?.ReturnToPool(poolTag, this.gameObject);
-            }
-            else
-            {
-                Debug.LogError("不明なプールタイプです。直接非アクティブ化します。", this);
-                this.gameObject.SetActive(false);
-            }
+            ReturnToPool(); // PoolableObjectのメソッドを呼び出す
         }
         else
         {
@@ -432,11 +416,6 @@ public abstract class CharacterHealth : MonoBehaviour, IDamageable, IDroppable, 
             }
         }
     }
-
-    // --- プール情報のセッター ---
-    public void SetPoolTag(string tag) => this.poolTag = tag;
-
-    public void SetPoolType(PoolType type) => this.poolType = type;
 
     #region Interface Implementations
     // --- インターフェースの共通実装 ---

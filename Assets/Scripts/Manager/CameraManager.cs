@@ -37,6 +37,8 @@ namespace MyGame.CameraControl
         private Coroutine dampingResetCoroutine = null; // 実行中のダンピングリセットコルーチンを管理するための変数
         private bool isPriorityShakeActive = false; // 優先度の高い（カスタム）シェイクが実行中かどうかを示すフラグ
         public bool IsTimelineControlMode { get; private set; } = false; // 外部からTimelineモードかを確認するためのプロパティ
+        private Tweener lensTween;
+        private Tweener offsetTween;
 
         // --- タイムライン制御用変数 ---
         private float timelineAmplitude = 0f;
@@ -46,7 +48,7 @@ namespace MyGame.CameraControl
         private float originalXDamping; // 元のDamping設定保存用
         private float originalYDamping; // 元のDamping設定保存用
         private bool isDebugScene = false; // 開発用フラグ：デバッグシーンかどうか
-
+        #region Unity Methods /// <summary>
         private void Awake()
         {
             if (instance == null)
@@ -174,7 +176,9 @@ namespace MyGame.CameraControl
                 perlinNoise.m_FrequencyGain = 0f;
             }
         }
+        #endregion
 
+        #region Camera Movement Logic
         /// <summary>
         /// （コルーチン）カメラのY軸追従を即座に行わせ（Damping=0）、ターゲットに十分近づくかカメラが端に達するまで待機し、
         ///  その後Damping設定を元に戻します。タイムアウト付き。
@@ -255,7 +259,9 @@ namespace MyGame.CameraControl
                 )
                 .WaitForCompletion();
         }
+        #endregion
 
+        #region Camera Shake Logic
         /// <summary>
         /// 敵ヒット時など、小規模なカメラシェイク（Noise）を発生させます。
         /// </summary>
@@ -411,6 +417,10 @@ namespace MyGame.CameraControl
             Camera.main.GetComponent<CinemachineBrain>().enabled = true;
         }
 
+        #endregion
+
+        #region Damping Control
+
         /// <summary>
         /// 指定された時間だけ、カメラのY軸追従のDampingを0にし、即座に追従するようにします。
         /// </summary>
@@ -454,6 +464,76 @@ namespace MyGame.CameraControl
             // コルーチンの管理変数をクリア
             dampingResetCoroutine = null;
         }
+        #endregion
+        #region Camera Settings Override
+        /// <summary>
+        /// カメラのレンズ設定と追従オフセットを変更します。
+        /// </summary>
+        /// <param name="orthoSize">ターゲットとなるOrthographic Size</param>
+        /// <param name="nearClip">ターゲットとなるNear Clip Plane</param>
+        /// <param name="offset">ターゲットとなるFollow Offset</param>
+        /// <param name="duration">変更にかける時間（秒）。0の場合は即時変更。</param>
+        public void SetCameraSettings(
+            float orthoSize,
+            float nearClip,
+            Vector3 offset,
+            float duration = 1.0f
+        )
+        {
+            if (virtualCamera == null || framing == null)
+                return;
+
+            // 既存のTweenがあればキルする
+            lensTween?.Kill();
+            offsetTween?.Kill();
+
+            if (duration <= 0f)
+            {
+                // 即時変更
+                virtualCamera.m_Lens.OrthographicSize = orthoSize;
+                virtualCamera.m_Lens.NearClipPlane = nearClip;
+                framing.m_FollowOffset = offset;
+            }
+            else
+            {
+                // DOTweenで滑らかに変更
+                lensTween = DOTween
+                    .To(
+                        () => virtualCamera.m_Lens.OrthographicSize,
+                        x => virtualCamera.m_Lens.OrthographicSize = x,
+                        orthoSize,
+                        duration
+                    )
+                    .SetUpdate(true); // TimeScaleの影響を受けないようにする場合
+
+                // NearClipは通常即時変更で問題ないが、必要ならここもTween可能
+                virtualCamera.m_Lens.NearClipPlane = nearClip;
+
+                offsetTween = DOTween
+                    .To(
+                        () => framing.m_FollowOffset,
+                        x => framing.m_FollowOffset = x,
+                        offset,
+                        duration
+                    )
+                    .SetUpdate(true);
+            }
+        }
+
+        /// <summary>
+        /// カメラの設定をGameConstantsのデフォルト値に戻します。
+        /// </summary>
+        /// <param name="duration">戻すのにかける時間（秒）</param>
+        public void ResetCameraSettings(float duration = 1.0f)
+        {
+            SetCameraSettings(
+                GameConstants.DEFAULT_CAMERA_ORTHO_SIZE,
+                GameConstants.DEFAULT_CAMERA_NEAR_CLIP,
+                GameConstants.PLAYER_CAMERA_FOLLOW_OFFSET,
+                duration
+            );
+        }
+        #endregion
 
         #region Timeline Control
         /// <summary>

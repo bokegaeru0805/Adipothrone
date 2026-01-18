@@ -1,3 +1,4 @@
+using NaughtyAttributes;
 using UnityEngine;
 
 /// <summary>
@@ -19,75 +20,99 @@ public class ContactDamageController : MonoBehaviour
         ,
     }
 
-    private DamageType damageType = DamageType.Normal;
-    private float damageValue = 1f;
+    [Header("初期設定")]
+    [SerializeField]
+    [Tooltip("有効にすると、インスペクターで設定したダメージ値を初期値として使用します。")]
+    private bool useInspectorSettings = false;
+
+    [Tooltip("初期ダメージの種類")]
+    [AllowNesting]
+    [SerializeField, ShowIf(nameof(useInspectorSettings))]
+    private DamageType initialDamageType = DamageType.Normal;
+
+    [Tooltip("初期ダメージ値（固定値 または 割合0.0~1.0）")]
+    [AllowNesting]
+    [SerializeField, ShowIf(nameof(useInspectorSettings))]
+    private float initialDamageValue = 1f;
+
+    // 内部で使用する実際のダメージ設定
+    private DamageType currentDamageType = DamageType.Normal;
+    private float currentDamageValue = 1f;
 
     /// <summary>
-    /// 与えるダメージを「通常の固定ダメージ」に設定します。
+    /// オブジェクトが有効化されるたびに呼ばれます（生成時やプールからの取り出し時）
     /// </summary>
-    /// <param name="amount">固定ダメージ量</param>
+    private void OnEnable()
+    {
+        // インスペクター設定を使用する場合、値をロードする
+        if (useInspectorSettings)
+        {
+            currentDamageType = initialDamageType;
+            currentDamageValue = initialDamageValue;
+        }
+        else
+        {
+            // 使用しない場合のデフォルトリセット（必要に応じて）
+            // currentDamageType = DamageType.Normal;
+            // currentDamageValue = 0f;
+        }
+    }
+
+    /// <summary>
+    /// 与えるダメージを「通常の固定ダメージ」に設定します。（外部スクリプトからの上書き用）
+    /// </summary>
     public void SetNormalDamage(int amount)
     {
-        damageType = DamageType.Normal;
-        damageValue = amount;
+        currentDamageType = DamageType.Normal;
+        currentDamageValue = amount;
     }
 
     /// <summary>
-    /// 与えるダメージを「最大HPに対する割合ダメージ」に設定します。
+    /// 与えるダメージを「最大HPに対する割合ダメージ」に設定します。（外部スクリプトからの上書き用）
     /// </summary>
-    /// <param name="ratio">最大HPに対する割合 (例: 0.1f = 10%)</param>
     public void SetMaxHPRatioDamage(float ratio)
     {
-        damageType = DamageType.MaxHPRatio;
-        damageValue = ratio;
+        currentDamageType = DamageType.MaxHPRatio;
+        currentDamageValue = ratio;
     }
 
     /// <summary>
-    /// 与えるダメージを「現在HPに対する割合ダメージ」に設定します。
+    /// 与えるダメージを「現在HPに対する割合ダメージ」に設定します。（外部スクリプトからの上書き用）
     /// </summary>
-    /// <param name="ratio">現在HPに対する割合 (例: 0.5f = 50%)</param>
     public void SetCurrentHPRatioDamage(float ratio)
     {
-        damageType = DamageType.CurrentHPRatio;
-        damageValue = ratio;
+        currentDamageType = DamageType.CurrentHPRatio;
+        currentDamageValue = ratio;
     }
 
-    /// <summary>
-    /// オブジェクトが他のコライダーと接触したときに呼び出される
-    /// </summary>
     private void OnTriggerEnter2D(Collider2D other)
     {
         // 自分のタグが "DamageableEnemy" でなければ何もしない
+        // ※罠などの場合、タグ設定を忘れると動かないので注意
         if (this.tag != GameConstants.DAMAGEABLE_ENEMY_TAG_NAME)
             return;
 
-        // 接触した相手がプレイヤーかチェック
         if (other.CompareTag(GameConstants.PLAYER_TAG_NAME))
         {
-            // PlayerManagerのインスタンスがなければ処理を中断
             if (PlayerManager.instance == null)
             {
                 Debug.LogError("PlayerManagerのインスタンスが見つかりません。");
                 return;
             }
 
-            // --- PlayerManagerの適切なダメージ関数を呼び出す ---
-            // インスペクターで設定されたdamageTypeに応じて処理を分岐
-            switch (damageType)
+            // 現在の設定値(current~)を使ってダメージ処理を実行
+            switch (currentDamageType)
             {
                 case DamageType.Normal:
-                    // 通常ダメージの場合は、damageValueを整数に変換して渡す
-                    PlayerManager.instance.TakeNormalDamage((int)damageValue);
+                    PlayerManager.instance.TakeNormalDamage((int)currentDamageValue);
                     break;
 
                 case DamageType.MaxHPRatio:
-                    // 最大HP割合ダメージ
-                    PlayerManager.instance.DamageHPByMaxHPRatio(damageValue);
+                    PlayerManager.instance.DamageHPByMaxHPRatio(currentDamageValue);
                     break;
 
                 case DamageType.CurrentHPRatio:
-                    // 現在HP割合ダメージ
-                    PlayerManager.instance.DamageHPByCurrentHPRatio(damageValue);
+                    PlayerManager.instance.DamageHPByCurrentHPRatio(currentDamageValue);
                     break;
             }
         }

@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using Cinemachine;
 using MyGame.CameraControl;
+using NaughtyAttributes;
 using UnityEngine;
 using UnityEngine.Rendering;
 using UnityEngine.Rendering.Universal;
@@ -101,6 +102,27 @@ public class CameraMoveArea : MonoBehaviour
     )]
     [SerializeField]
     private List<ConditionalBgm> conditionalBgms = new List<ConditionalBgm>();
+
+    [Header("カメラ個別設定")]
+    [Tooltip("このエリアに入った時、カメラのサイズやオフセットを変更するかどうか")]
+    [SerializeField]
+    private bool overrideCameraSettings = false;
+
+    [Tooltip("変更後のOrthographic Size（ズーム具合）。無効時はデフォルト値が使用されます。")]
+    [SerializeField, ShowIf(nameof(overrideCameraSettings))]
+    private float targetOrthoSize = GameConstants.DEFAULT_CAMERA_ORTHO_SIZE;
+
+    [Tooltip("変更後のNear Clip Plane。")]
+    [SerializeField, ShowIf(nameof(overrideCameraSettings))]
+    private float targetNearClip = GameConstants.DEFAULT_CAMERA_NEAR_CLIP;
+
+    [Tooltip("変更後のFollow Offset（プレイヤーからの距離）。")]
+    [SerializeField, ShowIf(nameof(overrideCameraSettings))]
+    private Vector3 targetFollowOffset = new Vector3(0f, 4.5f, -10f); // 初期値はデフォルトに合わせておく
+
+    [Tooltip("設定変更にかける時間（秒）")]
+    [SerializeField, ShowIf(nameof(overrideCameraSettings))]
+    private float settingsTransitionDuration = 0f;
 
     // シーン全体のVolumeコンポーネントとその元のプロファイル
     private Volume globalVolume;
@@ -270,13 +292,26 @@ public class CameraMoveArea : MonoBehaviour
         }
     }
 
-    // プレイヤーがエリアに入ったときの処理をまとめたメソッド
+    /// <summary>
+    /// プレイヤーがエリアに入ったときの処理をまとめたメソッド
+    /// </summary>
     private void ApplyAreaSettings()
     {
         // Volume Profileを切り替える
         if (globalVolume != null && areaVolumeProfile != null)
         {
             globalVolume.profile = areaVolumeProfile;
+        }
+
+        // カメラ設定の変更
+        if (overrideCameraSettings && CameraManager.instance != null)
+        {
+            CameraManager.instance.SetCameraSettings(
+                targetOrthoSize,
+                targetNearClip,
+                targetFollowOffset,
+                settingsTransitionDuration
+            );
         }
 
         // CinemachineConfiner2Dの境界を設定
@@ -295,6 +330,12 @@ public class CameraMoveArea : MonoBehaviour
         {
             StopCoroutine(backgroundMoveCoroutine);
             backgroundMoveCoroutine = null;
+        }
+
+        // カメラ設定をデフォルトに戻す（設定変更を行っていた場合のみ）
+        if (overrideCameraSettings && CameraManager.instance != null)
+        {
+            CameraManager.instance.ResetCameraSettings(settingsTransitionDuration);
         }
 
         if (backGround != null)

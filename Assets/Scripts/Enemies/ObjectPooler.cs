@@ -136,16 +136,6 @@ public class ObjectPooler : MonoBehaviour
                     poolable.SetPoolType(isPersistent ? PoolType.Persistent : PoolType.Scene);
                 }
 
-                // CharacterHealthコンポーネントがあれば、プールタグとタイプを設定
-                var characterHealth = obj.GetComponent<CharacterHealth>();
-                if (characterHealth != null)
-                {
-                    characterHealth.SetPoolTag(pool.tag);
-                    characterHealth.SetPoolType(
-                        isPersistent ? PoolType.Persistent : PoolType.Scene
-                    );
-                }
-
                 obj.SetActive(false);
                 objectQueue.Enqueue(obj);
             }
