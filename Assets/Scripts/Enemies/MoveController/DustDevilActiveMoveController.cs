@@ -417,7 +417,7 @@ public class DustDevilActiveMoveController : MonoBehaviour, IEnemyResettable
         Gizmos.DrawWireSphere(center, moveDistance);
 
         // 横の移動限界範囲のGizmosを表示
-        Gizmos.color = new Color(1f, 0f, 0f, 0.15f);
+        Gizmos.color = new Color(1f, 0f, 0f, 0.15f); // 半透明の赤色
         center = new Vector3(
             (leftBound + rightBound) / 2f,
             transform.position.y,

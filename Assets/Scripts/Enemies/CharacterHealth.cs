@@ -82,6 +82,8 @@ public abstract class CharacterHealth : PoolableObject, IDamageable, IDroppable,
             material = spriteRenderer.material;
         }
 
+        animator = GetComponent<Animator>();
+
         // オーバーレイテクスチャ効果の初期設定
         SetOverlayEnabled(enableOverlayTexture);
 

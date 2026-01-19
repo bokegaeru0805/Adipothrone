@@ -1,10 +1,12 @@
 using System;
 using System.Collections;
-using UnityEditor;
+using System.Collections.Generic;
 using UnityEngine;
 
 public class Heroin_move : MonoBehaviour
 {
+    #region Inspector Settings
+
     [Header("必須の子オブジェクト")]
     [SerializeField]
     private GameObject RobotObject;
@@ -12,31 +14,50 @@ public class Heroin_move : MonoBehaviour
     [SerializeField]
     private Sprite deathSprite; // 死亡時に表示するスプライト
 
-    // public float CameraOffsetY { get; private set; } = 6; //プレイヤーに対してのカメラのy座標の差分
+    [SerializeField]
+    private float Bound2EffecIntervalTime = 0.2f; //揺れる効果音の間隔の時間
+
+    [SerializeField]
+    private Transform groundCheck; // プレイヤーの足元のTransform
+    #endregion
+
+    #region Public Properties & Variables
     public bool rightFlag { get; private set; } = false; // 右向きかどうかのフラグ
 
     [HideInInspector]
     public Vector2 pos = new Vector2(0, 0); //自分の座標
     public Fungus.Flowchart flowchart = null;
 
-    [SerializeField]
-    private float Bound2EffecIntervalTime = 0.2f; //揺れる効果音の間隔の時間
+    /// <summary>
+    /// 外部から現在の無敵状態を読み取るための公開プロパティ
+    /// </summary>
+    public bool IsImmune => immunity;
 
-    [SerializeField]
-    private Transform groundCheck; // プレイヤーの足元のTransform
+    public float m_defaultSpeed { get; private set; } = 4.0f; // 通常の歩行速度
+
+    // プレイヤーの可視状態が変化したときに呼び出されるイベント
+    public event Action<bool> OnPlayerVisibilityChanged;
+
+    #endregion
+
+    #region Constants & Internal Parameters
 
     // --- 調整用パラメータ ---
     private const float BOUND2EFFECT_LENGHT = 1.384f; //揺れる効果音の長さ
     private const float DEFAULT_WALK_ANIMATION_DURATION = 0.500f; //元の一回の歩行アニメーションの秒数
-    public float m_defaultSpeed { get; private set; } = 4.0f; // 通常の歩行速度
     private float m_dashDefaultSpeed = 8.0f; //通常のダッシュ速度
     private float jumpHeight = 3.5f; // ジャンプで到達したい高さ
-    private float damageX = 3.0f; //ダメージを食らったときのx軸の移動具合
+
+    // private float damageX = 3.0f; //ダメージを食らったときのx軸の移動具合
     private float MoveStart_Sec = 0.5f; //ダメージを食らったときの硬直無敵時間
     private float immunityDuration = 0.75f; //動ける無敵時間
     private float attackMoveSlowRate = 4.0f; //攻撃中の移動速度の減少率
     private float WalkTime = 1.46f; //一回の歩行アニメーションの秒数
     private float DashTime = 0.72f; //一回のダッシュアニメーションの秒数
+    private List<EnvironmentArea> activeEnvironments = new List<EnvironmentArea>(); // 現在適用中の環境エリアリスト
+    #endregion
+
+    #region Internal State Variables
 
     // --- 内部状態変数 ---
     private float vx = 0; //実際のx方向の移動速度
@@ -50,7 +71,6 @@ public class Heroin_move : MonoBehaviour
     private int AnimBodyState; //アニメーションの体形の状態を保存する変数
     private bool isAttacking = false; // 攻撃中かどうかのフラグ
     private bool immunity = false; //無敵かどうかのフラグ
-    public bool IsImmune => immunity; // 外部から現在の無敵状態を読み取るための公開プロパティ
     private bool isFadingOut = true; //不透明度が減少するかどうかのフラグ
     private bool move = true; //操作できるかどうかのフラグ
     private bool isFirstGetKey = false; //初めてキー入力をしたかどうかのフラグ
@@ -60,6 +80,9 @@ public class Heroin_move : MonoBehaviour
     private bool jumpRequested = false;
     private bool isTalking = false; // 会話状態を保存するローカル変数
     private bool isDead = false; // プレイヤーが死亡しているかどうかのマスターフラグ
+    #endregion
+
+    #region Component References
 
     // --- 内部参照 ---
     private Rigidbody2D _rbody; // Rigidbody2Dコンポーネント
@@ -69,16 +92,100 @@ public class Heroin_move : MonoBehaviour
     private Robot_move robotMoveScript;
     private CriWare.Assets.CriAtomSePlayer sePlayer; // SE再生用のCriAtomSePlayerコンポーネント
     private LayerMask groundLayer; // 接地判定用のレイヤーマスク
-    public event Action<bool> OnPlayerVisibilityChanged; // プレイヤーの可視状態が変化したときに呼び出されるイベント
+
+    // --- Managers ---
     private GameManager gameManager;
     private PlayerManager playerManager;
     private PlayerEffectManager playerEffectManager;
     private PlayerBodyManager playerBodyManager;
     private InputManager inputManager;
 
+    #endregion
+
+    #region Unity Lifecycle Methods
+
     private void Awake()
     {
-        groundLayer = LayerMask.GetMask(GameConstants.PHYSICS_LAYER_NAME_GROUND); // Groundレイヤーを取得
+        InitializeComponents();
+    }
+
+    private void Start()
+    {
+        InitializeSettings();
+    }
+
+    private void OnEnable()
+    {
+        StartCoroutine(DelayedInitialization());
+    }
+
+    private void OnDisable()
+    {
+        UnsubscribeEvents();
+    }
+
+    private void Update()
+    {
+        if (inputManager == null)
+            return;
+
+        // 初期化
+        vx = 0;
+
+        // ポーズ中、会話中、死亡中は入力を受け付けない
+        if (Time.timeScale > 0f && !isTalking && !isDead)
+        {
+            HandleFirstKeyInput();
+            HandleMovementInput();
+            HandleJumpInput();
+        }
+        else
+        {
+            HandleIdleState();
+        }
+    }
+
+    private void FixedUpdate()
+    {
+        UpdateAnimatorParameters();
+        UpdateRobotStatus();
+
+        if (Time.timeScale > 0f)
+        {
+            ApplyEnvironmentEffects();
+            ApplyMovement();
+            CheckGroundStatus();
+            ExecuteJumpPhysics();
+            HandleLanding();
+            UpdateImmunityBlink();
+
+            // 座標更新とRobot同期
+            pos = this.transform.position;
+            RobotObject.SetActive(isRobotmove);
+        }
+    }
+
+    private void OnTriggerStay2D(Collider2D collision)
+    {
+        HandleItemPickup(collision);
+    }
+
+    private void OnDrawGizmosSelected()
+    {
+        if (groundCheck == null)
+            return;
+
+        Gizmos.color = Color.green;
+        Gizmos.DrawWireSphere(groundCheck.position, groundCheckRadius);
+    }
+
+    #endregion
+
+    #region Initialization Logic
+
+    private void InitializeComponents()
+    {
+        groundLayer = LayerMask.GetMask(GameConstants.PHYSICS_LAYER_NAME_GROUND);
         _animator = GetComponent<Animator>();
         _rbody = GetComponent<Rigidbody2D>();
         _spriteRenderer = GetComponent<SpriteRenderer>();
@@ -99,425 +206,24 @@ public class Heroin_move : MonoBehaviour
         }
     }
 
-    private void Start()
+    private void InitializeSettings()
     {
         isFirstGetKey = true;
         gravity = Mathf.Abs(Physics2D.gravity.y * _rbody.gravityScale);
+
         if (gameObject.name != GameConstants.PLAYER_OBJECT_NAME)
         {
             Debug.LogError(
                 $"{gameObject.name}の名前がGameConstants.PLAYER_OBJECT_NAMEと一致しません。"
-            ); // プレイヤーのオブジェクト名が一致しない場合のエラーメッセージ
+            );
         }
 
         if (this.tag != GameConstants.PLAYER_TAG_NAME)
         {
             Debug.LogError(
                 $"{this.gameObject.name}のタグがGameConstants.PLAYER_TAG_NAMEと一致しません。"
-            ); // プレイヤーのタグ名が一致しない場合のエラーメッセージ
-        }
-    }
-
-    private void Update()
-    {
-        if (inputManager == null)
-        {
-            return; // InputManagerがまだ初期化されていない場合は何もしない
-        }
-
-        vx = 0; //x方向の速度を初期化
-
-        //Debug.Log($"[Heroin_move] isTalking: {isTalking}, isDead: {isDead}", this); //デバッグ用ログ
-
-        if (Time.timeScale > 0f && !isTalking && !isDead)
-        {
-            if (isFirstGetKey)
-            { //向きの初期化の処理
-                if (inputManager.GetPlayerMoveRight())
-                {
-                    rightFlag = true;
-                    robotMoveScript.SetRightFlag(true); //Robotの向きを変える
-                    isFirstGetKey = false;
-                }
-                else if (InputManager.instance.GetPlayerMoveLeft())
-                {
-                    rightFlag = false;
-                    robotMoveScript.SetRightFlag(false); //Robotの向きを変える
-                    isFirstGetKey = false;
-                }
-            }
-
-            // -- 入力と移動の処理 --
-            if ((inputManager.GetPlayerMoveRight() || inputManager.GetPlayerMoveLeft()) && move)
-            {
-                //左右の方向を決定
-                bool movingRight = inputManager.GetPlayerMoveRight();
-
-                _spriteRenderer.flipX = movingRight; //画像の左右の向きを設定
-                _animator.SetInteger("AnimState", 1); //アニメーションの状態を設定
-
-                // ダッシュ判定
-                bool isDashing = inputManager.GetPlayerDash();
-                vx = isDashing ? dashSpeed : walkSpeed; // x方向の速度の大きさを設定
-
-                float direction = movingRight ? 1f : -1f; // 移動方向の決定
-                vx = vx * direction; //vxを方向に合わせる
-
-                //歩行アニメーションの速度を設定
-                _animator.SetFloat(
-                    "WalkSpeed",
-                    DEFAULT_WALK_ANIMATION_DURATION / (isDashing ? DashTime : WalkTime)
-                );
-
-                if (isGrounded)
-                {
-                    sePlayer.Play(SE_PlayerAction.Walk1);
-                }
-
-                BoundIntervalTime += isDashing ? 2 * Time.deltaTime : Time.deltaTime;
-
-                // 歩行時の効果音の判定
-                if (
-                    BoundIntervalTime >= BOUND2EFFECT_LENGHT + Bound2EffecIntervalTime
-                    && BodyState == GameConstants.BODY_STATE_ARMED_2
-                )
-                {
-                    sePlayer.Play(SE_PlayerAction.Bound2);
-                    BoundIntervalTime = 0f;
-                }
-                else if (
-                    BoundIntervalTime >= 3.448f
-                    && BodyState == GameConstants.BODY_STATE_ARMED_1
-                )
-                {
-                    sePlayer.Play(SE_PlayerAction.GichiGichi1);
-                    BoundIntervalTime = 0f;
-                }
-
-                // 向きフラグとロボット反映
-                if (rightFlag != movingRight)
-                {
-                    rightFlag = movingRight;
-                    robotMoveScript.SetRightFlag(movingRight);
-                }
-            }
-            else
-            {
-                // if (seManager.IsPlayingPlayerActionSE(SE_PlayerAction.Walk1))
-                //     seManager.StopPlayerActionSE(SE_PlayerAction.Walk1); //歩行の効果音を止める
-                _animator.SetInteger("AnimState", 0);
-            }
-
-            if (
-                inputManager.GetPlayerJump()
-                && isGrounded
-                && move
-                && !GameManager.IsJumpCooldownActive
-            )
-            {
-                jumpRequested = true;
-            }
-        }
-        else
-        {
-            _animator.SetInteger("AnimState", 0); //自分のanimationをstand状態にする
-
-            // 死亡時に不要な入力をクリア
-            if (isDead)
-            {
-                vx = 0;
-                jumpRequested = false;
-            }
-        }
-    }
-
-    private void FixedUpdate()
-    {
-        _animator.SetBool("IsGrounded", isGrounded); //接地判定を設定
-        _animator.SetFloat("VerticalSpeed", _rbody.velocity.y); //y方向の速度を設定
-
-        if (RobotObject.activeInHierarchy)
-        {
-            isAttacking = robotMoveScript.isAttacking; //ロボットから攻撃中かどうかのフラグを取得
-        }
-
-        if (Time.timeScale > 0f)
-        {
-            // 移動する（重力をかけたまま）
-            if (!isAttacking && move)
-            {
-                _rbody.velocity = new Vector2(vx, _rbody.velocity.y);
-            }
-            else if (isAttacking && move)
-            {
-                vx /= attackMoveSlowRate; //攻撃中は移動速度を減少させる
-                _rbody.velocity = new Vector2(vx, _rbody.velocity.y);
-            }
-
-            // 接地判定
-            isGrounded = Physics2D.OverlapCircle(
-                groundCheck.position,
-                groundCheckRadius,
-                groundLayer
             );
-
-            // ジャンプ処理
-            if (jumpRequested)
-            {
-                jumpRequested = false;
-                jumpForce = Mathf.Sqrt(2 * gravity * jumpHeight); // ジャンプ力を計算する
-                _rbody.velocity = new Vector2(_rbody.velocity.x, jumpForce);
-                AnimBodyState = playerBodyManager.AnimBodyState; //アニメーションの体形の状態を取得する
-
-                switch (AnimBodyState)
-                {
-                    case GameConstants.ANIM_BODY_STATE_NORMAL:
-                        _animator.ResetTrigger("Normal_JumpTrigger");
-                        _animator.SetTrigger("Normal_JumpTrigger");
-                        break;
-                    case GameConstants.ANIM_BODY_STATE_ARMED_1:
-                        _animator.ResetTrigger("Armed1_JumpTrigger");
-                        _animator.SetTrigger("Armed1_JumpTrigger");
-                        break;
-                    case GameConstants.ANIM_BODY_STATE_ARMED_2:
-                        _animator.ResetTrigger("Armed2_JumpTrigger");
-                        _animator.SetTrigger("Armed2_JumpTrigger");
-                        break;
-                }
-
-                sePlayer.Play(SE_PlayerAction.Jump1);
-            }
-
-            // 着地判定：前のフレームでは空中、今フレームで地面
-            if (!wasGroundedLastFrame && isGrounded)
-            {
-                sePlayer.Play(SE_PlayerAction.Land1); //着地の効果音を鳴らす
-                if (BodyState == GameConstants.BODY_STATE_ARMED_2)
-                {
-                    sePlayer.Play(SE_PlayerAction.Bound1);
-                }
-                else if (BodyState == GameConstants.BODY_STATE_ARMED_1)
-                {
-                    sePlayer.Play(SE_PlayerAction.Bound3);
-                }
-            }
-            wasGroundedLastFrame = isGrounded; // 前のフレームの接地状態を保存
-
-            if (immunity)
-            {
-                if (_col.a <= 0.3f)
-                {
-                    isFadingOut = false; //不透明度を上げるようにする
-                }
-                else if (_col.a >= 1.0f)
-                {
-                    isFadingOut = true; //不透明度を下げるようにする
-                }
-
-                _col.a += isFadingOut ? -0.1f : +0.1f; //不透明度を変更する
-                SetColorWithFixedBrightness(_col); //ヘルパーメソッドを使って色を設定
-            }
-
-            pos = this.transform.position; //現在の自分の座標を保存
-            RobotObject.SetActive(isRobotmove);
         }
-    }
-
-    /// <summary>
-    /// スプライトの色を、明度を固定した状態で設定します。
-    /// </summary>
-    /// <param name="newColor">設定したい基本の色</param>
-    private void SetColorWithFixedBrightness(Color newColor)
-    {
-        if (_spriteRenderer == null)
-            return;
-
-        // 1. 設定したい色（newColor）をHSVに変換
-        float h,
-            s,
-            v;
-        Color.RGBToHSV(newColor, out h, out s, out v);
-
-        // 2. V（明度）の値を固定値（ここでは80% = 0.8f）に上書き
-        float fixedBrightness = 0.8f;
-
-        // 3. 新しいHSVの値からRGBカラーを生成
-        Color finalColor = Color.HSVToRGB(h, s, fixedBrightness);
-
-        // 4. 元の色のアルファ値（透明度）を引き継ぐ
-        finalColor.a = newColor.a;
-
-        // 5. 最終的な色をスプライトに適用
-        _spriteRenderer.color = finalColor;
-    }
-
-    private void OnTriggerStay2D(Collider2D collision)
-    {
-        if (Time.timeScale > 0f)
-        {
-            var script = collision.gameObject.GetComponent<DropItem>();
-            if (script != null && !script.isTreasureBox)
-            {
-                //DropItemのスクリプトが付いていて、かつ宝箱ではないとき
-                if (script.DropMoney != 0)
-                {
-                    //インベントに金を追加
-                    playerManager.ChangeMoney(script.DropMoney);
-                    sePlayer.Play(SE_Field.CoinGet1);
-                }
-
-                if (script.DropID != null)
-                {
-                    gameManager.AddAllTypeIDToInventory(script.DropID);
-                    //ドロップ品をインベントに追加
-                    sePlayer.Play(SE_SystemEvent.ItemGet2);
-                }
-
-                Destroy(collision.gameObject); //ドロップ品を消去
-            }
-        }
-    }
-
-    /// <summary>
-    /// ダメージを受けたときの物理的なリアクション処理。
-    /// PlayerManagerからのOnDamageReactionイベントによって呼び出される。
-    /// </summary>
-    private void ReactToDamage() // 引数なし、privateに変更
-    {
-        // 時間が止まっているか、プレイヤーが無敵状態なら物理反応も起こさない
-        if (Time.timeScale <= 0 || IsImmune)
-        {
-            return;
-        }
-
-        // ここは物理的な反応のみに専念する
-        move = false; // 一時的に操作不能にする
-
-        // ノックバック処理
-        if (rightFlag) // 右を向いているとき
-        {
-            _rbody.velocity = new Vector2(-damageX, _rbody.velocity.y);
-        }
-        else // 左を向いているとき
-        {
-            _rbody.velocity = new Vector2(damageX, _rbody.velocity.y);
-        }
-
-        // 無敵時間などを開始するコルーチンを呼び出す
-        StartCoroutine(MoveStart());
-    }
-
-    private IEnumerator MoveStart() //velocity再開
-    {
-        _col = new Color(1.0f, 1.0f, 1.0f, 1.0f); //色を初期化
-        immunity = true; //無敵状態にする
-        yield return new WaitForSeconds(MoveStart_Sec); //MoveStart_Secの待つ
-        //死亡していない場合のみ、moveをtrueに戻す
-        if (!isDead)
-        {
-            move = true; //velocityを再開する
-        }
-        yield return new WaitForSeconds(immunityDuration); //immunityDurationの待つ
-        immunity = false; //無敵状態を解除する
-        _col.a = 1.0f; //不透明度を初期化する
-        SetColorWithFixedBrightness(_col); // ヘルパーメソッドを使って色を設定
-    }
-
-    public void EnableInvincibility(float time)
-    {
-        StartCoroutine(enableinvincibility(time));
-    }
-
-    private IEnumerator enableinvincibility(float time)
-    {
-        _col = new Color(1.0f, 1.0f, 1.0f, 1.0f); //色を初期化
-        immunity = true; //無敵状態にする
-        yield return new WaitForSeconds(time); //time秒待つ
-        immunity = false; //無敵状態を解除する
-        _col.a = 1.0f; //不透明度を初期化する
-        SetColorWithFixedBrightness(_col); // ヘルパーメソッドを使って色を設定
-    }
-
-    /// <summary>
-    /// PlayerManagerから死亡通知を受け取った際の処理
-    /// </summary>
-    private void HandlePlayerDeath()
-    {
-        EnterDeathState(); // 死亡状態に移行する関数を呼び出す
-    }
-
-    /// <summary>
-    /// プレイヤーを死亡状態に設定します。
-    /// 操作不能にし、アニメーションを停止して死亡スプライトに切り替えます。
-    /// </summary>
-    public void EnterDeathState()
-    {
-        // 死亡フラグを立てる
-        isDead = true;
-        // プレイヤーの操作を不能にする
-        move = false;
-
-        // 物理的な挙動を完全に停止させる
-        if (_rbody != null)
-        {
-            _rbody.velocity = Vector2.zero;
-            _rbody.isKinematic = true; // 物理演算の影響を受けなくする
-        }
-
-        // アニメーションを停止させる
-        if (_animator != null)
-        {
-            _animator.enabled = false;
-        }
-
-        // 死亡時のスプライトがインスペクターで設定されていれば、それに差し替える
-        if (_spriteRenderer != null && deathSprite != null)
-        {
-            _spriteRenderer.sprite = deathSprite;
-        }
-
-        // ダメージ点滅などの視覚効果をリセットし、通常の色に戻す
-        immunity = false;
-        if (_spriteRenderer != null)
-        {
-            _spriteRenderer.color = Color.white;
-        }
-    }
-
-    /// <summary>
-    /// プレイヤーの状態を死亡状態から元の活動状態に戻します。
-    /// 主にリトライやシーンの再読み込み時に呼び出すことを想定しています。
-    /// </summary>
-    public void ResetToLiveState()
-    {
-        // 死亡フラグを解除する
-        isDead = false;
-        // プレイヤーの操作を可能にする
-        move = true;
-
-        // 物理演算を再度有効にする
-        if (_rbody != null)
-        {
-            _rbody.isKinematic = false;
-        }
-
-        // アニメーションを再度有効にする
-        // これにより、スプライトはAnimatorによって自動的に更新されます
-        if (_animator != null)
-        {
-            _animator.enabled = true;
-        }
-
-        // 念のため色を元に戻す
-        if (_spriteRenderer != null)
-        {
-            _spriteRenderer.color = Color.white;
-        }
-    }
-
-    private void OnEnable()
-    {
-        StartCoroutine(DelayedInitialization());
     }
 
     /// <summary>
@@ -525,20 +231,15 @@ public class Heroin_move : MonoBehaviour
     /// </summary>
     private IEnumerator DelayedInitialization()
     {
-        // 最初のフレームの描画が終わるまで待つ
-        // これにより、全てのシングルトンが確実に初期化されている状態になる
         yield return new WaitForEndOfFrame();
 
-        // --- ここからが実質的な初期化処理 ---
-
-        // 各マネージャーのインスタンスを取得
+        // 各マネージャーの取得
         gameManager = GameManager.instance;
         playerManager = PlayerManager.instance;
         playerEffectManager = PlayerEffectManager.instance;
         playerBodyManager = PlayerBodyManager.instance;
         inputManager = InputManager.instance;
 
-        // いずれかのマネージャーが見つからなければ、処理を中断
         if (
             gameManager == null
             || playerManager == null
@@ -548,10 +249,28 @@ public class Heroin_move : MonoBehaviour
         )
         {
             Debug.LogError("必要なマネージャーが見つかりませんでした。Heroin_moveは機能しません。");
-            yield break; // コルーチンを終了
+            yield break;
         }
 
-        // イベントの購読
+        // イベント購読
+        SubscribeEvents();
+
+        // 初期状態の反映
+        HandleLoadingStateChanged(false);
+
+        // 変数初期化
+        _spriteRenderer.flipX = true;
+        rightFlag = true;
+        BoundIntervalTime = 0;
+        isAttacking = false;
+        immunity = false;
+        move = true;
+        isDead = false;
+        OnPlayerVisibilityChanged?.Invoke(true);
+    }
+
+    private void SubscribeEvents()
+    {
         playerManager.OnDamageReaction += ReactToDamage;
         playerManager.OnPlayerDied += HandlePlayerDeath;
         playerManager.OnPlayerRevived += ResetToLiveState;
@@ -560,27 +279,13 @@ public class Heroin_move : MonoBehaviour
         playerBodyManager.OnChangeBodyState += GetBodyStateData;
         GameManager.OnTalkingStateChanged += HandleTalkingStateChanged;
         SaveLoadManager.OnLoadingStateChanged += HandleLoadingStateChanged;
-
-        // 初期状態の設定
-        HandleLoadingStateChanged(false); // ロード完了時の初期化処理を実行
-
-        // その他の初期化
-        _spriteRenderer.flipX = true; // 初期状態では右向き
-        rightFlag = true; // 初期状態では右向き
-        BoundIntervalTime = 0; // 効果音の間隔を初期化
-        isAttacking = false; // 初期状態では攻撃中ではない
-        immunity = false; // 初期状態では無敵ではない
-        move = true; // 初期状態では操作可能
-        isDead = false; // 初期状態では死亡していない
-        OnPlayerVisibilityChanged?.Invoke(true); // プレイヤーの可視状態を通知
     }
 
-    private void OnDisable()
+    private void UnsubscribeEvents()
     {
         if (!GameManager.isFirstGameSceneOpen)
             return;
 
-        // イベントを安全に解除
         if (playerManager != null)
         {
             playerManager.OnBoolStatusChanged -= OnAnyBoolStatusChanged;
@@ -596,47 +301,500 @@ public class Heroin_move : MonoBehaviour
         GameManager.OnTalkingStateChanged -= HandleTalkingStateChanged;
         SaveLoadManager.OnLoadingStateChanged -= HandleLoadingStateChanged;
 
-        // その他のリセット処理
-        move = true; // 操作可能状態に戻す
-        isDead = false; // 死亡状態を解除
-        immunity = false; // 無敵状態を解除
-        _col = new Color(1.0f, 1.0f, 1.0f, 1.0f); // 色を初期化
-        _col.a = 1.0f; // 不透明度を初期化
-        SetColorWithFixedBrightness(_col); // ヘルパーメソッドを使って色を設定
-        OnPlayerVisibilityChanged?.Invoke(false); // プレイヤーの可視状態を通知
+        // 状態リセット
+        move = true;
+        isDead = false;
+        immunity = false;
+        _col = new Color(1.0f, 1.0f, 1.0f, 1.0f);
+        SetColorWithFixedBrightness(_col);
+        OnPlayerVisibilityChanged?.Invoke(false);
+    }
+
+    #endregion
+
+    #region Input & Logic Methods (Called from Update)
+
+    /// <summary>
+    /// 初回キー入力時の向き初期化処理
+    /// </summary>
+    private void HandleFirstKeyInput()
+    {
+        if (!isFirstGetKey)
+            return;
+
+        if (inputManager.GetPlayerMoveRight())
+        {
+            SetFacingDirection(true);
+            isFirstGetKey = false;
+        }
+        else if (InputManager.instance.GetPlayerMoveLeft())
+        {
+            SetFacingDirection(false);
+            isFirstGetKey = false;
+        }
     }
 
     /// <summary>
-    /// 移動速度を計算する
+    /// 移動入力の処理
     /// </summary>
+    private void HandleMovementInput()
+    {
+        if ((inputManager.GetPlayerMoveRight() || inputManager.GetPlayerMoveLeft()) && move)
+        {
+            bool movingRight = inputManager.GetPlayerMoveRight();
+
+            // 画像の向きとアニメーション設定
+            _spriteRenderer.flipX = movingRight;
+            _animator.SetInteger("AnimState", 1);
+
+            // 速度計算（ダッシュ or 歩行）
+            bool isDashing = inputManager.GetPlayerDash();
+            float currentSpeed = isDashing ? dashSpeed : walkSpeed;
+            float direction = movingRight ? 1f : -1f;
+            vx = currentSpeed * direction;
+
+            // アニメーション速度調整
+            float animDuration = isDashing ? DashTime : WalkTime;
+            _animator.SetFloat("WalkSpeed", DEFAULT_WALK_ANIMATION_DURATION / animDuration);
+
+            // 効果音処理
+            if (isGrounded)
+            {
+                sePlayer.Play(SE_PlayerAction.Walk1);
+            }
+            PlayMoveSoundEffects(isDashing);
+
+            // 向き情報の更新
+            if (rightFlag != movingRight)
+            {
+                SetFacingDirection(movingRight);
+            }
+        }
+        else
+        {
+            // 待機状態
+            _animator.SetInteger("AnimState", 0);
+        }
+    }
+
+    /// <summary>
+    /// ジャンプ入力の受付
+    /// </summary>
+    private void HandleJumpInput()
+    {
+        if (inputManager.GetPlayerJump() && isGrounded && move && !GameManager.IsJumpCooldownActive)
+        {
+            jumpRequested = true;
+        }
+    }
+
+    /// <summary>
+    /// 操作不能時のアイドリング処理
+    /// </summary>
+    private void HandleIdleState()
+    {
+        _animator.SetInteger("AnimState", 0);
+        if (isDead)
+        {
+            vx = 0;
+            jumpRequested = false;
+        }
+    }
+
+    /// <summary>
+    /// ロボットも含めた向きの設定
+    /// </summary>
+    private void SetFacingDirection(bool isRight)
+    {
+        rightFlag = isRight;
+        robotMoveScript.SetRightFlag(isRight);
+    }
+
+    /// <summary>
+    /// 歩行・ダッシュ中の特殊な効果音（バウンド音など）の再生
+    /// </summary>
+    private void PlayMoveSoundEffects(bool isDashing)
+    {
+        BoundIntervalTime += isDashing ? 2 * Time.deltaTime : Time.deltaTime;
+
+        if (
+            BoundIntervalTime >= BOUND2EFFECT_LENGHT + Bound2EffecIntervalTime
+            && BodyState == GameConstants.BODY_STATE_ARMED_2
+        )
+        {
+            sePlayer.Play(SE_PlayerAction.Bound2);
+            BoundIntervalTime = 0f;
+        }
+        else if (BoundIntervalTime >= 3.448f && BodyState == GameConstants.BODY_STATE_ARMED_1)
+        {
+            sePlayer.Play(SE_PlayerAction.GichiGichi1);
+            BoundIntervalTime = 0f;
+        }
+    }
+
+    #endregion
+
+    #region Physics Logic Methods (Called from FixedUpdate)
+
+    private void UpdateAnimatorParameters()
+    {
+        _animator.SetBool("IsGrounded", isGrounded);
+        _animator.SetFloat("VerticalSpeed", _rbody.velocity.y);
+    }
+
+    private void UpdateRobotStatus()
+    {
+        if (RobotObject.activeInHierarchy)
+        {
+            isAttacking = robotMoveScript.isAttacking;
+        }
+    }
+
+    /// <summary>
+    /// 物理的な移動の適用
+    /// </summary>
+    private void ApplyMovement()
+    {
+        if (!move)
+            return; // 操作不能時は速度更新しない（ダメージリアクション等で制御されるため）
+
+        // --- 環境効果（速度・風）の計算 ---
+        float finalSpeedMult = 1.0f;
+        Vector2 totalWindVelocity = Vector2.zero;
+
+        // アクティブな環境エリアすべてから効果を合成
+        for (int i = 0; i < activeEnvironments.Count; i++)
+        {
+            var area = activeEnvironments[i];
+            if (area == null)
+                continue;
+
+            // 1. 全体速度倍率の適用 (泥沼など)
+            finalSpeedMult *= area.GlobalSpeedMultiplier;
+
+            // 2. 風ベクトル（方向と強さ）の合成
+            // ここでは風の「ベクトル」を加算していく（複数の風がある場合の合成）
+            totalWindVelocity += area.WindVelocity;
+        }
+
+        // --- 風による抵抗計算 ---
+        // プレイヤーの移動方向(vxの符号)と、風向きの関係を調べる
+        if (Mathf.Abs(vx) > 0.01f && totalWindVelocity.sqrMagnitude > 0.01f)
+        {
+            // 正規化された移動方向ベクトル
+            Vector2 moveDir = new Vector2(Mathf.Sign(vx), 0);
+
+            // 風ベクトルとの内積を計算 (正なら追い風、負なら向かい風)
+            // WindVelocity自体が強さを持っているので、正規化せずにそのまま使うと強風ほど影響が出る
+            float dot = Vector2.Dot(moveDir, totalWindVelocity);
+
+            if (dot < 0)
+            {
+                // 向かい風の場合: 内積がマイナスになるので、速度を減衰させる
+                // 例: dotが-5なら、1 - (5 * 0.1) = 0.5倍になる、等
+                // ※ここでは簡易的に、リストの最後のエリアのResistanceFactorを使うか、固定係数を使う
+                // 複数のエリアがある場合を考慮し、最も強い抵抗を採用する設計も可能だが、
+                // ここではシンプルに「内積値に応じた減速」を行う
+
+                // 抵抗係数を適当に定数化（またはエリアから取得）して調整
+                float resistance = 0.1f;
+                // 減速率を計算 (最低でも0.1倍は残すクランプ処理)
+                float windSlowDown = Mathf.Max(0.1f, 1.0f + (dot * resistance));
+
+                finalSpeedMult *= windSlowDown;
+            }
+            // 追い風の場合に加速させたい場合は else if (dot > 0) で処理を追加可能
+        }
+
+        // --- 最終速度の適用 ---
+        if (!isAttacking)
+        {
+            // 環境倍率を適用して速度決定
+            _rbody.velocity = new Vector2(vx * finalSpeedMult, _rbody.velocity.y);
+        }
+        else
+        {
+            // 攻撃中は減速 (攻撃減速も環境倍率の影響を受けるようにする)
+            float slowedVx = (vx / attackMoveSlowRate) * finalSpeedMult;
+            _rbody.velocity = new Vector2(slowedVx, _rbody.velocity.y);
+        }
+    }
+
+    /// <summary>
+    /// 接地判定
+    /// </summary>
+    private void CheckGroundStatus()
+    {
+        isGrounded = Physics2D.OverlapCircle(groundCheck.position, groundCheckRadius, groundLayer);
+    }
+
+    /// <summary>
+    /// ジャンプの物理計算とアニメーショントリガー
+    /// </summary>
+    private void ExecuteJumpPhysics()
+    {
+        if (!jumpRequested)
+            return;
+
+        jumpRequested = false;
+        jumpForce = Mathf.Sqrt(2 * gravity * jumpHeight);
+        _rbody.velocity = new Vector2(_rbody.velocity.x, jumpForce);
+
+        // 体型に応じたジャンプアニメーション
+        AnimBodyState = playerBodyManager.AnimBodyState;
+        switch (AnimBodyState)
+        {
+            case GameConstants.ANIM_BODY_STATE_NORMAL:
+                TriggerAnimation("Normal_JumpTrigger");
+                break;
+            case GameConstants.ANIM_BODY_STATE_ARMED_1:
+                TriggerAnimation("Armed1_JumpTrigger");
+                break;
+            case GameConstants.ANIM_BODY_STATE_ARMED_2:
+                TriggerAnimation("Armed2_JumpTrigger");
+                break;
+        }
+
+        sePlayer.Play(SE_PlayerAction.Jump1);
+    }
+
+    /// <summary>
+    /// 環境エリアのリストをチェックし、重力倍率などを適用するメソッド (新規追加)
+    /// </summary>
+    private void ApplyEnvironmentEffects()
+    {
+        float finalGravityMult = 1.0f;
+
+        // 登録されている全エリアの重力倍率を掛け合わせる
+        for (int i = 0; i < activeEnvironments.Count; i++)
+        {
+            if (activeEnvironments[i] != null)
+            {
+                finalGravityMult *= activeEnvironments[i].GravityMultiplier;
+            }
+        }
+
+        // 重力を適用
+        _rbody.gravityScale = GameConstants.PLAYER_GRAVITY_SCALE * finalGravityMult;
+        // ジャンプ計算用のgravity変数も更新しておく
+        gravity = Mathf.Abs(Physics2D.gravity.y * _rbody.gravityScale);
+    }
+
+    private void TriggerAnimation(string triggerName)
+    {
+        _animator.ResetTrigger(triggerName);
+        _animator.SetTrigger(triggerName);
+    }
+
+    /// <summary>
+    /// 着地時の処理
+    /// </summary>
+    private void HandleLanding()
+    {
+        if (!wasGroundedLastFrame && isGrounded)
+        {
+            sePlayer.Play(SE_PlayerAction.Land1);
+
+            if (BodyState == GameConstants.BODY_STATE_ARMED_2)
+            {
+                sePlayer.Play(SE_PlayerAction.Bound1);
+            }
+            else if (BodyState == GameConstants.BODY_STATE_ARMED_1)
+            {
+                sePlayer.Play(SE_PlayerAction.Bound3);
+            }
+        }
+        wasGroundedLastFrame = isGrounded;
+    }
+
+    /// <summary>
+    /// 無敵時間の点滅処理
+    /// </summary>
+    private void UpdateImmunityBlink()
+    {
+        if (!immunity)
+            return;
+
+        if (_col.a <= 0.3f)
+            isFadingOut = false;
+        else if (_col.a >= 1.0f)
+            isFadingOut = true;
+
+        _col.a += isFadingOut ? -0.1f : +0.1f;
+        SetColorWithFixedBrightness(_col);
+    }
+
+    private void HandleItemPickup(Collider2D collision)
+    {
+        if (Time.timeScale <= 0f)
+            return;
+
+        var script = collision.gameObject.GetComponent<DropItem>();
+        if (script != null && !script.isTreasureBox)
+        {
+            if (script.DropMoney != 0)
+            {
+                playerManager.ChangeMoney(script.DropMoney);
+                sePlayer.Play(SE_Field.CoinGet1);
+            }
+
+            if (script.DropID != null)
+            {
+                gameManager.AddAllTypeIDToInventory(script.DropID);
+                sePlayer.Play(SE_SystemEvent.ItemGet2);
+            }
+
+            Destroy(collision.gameObject);
+        }
+    }
+
+    #endregion
+
+    #region Damage & Death Logic
+
+    /// <summary>
+    /// ダメージリアクション（ノックバック処理）
+    /// </summary>
+    /// <param name="data">ノックバック情報</param>
+    private void ReactToDamage(KnockbackData data)
+    {
+        if (Time.timeScale <= 0 || IsImmune)
+            return;
+
+        // ノックバック力が設定されている場合のみ、移動制御を奪って吹き飛ばす
+        if (data.force > 0f)
+        {
+            move = false; // 操作不能にする
+
+            Vector2 knockbackDir = Vector2.zero;
+
+            // タイプに応じたベクトルの計算
+            switch (data.type)
+            {
+                case KnockbackType.HorizontalFromSource:
+                    // 敵(Source)とプレイヤー(pos)のX位置関係を見て、反対方向へ飛ばす
+                    // プレイヤーが右にいれば右(1)、左にいれば左(-1)
+                    float directionX = Mathf.Sign(pos.x - data.sourcePosition.x);
+                    knockbackDir = new Vector2(directionX, 0.5f).normalized; // 0.5fは少し浮かせるため
+                    break;
+
+                case KnockbackType.RadialFromSource:
+                    // 敵からプレイヤーへ向かうベクトル（全方位）
+                    knockbackDir = (pos - data.sourcePosition).normalized;
+                    break;
+
+                case KnockbackType.FixedVector:
+                    // 指定された固定ベクトル（正規化して使用）
+                    knockbackDir = data.fixedDirection.normalized;
+                    break;
+            }
+
+            // 速度の適用
+            _rbody.velocity = knockbackDir * data.force;
+        }
+
+        // コルーチンの開始（点滅処理と、硬直解除）
+        StartCoroutine(MoveStartCoroutine(data.force > 0f));
+    }
+
+    private IEnumerator MoveStartCoroutine(bool hasKnockback)
+    {
+        _col = new Color(1.0f, 1.0f, 1.0f, 1.0f);
+        immunity = true;
+
+        yield return new WaitForSeconds(MoveStart_Sec); // 硬直時間
+
+        // 死亡していない、かつノックバック発生による操作不能時のみ操作を復帰
+        if (!isDead && hasKnockback)
+        {
+            move = true;
+        }
+
+        yield return new WaitForSeconds(immunityDuration); // 無敵時間残り
+
+        immunity = false;
+        _col.a = 1.0f;
+        SetColorWithFixedBrightness(_col);
+    }
+
+    /// <summary>
+    /// 外部から無敵時間を強制付与
+    /// </summary>
+    public void EnableInvincibility(float time)
+    {
+        StartCoroutine(EnableInvincibilityCoroutine(time));
+    }
+
+    private IEnumerator EnableInvincibilityCoroutine(float time)
+    {
+        _col = new Color(1.0f, 1.0f, 1.0f, 1.0f);
+        immunity = true;
+        yield return new WaitForSeconds(time);
+        immunity = false;
+        _col.a = 1.0f;
+        SetColorWithFixedBrightness(_col);
+    }
+
+    private void HandlePlayerDeath()
+    {
+        EnterDeathState();
+    }
+
+    public void EnterDeathState()
+    {
+        isDead = true;
+        move = false;
+
+        if (_rbody != null)
+        {
+            _rbody.velocity = Vector2.zero;
+            _rbody.isKinematic = true;
+        }
+
+        if (_animator != null)
+            _animator.enabled = false;
+        if (_spriteRenderer != null && deathSprite != null)
+            _spriteRenderer.sprite = deathSprite;
+
+        immunity = false;
+        if (_spriteRenderer != null)
+            _spriteRenderer.color = Color.white;
+    }
+
+    public void ResetToLiveState()
+    {
+        isDead = false;
+        move = true;
+
+        if (_rbody != null)
+            _rbody.isKinematic = false;
+        if (_animator != null)
+            _animator.enabled = true;
+        if (_spriteRenderer != null)
+            _spriteRenderer.color = Color.white;
+    }
+
+    #endregion
+
+    #region Event Handlers & Helpers
+
     private void CalculateMoveSpeed()
     {
-        // 通常の歩行速度とダッシュ速度を計算
         walkSpeed = playerEffectManager.CalculateFinalPlayerMoveSpeed(m_defaultSpeed);
         dashSpeed = playerEffectManager.CalculateFinalPlayerMoveSpeed(m_dashDefaultSpeed);
     }
 
-    /// <summary>
-    /// 体形の状態データを取得して設定する
-    /// </summary>
     private void GetBodyStateData()
     {
-        BodyState = playerBodyManager.BodyState; //主人公の体形の状態を取得する
-        AnimBodyState = playerBodyManager.AnimBodyState; //アニメーションの体形の状態を取得する
-        _animator.SetInteger("BodyState", AnimBodyState); //体形の状態を設定
+        BodyState = playerBodyManager.BodyState;
+        AnimBodyState = playerBodyManager.AnimBodyState;
+        _animator.SetInteger("BodyState", AnimBodyState);
     }
 
-    /// <summary>
-    /// 初期状態のデータを設定する
-    /// </summary>
     private void HandleLoadingStateChanged(bool isLoading)
     {
-        // ロードが完了した(falseになった)タイミングで、データが最新になっているため初期化を実行
         if (!isLoading)
         {
-            GetBodyStateData();
-            CalculateMoveSpeed();
-
             GetBodyStateData();
             CalculateMoveSpeed();
             OnAnyBoolStatusChanged(
@@ -646,37 +804,58 @@ public class Heroin_move : MonoBehaviour
         }
     }
 
-    /// <summary>
-    /// PlayerManagerのいずれかのbool値が変更されたときに呼び出されます。
-    /// </summary>
-    /// <param name="flag">どのステータスが変更されたかを示すEnum</param>
-    /// <param name="isEnabled">ステータスの新しい値 (true/false)</param>
     private void OnAnyBoolStatusChanged(PlayerStatusBoolName flag, bool isEnabled)
     {
-        // どのフラグが変更されたかをswitch文で判定し、対応する変数を更新
         switch (flag)
         {
-            // ロボットが移動可能かどうかの状態
             case PlayerStatusBoolName.isRobotmove:
-                isRobotmove = isEnabled; //Robotが動けるかどうかを取得する
+                isRobotmove = isEnabled;
                 break;
         }
     }
 
-    /// <summary>
-    /// GameManagerから会話状態の変更通知を受け取る
-    /// </summary>
     private void HandleTalkingStateChanged(bool talkState)
     {
         isTalking = talkState;
     }
 
-    private void OnDrawGizmosSelected()
+    private void SetColorWithFixedBrightness(Color newColor)
     {
-        if (groundCheck == null)
+        if (_spriteRenderer == null)
             return;
 
-        Gizmos.color = Color.green;
-        Gizmos.DrawWireSphere(groundCheck.position, groundCheckRadius);
+        float h,
+            s,
+            v;
+        Color.RGBToHSV(newColor, out h, out s, out v);
+        float fixedBrightness = 0.8f;
+        Color finalColor = Color.HSVToRGB(h, s, fixedBrightness);
+        finalColor.a = newColor.a;
+
+        _spriteRenderer.color = finalColor;
     }
+
+    /// <summary>
+    /// 環境エリアに入ったときに呼ばれる登録メソッド (新規追加)
+    /// </summary>
+    public void EnterEnvironmentArea(EnvironmentArea area)
+    {
+        if (!activeEnvironments.Contains(area))
+        {
+            activeEnvironments.Add(area);
+        }
+    }
+
+    /// <summary>
+    /// 環境エリアから出たときに呼ばれる解除メソッド (新規追加)
+    /// </summary>
+    public void ExitEnvironmentArea(EnvironmentArea area)
+    {
+        if (activeEnvironments.Contains(area))
+        {
+            activeEnvironments.Remove(area);
+        }
+    }
+
+    #endregion
 }

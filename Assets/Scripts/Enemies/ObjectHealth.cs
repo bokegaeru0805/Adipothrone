@@ -1,121 +1,320 @@
-using System.Collections;
+using NaughtyAttributes;
 using UnityEngine;
 
 /// <summary>
 /// 破壊可能なオブジェクト（岩、木など）のHPと破壊処理を管理するクラス。
 /// CharacterHealthを継承し、共通のダメージ処理などを利用しつつ、
 /// EnemyDataがなくてもHPを設定できるなど、オブジェクト固有の初期化処理を持ちます。
+/// プーリングに対応し、破壊時のエフェクト再生機能も備えています。
 /// </summary>
-public class ObjectHealth : CharacterHealth
+[RequireComponent(typeof(Rigidbody2D))]
+public class ObjectHealth : CharacterHealth, IEnemyResettable
 {
-    [Header("オブジェクト固有設定")]
-    [Tooltip("破壊時のフェードアウト時間")]
-    [SerializeField]
-    private float fadeOutDuration = 0.1f;
-
     [Header("EnemyDataがない場合のフォールバック設定")]
     [Tooltip("EnemyDataが未設定の場合、この値が最大HPになります")]
     [SerializeField]
     private int objectMaxHP = 0;
 
-    [Tooltip("EnemyDataが未設定の場合、この値がドロップするお金になります")]
+    [Header("オブジェクト固有設定")]
+    [Tooltip("破壊時のフェードアウト時間")]
     [SerializeField]
-    private int dropMoney = 0;
+    private float fadeOutDuration = 0.1f;
+
+    [Tooltip("破壊時にエフェクトとを再生するかどうか")]
+    [SerializeField]
+    private bool enableDestroyEffect = false;
+
+    [Tooltip("破壊時に再生するエフェクトのプールタグ（任意）")]
+    [SerializeField, ShowIf(nameof(enableDestroyEffect))]
+    private string destroyEffectPoolTag;
+
+    [Tooltip("破壊エフェクトの大きさ")]
+    [SerializeField, ShowIf(nameof(enableDestroyEffect))]
+    private float destroyEffectScale = 1.0f;
+
+    [Tooltip("破壊時にSEを再生するかどうか")]
+    [SerializeField]
+    private bool enableDestroySE = false;
+
+    [Tooltip("破壊時の効果音（任意）")]
+    [SerializeField, ShowIf(nameof(enableDestroySE))]
+    private SeSelector destroySE;
+
+    [Header("破壊アニメーション設定")]
+    [Tooltip("破壊時にアニメーションを再生するかどうか")]
+    [SerializeField]
+    private bool enableDestroyAnimation = false;
+
+    [Tooltip("破壊アニメーションのパラメータ名（Trigger）")]
+    [SerializeField, ShowIf(nameof(enableDestroyAnimation))]
+    private string destroyAnimationParam = "Destroy";
+
+    [Header("位置リセット設定")]
+    [Tooltip("有効にすると、初回起動時の座標を記憶し、リセット時（再出現時）にその座標に戻ります")]
+    [SerializeField]
+    private bool enablePositionReset = false;
+
+    [Header("破壊時のコライダー設定")]
+    [Tooltip("破壊時、指定時間後にコライダーを無効にするかどうか")]
+    [SerializeField]
+    private bool enableDisableColliderOnDeath = false;
+
+    [Tooltip("破壊からコライダーを無効にするまでの時間（秒）")]
+    [SerializeField, ShowIf(nameof(enableDisableColliderOnDeath))]
+    private float disableColliderDelay = 0.0f;
 
     // --- 内部参照 ---
-    private bool isActivated = false; // 初期化が完了したかどうかのフラグ
+    private bool isInitialized = false; // 初期化が完了したかどうかのフラグ
+    private Vector3 initialPosition; // 記憶した初期座標
     private Rigidbody2D rbody;
+    private Transform dropParent;
 
     /// <summary>
-    /// オブジェクト固有の初期化処理。
-    /// EnemyDataがない場合のフォールバック機能を持つため、基本クラスのAwakeは使わず、
-    /// 完全にこのメソッドで処理を上書き（override）します。
+    /// 基本クラスのAwakeを拡張し、オブジェクトに必要なコンポーネントを取得、設定します。
     /// </summary>
     protected override void Awake()
     {
-        // 基本クラスのAwakeは呼び出さず、ここから全て記述する
-        isActivated = false;
-        rbody = GetComponent<Rigidbody2D>();
-        spriteRenderer = GetComponent<SpriteRenderer>(); // spriteRendererは基本クラスの変数
-        col = spriteRenderer.color;                 // colも基本クラスの変数
+        // 基本クラスのAwake処理（SpriteRendererの取得、オーバーレイ設定など）を実行
+        base.Awake();
 
-        // --- HPとドロップ金額の設定 ---
-        // EnemyDataが設定されている場合
-        if (enemyData != null)
+        // 固有コンポーネントの取得
+        rbody = GetComponent<Rigidbody2D>();
+        dropParent = this.transform.parent; // ドロップアイテムの親を設定
+
+        // 初回起動時の座標を記憶
+        // Startで行うと、EnmeyActivatorのResetState()呼び出しにより、座標が変わってしまう可能性がある
+        if (enablePositionReset)
         {
-            MaxHP = enemyData.enemyHP;
-            // TODO: ドロップ金額は現在使われていないが、必要ならここで設定
-            // dropMoney = enemyData.dropMoney; 
+            initialPosition = this.transform.position;
         }
-        // EnemyDataがなく、独自のHPが設定されている場合
-        else if (objectMaxHP > 0)
-        {
-            MaxHP = objectMaxHP;
-        }
-        // どちらも設定されていない場合は警告を出す
-        else
-        {
-            Debug.LogWarning($"{this.gameObject.name}はEnemyDataまたはobjectMaxHPが設定されていません");
-        }
-        
-        CurrentHP = MaxHP; // 現在HPを最大HPに設定
-        isActivated = true;  // 初期化完了
     }
 
     /// <summary>
-    /// 基本クラスから継承した、オブジェクト固有の死亡処理。
-    /// 元のHandleDeath()メソッドのロジックをここに記述します。
+    /// ゲーム開始時に、もし外部からInitializeが呼ばれていなければ、
+    /// インスペクターの設定またはフォールバック設定で自己初期化します。
+    /// </summary>
+    private void Start()
+    {
+        if (!isInitialized)
+        {
+            // EnemyDataがあればそれを使って初期化
+            if (enemyData != null)
+            {
+                Initialize(enemyData);
+            }
+            // なければフォールバック値（objectMaxHP）を使って初期化
+            else
+            {
+                InitializeFallback();
+            }
+        }
+    }
+
+    /// <summary>
+    /// 外部（スポナーなど）からEnemyDataを使って初期化するためのメソッド。
+    /// </summary>
+    public void Initialize(EnemyData data)
+    {
+        if (isInitialized)
+            return;
+
+        if (data == null)
+        {
+            Debug.LogError($"{this.gameObject.name}に設定されるEnemyDataがnullです。");
+            return;
+        }
+
+        this.enemyData = data;
+        MaxHP = enemyData.enemyHP;
+        destroyEffectScale = enemyData.destroyeffectScale;
+        // 必要ならエフェクトタグなどもデータから上書き可能
+
+        ResetState();
+        isInitialized = true;
+    }
+
+    /// <summary>
+    /// EnemyDataがない場合に、インスペクターのフォールバック設定を使って初期化します。
+    /// </summary>
+    public void InitializeFallback()
+    {
+        if (isInitialized)
+            return;
+
+        if (objectMaxHP > 0)
+        {
+            MaxHP = objectMaxHP;
+        }
+        else
+        {
+            Debug.LogWarning(
+                $"{this.gameObject.name}はEnemyDataまたはobjectMaxHPが設定されていません。HPを1として扱います。"
+            );
+            MaxHP = 1;
+        }
+
+        ResetState();
+        isInitialized = true;
+    }
+
+    /// <summary>
+    /// 基本クラスから継承した、オブジェクト固有の死亡（破壊）処理。
     /// </summary>
     protected override void OnDeath()
     {
-        // Rigidbodyの物理処理を停止
+        // --- 1. 破壊エフェクトの再生（フラグで制御） ---
+        if (enableDestroyEffect)
+        {
+            if (
+                ObjectPooler.PersistentInstance != null
+                && !string.IsNullOrEmpty(destroyEffectPoolTag)
+            )
+            {
+                GameObject effect = ObjectPooler.PersistentInstance.SpawnFromPool(
+                    destroyEffectPoolTag,
+                    this.transform.position,
+                    Quaternion.identity
+                );
+
+                if (effect != null)
+                {
+                    effect.transform.localScale = Vector3.one * destroyEffectScale;
+                }
+            }
+        }
+
+        // 破壊SEの再生（フラグで制御）
+        if (enableDestroySE)
+        {
+            CriWare.Assets.CriAtomSePlayer sePlayer =
+                GetComponent<CriWare.Assets.CriAtomSePlayer>();
+            if (sePlayer != null)
+            {
+                sePlayer.Play(destroySE.GetSelectedEnum());
+            }
+            else
+            {
+                Debug.LogWarning(
+                    "ObjectHealth: 破壊SEを再生する設定ですが、CriAtomSePlayerコンポーネントがアタッチされていません。"
+                );
+            }
+        }
+
+        // --- コライダー無効化の遅延処理 ---
+        if (enableDisableColliderOnDeath)
+        {
+            StartCoroutine(DisableColliderDelayCoroutine(disableColliderDelay));
+        }
+
+        // --- 2. 物理挙動の停止 ---
         if (rbody != null)
         {
             rbody.velocity = Vector2.zero;
-            rbody.isKinematic = true;
         }
 
-        // 破壊時に色を元に戻す
+        // --- 3. 見た目のリセット ---
+        // フェードアウト前の初期状態に戻す（透明度リセット）
         col.a = 1;
         spriteRenderer.color = col;
 
-        // 指定時間後にGameObjectを完全に消去する
-        Destroy(gameObject, fadeOutDuration);
+        // --- 4. 破壊アニメーションと非アクティブ化 ---
+        float waitTime = fadeOutDuration;
+
+        // アニメーションが有効かつAnimatorがある場合
+        if (enableDestroyAnimation && animator != null)
+        {
+            // 破壊トリガーをセット
+            animator.SetTrigger(destroyAnimationParam);
+        }
+
+        // 指定時間後に非アクティブ化（プーリング対応）
+        StartCoroutine(DeactivateAfterTime(waitTime));
     }
-    
+
+    /// <summary>
+    /// 指定時間後にコライダーを無効にするコルーチン。
+    /// </summary>
+    /// <param name="delay">待機時間（秒）</param>
+    /// <returns></returns>
+    private System.Collections.IEnumerator DisableColliderDelayCoroutine(float delay)
+    {
+        if (delay > 0f)
+        {
+            yield return new WaitForSeconds(delay);
+        }
+
+        Collider2D col = GetComponent<Collider2D>();
+        if (col != null)
+        {
+            col.enabled = false;
+        }
+    }
+
     /// <summary>
     /// HPが0になった後、徐々にフェードアウトさせるための処理。
     /// </summary>
     private void FixedUpdate()
     {
-        // HPが0以下で、かつ初期化が完了している場合にフェードアウトを実行
-        // isActivatedのチェックは元のスクリプトでは!isActivatedだったが、意図を汲んで修正
-        if (Time.timeScale > 0 && CurrentHP <= 0 && isActivated)
+        // HPが0以下で、かつ初期化済みの場合にフェードアウト
+        if (Time.timeScale > 0 && CurrentHP <= 0 && isInitialized)
         {
-            col.a -= 1 / (60 * fadeOutDuration);
+            col.a -= 1.0f / (60.0f * fadeOutDuration);
+            // 透明度が負にならないようにクランプ
+            col.a = Mathf.Max(col.a, 0f);
             spriteRenderer.color = col;
         }
     }
 
-    #region 独自機能
     /// <summary>
-    /// このオブジェクトの最大HPを外部から設定します。現在HPも新しい最大HPに合わせて全回復します。
+    /// オブジェクトの状態をリセットし、再利用可能な状態にします。
     /// </summary>
-    /// <param name="newMaxHP">新しい最大HPの値</param>
-    public void SetMaxHP(int newMaxHP)
+    public void ResetState()
     {
-        // 不正な値（0以下）が設定されないように値を検証
-        if (newMaxHP <= 0)
+        IsDefeated = false;
+        CurrentHP = MaxHP;
+
+        // 色と透明度を完全に戻す
+        col.a = 1f;
+        if (spriteRenderer != null)
         {
-            Debug.LogWarning(
-                "最大HPには1以上の値を設定してください。自動的に1に補正します。",
-                this
-            );
-            newMaxHP = 1;
+            spriteRenderer.color = col;
         }
 
+        // 座標を初期位置に戻す
+        if (enablePositionReset)
+        {
+            this.transform.position = initialPosition;
+        }
+
+        // コライダーを再度有効化
+        if (enableDisableColliderOnDeath)
+        {
+            Collider2D col = GetComponent<Collider2D>();
+            if (col != null)
+            {
+                col.enabled = true;
+            }
+        }
+
+        // 物理挙動の再有効化が必要な場合はここで行う
+        // if (rbody != null) rbody.isKinematic = false;
+    }
+
+    // ドロップアイテムの親オブジェクトを返すように上書き
+    public override Transform GetDropParent() => this.dropParent;
+
+    #region 独自機能
+    /// <summary>
+    /// このオブジェクトの最大HPを外部から動的に変更します。
+    /// </summary>
+    public void SetMaxHP(int newMaxHP)
+    {
+        if (newMaxHP <= 0)
+        {
+            newMaxHP = 1;
+        }
         MaxHP = newMaxHP;
-        CurrentHP = MaxHP; // 現在HPも最大値にリセット（全回復）
+        CurrentHP = MaxHP;
     }
     #endregion
 }

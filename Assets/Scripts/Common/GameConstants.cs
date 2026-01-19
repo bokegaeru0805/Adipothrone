@@ -103,6 +103,7 @@ public static class GameConstants
     public const float MIN_ATTACK_POWER_MULTIPLIER = 0.01f; // 攻撃力の倍率が0以下にならないようにする最小値
     public const float PLAYER_MOVE_MAX_SPEED = 50.0f; // プレイヤーの最大移動速度
     public const float PLAYER_BLADE_MIN_SPEED = 0.05f; // プレイヤーの剣の最小速度
+    public const float PLAYER_DAMAGE_DEFAULT_KNOCKBACK_FORCE = 3.0f; // プレイヤーの被ダメージ時のデフォルトノックバック力
     public const float GUTS_EFFECT_THRESHOLD = 0.9f; // 「耐える」効果が発動するHP割合の閾値
     public const float GAUGE_SMOOTH_TIME = 0.15f; // ゲージのスムーズな更新にかかる時間
     public const float PLAYER_BASE_HEIGHT = 3.0f; // プレイヤーの基準高さ
@@ -110,6 +111,7 @@ public static class GameConstants
     public const float PLAYER_JUMP_HEIGHT = 3.5f; // プレイヤーのジャンプ高さ
     public const float ROBOT_BASE_HEIGHT = 2.0f; // ロボットの基準高さ
     public const float ROBOT_JUMP_PEAK_HEIGHT = ROBOT_BASE_HEIGHT + PLAYER_JUMP_HEIGHT; // ロボットのジャンプ頂点高さ
+    public const float PLAYER_GRAVITY_SCALE = 2.0f; // プレイヤーの重力スケール
     public const string UI_COLOR_TAG_GOLD = "<color=#C6A34C>{0}</color>"; // ゴールド色のUIテキストタグのフォーマット文字列
 
     //string coloredText = string.Format(GameConstants.UI_COLOR_TAG_GOLD, "攻撃力");のようにして使用

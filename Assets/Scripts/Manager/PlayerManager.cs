@@ -47,7 +47,7 @@ public class PlayerManager : MonoBehaviour
     public event Action<int> OnChangeMaxWP; // 最大WPが変化したときに呼び出されるイベント
     public event Action<int> OnChangeWP; // WPが変化したときに呼び出されるイベント
     public event Action<PlayerAttackType> OnChangeAttackType; // 攻撃方法が変化したときに呼び出されるイベント
-    public event Action OnDamageReaction; // プレイヤーがダメージを受けたときに呼び出されるイベント
+    public event Action<KnockbackData> OnDamageReaction; // ダメージリアクション時に呼び出されるイベント
     public event Action OnChangePlayerMoney; // プレイヤーの所持金が変化したときに呼び出されるイベント
     public event Action OnPlayerDied; // プレイヤーが死亡したときに呼び出されるイベント
     public event Action OnPlayerRevived; // プレイヤーが復活したときに呼び出されるイベント
@@ -281,7 +281,8 @@ public class PlayerManager : MonoBehaviour
     /// 外部（敵の攻撃やプレイヤーの被弾処理）からはこの関数を呼び出します。
     /// </summary>
     /// <param name="baseDamage">防御計算前の基本ダメージ量</param>
-    public void TakeNormalDamage(int baseDamage)
+    /// <param name="knockbackData">ノックバック情報</param>
+    public void TakeNormalDamage(int baseDamage, KnockbackData knockbackData = default)
     {
         // PlayerEffectManagerから最終的な防御力を取得
         int damageReduction = EffectManager.CalculateFinalDefensePower();
@@ -292,7 +293,7 @@ public class PlayerManager : MonoBehaviour
         // ダメージが1以上あれば、実際にHPを減らす処理を呼び出す
         if (finalDamage > 0)
         {
-            ApplyDamage(finalDamage);
+            ApplyDamage(finalDamage, knockbackData);
         }
     }
 
@@ -300,7 +301,8 @@ public class PlayerManager : MonoBehaviour
     /// 【最大HP】に対する割合でダメージを与えます。
     /// </summary>
     /// <param name="damageRatio">最大HPに対するダメージの割合（例: 0.25f = 25%）</param>
-    public void DamageHPByMaxHPRatio(float damageRatio)
+    /// <param name="knockbackData">ノックバック情報</param>
+    public void DamageHPByMaxHPRatio(float damageRatio, KnockbackData knockbackData = default)
     {
         // ダメージ割合がマイナスや0の場合は処理を中断
         if (damageRatio <= 0)
@@ -311,14 +313,15 @@ public class PlayerManager : MonoBehaviour
         int damageAmount = Mathf.Max(1, Mathf.RoundToInt(playerMaxHP * damageRatio));
 
         // 既存のダメージ処理関数を呼び出す
-        ApplyDamage(damageAmount);
+        ApplyDamage(damageAmount, knockbackData);
     }
 
     /// <summary>
     /// 【現在HP】に対する割合でダメージを与えます。HPが低いほどダメージ量が減るため、この攻撃単体で倒されることはありません。
     /// </summary>
     /// <param name="damageRatio">現在HPに対するダメージの割合（例: 0.5f = 50%）</param>
-    public void DamageHPByCurrentHPRatio(float damageRatio)
+    /// <param name="knockbackData">ノックバック情報</param>
+    public void DamageHPByCurrentHPRatio(float damageRatio, KnockbackData knockbackData = default)
     {
         // ダメージ割合がマイナスや0の場合は処理を中断
         if (damageRatio <= 0)
@@ -332,14 +335,15 @@ public class PlayerManager : MonoBehaviour
         int damageAmount = Mathf.Max(1, Mathf.RoundToInt(currentHP * damageRatio));
 
         // 既存のダメージ処理関数を呼び出す
-        ApplyDamage(damageAmount);
+        ApplyDamage(damageAmount, knockbackData);
     }
 
     /// <summary>
     /// 計算済みの最終ダメージをHPに適用し、死亡判定などを行う内部専用関数。
     /// </summary>
-    /// <param name="damage">適用する最終ダメージ量</param>
-    private void ApplyDamage(int damage)
+    /// <param name="damage">適用するダメージ量</param>
+    /// <param name="knockbackData">ノックバック情報</param>
+    private void ApplyDamage(int damage, KnockbackData knockbackData = default)
     {
         // 全てのダメージ処理の入口で、まず無敵状態をチェックする
         if (heroinMove != null && heroinMove.IsImmune)
@@ -364,7 +368,7 @@ public class PlayerManager : MonoBehaviour
         SetPlayerIntStatus(PlayerStatusIntName.playerCurrentHP, hpBeforeDamage - damage); //HPを更新
 
         // HPを減らした直後に、リアクションを促すイベントを発行する
-        OnDamageReaction?.Invoke();
+        OnDamageReaction?.Invoke(knockbackData);
 
         int hpAfterDamage = hpBeforeDamage - damage;
 

@@ -546,7 +546,7 @@ public class CameraMoveArea : MonoBehaviour
     private void OnDrawGizmos()
     {
         // ギズモの描画色と透明度を設定（半透明のマゼンタ）
-        Color fillColor = new Color(1f, 0f, 1f, 0.05f);
+        Color fillColor = new Color(1f, 0f, 1f, 0.2f);
         Color borderColor = Color.magenta;
 
         // BoxCollider2Dが存在するかチェック
@@ -570,7 +570,7 @@ public class CameraMoveArea : MonoBehaviour
         Gizmos.color = borderColor;
         Gizmos.DrawWireCube(Vector3.zero, (Vector3)box2D.size);
 
-        // --- 追加: 文字ラベルの表示 ---
+        // --- 文字ラベルの表示 ---
 #if UNITY_EDITOR
         // オブジェクト名から表示する文字列を作成
         string labelText = gameObject.name;

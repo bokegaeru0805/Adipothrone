@@ -1,3 +1,4 @@
+using Fungus;
 using NaughtyAttributes;
 using UnityEngine;
 using UnityEngine.Playables;
@@ -23,6 +24,11 @@ public class PlayerTestMoveController : MonoBehaviour
     [Tooltip("1回に与えるダメージ量")]
     [SerializeField]
     private int damageAmount = 10;
+
+    [Header("Timeline自動再生設定")]
+    [Tooltip(
+        "PlayableDirectorコンポーネントをアタッチして、自動再生したいTimelineを指定してください"
+    )]
     [SerializeField]
     private PlayableDirector director;
 
@@ -45,6 +51,9 @@ public class PlayerTestMoveController : MonoBehaviour
     private int currentPressCount = 0;
     private float timeSinceLastPress = 0f;
 
+    // ---　内部コンポーネント ---
+    private Collider2D playerCollider;
+
     void Start()
     {
         // 効率化のため、最初にメインカメラを取得しておく
@@ -52,11 +61,13 @@ public class PlayerTestMoveController : MonoBehaviour
         // 連打カウントを初期化
         currentPressCount = 0;
 
-        if(director != null)
+        if (director != null)
         {
             director.Play();
             Debug.Log($"Timeline Started: {director.name}");
         }
+
+        playerCollider = GetComponent<Collider2D>();
     }
 
     void Update()
@@ -104,6 +115,9 @@ public class PlayerTestMoveController : MonoBehaviour
     /// </summary>
     private void ApplyDamageAtMousePosition()
     {
+        Debug.Log("Damage Test: マウスクリック検出");
+        
+        playerCollider.enabled = false; // 一時的に自分のコライダーを無効化して自身を除外
         // マウスのスクリーン座標をワールド座標に変換
         Vector2 mouseWorldPos = mainCamera.ScreenToWorldPoint(Input.mousePosition);
 
@@ -128,6 +142,8 @@ public class PlayerTestMoveController : MonoBehaviour
                 // Debug.Log($"クリックした対象 ({hitCollider.name}) には CharacterHealth がありません。");
             }
         }
+
+        playerCollider.enabled = true; // 自分のコライダーを再度有効化
     }
 
     // Playモード停止を処理する専用の関数
