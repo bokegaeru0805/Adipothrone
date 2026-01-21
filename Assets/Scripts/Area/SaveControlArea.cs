@@ -4,7 +4,7 @@ using UnityEngine;
 /// プレイヤーがトリガー範囲内に入るとセーブを無効化し、出ると有効化する
 /// </summary>
 [RequireComponent(typeof(BoxCollider2D))]
-public class SaveControlZone : MonoBehaviour
+public class SaveControlArea : MonoBehaviour
 {
     private BoxCollider2D boxCollider;
 

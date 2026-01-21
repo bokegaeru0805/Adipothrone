@@ -644,7 +644,8 @@ public class Heroin_move : MonoBehaviour
                 sePlayer.Play(SE_SystemEvent.ItemGet2);
             }
 
-            Destroy(collision.gameObject);
+            // オブジェクトプールに返却
+           script.ReturnToPool();
         }
     }
 

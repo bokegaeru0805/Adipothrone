@@ -54,20 +54,19 @@ public static class DropOnDeathHandler
                 Vector2 offset = UnityEngine.Random.insideUnitCircle * ItemPositionOffsetRadius;
                 Vector3 dropPos = dropBasePos + new Vector3(offset.x, offset.y, 0);
 
-                // ドロップアイテム用のプレハブを生成
-                GameObject dropObj =
-                    parent != null
-                        ? UnityEngine.Object.Instantiate(
-                            GameManager.instance.DropItemPrefab,
-                            dropPos,
-                            Quaternion.identity,
-                            parent
-                        )
-                        : UnityEngine.Object.Instantiate(
-                            GameManager.instance.DropItemPrefab,
-                            dropPos,
-                            Quaternion.identity
-                        );
+                // 【重要】DropItemはシーンオブジェクト（EnemyActivator）の子になるため、
+                // シーン遷移時の整合性を保つために PersistentInstance ではなく SceneInstance を使用する。
+                GameObject dropObj = ObjectPooler.SceneInstance.SpawnFromPool(
+                    GameConstants.DROP_ITEM_POOLTAG,
+                    dropPos,
+                    Quaternion.identity
+                );
+
+                // 親オブジェクト指定がある場合は、生成後に設定する
+                if (dropObj != null && parent != null)
+                {
+                    dropObj.transform.SetParent(parent);
+                }
 
                 // DropItemスクリプトを取得（存在しない場合は警告を出してスキップ）
                 var dropScript = dropObj.GetComponent<DropItem>();
@@ -82,7 +81,7 @@ public static class DropOnDeathHandler
                 if (dropID == null)
                 {
                     // IDが取得できない場合はドロップを中止
-                    UnityEngine.Object.Destroy(dropObj);
+                    dropScript.ReturnToPool();
                     Debug.LogWarning("ドロップアイテムのIDが取得できませんでした");
                     continue;
                 }
@@ -123,19 +122,16 @@ public static class DropOnDeathHandler
 
                 // 親オブジェクト(EnemyActivator)が存在する場合は、親の子としてドロップアイテムを生成し、
                 // 存在しない場合はルートに生成する（親子関係を持たせない）
-                GameObject coinObj =
-                    parent != null
-                        ? UnityEngine.Object.Instantiate(
-                            GameManager.instance.DropItemPrefab,
-                            dropPos,
-                            Quaternion.identity,
-                            parent
-                        )
-                        : UnityEngine.Object.Instantiate(
-                            GameManager.instance.DropItemPrefab,
-                            dropPos,
-                            Quaternion.identity
-                        );
+                GameObject coinObj = ObjectPooler.SceneInstance.SpawnFromPool(
+                    GameConstants.DROP_ITEM_POOLTAG,
+                    dropPos,
+                    Quaternion.identity
+                );
+
+                if (coinObj != null && parent != null)
+                {
+                    coinObj.transform.SetParent(parent);
+                }
 
                 var dropScript = coinObj.GetComponent<DropItem>();
                 if (dropScript == null)

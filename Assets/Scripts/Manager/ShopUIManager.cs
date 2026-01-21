@@ -237,7 +237,7 @@ public class ShopUIManager : MonoBehaviour
         {
             if (obj == null)
             {
-                Debug.LogError($"ShopUIManagerに{name}がセットされていません。");
+                Debug.LogError($"ShopUIManagerに{name}がセットされていません。",this);
                 result = false;
             }
         }

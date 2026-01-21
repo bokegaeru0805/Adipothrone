@@ -100,6 +100,14 @@ public class CharacterHealthUIController : MonoBehaviour
             StopCoroutine(hideCoroutine);
             hideCoroutine = null;
         }
+
+        // 親オブジェクトが非アクティブになった（エリアを出た）際、
+        // HPバーの表示状態も強制的にオフにリセットする。
+        // これにより、次にエリアに入って敵が再表示された際、HPバーは隠れた状態からスタートする。
+        if (hpBarRootObject != null)
+        {
+            hpBarRootObject.SetActive(false);
+        }
     }
 
     /// <summary>

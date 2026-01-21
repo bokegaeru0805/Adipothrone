@@ -125,7 +125,6 @@ public class BossAfterDeath : MonoBehaviour
         {
             case BossHealth.BossName.FirstBoss:
                 flagManager.SetBoolFlag(PrologueTriggeredEvent.DefeatFirstBoss, true);
-                flagManager.SetKeyOpened(KeyID.K4_2, true); //ボス前の扉を開ける
                 FungusHelper.ExecuteBlock(flowchart, "FirstBossDefeat");
                 BGMManager.instance.Play(BGMCategory.Field_Quiet); //指定したBGMを再生
                 GameManager.instance.savedata.ProgressLogData.RegisterProgressData(

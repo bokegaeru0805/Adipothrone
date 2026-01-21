@@ -63,9 +63,16 @@ public class ObjectHealth : CharacterHealth, IEnemyResettable
     [SerializeField, ShowIf(nameof(enableDisableColliderOnDeath))]
     private float disableColliderDelay = 0.0f;
 
+    [Tooltip(
+        "有効にすると、初回起動時の回転（傾き）を記憶し、リセット時（再出現時）にその回転に戻ります"
+    )]
+    [SerializeField]
+    private bool enableRotationReset = true;
+
     // --- 内部参照 ---
     private bool isInitialized = false; // 初期化が完了したかどうかのフラグ
     private Vector3 initialPosition; // 記憶した初期座標
+    private Quaternion initialRotation; // 記憶した初期回転
     private Rigidbody2D rbody;
     private Transform dropParent;
 
@@ -86,6 +93,12 @@ public class ObjectHealth : CharacterHealth, IEnemyResettable
         if (enablePositionReset)
         {
             initialPosition = this.transform.position;
+        }
+
+        // 初回起動時の回転を記憶
+        if (enableRotationReset)
+        {
+            initialRotation = this.transform.rotation;
         }
     }
 
@@ -284,6 +297,18 @@ public class ObjectHealth : CharacterHealth, IEnemyResettable
         if (enablePositionReset)
         {
             this.transform.position = initialPosition;
+        }
+
+        // 回転を初期回転に戻す
+        if (enableRotationReset)
+        {
+            this.transform.rotation = initialRotation;
+
+            // Rigidbodyがある場合、回転速度もリセットしておくのが安全です
+            if (rbody != null)
+            {
+                rbody.angularVelocity = 0f;
+            }
         }
 
         // コライダーを再度有効化

@@ -69,11 +69,13 @@ public class EnvironmentArea : MonoBehaviour
             return;
 
         // エリアの色（半透明のオレンジ）
-        Gizmos.color = new Color(1f, 0.64f, 0f, 0.2f);
+        Color fillColor = new Color(1f, 0.64f, 0f, 0.2f);
+        Gizmos.color = fillColor;
         Gizmos.DrawCube(col.bounds.center, col.bounds.size);
 
         // 枠線（不透明のオレンジ）
-        Gizmos.color = new Color(1f, 0.64f, 0f, 1f);
+        Color borderColor = new Color(1f, 0.64f, 0f, 1f);
+        Gizmos.color = borderColor;
         Gizmos.DrawWireCube(col.bounds.center, col.bounds.size);
 
         // 風向きの矢印

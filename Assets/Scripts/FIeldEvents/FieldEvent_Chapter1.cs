@@ -186,9 +186,8 @@ public class FieldEvent_Chapter1 : BaseFieldEvent
                 }
                 break;
             case FieldName.RiverBossField:
-                if (!flagManager.GetBoolFlag(Chapter1TriggeredEvent.RiverBossAppear))
+                if (!flagManager.GetBoolFlag(Chapter1TriggeredEvent.RiverBossDefeated))
                 {
-                    flagManager.SetBoolFlag(Chapter1TriggeredEvent.RiverBossAppear, true);
                     isEventTriggered = true; // イベントがトリガーされたことを記録
                     FungusHelper.ExecuteBlock(targetFlowchart, "RiverBossAppear");
                     GameManager.instance.savedata.ProgressLogData.RegisterProgressData(
@@ -205,9 +204,8 @@ public class FieldEvent_Chapter1 : BaseFieldEvent
                 }
                 break;
             case FieldName.CaveBossField:
-                if (!flagManager.GetBoolFlag(Chapter1TriggeredEvent.CaveBossAppear))
+                if (!flagManager.GetBoolFlag(Chapter1TriggeredEvent.CaveBossDefeated))
                 {
-                    flagManager.SetBoolFlag(Chapter1TriggeredEvent.CaveBossAppear, true);
                     isEventTriggered = true; // イベントがトリガーされたことを記録
                     FungusHelper.ExecuteBlock(targetFlowchart, "CaveBossAppear");
                     GameManager.instance.savedata.ProgressLogData.RegisterProgressData(

@@ -112,6 +112,8 @@ public enum SE_Field
     Sand1 = 5085,
     Clash_WaterGlass = 5090,
     WaterMove1 = 5095,
+    LaserShoot = 5100,
+    LaserExpand = 5101,
 }
 
 /// <summary>

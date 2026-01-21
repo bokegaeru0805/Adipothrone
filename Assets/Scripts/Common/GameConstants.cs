@@ -112,6 +112,7 @@ public static class GameConstants
     public const float ROBOT_BASE_HEIGHT = 2.0f; // ロボットの基準高さ
     public const float ROBOT_JUMP_PEAK_HEIGHT = ROBOT_BASE_HEIGHT + PLAYER_JUMP_HEIGHT; // ロボットのジャンプ頂点高さ
     public const float PLAYER_GRAVITY_SCALE = 2.0f; // プレイヤーの重力スケール
+    public const float INVINCIBLE_DURATION_ON_LOAD = 5.0f; // ロード時の無敵時間
     public const string UI_COLOR_TAG_GOLD = "<color=#C6A34C>{0}</color>"; // ゴールド色のUIテキストタグのフォーマット文字列
 
     //string coloredText = string.Format(GameConstants.UI_COLOR_TAG_GOLD, "攻撃力");のようにして使用
@@ -149,4 +150,5 @@ public static class GameConstants
 
     // ---　プールタグ名 ---
     public const string EFFECT_ENEMY_SPAWN_POOLTAG = "Effect_Enemy_Spawn";
+    public const string DROP_ITEM_POOLTAG = "DropItem" ;
 }

@@ -207,6 +207,7 @@ public class FieldEvent_Tutorial : BaseFieldEvent
                 }
                 break;
 
+            // 初ボス直前イベント
             case FieldName.BeforeFirstBossField:
                 if (
                     !flagManager.GetBoolFlag(PrologueTriggeredEvent.BeforeFirstBoss)
@@ -219,10 +220,10 @@ public class FieldEvent_Tutorial : BaseFieldEvent
                 }
                 break;
 
+            // 初ボス出現イベント
             case FieldName.FirstBossAppearField:
-                if (!flagManager.GetBoolFlag(PrologueTriggeredEvent.FirstBossAppear))
+                if (!flagManager.GetBoolFlag(PrologueTriggeredEvent.DefeatFirstBoss))
                 {
-                    flagManager.SetBoolFlag(PrologueTriggeredEvent.FirstBossAppear, true);
                     FungusHelper.ExecuteBlock(targetFlowchart, "FirstBossAppearField");
                     GameManager.instance.savedata.ProgressLogData.RegisterProgressData(
                         ProgressLogName.FirstBossAppear

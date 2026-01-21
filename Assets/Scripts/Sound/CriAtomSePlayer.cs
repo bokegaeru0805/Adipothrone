@@ -207,6 +207,7 @@ namespace CriWare.Assets
 
             if (cueName != null)
             {
+                // Debug.Log($"Playing SE: {cueName}");
                 // 既存のPlay(string)メソッドを呼び出す
                 return this.Play(cueName);
             }

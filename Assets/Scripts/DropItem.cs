@@ -20,17 +20,21 @@ public class TreasureSpriteSet
 /// </summary>
 /// <remarks>
 /// ■ 前提条件:
-/// 1. Rigidbody2D: このコンポーネントがアタッチされている場合、Body Typeは「Kinematic」に設定してください。
-///    「Dynamic」だと物理演算が働き、自動配置やアニメーションが正しく動作しません。
-/// 2. Pivot設定:
-///    - 自動配置されるアイテムやお金のスプライト: Pivotは「Center」を想定しています。
-///    - 手動配置される宝箱のスプライト: Pivotは「Bottom」に設定することを推奨します。
+/// 1. Rigidbody2D: Body Typeは「Kinematic」推奨。「Dynamic」だと自動配置が正しく動作しません。
+/// 2. Pivot設定: アイテムは「Center」、宝箱は「Bottom」推奨。
 ///
 /// ■ 注意事項:
 /// このスクリプトは、宝箱(isTreasureBox = true)の場合は地面への自動配置を行いません。
-/// 宝箱はシーンに直接、手動で配置されることを前提としています。
+///
+/// ■ ObjectPoolerの設計方針について (重要):
+/// このオブジェクトは `ObjectPooler.SceneInstance`（シーン固有プール）で管理します。
+/// 理由は以下の通りです：
+/// 1. 【メモリ効率】: シーンによってドロップ数が大きく異なるため、永続化せずシーン終了時にメモリを解放するため。
+/// 2. 【親子関係の整合性】: 生成時に `EnemyActivator`（シーンオブジェクト）の子として設定されるため、
+///    シーン遷移時に親と一緒に破棄されないと、参照エラー（MissingReference）の原因になるため。
+/// 3. 【状態リセット】: 宝箱化など状態変化が激しいため、シーン遷移で確実にリセットし、バグの持ち越しを防ぐため。
 /// </remarks>
-public class DropItem : MonoBehaviour
+public class DropItem : PoolableObject
 {
     private float maxUnitPixel = 2.0f; //スプライトの最大表示サイズ（Unity単位）
     private float originalColliderSize = 2.0f; //元のColliderサイズ（固定）
@@ -101,6 +105,38 @@ public class DropItem : MonoBehaviour
         rbody = GetComponent<Rigidbody2D>();
     }
 
+    /// <summary>
+    /// 変数やコンポーネントの状態を初期化します。
+    /// </summary>
+    private void ResetState()
+    {
+        isTreasureBox = false;
+        DropMoney = 0;
+        DropID = null;
+
+        // 宝箱化によって変更されたタグを元に戻す
+        this.tag = GameConstants.UNTAGGED_TAG_NAME;
+
+        // 物理挙動のリセット（地面判定ロジックが走るまではKinematicで静止させておく）
+        if (rbody != null)
+        {
+            rbody.bodyType = RigidbodyType2D.Kinematic;
+            rbody.velocity = Vector2.zero;
+        }
+
+        // コライダーサイズを初期値に戻す
+        if (mycollider != null)
+        {
+            mycollider.radius = originalColliderSize / 2;
+        }
+
+        // スケールはObjectPooler側で初期値(prefabの状態)に戻されるが、
+        // SetDropItemSpriteで変更される可能性があるため、必要ならここでも戻す
+    }
+
+    /// <summary>
+    /// ドロップアイテムのスプライトを設定します。
+    /// </summary>
     public void SetDropItemSprite()
     {
         Sprite dropSprite = ItemDataManager.instance.GetItemSpriteByID(DropID); // アイテムの見た目（スプライト）を取得
@@ -131,6 +167,9 @@ public class DropItem : MonoBehaviour
         AdjustPositionToGroundSurface();
     }
 
+    /// <summary>
+    /// ドロップするお金のスプライトを設定します。
+    /// </summary>
     public void SetMoneySprite()
     {
         Animator animator = this.GetComponent<Animator>();
@@ -363,9 +402,6 @@ public class DropItem : MonoBehaviour
         }
     }
 
-    /// <summary>
-    /// オブジェクトが他のコライダーと衝突したときに呼び出される
-    /// </summary>
     private void OnCollisionEnter2D(Collision2D collision)
     {
         // 落下中(Dynamic)でなければ何もしない
@@ -384,12 +420,16 @@ public class DropItem : MonoBehaviour
         }
     }
 
-    /// <summary>
-    /// このオブジェクトが破棄される際に、実行中のDOTweenアニメーションを停止します。
-    /// </summary>
-    private void OnDestroy()
+    private void OnEnable()
     {
-        // このTransformで実行中のすべてのアニメーションを安全に停止・破棄する
+        // プールから取り出された際に状態をリセットする
+        ResetState();
+    }
+
+    private void OnDisable()
+    {
+        // プールに戻る際（または非アクティブ化時）にアニメーションを確実に停止する
+        // これを忘れると、次に取り出した時に変な位置に飛んだりする
         transform.DOKill();
     }
 }

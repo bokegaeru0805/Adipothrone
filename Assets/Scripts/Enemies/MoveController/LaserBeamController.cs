@@ -67,6 +67,7 @@ public class LaserBeamController : MonoBehaviour, IEnemyResettable
 
     // --- コンポーネント参照 ---
     private SpriteRenderer beamSpriteRenderer; //ビームの描画用スプライト
+    private CriWare.Assets.CriAtomSePlayer _sePlayer;
 
     private void Awake()
     {
@@ -74,6 +75,7 @@ public class LaserBeamController : MonoBehaviour, IEnemyResettable
             beamCollider = GetComponent<BoxCollider2D>();
 
         beamSpriteRenderer = GetComponent<SpriteRenderer>();
+        _sePlayer = GetComponent<CriWare.Assets.CriAtomSePlayer>();
         // スプライトの高さ（太さ）は初期値を維持する
         if (beamSpriteRenderer != null)
         {
@@ -147,6 +149,7 @@ public class LaserBeamController : MonoBehaviour, IEnemyResettable
         currentState = BeamState.Expanding;
         float timer = 0f;
         float startLen = beamSpriteRenderer.size.x;
+        _sePlayer?.Play(SE_Field.LaserShoot);
 
         while (timer < expansionDuration)
         {
@@ -155,6 +158,7 @@ public class LaserBeamController : MonoBehaviour, IEnemyResettable
             // 滑らかに伸ばす
             float currentLen = Mathf.Lerp(startLen, maxBeamLength, t);
             UpdateBeamSize(currentLen);
+            _sePlayer?.Play(SE_Field.LaserExpand);
             yield return null;
         }
         // 念のため最終値を適用

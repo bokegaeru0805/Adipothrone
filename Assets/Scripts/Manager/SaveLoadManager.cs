@@ -552,7 +552,7 @@ public class SaveLoadManager : MonoBehaviour
                 {
                     sceneName = ES3.Load<string>("CurrentSceneName", filePath);
                 }
-                
+
                 AsyncOperation asyncLoad = SceneManager.LoadSceneAsync(sceneName); //Sceneをロード
 
                 //セーブデータのプレイ時間を更新
@@ -616,6 +616,20 @@ public class SaveLoadManager : MonoBehaviour
 #endif
             }
 
+            // シーン内に配置された補正エリアを確認し、該当する場合は座標を上書きする
+            foreach (var corrector in PlayerSpawnCorrectorArea.ActiveInstances)
+            {
+                if (corrector != null && corrector.IsPositionInArea(PlayerPosition))
+                {
+                    Vector2 correctedPos = corrector.GetSafeSpawnPosition();
+                    // Debug.Log(
+                    //     $"ロード位置補正: {PlayerPosition} -> {correctedPos} (by {corrector.name})"
+                    // );
+                    PlayerPosition = correctedPos;
+                    break; // 1か所で補正されたら終了（エリア重複はない前提）
+                }
+            }
+
             //シーンロードが完了したので、"新しいシーンの" PlayerManagerを改めて取得する
             var playerManagerInNewScene = PlayerManager.instance;
 
@@ -631,7 +645,9 @@ public class SaveLoadManager : MonoBehaviour
                 // プレイヤーを一定時間無敵化
                 if (file_number != GameConstants.NEW_GAME_FILE_NUMBER)
                 {
-                    playerManagerInNewScene.EnableInvincibility(5);
+                    playerManagerInNewScene.EnableInvincibility(
+                        GameConstants.INVINCIBLE_DURATION_ON_LOAD
+                    );
                 }
             }
             else

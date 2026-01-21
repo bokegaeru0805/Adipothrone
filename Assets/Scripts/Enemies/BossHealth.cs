@@ -100,10 +100,8 @@ public class BossHealth : CharacterHealth
             switch (bossname)
             {
                 case BossName.FirstBoss:
-                    FlagManager.instance.SetKeyOpened(KeyID.K4_2, false);
                     break;
                 case BossName.SlimeBoss:
-                    // スライムボス固有の初期設定があればここに追加
                     break;
                 // 他のボスもここに追加
             }

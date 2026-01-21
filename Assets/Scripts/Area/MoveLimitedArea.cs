@@ -1,6 +1,6 @@
 using UnityEngine;
 
-public class MoveLimitedZone : MonoBehaviour
+public class MoveLimitedArea : MonoBehaviour
 {
     private void OnDrawGizmos()
     {
