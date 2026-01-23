@@ -89,8 +89,16 @@ public static class DropOnDeathHandler
                 // DropItemスクリプトにIDを設定
                 dropScript.DropID = dropID;
 
+                // ドロップしたアイテムを図鑑の「確認済みリスト」に登録する
+                // Enumをint型IDに変換して保存
+                int itemIDInt = EnumIDUtility.ToID(dropID);
+                GameManager.instance.savedata.EnemyRecordData.UnlockDropItem(
+                    enemyData.enemyID,
+                    itemIDInt
+                );
+
                 // アイテムの種類ID（TypeID）を取得
-                int dropIDType = EnumIDUtility.ExtractTypeID(EnumIDUtility.ToID(dropID));
+                int dropIDType = EnumIDUtility.ExtractTypeID(itemIDInt); // 変数再利用で少し効率化
 
                 // 装備アイテムなら宝箱スプライトを表示（通常アイテムとは区別）
                 if ((int)TypeID.Blade <= dropIDType && dropIDType < (int)TypeID.Jewelry3)

@@ -1047,18 +1047,29 @@ public class StoneGolemMoveController : MonoBehaviour
         float existenceDuration = Mathf.Abs(rightBound - leftBound) / crawlingRockSpeed; // 這う岩の存在時間を計算
         var crawlingRockSePlayer = crawlingRock.GetComponent<CriWare.Assets.CriAtomSePlayer>();
 
+        //ループ前に一度だけ再生し、Playbackハンドルを取得
+        // これにより「毎フレームPlay」の負荷と不具合を防ぎます
+        CriWare.CriAtomExPlayback rockSePlayback = crawlingRockSePlayer.Play(
+            SE_Field.GroundRumble1
+        );
+
         // 岩の生存時間を計測するタイマーを追加
         float lifeTimer = 0f;
         float elapsedTime = crawlingRockDustEffectInterval; //最初にすぐエフェクトを出すために初期化
         while (true)
         {
             if (crawlingRock == null)
+            {
+                rockSePlayback.Stop(); // 岩が消滅していたら音も止める（念のため）
                 yield break;
+            }
 
             if (!TimeManager.instance.isEnemyMovePaused) //敵の動きがポーズされていない場合
             {
                 if (crawlingRockRigidbody != null && !crawlingRockRigidbody.simulated)
                     crawlingRockRigidbody.simulated = true; //物理挙動を再起動する
+
+                rockSePlayback.Pause(false); // ポーズ解除中なので、音声を再開（一時停止解除）
 
                 // ポーズ中でなければ、生存時間タイマーを進める
                 lifeTimer += Time.deltaTime;
@@ -1066,6 +1077,7 @@ public class StoneGolemMoveController : MonoBehaviour
                 // 生存時間に達したらオブジェクトを破棄して終了
                 if (lifeTimer >= existenceDuration)
                 {
+                    rockSePlayback.Stop(); //破棄する前に音を止める
                     ObjectPooler.SceneInstance.ReturnToPool(crawlingRockPoolTag, crawlingRock);
                     yield break;
                 }
@@ -1119,13 +1131,12 @@ public class StoneGolemMoveController : MonoBehaviour
                     scale.x = Mathf.Abs(scale.x) * (_rightFlag ? -1f : 1f);
                     crawlingDustEffect.transform.localScale = scale; // スケールを適用
                 }
-
-                crawlingRockSePlayer.Play(SE_Field.GroundRumble1); // 這う岩の移動音を鳴らす
             }
             else
             {
                 if (crawlingRockRigidbody != null)
                     crawlingRockRigidbody.simulated = false; //物理挙動を止める
+                rockSePlayback.Pause(true); // ポーズ中なので、音声を一時停止
             }
 
             yield return null; //1フレーム待って次のフレームで再評価する（フリーズ防止）

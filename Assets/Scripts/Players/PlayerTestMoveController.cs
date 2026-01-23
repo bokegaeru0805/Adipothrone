@@ -1,4 +1,4 @@
-using Fungus;
+using CriWare;
 using NaughtyAttributes;
 using UnityEngine;
 using UnityEngine.Playables;
@@ -53,6 +53,8 @@ public class PlayerTestMoveController : MonoBehaviour
 
     // ---　内部コンポーネント ---
     private Collider2D playerCollider;
+    private CriWare.Assets.CriAtomSePlayer _sePlayer;
+    private CriAtomExPlayback loopSePlayback;
 
     void Start()
     {
@@ -68,6 +70,7 @@ public class PlayerTestMoveController : MonoBehaviour
         }
 
         playerCollider = GetComponent<Collider2D>();
+        _sePlayer = GetComponent<CriWare.Assets.CriAtomSePlayer>();
     }
 
     void Update()
@@ -108,6 +111,23 @@ public class PlayerTestMoveController : MonoBehaviour
 #if UNITY_EDITOR
         HandleEditorStop();
 #endif
+
+        if (_sePlayer != null)
+        {
+            if (Input.GetKeyDown(KeyCode.A))
+            {
+                _sePlayer.Play(SE_EnemyAction.ChargePower1);
+                loopSePlayback = _sePlayer.Play(SE_Field.SawBlade);
+            }
+            else if (Input.GetKeyUp(KeyCode.A))
+            {
+                loopSePlayback.Pause();
+            }
+            else if (Input.GetKeyDown(KeyCode.S))
+            {
+                loopSePlayback.Resume(CriAtomEx.ResumeMode.AllPlayback);
+            }
+        }
     }
 
     /// <summary>
@@ -116,7 +136,7 @@ public class PlayerTestMoveController : MonoBehaviour
     private void ApplyDamageAtMousePosition()
     {
         Debug.Log("Damage Test: マウスクリック検出");
-        
+
         playerCollider.enabled = false; // 一時的に自分のコライダーを無効化して自身を除外
         // マウスのスクリーン座標をワールド座標に変換
         Vector2 mouseWorldPos = mainCamera.ScreenToWorldPoint(Input.mousePosition);

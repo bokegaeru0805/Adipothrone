@@ -308,27 +308,40 @@ public class EnemyDexPanelActive : MonoBehaviour, IPanelActive
         {
             foreach (var item in enemyData.dropItems)
             {
-                // BaseItemDataにitemNameプロパティがあると仮定
-                string itemName = item.baseItemData.itemName;
+               string displayName = "？？？"; // デフォルトは隠す
+
+                // 1. アイテムのID（int）を取得
+                // (注意: BaseItemManagerやEnumIDUtilityへのアクセスが必要)
+                var itemEnum = BaseItemManager.instance.GetItemIDFromData(item.baseItemData);
+                
+                if (itemEnum != null)
+                {
+                    int itemID = EnumIDUtility.ToID(itemEnum);
+
+                    // 2. セーブデータを確認して、ドロップ済みなら本来の名前を表示
+                    if (GameManager.instance.savedata.EnemyRecordData.IsDropUnlocked(enemyData.enemyID, itemID))
+                    {
+                        displayName = item.baseItemData.itemName;
+                    }
+                }
 
                 // maxDropCountが1より大きいかどうかで表示を分岐させる
                 if (item.maxDropCount > 1)
                 {
                     // 1. 実質確率を計算
-                    float singleChance = item.dropChance / 100.0f; // 確率を0.0～1.0の範囲に変換
-                    float noDropChance = 1.0f - singleChance; // 1回でドロップしない確率
-                    float allFailChance = Mathf.Pow(noDropChance, item.maxDropCount); // 全ての回でドロップしない確率
-                    float effectiveChance = 1.0f - allFailChance; // 少なくとも1個以上ドロップする実質確率
-                    float effectiveChancePercent = effectiveChance * 100f; // パーセントに変換
+                    float singleChance = item.dropChance / 100.0f;
+                    float noDropChance = 1.0f - singleChance;
+                    float allFailChance = Mathf.Pow(noDropChance, item.maxDropCount);
+                    float effectiveChance = 1.0f - allFailChance;
+                    float effectiveChancePercent = effectiveChance * 100f;
 
-                    // 2. 表示を更新
-                    // F1は小数点以下1桁まで表示する書式指定子
-                    dropsBuilder.AppendLine($"・{itemName}  ({effectiveChancePercent:F1}%)");
+                    // 2. 表示を更新（名前には displayName 変数を使用）
+                    dropsBuilder.AppendLine($"・{displayName}  ({effectiveChancePercent:F1}%)");
                 }
                 else
                 {
-                    // 1の場合（従来通り）：個数は表示しない
-                    dropsBuilder.AppendLine($"・{itemName} ({item.dropChance}%)");
+                    // 1の場合
+                    dropsBuilder.AppendLine($"・{displayName} ({item.dropChance}%)");
                 }
             }
         }

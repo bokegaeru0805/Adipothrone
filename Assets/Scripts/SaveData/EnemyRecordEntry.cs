@@ -10,6 +10,21 @@ public class EnemyRecordEntry
     public int enemyIdValue;
     public int killCount;
     public bool isNew = true; //新規討伐フラグ（デフォルトはtrue）
+    private List<int> _unlockedDropItemIds; //外部からは直接触れないように privateに
+
+    // 安全なアクセス用プロパティ
+    // これを使えば、アクセスした瞬間にnullなら自動で new してくれる
+    public List<int> UnlockedDropItemIds
+    {
+        get
+        {
+            if (_unlockedDropItemIds == null)
+            {
+                _unlockedDropItemIds = new List<int>();
+            }
+            return _unlockedDropItemIds;
+        }
+    }
 
     // 今後、初めて遭遇した日時などの新しい記録をここに追加できます
     // public bool hasEncountered = false;
@@ -21,6 +36,7 @@ public class EnemyRecordEntry
         enemyIdValue = idValue;
         killCount = amount;
         isNew = true; // 新規登録時は必ずNew
+        _unlockedDropItemIds = new List<int>();
     }
 }
 
@@ -39,7 +55,7 @@ public class EnemyRecordData
     {
         int targetIdValue = (int)enemyID;
 
-        // [変更点] 変数名とリスト名の変更を反映
+        // 変数名とリスト名の変更を反映
         var entry = enemyRecords.Find(e => e.enemyIdValue == targetIdValue);
         if (entry != null)
         {
@@ -57,9 +73,46 @@ public class EnemyRecordData
     public int GetKillCount(EnemyName enemyID)
     {
         int targetIdValue = (int)enemyID;
-        // [変更点] 変数名とリスト名の変更を反映
+        // 変数名とリスト名の変更を反映
         var entry = enemyRecords.Find(e => e.enemyIdValue == targetIdValue);
         return entry?.killCount ?? 0;
+    }
+
+    /// <summary>
+    /// 指定された敵のドロップアイテムを「確認済み」として記録する
+    /// </summary>
+    public void UnlockDropItem(EnemyName enemyID, int itemID)
+    {
+        int targetEnemyIdValue = (int)enemyID;
+        var entry = enemyRecords.Find(e => e.enemyIdValue == targetEnemyIdValue);
+
+        if (entry != null)
+        {
+            // プロパティ経由でアクセスすれば勝手に初期化されるのでnullチェック不要
+            if (!entry.UnlockedDropItemIds.Contains(itemID))
+            {
+                entry.UnlockedDropItemIds.Add(itemID);
+            }
+        }
+        // 補足: まだ一度も倒していない敵からアイテムがドロップすることは理論上ないため、
+        // entryがnullの場合（討伐記録がない場合）の作成処理はここでは行いません。
+        // （通常はAddKillCountが先に呼ばれるか、同時期に呼ばれるはずです）
+    }
+
+    /// <summary>
+    /// 指定された敵の特定のアイテムがドロップ確認済みかを判定する
+    /// </summary>
+    public bool IsDropUnlocked(EnemyName enemyID, int itemID)
+    {
+        int targetEnemyIdValue = (int)enemyID;
+        var entry = enemyRecords.Find(e => e.enemyIdValue == targetEnemyIdValue);
+
+        if (entry != null)
+        {
+            // こちらもプロパティ経由なら安全
+            return entry.UnlockedDropItemIds.Contains(itemID);
+        }
+        return false;
     }
 
     /// <summary>
@@ -76,12 +129,12 @@ public class EnemyRecordData
     public List<EnemyName> GetUnlockedEnemies()
     {
         List<EnemyName> unlockedList = new List<EnemyName>();
-        // [変更点] リスト名の変更を反映
+        // リスト名の変更を反映
         foreach (var entry in enemyRecords)
         {
             if (entry.killCount > 0)
             {
-                // [変更点] 変数名の変更を反映
+                // 変数名の変更を反映
                 if (Enum.IsDefined(typeof(EnemyName), entry.enemyIdValue))
                 {
                     unlockedList.Add((EnemyName)entry.enemyIdValue);

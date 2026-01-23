@@ -1,4 +1,5 @@
 using System.Collections;
+using CriWare;
 using NaughtyAttributes;
 using UnityEngine;
 
@@ -64,6 +65,7 @@ public class LaserBeamController : MonoBehaviour, IEnemyResettable
     private BeamState currentState = BeamState.Idle;
     private Coroutine beamCoroutine;
     private float defaultHeight; // スプライトの元の高さ（太さ）
+    private CriAtomExPlayback expandSePlayback; // 伸縮音制御用のPlaybackハンドル
 
     // --- コンポーネント参照 ---
     private SpriteRenderer beamSpriteRenderer; //ビームの描画用スプライト
@@ -100,6 +102,9 @@ public class LaserBeamController : MonoBehaviour, IEnemyResettable
             StopCoroutine(beamCoroutine);
             beamCoroutine = null;
         }
+
+        //リセット時に音が残っていたら消す
+        StopExpandSound();
 
         currentState = BeamState.Idle;
 
@@ -151,6 +156,13 @@ public class LaserBeamController : MonoBehaviour, IEnemyResettable
         float startLen = beamSpriteRenderer.size.x;
         _sePlayer?.Play(SE_Field.LaserShoot);
 
+        // 伸縮音をループ前に一度だけ再生し、ハンドルを保持
+        // ※SE_Field.LaserExpand はデータ側でループ設定になっている前提です
+        if (_sePlayer != null)
+        {
+            expandSePlayback = _sePlayer.Play(SE_Field.LaserExpand);
+        }
+
         while (timer < expansionDuration)
         {
             timer += Time.deltaTime;
@@ -158,9 +170,11 @@ public class LaserBeamController : MonoBehaviour, IEnemyResettable
             // 滑らかに伸ばす
             float currentLen = Mathf.Lerp(startLen, maxBeamLength, t);
             UpdateBeamSize(currentLen);
-            _sePlayer?.Play(SE_Field.LaserExpand);
             yield return null;
         }
+
+        // 伸長完了したら音を停止
+        StopExpandSound();
         // 念のため最終値を適用
         UpdateBeamSize(maxBeamLength);
 
@@ -220,8 +234,21 @@ public class LaserBeamController : MonoBehaviour, IEnemyResettable
         }
     }
 
+    /// <summary>
+    /// 伸縮音の再生を停止する
+    /// </summary>
+    private void StopExpandSound()
+    {
+        var status = expandSePlayback.GetStatus();
+        if (status == CriAtomExPlayback.Status.Playing || status == CriAtomExPlayback.Status.Prep)
+        {
+            expandSePlayback.Stop();
+        }
+    }
+
     private void OnDisable()
     {
+        StopExpandSound();
         ResetState();
     }
 

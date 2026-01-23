@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
+using CriWare;
 using DG.Tweening;
 using MyGame.CameraControl;
 using UnityEngine;
@@ -175,6 +176,7 @@ public class DesertTempleBossSmokeMoveController : MonoBehaviour
     private bool isBothArmsAttacking = false; // 両手攻撃実行中
     private bool isBothArmsPending = false; // 両手攻撃のタイマーが満了し、他の攻撃の終了待ち状態
     private Vector2 centerPosition; // 中心位置
+    private CriAtomExPlayback gearPlayback; // ギア回転音制御用のPlaybackハンドル
 
     private enum MovementPattern
     {
@@ -187,7 +189,7 @@ public class DesertTempleBossSmokeMoveController : MonoBehaviour
     private MovementPattern movementPattern = MovementPattern.Standard; // 動きのパターン
     private SpriteRenderer rightArmSpriteRenderer;
     private SpriteRenderer leftArmSpriteRenderer;
-    private CriWare.Assets.CriAtomSePlayer sePlayer;
+    private CriWare.Assets.CriAtomSePlayer _sePlayer;
 
     // Tween管理用変数
     private Tweener leftArmTween;
@@ -216,7 +218,7 @@ public class DesertTempleBossSmokeMoveController : MonoBehaviour
             return;
         }
 
-        sePlayer = GetComponent<CriWare.Assets.CriAtomSePlayer>();
+        _sePlayer = GetComponent<CriWare.Assets.CriAtomSePlayer>();
 
         // パーツのSpriteRendererを取得
         rightArmSpriteRenderer = rightArmObject.GetComponent<SpriteRenderer>();
@@ -247,6 +249,8 @@ public class DesertTempleBossSmokeMoveController : MonoBehaviour
         }
         //中心座標の決定
         centerPosition = new Vector2((leftBound + rightBound) / 2, initialPositionY);
+        // リセット時に音が残っていたら消す
+        StopGearSound();
 
         // スプライト初期化
         if (rightArmSpriteRenderer != null)
@@ -556,7 +560,7 @@ public class DesertTempleBossSmokeMoveController : MonoBehaviour
             }
 
             // SE再生
-            sePlayer.Play(SE_EnemyAction.Shoot_Water1);
+            _sePlayer.Play(SE_EnemyAction.Shoot_Water1);
             CameraManager.instance?.PlayCustomShake(1.0f, 2.0f, 0.3f); //カメラ揺れ
         }
 
@@ -639,7 +643,7 @@ public class DesertTempleBossSmokeMoveController : MonoBehaviour
             }
 
             // SE再生
-            sePlayer.Play(SE_EnemyAction.Drop_Metal);
+            _sePlayer.Play(SE_EnemyAction.Drop_Metal);
         }
 
         // 左腕のスプライトを通常用に戻す
@@ -695,11 +699,12 @@ public class DesertTempleBossSmokeMoveController : MonoBehaviour
         // 回転・拡大演出
         float elapsedTime = 0f;
         CameraManager.instance?.PlayCustomShake(0.3f, 8.0f, bothArmsAttackSpawnTime); //カメラ揺れ
+        //ループ前に一度だけ再生し、ハンドルを保持
+        // ※SE_EnemyAction.GearTurn はデータ側でループ設定になっている前提です
+        gearPlayback = _sePlayer.Play(SE_EnemyAction.GearTurn);
 
         while (elapsedTime < bothArmsAttackSpawnTime)
         {
-            sePlayer.Play(SE_EnemyAction.GearTurn); // 回転SEをループ再生
-
             elapsedTime += Time.deltaTime;
             float progress = elapsedTime / bothArmsAttackSpawnTime;
             float easeProgress = DOVirtual.EasedValue(0, 1, progress, Ease.OutCubic); // 拡大のイージング
@@ -743,8 +748,7 @@ public class DesertTempleBossSmokeMoveController : MonoBehaviour
             yield return null;
         }
 
-        // 回転SE停止
-        sePlayer.Stop();
+        StopGearSound(); // ハンドルを使って特定の音だけ停止
 
         // 発射処理 (法線方向へ飛ばす)
         spawnCenter = transform.position + baseOffset; // 発射時の中心位置
@@ -831,10 +835,23 @@ public class DesertTempleBossSmokeMoveController : MonoBehaviour
         );
     }
 
+    /// <summary>
+    /// ギア回転音を停止する
+    /// </summary>
+    private void StopGearSound()
+    {
+        var status = gearPlayback.GetStatus();
+        if (status == CriAtomExPlayback.Status.Playing || status == CriAtomExPlayback.Status.Prep)
+        {
+            gearPlayback.Stop();
+        }
+    }
+
     private void OnDestroy()
     {
         leftArmTween?.Kill();
         rightArmTween?.Kill();
+        StopGearSound();
     }
 
     private void OnDrawGizmosSelected()

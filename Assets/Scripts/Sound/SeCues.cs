@@ -114,6 +114,7 @@ public enum SE_Field
     WaterMove1 = 5095,
     LaserShoot = 5100,
     LaserExpand = 5101,
+    SawBlade = 5105,
 }
 
 /// <summary>

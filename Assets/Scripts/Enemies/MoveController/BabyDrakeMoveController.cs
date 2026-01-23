@@ -1,4 +1,5 @@
 using System.Collections;
+using CriWare;
 using NaughtyAttributes;
 using UnityEngine;
 
@@ -77,6 +78,7 @@ public class BabyDrakeMoveController : MonoBehaviour, IEnemyResettable
         Desert = 1,
     }
 
+    // --- 内部変数 ---
     private int damage = 0; // 攻撃力
     private float verticalAdjustSpeed = 100f; // 地面から抜け出す速度
     private float vx = 0;
@@ -86,11 +88,13 @@ public class BabyDrakeMoveController : MonoBehaviour, IEnemyResettable
     private float stuckDistanceThreshold = 0.1f; //動いていると判断する最低限の移動距離
     private float currentAttackCooldown = 0f; // 次に攻撃が可能になる時刻
     private LayerMask GroundLayer;
+    private CriAtomExPlayback moveSePlayback; //移動音制御用のPlaybackハンドル
 
     //埋まり判定用のbool
     private bool isOverlappingGround =>
         Physics2D.OverlapCircle(overlapCheckPoint.position, overlapCheckRadius, GroundLayer);
 
+    // --- 内部コンポーネント ---
     private SpriteRenderer spriteRenderer;
     private Rigidbody2D rbody;
     private Animator animator;
@@ -226,9 +230,11 @@ public class BabyDrakeMoveController : MonoBehaviour, IEnemyResettable
         }
 
         tag = GameConstants.UNTAGGED_TAG_NAME; // タグをリセット
-        // 初期状態をMovingにし、タイマーを設定
-        currentState = DrakeState.Moving;
+        StopMoveSe(); // リセット時に前の音が残っていたら消す
+
+        currentState = DrakeState.Moving; // 初期状態をMovingにし、タイマーを設定
         SetNextStateDuration();
+        PlayMoveSe(); // 初期状態がMovingなので音を再生
 
         // スタック検出用の変数を初期化
         lastCheckedPosition = transform.position;
@@ -335,10 +341,14 @@ public class BabyDrakeMoveController : MonoBehaviour, IEnemyResettable
         {
             if (rbody.simulated)
                 rbody.simulated = false;
+            moveSePlayback.Pause(true); //ポーズ中は音を一時停止
             return;
         }
         else if (!rbody.simulated)
+        {
             rbody.simulated = true;
+            moveSePlayback.Pause(false); //ポーズ解除時に音を再開
+        }
 
         if (currentAttackCooldown > 0f)
         {
@@ -376,7 +386,6 @@ public class BabyDrakeMoveController : MonoBehaviour, IEnemyResettable
                     spriteRenderer.flipX = rightFlag;
                 }
                 rbody.velocity = new Vector2(vx, rbody.velocity.y);
-                sePlayer.Play(SE_Field.Sand1); // 砂埃SEを再生
 
                 // タイマーが0以下 かつ 範囲内なら攻撃
                 if (currentAttackCooldown <= 0f && IsPlayerInAttackRange(dir))
@@ -460,13 +469,14 @@ public class BabyDrakeMoveController : MonoBehaviour, IEnemyResettable
             currentState = DrakeState.Moving;
             // 移動再開時に向きに応じた速度を再設定
             vx = speedX * (rightFlag ? 1 : -1);
-            //TODO:アニメーションがあればここでWalkなどを再生
+            // Movingになったので音を再生
+            PlayMoveSe();
         }
         else if (currentState == DrakeState.Moving)
         {
             currentState = DrakeState.Idle;
             rbody.velocity = Vector2.zero;
-            //TODO:アニメーションがあればここでIdleなどを再生
+            StopMoveSe(); // Idleになったので音を停止
         }
         SetNextStateDuration();
     }
@@ -484,6 +494,8 @@ public class BabyDrakeMoveController : MonoBehaviour, IEnemyResettable
     /// </summary>
     private void StartAttack()
     {
+        // 攻撃に移るため、移動音を停止
+        StopMoveSe();
         // プレイヤーが攻撃範囲に入ったら、溜めステートに移行
         currentState = DrakeState.PreparingToJump;
         rbody.velocity = Vector2.zero; // 移動を停止
@@ -569,6 +581,7 @@ public class BabyDrakeMoveController : MonoBehaviour, IEnemyResettable
         currentState = DrakeState.Moving;
         this.tag = GameConstants.UNTAGGED_TAG_NAME;
         SetNextStateDuration();
+        PlayMoveSe(); // Movingに戻ったので音を再生
 
         currentAttackCooldown = attackCooldownDuration; //クールダウンタイマーに時間をセット（ここから減算が始まる）
     }
@@ -626,6 +639,39 @@ public class BabyDrakeMoveController : MonoBehaviour, IEnemyResettable
                 }
             }
         }
+    }
+
+    #region Helper Methods
+    /// <summary>
+    /// 移動音を再生する
+    /// </summary>
+    private void PlayMoveSe()
+    {
+        // 既に再生中なら何もしない（二重再生防止）
+        if (moveSePlayback.GetStatus() == CriAtomExPlayback.Status.Playing)
+            return;
+
+        // 再生してハンドルを保存
+        moveSePlayback = sePlayer.Play(SE_Field.Sand1);
+    }
+
+    /// <summary>
+    /// 移動音を停止する
+    /// </summary>
+    private void StopMoveSe()
+    {
+        // 再生中または準備中なら停止
+        var status = moveSePlayback.GetStatus();
+        if (status == CriAtomExPlayback.Status.Playing || status == CriAtomExPlayback.Status.Prep)
+        {
+            moveSePlayback.Stop();
+        }
+    }
+    #endregion
+    private void OnDisable()
+    {
+        // オブジェクトが無効になったら音を止める
+        StopMoveSe();
     }
 
     private void OnDrawGizmosSelected()

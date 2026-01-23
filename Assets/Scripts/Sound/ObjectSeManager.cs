@@ -1,4 +1,5 @@
 using System;
+using CriWare;
 using NaughtyAttributes;
 using UnityEngine;
 
@@ -24,7 +25,9 @@ public class ObjectSeManager : MonoBehaviour
     [SerializeField]
     private bool playLoopSe = false;
 
-    [Tooltip("オブジェクトが存在する間ループ再生するSE")]
+    [Tooltip(
+        "オブジェクトが存在する間ループ再生するSE(このSEはデータ側でループ設定になっている前提です)"
+    )]
     [SerializeField, ShowIf(nameof(playLoopSe))]
     private SeSelector loopSe;
 
@@ -37,6 +40,7 @@ public class ObjectSeManager : MonoBehaviour
     private SeSelector disappearSe;
 
     private CriWare.Assets.CriAtomSePlayer sePlayer;
+    private CriAtomExPlayback loopPlayback; // ループ再生制御用のPlaybackハンドル
 
     // --- 実行時処理 ---
 
@@ -52,11 +56,18 @@ public class ObjectSeManager : MonoBehaviour
             // 登場時SEの再生処理
             PlaySe(appearSe);
         }
+
+        // ループ再生を一度だけ実行し、ハンドルを保持
+        if (playLoopSe)
+        {
+            PlayLoopSe();
+        }
     }
 
     private void OnDisable()
     {
-        sePlayer.Stop();
+        //  全停止ではなく、ループ再生だけを停止
+        StopLoopSe();
         if (playDisappearSe)
         {
             // 非表示時SEの再生処理
@@ -66,15 +77,30 @@ public class ObjectSeManager : MonoBehaviour
 
     private void FixedUpdate()
     {
-        //ループSEの再生状態を維持
-        if (playLoopSe)
-        {
-            PlaySe(loopSe);
-        }
+        // // ポーズ制御（TimeManagerが存在する場合）
+        // if (TimeManager.instance != null)
+        // {
+        //     if (TimeManager.instance.isEnemyMovePaused)
+        //     {
+        //         // ポーズ中かつ再生中なら一時停止
+        //         if (loopPlayback.GetStatus() == CriAtomExPlayback.Status.Playing)
+        //         {
+        //             loopPlayback.Pause(true);
+        //         }
+        //     }
+        //     else
+        //     {
+        //         // ポーズ解除かつ再生中なら再開
+        //         if (loopPlayback.GetStatus() == CriAtomExPlayback.Status.Playing)
+        //         {
+        //             loopPlayback.Pause(false);
+        //         }
+        //     }
+        // }
     }
 
     /// <summary>
-    /// SE再生処理（コメント表記）
+    /// SE再生処理
     /// </summary>
     private void PlaySe(SeSelector selector)
     {
@@ -91,5 +117,36 @@ public class ObjectSeManager : MonoBehaviour
         }
 
         sePlayer.Play(selectedEnum); // SE再生
+    }
+
+    /// <summary>
+    /// ループSE再生処理
+    /// </summary>
+    private void PlayLoopSe()
+    {
+        Enum selectedEnum = loopSe.GetSelectedEnum();
+        if (selectedEnum == null)
+            return;
+
+        // 既に再生中なら二重再生しない
+        if (loopPlayback.GetStatus() == CriAtomExPlayback.Status.Playing)
+            return;
+
+        // 再生してハンドルを保存
+        loopPlayback = sePlayer.Play(selectedEnum);
+        Debug.Log("ObjectSeManager: ループSEを再生しました。", this);
+    }
+
+    /// <summary>
+    /// ループSE停止処理
+    /// </summary>
+    private void StopLoopSe()
+    {
+        // 再生中または準備中なら停止
+        var status = loopPlayback.GetStatus();
+        if (status == CriAtomExPlayback.Status.Playing || status == CriAtomExPlayback.Status.Prep)
+        {
+            loopPlayback.Stop();
+        }
     }
 }

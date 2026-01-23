@@ -118,6 +118,7 @@ public static class SeCueDatabase
         { SE_Field.WaterMove1, "WaterMove1" },
         { SE_Field.LaserShoot, "LaserShoot" },
         { SE_Field.LaserExpand, "LaserExpand" },
+        { SE_Field.SawBlade, "SawBlade" },
     };
 
     /// <summary>
