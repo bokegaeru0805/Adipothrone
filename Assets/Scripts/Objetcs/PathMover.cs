@@ -2,21 +2,28 @@ using System.Collections.Generic;
 using UnityEngine;
 
 /// <summary>
-/// PathMovementSpawnerによって制御される、経路移動型リフト。
+/// Spawner制御による経路移動コンポーネント。
+/// PoolableObjectを継承し、プール管理に対応します。
 /// </summary>
-public class PathMovementPlatform : BaseMovingPlatform
+[RequireComponent(typeof(Rigidbody2D))]
+public class PathMover : PoolableObject // BaseMovingPlatformではなくPoolableObjectを直接継承
 {
     private List<Vector3> pathPoints;
     private int currentTargetIndex = 0;
     private float moveSpeed;
     private bool isInitialized = false;
 
-    // AwakeはBaseで処理されるので省略可能ですが、追加初期化があれば書きます
-    // 今回は追加がないので省略します
+    private Rigidbody2D rb;
+    private MovingPlatformAudio platformAudio;
+    private PassengerCarrier carrier;
 
-    /// <summary>
-    /// Spawnerから呼ばれる初期化処理
-    /// </summary>
+    void Awake()
+    {
+        rb = GetComponent<Rigidbody2D>();
+        platformAudio = GetComponent<MovingPlatformAudio>();
+        carrier = GetComponent<PassengerCarrier>();
+    }
+
     public void Initialize(List<Vector3> worldPath, float speed, string tag, PoolType type)
     {
         pathPoints = new List<Vector3>(worldPath);
@@ -32,10 +39,10 @@ public class PathMovementPlatform : BaseMovingPlatform
         }
 
         isInitialized = true;
-        PlayMovingSound(); // 移動音開始
+        if (platformAudio != null) platformAudio.PlayMoveSound();
     }
 
-    private void FixedUpdate()
+    void FixedUpdate()
     {
         if (!isInitialized || pathPoints == null || pathPoints.Count <= 1)
             return;
@@ -49,9 +56,6 @@ public class PathMovementPlatform : BaseMovingPlatform
         MoveAlongPath();
     }
 
-    /// <summary>
-    /// 経路に沿って移動する
-    /// </summary>
     private void MoveAlongPath()
     {
         Vector3 targetPos = pathPoints[currentTargetIndex];
@@ -71,24 +75,16 @@ public class PathMovementPlatform : BaseMovingPlatform
         }
     }
 
-    /// <summary>
-    /// 自分自身をプールに返却する
-    /// </summary>
     private void ReturnSelf()
     {
         isInitialized = false;
-        StopMovingSound();
+        
+        if (platformAudio != null) platformAudio.StopMoveSound();
 
-        // 乗っているオブジェクトを強制解除（BaseクラスのTriggerExitだけでは賄えないケースへの保険）
-        foreach (Transform child in transform)
+        // PassengerCarrierを使って乗客を安全に降ろす
+        if (carrier != null)
         {
-            if (
-                child.CompareTag(GameConstants.PLAYER_TAG_NAME)
-                || child.CompareTag(GameConstants.PHYSICS_OBJECT_TAG_NAME)
-            )
-            {
-                child.SetParent(null);
-            }
+            carrier.EjectAllPassengers();
         }
 
         ReturnToPool();

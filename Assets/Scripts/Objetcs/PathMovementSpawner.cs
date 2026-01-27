@@ -106,7 +106,7 @@ public class PathMovementSpawner : MonoBehaviour
         // 3. 移動コンポーネントにパス情報を渡して起動
         if (obj != null)
         {
-            var mover = obj.GetComponent<PathMovementPlatform>();
+            var mover = obj.GetComponent<PathMover>();
             if (mover != null)
             {
                 mover.Initialize(worldPath, moveSpeed, poolTag, poolType);
@@ -114,7 +114,7 @@ public class PathMovementSpawner : MonoBehaviour
             else
             {
                 Debug.LogWarning(
-                    $"生成されたオブジェクト '{obj.name}' に 'PathMovementPlatform' がついていません。",
+                    $"生成されたオブジェクト '{obj.name}' に 'PathMover' がついていません。",
                     this
                 );
             }
