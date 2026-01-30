@@ -414,7 +414,10 @@ public class SaveLoadManager : MonoBehaviour
                 if (ES3.KeyExists("SaveData", filePath))
                 {
                     //セーブデータをロード
-                    SaveData saveData = ES3.Load<SaveData>("SaveData", filePath);
+                    SaveData saveData = ES3.Load<SaveData>("SaveData", filePath, new SaveData());
+
+                    // ここでデータの自己修復を行う
+                    saveData.Validate();
 
                     // マイグレーション処理の呼び出し
                     CheckAndMigrateSaveData(saveData);
@@ -427,56 +430,6 @@ public class SaveLoadManager : MonoBehaviour
 
                     //スロット中の全アイテムのIDを取得し、同じIDの所持アイテム(inventory)の参照に置き換える
                     ReplaceAllSlotItemWithInventoryReferences();
-
-                    // SaveData の null-safe 初期化
-                    if (GameManager.instance?.savedata == null)
-                    {
-                        GameManager.instance.savedata = new SaveData();
-                    }
-
-                    // プレイヤーステータス
-                    if (GameManager.instance?.savedata?.PlayerStatus == null)
-                    {
-                        GameManager.instance.savedata.PlayerStatus = new PlayerStatusData();
-                    }
-
-                    // 宝箱データ
-                    if (GameManager.instance?.savedata?.TreasureData == null)
-                    {
-                        GameManager.instance.savedata.TreasureData = new TreasureData();
-                    }
-
-                    // // クエスト進行度
-                    // if (GameManager.instance?.savedata?.questData == null)
-                    // {
-                    //     GameManager.instance.savedata.questData = new QuestData();
-                    // }
-
-                    // 所持アイテム
-                    if (GameManager.instance?.savedata?.ItemInventoryData == null)
-                    {
-                        GameManager.instance.savedata.ItemInventoryData = new InventoryItemData();
-                    }
-
-                    // 所持武器
-                    if (GameManager.instance?.savedata?.WeaponInventoryData == null)
-                    {
-                        GameManager.instance.savedata.WeaponInventoryData =
-                            new InventoryWeaponData();
-                    }
-
-                    // 装備武器
-                    if (GameManager.instance?.savedata?.WeaponEquipmentData == null)
-                    {
-                        GameManager.instance.savedata.WeaponEquipmentData =
-                            new InventoryWeaponData();
-                    }
-
-                    // ファストトラベルデータ
-                    if (GameManager.instance?.savedata?.FastTravelData == null)
-                    {
-                        GameManager.instance.savedata.FastTravelData = new FastTravelData();
-                    }
                 }
                 else
                 {

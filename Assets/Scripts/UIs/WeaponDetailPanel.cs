@@ -265,6 +265,14 @@ public class WeaponDetailPanel : MonoBehaviour
 
         if (weaponID == null)
         {
+            // 武器がない場合は名前と画像もクリアする
+            WeaponNameText.text = "";
+            if (WeaponImage != null)
+            {
+                WeaponImage.sprite = null;
+                // WeaponImage.color = Color.clear; // 画像を透明にして見えなくする
+            }
+
             // 選択中の武器がない場合は、詳細パネルを空にする
             weaponManager.DisplaySelectedWeaponDetails(
                 null,
@@ -296,6 +304,7 @@ public class WeaponDetailPanel : MonoBehaviour
         WeaponNameText.text = weaponName; //武器の名前を設定
         if (WeaponImage != null)
         {
+            // WeaponImage.color = Color.white; // 画像の色を元に戻す
             // 武器のアイコン画像を設定
             UIUtility.SetSpriteFitToSquare(WeaponImage, weaponData.itemSprite, baseSize);
         }
@@ -316,7 +325,7 @@ public class WeaponDetailPanel : MonoBehaviour
     /// <summary>
     /// 現在装備中の武器の詳細情報を表示する
     /// </summary>
-    /// <param name="weaponType"></param>
+    /// <param name="weaponType"> </param>
     public void DisplayEquippedWeaponDetails(Enum _weaponID)
     {
         if (
@@ -325,6 +334,22 @@ public class WeaponDetailPanel : MonoBehaviour
         )
         {
             Debug.LogWarning("GameManagerまたはWeaponEquipmentDataが設定されていません");
+            return;
+        }
+
+        // nullの場合は警告を出さずにクリアして終了する
+        if (_weaponID == null)
+        {
+            WeaponManager.instance.DisplaySelectedWeaponDetails(
+                null,
+                AttackPowerCurrentText,
+                WPCostCurrentText,
+                RangeOrSpeedCurrentBar,
+                RangeOrSpeedCurrentBarImage,
+                HandlingCurrentBar,
+                HandlingCurrentBarImage,
+                PenetrationCurrentText
+            );
             return;
         }
 
@@ -343,6 +368,7 @@ public class WeaponDetailPanel : MonoBehaviour
         }
         else
         {
+            // ここには通常到達しないが、念のため処理を残す
             Debug.LogWarning("武器の種類が設定されていません");
             WeaponManager.instance.DisplaySelectedWeaponDetails(
                 null,

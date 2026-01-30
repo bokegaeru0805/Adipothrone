@@ -4,10 +4,16 @@ using UnityEngine;
 // 元のDialogInputを「継承」して、その機能をすべて引き継ぐ
 public class CustomDialogInput : DialogInput
 {
+    [Tooltip("スキップを開始するために必要な長押し時間（秒）")]
+    [SerializeField]
+    private float skipHoldThreshold = 0.3f;
     private InputManager inputManager;
 
     // 会話開始時にスキップキーが押されっぱなしの場合、キーが離されるまでスキップを無効にするためのフラグ
     private bool isWaitingForSkipKeyRelease = false;
+
+    // スキップキーの押下時間を計測するためのタイマー
+    private float currentSkipHoldTimer = 0.0f;
 
     private void Start()
     {
@@ -56,6 +62,7 @@ public class CustomDialogInput : DialogInput
             if (!inputManager.SkipDialogHold())
             {
                 isWaitingForSkipKeyRelease = false;
+                currentSkipHoldTimer = 0f; // タイマーもリセット
             }
             // キーが離されるまでは、以降の入力処理を一切行わない
             return;
@@ -65,11 +72,31 @@ public class CustomDialogInput : DialogInput
         // writer と InputManager の両方が存在することを確認
         if (writer != null && inputManager != null)
         {
-            // InputManagerのUIConfirm (決定) または UICloseの長押し (キャンセル/早送り) を検知
-            if (inputManager.UIConfirm() || (cancelEnabled && inputManager.SkipDialogHold()))
+            // 変更部分: 決定ボタンとスキップ長押しを分けて処理
+
+            // 1. UIConfirm (決定) は即座に反応させる
+            if (inputManager.UIConfirm())
             {
-                // 元のDialogInputが持っているSetNextLineFlag()を呼び出す
                 SetNextLineFlag();
+                currentSkipHoldTimer = 0f; // 決定入力があったら長押しタイマーはリセット
+            }
+            // 2. スキップキーが押されている場合（かつキャンセル有効時）
+            else if (cancelEnabled && inputManager.SkipDialogHold())
+            {
+                // 押されている時間を計測
+                currentSkipHoldTimer += Time.deltaTime;
+
+                // 閾値を超えたらスキップ処理（次の行へ進むフラグ）を実行し続ける
+                if (currentSkipHoldTimer >= skipHoldThreshold)
+                {
+                    SetNextLineFlag();
+                }
+            }
+            // 3. キーが離された場合
+            else
+            {
+                // タイマーをリセット
+                currentSkipHoldTimer = 0f;
             }
         }
     }

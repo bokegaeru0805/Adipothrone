@@ -42,4 +42,32 @@ public class SaveData
 
     // ===== 敵の記録 =====
     public EnemyRecordData EnemyRecordData = new EnemyRecordData();
+
+    /// <summary>
+    /// データの整合性をチェックし、nullの箇所があれば初期化して修復する
+    /// ロード直後に呼び出すこと
+    /// </summary>
+    public void Validate()
+    {
+        if (PlayerStatus == null)
+            PlayerStatus = new PlayerStatusData();
+        if (TreasureData == null)
+            TreasureData = new TreasureData();
+        if (ProgressLogData == null)
+            ProgressLogData = new ProgressLogData();
+        if (TipsData == null)
+            TipsData = new TipsData();
+        if (ItemInventoryData == null)
+            ItemInventoryData = new InventoryItemData();
+        if (QuickItemData == null)
+            QuickItemData = new InventoryItemData();
+        if (WeaponInventoryData == null)
+            WeaponInventoryData = new InventoryWeaponData();
+        if (WeaponEquipmentData == null)
+            WeaponEquipmentData = new InventoryWeaponData();
+        if (FastTravelData == null)
+            FastTravelData = new FastTravelData();
+        if (EnemyRecordData == null)
+            EnemyRecordData = new EnemyRecordData();
+    }
 }
