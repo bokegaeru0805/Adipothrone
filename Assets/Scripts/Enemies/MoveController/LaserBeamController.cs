@@ -35,6 +35,13 @@ public class LaserBeamController : MonoBehaviour, IEnemyResettable
     [SerializeField]
     private float initialBeamLength = 0.0f;
 
+    [Header("初期状態設定")]
+    [Tooltip(
+        "Trueの場合、ゲーム開始時（およびリセット時）に最初からビームが伸びた状態で始まります"
+    )]
+    [SerializeField]
+    private bool startActive = false;
+
     [Header("ループ設定")]
     [Tooltip(
         "Trueの場合、一定時間後に縮み、再びプレイヤーを待ちます。\nFalseの場合、一度伸びたら伸びっぱなしになります。"
@@ -106,15 +113,28 @@ public class LaserBeamController : MonoBehaviour, IEnemyResettable
         //リセット時に音が残っていたら消す
         StopExpandSound();
 
-        currentState = BeamState.Idle;
-
-        // ビームの長さを初期値に戻す
-        UpdateBeamSize(initialBeamLength);
-
-        // 感知エリアを有効化
-        if (detectionAreaCollider != null)
+        if (startActive)
         {
-            detectionAreaCollider.enabled = true;
+            // 最初からアクティブ設定の場合
+            // ビームを最大長に設定
+            UpdateBeamSize(maxBeamLength);
+
+            // いきなり照射状態（維持フェーズ）からシーケンスを開始する
+            // (ループ設定などの挙動を統一して管理するためコルーチンを通す)
+            beamCoroutine = StartCoroutine(FireSequence(true));
+        }
+        else
+        {
+            // 通常待機設定の場合
+            currentState = BeamState.Idle;
+            // ビームの長さを初期値に戻す
+            UpdateBeamSize(initialBeamLength);
+
+            // 感知エリアを有効化
+            if (detectionAreaCollider != null)
+            {
+                detectionAreaCollider.enabled = true;
+            }
         }
     }
 
@@ -136,7 +156,7 @@ public class LaserBeamController : MonoBehaviour, IEnemyResettable
             // (これにより、待機中の短いビーム部分に触れただけでは発射しないようにする)
             if (detectionAreaCollider != null && detectionAreaCollider.IsTouching(other))
             {
-                beamCoroutine = StartCoroutine(FireSequence());
+                beamCoroutine = StartCoroutine(FireSequence(false));
             }
         }
     }
@@ -144,39 +164,49 @@ public class LaserBeamController : MonoBehaviour, IEnemyResettable
     /// <summary>
     /// ビームの発射シーケンス（遅延 -> 伸長 -> [待機 -> 収束]）
     /// </summary>
-    private IEnumerator FireSequence()
+    private IEnumerator FireSequence(bool skipIntro = false)
     {
-        // --- 1. 遅延フェーズ ---
-        currentState = BeamState.Delaying;
-        yield return new WaitForSeconds(delayBeforeFire);
-
-        // --- 2. 伸長フェーズ ---
-        currentState = BeamState.Expanding;
         float timer = 0f;
-        float startLen = beamSpriteRenderer.size.x;
-        _sePlayer?.Play(SE_Field.LaserShoot);
-
-        // 伸縮音をループ前に一度だけ再生し、ハンドルを保持
-        // ※SE_Field.LaserExpand はデータ側でループ設定になっている前提です
-        if (_sePlayer != null)
+        if (!skipIntro)
         {
-            expandSePlayback = _sePlayer.Play(SE_Field.LaserExpand);
-        }
+            // 通常の発射シーケンス（遅延 -> 伸長）
 
-        while (timer < expansionDuration)
+            // --- 1. 遅延フェーズ ---
+            currentState = BeamState.Delaying;
+            yield return new WaitForSeconds(delayBeforeFire);
+
+            // --- 2. 伸長フェーズ ---
+            currentState = BeamState.Expanding;
+            float startLen = beamSpriteRenderer.size.x;
+            _sePlayer?.Play(SE_Field.LaserShoot);
+
+            if (_sePlayer != null)
+            {
+                expandSePlayback = _sePlayer.Play(SE_Field.LaserExpand);
+            }
+
+            while (timer < expansionDuration)
+            {
+                timer += Time.deltaTime;
+                float t = timer / expansionDuration;
+                // 滑らかに伸ばす
+                float currentLen = Mathf.Lerp(startLen, maxBeamLength, t);
+                UpdateBeamSize(currentLen);
+                yield return null;
+            }
+
+            // 伸長完了したら音を停止
+            StopExpandSound();
+            // 念のため最終値を適用
+            UpdateBeamSize(maxBeamLength);
+        }
+        else
         {
-            timer += Time.deltaTime;
-            float t = timer / expansionDuration;
-            // 滑らかに伸ばす
-            float currentLen = Mathf.Lerp(startLen, maxBeamLength, t);
-            UpdateBeamSize(currentLen);
-            yield return null;
+            // いきなり照射状態から開始
+            currentState = BeamState.Active;
+            // (長さはResetState等ですでに設定済み前提だが、念のためここでもセット)
+            UpdateBeamSize(maxBeamLength);
         }
-
-        // 伸長完了したら音を停止
-        StopExpandSound();
-        // 念のため最終値を適用
-        UpdateBeamSize(maxBeamLength);
 
         currentState = BeamState.Active;
 

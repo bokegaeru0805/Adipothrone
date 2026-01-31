@@ -34,6 +34,10 @@ public class WaypointMover : MonoBehaviour
     [SerializeField]
     private float speed = 2.0f;
 
+    [Tooltip("trueの場合、最後のポイントに到達したら始点に戻り、周回し続けます")]
+    [SerializeField]
+    private bool isLoop = false;
+
     [Tooltip("trueの場合、プレイヤーが接触するまで待機し、接触した瞬間に動き出します")]
     [SerializeField]
     private bool activateOnPlayerEnter = false;
@@ -44,7 +48,7 @@ public class WaypointMover : MonoBehaviour
     private bool showPathLine = false;
 
     [Tooltip("線を描画するためのLineRendererコンポーネント（任意）")]
-    [SerializeField,ShowIf(nameof(showPathLine))]
+    [SerializeField, ShowIf(nameof(showPathLine))]
     private LineRenderer pathLineRenderer;
 
     // --- 内部参照 ---
@@ -53,31 +57,34 @@ public class WaypointMover : MonoBehaviour
 
     // --- 内部状態 ---
     private int currentTargetIndex = 0; // 現在目指しているポイントのインデックス
-    private int moveDirection = 1;      // 1: 順方向, -1: 逆方向
-    private bool isWaiting = false;     // ポイントでの待機中フラグ
-    private float waitTimer = 0.0f;     // 待機タイマー
-    private bool hasStarted = false;    // 起動済みかどうか
+    private int moveDirection = 1; // 1: 順方向, -1: 逆方向
+    private bool isWaiting = false; // ポイントでの待機中フラグ
+    private float waitTimer = 0.0f; // 待機タイマー
+    private bool hasStarted = false; // 起動済みかどうか
 
     private void Awake()
     {
         rb = GetComponent<Rigidbody2D>();
-        
+
         // リフトは重力や外部からの力の影響を受けないように Kinematic にする
         rb.bodyType = RigidbodyType2D.Kinematic;
-        
+
         // 移動中の衝突検知精度を上げて、すり抜けを防ぐ（推奨設定）
         rb.collisionDetectionMode = CollisionDetectionMode2D.Continuous;
-        
+
         // 必要に応じてZ回転を固定（Kinematicなら基本回らないが、念のため）
         rb.constraints = RigidbodyConstraints2D.FreezeRotation;
-        
+
         // 音声コンポーネントを取得（なくてもエラーにはしない）
         platformAudio = GetComponent<MovingPlatformAudio>();
 
         // データ検証
         if (waypoints == null || waypoints.Count < 2)
         {
-            Debug.LogError($"{this.name}: [WaypointMover] ウェイポイントは最低2つ（始点と終点）必要です。", this);
+            Debug.LogError(
+                $"{this.name}: [WaypointMover] ウェイポイントは最低2つ（始点と終点）必要です。",
+                this
+            );
             this.enabled = false;
             return;
         }
@@ -102,7 +109,8 @@ public class WaypointMover : MonoBehaviour
         {
             // プレイヤー接触待ち
             hasStarted = false;
-            if (platformAudio != null) platformAudio.StopMoveSound();
+            if (platformAudio != null)
+                platformAudio.StopMoveSound();
         }
 
         // 経路線の初期描画処理
@@ -119,7 +127,8 @@ public class WaypointMover : MonoBehaviour
     private void FixedUpdate()
     {
         // まだ起動していない場合は動かない
-        if (!hasStarted) return;
+        if (!hasStarted)
+            return;
 
         // 待機中処理
         if (isWaiting)
@@ -142,7 +151,8 @@ public class WaypointMover : MonoBehaviour
         if (!hasStarted)
         {
             hasStarted = true;
-            if (platformAudio != null) platformAudio.PlayMoveSound();
+            if (platformAudio != null)
+                platformAudio.PlayMoveSound();
         }
     }
 
@@ -152,7 +162,8 @@ public class WaypointMover : MonoBehaviour
     public void StopMoving()
     {
         hasStarted = false;
-        if (platformAudio != null) platformAudio.StopMoveSound();
+        if (platformAudio != null)
+            platformAudio.StopMoveSound();
     }
 
     // --- 内部ロジック ---
@@ -176,13 +187,15 @@ public class WaypointMover : MonoBehaviour
             waitTimer = 0.0f;
 
             DetermineNextWaypoint();
-            
-            if (platformAudio != null) platformAudio.PlayMoveSound();
+
+            if (platformAudio != null)
+                platformAudio.PlayMoveSound();
         }
         else
         {
             // 待機中は音を止める
-            if (platformAudio != null) platformAudio.StopMoveSound();
+            if (platformAudio != null)
+                platformAudio.StopMoveSound();
         }
     }
 
@@ -206,17 +219,19 @@ public class WaypointMover : MonoBehaviour
             // 待機モードへ移行
             isWaiting = true;
             waitTimer = 0.0f;
-            
-            if (platformAudio != null) platformAudio.StopMoveSound();
+
+            if (platformAudio != null)
+                platformAudio.StopMoveSound();
         }
         else
         {
             // 目標へ向かって移動
             Vector2 direction = (targetWorldPos - (Vector2)transform.position).normalized;
             rb.MovePosition((Vector2)transform.position + direction * step);
-            
+
             // 音再生（ループ再生管理はAudioコンポーネント側に任せる）
-            if (platformAudio != null) platformAudio.PlayMoveSound();
+            if (platformAudio != null)
+                platformAudio.PlayMoveSound();
         }
     }
 
@@ -225,22 +240,41 @@ public class WaypointMover : MonoBehaviour
     /// </summary>
     private void DetermineNextWaypoint()
     {
-        int nextIndex = currentTargetIndex + moveDirection;
-
-        // リストの末尾を超えた場合 -> 折り返し
-        if (nextIndex >= waypoints.Count)
+        if (isLoop)
         {
-            moveDirection = -1; // 逆方向へ
-            nextIndex = waypoints.Count - 2; // 末尾の1つ手前を目指す
-        }
-        // リストの先頭より前になった場合 -> 折り返し
-        else if (nextIndex < 0)
-        {
-            moveDirection = 1; // 順方向へ
-            nextIndex = 1; // 先頭の次を目指す
-        }
+            // ループモード：常に次の番号へ進み、末尾を超えたら0に戻る
+            // (往復ではなく一方通行で周回する挙動になります)
+            int nextIndex = currentTargetIndex + 1;
 
-        currentTargetIndex = nextIndex;
+            if (nextIndex >= waypoints.Count)
+            {
+                nextIndex = 0;
+            }
+
+            currentTargetIndex = nextIndex;
+            // ループ時は方向変数をリセットしておく（念のため）
+            moveDirection = 1;
+        }
+        else
+        {
+            // 既存の往復（Ping-Pong）ロジック
+            int nextIndex = currentTargetIndex + moveDirection;
+
+            // リストの末尾を超えた場合 -> 折り返し
+            if (nextIndex >= waypoints.Count)
+            {
+                moveDirection = -1; // 逆方向へ
+                nextIndex = waypoints.Count - 2; // 末尾の1つ手前を目指す
+            }
+            // リストの先頭より前になった場合 -> 折り返し
+            else if (nextIndex < 0)
+            {
+                moveDirection = 1; // 順方向へ
+                nextIndex = 1; // 先頭の次を目指す
+            }
+
+            currentTargetIndex = nextIndex;
+        }
     }
 
     /// <summary>
@@ -298,6 +332,9 @@ public class WaypointMover : MonoBehaviour
         pathLineRenderer.enabled = true;
         pathLineRenderer.positionCount = waypoints.Count;
 
+        // ループ設定をLineRendererに反映（始点と終点を自動で結ぶ）
+        pathLineRenderer.loop = isLoop;
+
         bool useWorldSpace = pathLineRenderer.useWorldSpace;
 
         for (int i = 0; i < waypoints.Count; i++)
@@ -311,7 +348,8 @@ public class WaypointMover : MonoBehaviour
             {
                 // LineRendererがローカル設定の場合、リフトの親座標系などに合わせる必要がある
                 // 簡易実装として、親がいる場合はそのローカル座標を使用
-                pos = transform.parent != null
+                pos =
+                    transform.parent != null
                         ? (Vector3)waypoints[i].localPosition
                         : (Vector3)waypoints[i].localPosition - transform.position;
             }
@@ -324,7 +362,8 @@ public class WaypointMover : MonoBehaviour
     /// </summary>
     private void OnDrawGizmos()
     {
-        if (waypoints == null || waypoints.Count == 0) return;
+        if (waypoints == null || waypoints.Count == 0)
+            return;
 
         // リフトのサイズを取得（コライダーがあればそれを使う）
         BoxCollider2D box = GetComponent<BoxCollider2D>();
@@ -335,13 +374,17 @@ public class WaypointMover : MonoBehaviour
         Gizmos.color = Color.cyan;
 
         Vector3? prevPos = null;
+        Vector3 firstPos = Vector3.zero;
 
         for (int i = 0; i < waypoints.Count; i++)
         {
             // ポイントのワールド位置計算
-            Vector3 worldPos = transform.parent != null
+            Vector3 worldPos =
+                transform.parent != null
                     ? transform.parent.TransformPoint(waypoints[i].localPosition)
                     : (Vector3)waypoints[i].localPosition;
+            if (i == 0)
+                firstPos = worldPos;
 
             // ポイント位置に枠線を表示
             Gizmos.DrawWireCube(worldPos, size);
@@ -360,6 +403,12 @@ public class WaypointMover : MonoBehaviour
             );
 #endif
             prevPos = worldPos;
+        }
+
+        // ループモードなら終点(prevPos)と始点(firstPos)を結ぶ
+        if (isLoop && waypoints.Count > 1 && prevPos.HasValue)
+        {
+            Gizmos.DrawLine(prevPos.Value, firstPos);
         }
 
         // 現在位置の表示（黄色）

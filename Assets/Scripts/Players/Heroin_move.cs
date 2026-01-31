@@ -80,6 +80,8 @@ public class Heroin_move : MonoBehaviour
     private bool jumpRequested = false;
     private bool isTalking = false; // 会話状態を保存するローカル変数
     private bool isDead = false; // プレイヤーが死亡しているかどうかのマスターフラグ
+    private Vector2 currentCarrierVelocity = Vector2.zero; // 現在のリフト速度
+    private bool isOnCarrier = false; // リフトに乗っているかどうかのフラグ
     #endregion
 
     #region Component References
@@ -506,18 +508,32 @@ public class Heroin_move : MonoBehaviour
             // 追い風の場合に加速させたい場合は else if (dot > 0) で処理を追加可能
         }
 
+        // 基本となる移動速度（入力 vx * 環境倍率）
+        float baseVelocityX = 0f;
         // --- 最終速度の適用 ---
         if (!isAttacking)
         {
             // 環境倍率を適用して速度決定
-            _rbody.velocity = new Vector2(vx * finalSpeedMult, _rbody.velocity.y);
+            baseVelocityX = vx * finalSpeedMult;
         }
         else
         {
             // 攻撃中は減速 (攻撃減速も環境倍率の影響を受けるようにする)
-            float slowedVx = (vx / attackMoveSlowRate) * finalSpeedMult;
-            _rbody.velocity = new Vector2(slowedVx, _rbody.velocity.y);
+            baseVelocityX = (vx / attackMoveSlowRate) * finalSpeedMult;
         }
+
+        // リフトの速度を加算する
+        // Y軸に関しては、リフトが下降する場合の追従性向上のため考慮しても良いが、
+        // 基本的には重力と衝突判定に任せるため、X軸の慣性をメインに加算する。
+        // ※ジャンプ中(ExitCarrier後)は、currentCarrierVelocityに「慣性」が残っている
+
+        float finalVelocityX = baseVelocityX + currentCarrierVelocity.x;
+
+        // Y軸にはリフト速度を加算しない（重力挙動と干渉するため）。
+        // ただし、リフトに接地中で、リフトが下向きに動いている場合のみ、浮き上がり防止で加算するアプローチもあり得るが、
+        // ここではシンプルにX軸の追従と慣性を優先する。
+
+        _rbody.velocity = new Vector2(finalVelocityX, _rbody.velocity.y);
     }
 
     /// <summary>
@@ -526,6 +542,14 @@ public class Heroin_move : MonoBehaviour
     private void CheckGroundStatus()
     {
         isGrounded = Physics2D.OverlapCircle(groundCheck.position, groundCheckRadius, groundLayer);
+
+        // リフトに乗っておらず、かつ地面に着地しているなら、リフト由来の慣性を消す
+        if (!isOnCarrier && isGrounded)
+        {
+            // 徐々に減衰させるか、即座に切るか。
+            // ここでは「着地したら慣性終了」として即座にゼロにする
+            currentCarrierVelocity = Vector2.zero;
+        }
     }
 
     /// <summary>
@@ -645,7 +669,7 @@ public class Heroin_move : MonoBehaviour
             }
 
             // オブジェクトプールに返却
-           script.ReturnToPool();
+            script.ReturnToPool();
         }
     }
 
@@ -856,6 +880,27 @@ public class Heroin_move : MonoBehaviour
         {
             activeEnvironments.Remove(area);
         }
+    }
+
+    /// <summary>
+    /// リフト（PassengerCarrier）から毎フレーム速度を受け取る
+    /// </summary>
+    public void SetCarrierVelocity(Vector2 velocity)
+    {
+        currentCarrierVelocity = velocity;
+        isOnCarrier = true;
+    }
+
+    /// <summary>
+    /// リフトから降りた（離れた）時に呼ばれる
+    /// </summary>
+    public void ExitCarrier()
+    {
+        isOnCarrier = false;
+
+        // ここで currentCarrierVelocity をゼロにしないことで、
+        // 空中にいる間は「慣性」として速度が残り続ける。
+        // CheckGroundStatus で着地判定されたときにゼロになる。
     }
 
     #endregion

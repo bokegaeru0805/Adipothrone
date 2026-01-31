@@ -39,6 +39,12 @@ namespace MyGame.CameraControl
         public bool IsTimelineControlMode { get; private set; } = false; // 外部からTimelineモードかを確認するためのプロパティ
         private Tweener lensTween;
         private Tweener offsetTween;
+        private Tweener xDampingTween;
+        private Tweener yDampingTween;
+
+        // 現在設定されているDampingの基準値を保持する変数
+        private float currentBaseXDamping = GameConstants.CAMERA_FOLLOW_DAMPING_X;
+        private float currentBaseYDamping = GameConstants.CAMERA_FOLLOW_DAMPING_Y;
 
         // --- タイムライン制御用変数 ---
         private float timelineAmplitude = 0f;
@@ -118,7 +124,8 @@ namespace MyGame.CameraControl
                 framing = virtualCamera.GetCinemachineComponent<CinemachineTransposer>();
                 if (framing != null)
                 {
-                    framing.m_YDamping = GameConstants.CAMERA_FOLLOW_DAMPING_Y; // 初期のYDamping値を設定
+                    currentBaseYDamping = GameConstants.CAMERA_FOLLOW_DAMPING_Y;
+                    framing.m_YDamping = currentBaseYDamping; // 初期のYDamping値を設定
                 }
                 else
                 {
@@ -230,7 +237,7 @@ namespace MyGame.CameraControl
                     yield return null; // 条件を満たさない場合は1フレーム待つ
                 }
 
-                framing.m_YDamping = GameConstants.CAMERA_FOLLOW_DAMPING_Y; // 元のYDamping値に戻す
+                framing.m_YDamping = currentBaseYDamping; // 元のYDamping値に戻す
             }
             else
             {
@@ -451,7 +458,7 @@ namespace MyGame.CameraControl
                 yield return new WaitForSecondsRealtime(duration);
 
                 // 元のYDamping値に戻す
-                framing.m_YDamping = GameConstants.CAMERA_FOLLOW_DAMPING_Y;
+                framing.m_YDamping = currentBaseYDamping;
             }
             else
             {
@@ -467,16 +474,18 @@ namespace MyGame.CameraControl
         #endregion
         #region Camera Settings Override
         /// <summary>
-        /// カメラのレンズ設定と追従オフセットを変更します。
+        /// カメラのレンズ設定、追従オフセット、Dampingを変更します。
         /// </summary>
         /// <param name="orthoSize">ターゲットとなるOrthographic Size</param>
         /// <param name="nearClip">ターゲットとなるNear Clip Plane</param>
         /// <param name="offset">ターゲットとなるFollow Offset</param>
+        /// <param name="damping">ターゲットとなるDamping (X, Y)</param>
         /// <param name="duration">変更にかける時間（秒）。0の場合は即時変更。</param>
         public void SetCameraSettings(
             float orthoSize,
             float nearClip,
             Vector3 offset,
+            Vector2 damping,
             float duration = 1.0f
         )
         {
@@ -486,6 +495,13 @@ namespace MyGame.CameraControl
             // 既存のTweenがあればキルする
             lensTween?.Kill();
             offsetTween?.Kill();
+            xDampingTween?.Kill();
+            yDampingTween?.Kill();
+
+            //  新しいDamping値を基準値として保存
+            // これにより、他の処理でリセットがかかっても、この値に戻るようになる
+            currentBaseXDamping = damping.x;
+            currentBaseYDamping = damping.y;
 
             if (duration <= 0f)
             {
@@ -493,6 +509,8 @@ namespace MyGame.CameraControl
                 virtualCamera.m_Lens.OrthographicSize = orthoSize;
                 virtualCamera.m_Lens.NearClipPlane = nearClip;
                 framing.m_FollowOffset = offset;
+                framing.m_XDamping = damping.x;
+                framing.m_YDamping = damping.y;
             }
             else
             {
@@ -517,6 +535,13 @@ namespace MyGame.CameraControl
                         duration
                     )
                     .SetUpdate(true);
+                xDampingTween = DOTween
+                    .To(() => framing.m_XDamping, x => framing.m_XDamping = x, damping.x, duration)
+                    .SetUpdate(true);
+
+                yDampingTween = DOTween
+                    .To(() => framing.m_YDamping, x => framing.m_YDamping = x, damping.y, duration)
+                    .SetUpdate(true);
             }
         }
 
@@ -530,6 +555,10 @@ namespace MyGame.CameraControl
                 GameConstants.DEFAULT_CAMERA_ORTHO_SIZE,
                 GameConstants.DEFAULT_CAMERA_NEAR_CLIP,
                 GameConstants.PLAYER_CAMERA_FOLLOW_OFFSET,
+                new Vector2(
+                    GameConstants.CAMERA_FOLLOW_DAMPING_X,
+                    GameConstants.CAMERA_FOLLOW_DAMPING_Y
+                ),
                 duration
             );
         }

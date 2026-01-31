@@ -120,6 +120,13 @@ public class CameraMoveArea : MonoBehaviour
     [SerializeField, ShowIf(nameof(overrideCameraSettings))]
     private Vector3 targetFollowOffset = new Vector3(0f, 4.5f, -10f); // 初期値はデフォルトに合わせておく
 
+    [Tooltip("変更後のDamping（カメラの追従遅延）。Xは横方向、Yは縦方向。(0で遅延なし)")]
+    [SerializeField, ShowIf(nameof(overrideCameraSettings))]
+    private Vector2 targetDamping = new Vector2(
+        GameConstants.CAMERA_FOLLOW_DAMPING_X,
+        GameConstants.CAMERA_FOLLOW_DAMPING_Y
+    );
+
     [Tooltip("設定変更にかける時間（秒）")]
     [SerializeField, ShowIf(nameof(overrideCameraSettings))]
     private float settingsTransitionDuration = 0f;
@@ -310,6 +317,7 @@ public class CameraMoveArea : MonoBehaviour
                 targetOrthoSize,
                 targetNearClip,
                 targetFollowOffset,
+                targetDamping,
                 settingsTransitionDuration
             );
         }
