@@ -75,32 +75,34 @@ public class PathMovementSpawner : MonoBehaviour
         if (prewarm)
         {
             PrewarmObjects();
-            //Debug.Log($"[PathMovementSpawner] Prewarmed objects along the path.", this);
         }
 
         // 最初のインターバルを取得
         float interval = Mathf.Max(0.1f, spawnInterval.Value);
-        float nextSpawnTime = Time.time + interval;
 
-        // 初回生成までの待機
-        yield return new WaitForSeconds(interval);
+        // Prewarmが無効な場合のみ、最初の1回分待つ。
+        // 有効な場合は待たずにループに入り、即座にSpawnObject()を実行する。
+        if (!prewarm)
+        {
+            yield return new WaitForSeconds(interval);
+        }
+
+        // 時間計測の基準を現在に設定
+        float nextSpawnTime = Time.time;
 
         while (true)
         {
             SpawnObject();
 
-            // 次のインターバルを取得（ランダム幅がある場合に備えて毎回取得）
+            // 次のインターバルを取得
             interval = Mathf.Max(0.1f, spawnInterval.Value);
             nextSpawnTime += interval;
 
-            // 現在時刻との差分を待機することで、処理落ち等によるズレを補正する
+            // 現在時刻との差分を待機
             float waitTime = nextSpawnTime - Time.time;
 
-            // 処理落ちで時間が過ぎてしまっている場合
             if (waitTime < 0)
             {
-                // 遅れを取り戻すために即時実行するか、遅れを許容して時間をリセットするか
-                // ここでは極端なバースト生成を防ぐため、あまりに遅れている場合はスケジュールを引き直す
                 if (waitTime < -0.5f)
                 {
                     nextSpawnTime = Time.time;
@@ -108,7 +110,7 @@ public class PathMovementSpawner : MonoBehaviour
                 }
                 else
                 {
-                    waitTime = 0; // 即時実行
+                    waitTime = 0;
                 }
             }
 

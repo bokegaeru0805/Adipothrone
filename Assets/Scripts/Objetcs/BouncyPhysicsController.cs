@@ -18,6 +18,11 @@ public class BoundPhysicsController : MonoBehaviour
     [SerializeField]
     private bool rotateTowardsDirection = true;
 
+    [Header("転がり維持設定")]
+    [Tooltip("速度維持を行う力（大きくしすぎると不自然に急加速する）")]
+    [SerializeField]
+    private float speedCorrectionForce = 5.0f;
+
     // --- 内部変数 ---
     private float rotationMultiplier; // 回転速度調整用
 
@@ -56,10 +61,25 @@ public class BoundPhysicsController : MonoBehaviour
         // 物理演算の直前の速度を常に記録しておく
         // (OnCollisionEnter2Dが呼ばれる時点では、すでに衝突して速度が変わっているため)
         lastVelocity = rb.velocity;
+
+        // 最低速度を下回っている場合
+        if (rb.velocity.magnitude < minSpeed)
+        {
+            // 進行方向に力を加えて加速させる（AddForceを使うことで自然に加速）
+            // ForceMode2D.Force は継続的な力を加えるモード
+            rb.AddForce(rb.velocity.normalized * speedCorrectionForce, ForceMode2D.Force);
+        }
     }
 
     void OnCollisionEnter2D(Collision2D collision)
     {
+        // 相手も鉄球（BoundPhysicsControllerを持っている）なら、
+        // スクリプトによる強制反射を行わず、物理演算に任せて「ゴツン」と衝突させる
+        if (collision.gameObject.GetComponent<BoundPhysicsController>() != null)
+        {
+            return;
+        }
+
         // 衝突時の接触点は1つとは限らない（床と壁の角などでは複数発生する）ため、
         // 全ての接触点をループして「壁」に当たっていないか確認する
         for (int i = 0; i < collision.contactCount; i++)

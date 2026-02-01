@@ -76,14 +76,25 @@ public class PassengerCarrier : MonoBehaviour
             if (col.isTrigger)
             {
                 // 【検知用コライダー】
-                float heightBuffer = 0.2f;
-                float widthShrink = 0.1f;
+                // 以前は全体を覆っていましたが、上部にだけ判定がある「帽子」のような形状に変更します。
+                // これにより、下や横からの接触で吸着するのを防ぎます。
 
+                float detectionHeight = 0.2f; // 検知エリアの厚み
+                float widthShrink = 0.1f; // 横からの誤接触防止用
+                float overlap = 0.05f; // 確実に足元を捉えるため、わずかにスプライト本体に食い込ませる量
+
+                // サイズ設定: 幅はスプライトより少し狭く、高さは薄く
                 col.size = new Vector2(
                     Mathf.Max(0.1f, spriteRenderer.size.x - widthShrink),
-                    spriteRenderer.size.y + heightBuffer
+                    detectionHeight
                 );
-                col.offset = new Vector2(0f, heightBuffer * 0.5f);
+
+                // オフセット設定: スプライトの上辺付近に配置
+                // スプライト中心(0) + 半分の高さ = 上辺。そこから検知エリアの中心位置を計算
+                float topY = spriteRenderer.size.y * 0.5f;
+                float yOffset = topY + (detectionHeight * 0.5f) - overlap;
+
+                col.offset = new Vector2(0f, yOffset);
             }
             else
             {
@@ -99,6 +110,18 @@ public class PassengerCarrier : MonoBehaviour
         // プレイヤーの場合
         if (other.CompareTag(GameConstants.PLAYER_TAG_NAME))
         {
+            // コライダー形状の変更でほぼ防げますが、念のため座標チェックも行います。
+            // プレイヤーのPivotはBottom（足元）なので、プレイヤーのY座標が
+            // リフトの上端（中心 + 高さ半分）より著しく低い場合は「乗っていない」とみなして無視します。
+
+            float carrierTopY = transform.position.y + (spriteRenderer.size.y * 0.5f);
+            float tolerance = 0.3f; // 許容誤差（少し食い込んでいてもOKにする）
+
+            if (other.transform.position.y < carrierTopY - tolerance)
+            {
+                return; // 下や横からの接触なので無視
+            }
+
             var playerMove = other.GetComponent<Heroin_move>();
             if (playerMove != null)
             {

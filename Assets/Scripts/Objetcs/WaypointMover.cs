@@ -41,6 +41,9 @@ public class WaypointMover : MonoBehaviour
     [Tooltip("trueの場合、プレイヤーが接触するまで待機し、接触した瞬間に動き出します")]
     [SerializeField]
     private bool activateOnPlayerEnter = false;
+    [Tooltip("trueの場合、ゲーム開始時にランダムなウェイポイントから開始します")]
+    [SerializeField]
+    private bool randomizeStartIndex = false;
 
     [Header("導線表示設定")]
     [Tooltip("ゲーム中に経路の線を表示するか")]
@@ -90,14 +93,42 @@ public class WaypointMover : MonoBehaviour
         }
     }
 
-    private void Start()
+    private void OnEnable()
     {
-        // 初期位置をIndex 0に設定
-        transform.localPosition = waypoints[0].localPosition;
+        int startIdx = 0;
 
-        // 次の目標をIndex 1に設定
-        currentTargetIndex = 1;
-        moveDirection = 1;
+        // ランダム開始設定が有効ならランダムなインデックスを選択
+        if (randomizeStartIndex && waypoints.Count > 0)
+        {
+            startIdx = Random.Range(0, waypoints.Count);
+        }
+
+        // 初期位置を選択したウェイポイントに設定
+        transform.localPosition = waypoints[startIdx].localPosition;
+
+        // 次の目標（currentTargetIndex）と移動方向（moveDirection）を決定
+        if (isLoop)
+        {
+            // ループモードなら単純に次のインデックスへ（末尾なら0に戻る）
+            currentTargetIndex = (startIdx + 1) % waypoints.Count;
+            moveDirection = 1;
+        }
+        else
+        {
+            // 往復モードの場合
+            if (startIdx >= waypoints.Count - 1)
+            {
+                // 末尾スタートなら逆方向（戻る）へ
+                moveDirection = -1;
+                currentTargetIndex = startIdx - 1;
+            }
+            else
+            {
+                // それ以外（先頭含む）なら順方向（進む）へ
+                moveDirection = 1;
+                currentTargetIndex = startIdx + 1;
+            }
+        }
 
         // 起動設定の確認
         if (!activateOnPlayerEnter)

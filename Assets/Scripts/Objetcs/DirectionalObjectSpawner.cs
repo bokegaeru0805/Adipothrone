@@ -54,6 +54,10 @@ public class DirectionalObjectSpawner : MonoBehaviour, IEnemyResettable
     [SerializeField]
     protected FloatRange spawnInterval;
 
+    [Tooltip("trueの場合、開始時に待機時間を待たずに即座に生成を行います")]
+    [SerializeField]
+    protected bool spawnImmediately = false;
+
     [Header("動きの設定")]
     [Tooltip("発射速度")]
     [SerializeField]
@@ -108,6 +112,12 @@ public class DirectionalObjectSpawner : MonoBehaviour, IEnemyResettable
     /// </summary>
     protected virtual IEnumerator SpawnRoutine()
     {
+        // フラグが有効なら、最初の待機時間の前に一度生成を実行する
+        if (spawnImmediately)
+        {
+            Spawn();
+        }
+
         while (true)
         {
             // 次の生成までの待機時間を取得

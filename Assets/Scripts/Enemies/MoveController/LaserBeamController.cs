@@ -121,7 +121,12 @@ public class LaserBeamController : MonoBehaviour, IEnemyResettable
 
             // いきなり照射状態（維持フェーズ）からシーケンスを開始する
             // (ループ設定などの挙動を統一して管理するためコルーチンを通す)
-            beamCoroutine = StartCoroutine(FireSequence(true));
+            // オブジェクトがアクティブな場合のみコルーチンを開始する
+            // (OnDisableから呼ばれた場合のエラー回避)
+            if (gameObject.activeInHierarchy)
+            {
+                beamCoroutine = StartCoroutine(FireSequence(true));
+            }
         }
         else
         {
