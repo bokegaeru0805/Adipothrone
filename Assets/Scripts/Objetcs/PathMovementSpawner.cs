@@ -1,6 +1,5 @@
 using System.Collections;
 using System.Collections.Generic;
-using NaughtyAttributes;
 using UnityEngine;
 #if UNITY_EDITOR
 using UnityEditor;
@@ -48,6 +47,9 @@ public class PathMovementSpawner : MonoBehaviour
     [SerializeField]
     private bool showDebugInfo = true;
 
+    // 生成したオブジェクトを管理するためのリスト
+    private List<PoolableObject> activeObjects = new List<PoolableObject>();
+
     private Coroutine spawnCoroutine;
 
     private void OnEnable()
@@ -64,6 +66,16 @@ public class PathMovementSpawner : MonoBehaviour
             StopCoroutine(spawnCoroutine);
             spawnCoroutine = null;
         }
+
+        // 自身が無効化された時、管理しているオブジェクトを全てプールに返却する
+        foreach (var obj in activeObjects)
+        {
+            if (obj != null && obj.gameObject.activeSelf)
+            {
+                obj.ReturnToPool();
+            }
+        }
+        activeObjects.Clear();
     }
 
     private IEnumerator SpawnRoutine()
@@ -223,6 +235,10 @@ public class PathMovementSpawner : MonoBehaviour
     /// </summary>
     private void SpawnInternal(List<Vector3> path, Vector3 spawnPos)
     {
+        // 1. リストのメンテナンス：すでにプールに戻った（非アクティブな）オブジェクトをリストから除外
+        // これを行わないとリストが無限に肥大化するため
+        activeObjects.RemoveAll(item => item == null || !item.gameObject.activeSelf);
+
         // 2. プールから取得
         GameObject obj = null;
         if (poolType == PoolType.Scene)
@@ -247,6 +263,13 @@ public class PathMovementSpawner : MonoBehaviour
         // 3. 移動コンポーネントにパス情報を渡して起動
         if (obj != null)
         {
+            // 管理リストに追加
+            var poolable = obj.GetComponent<PoolableObject>();
+            if (poolable != null)
+            {
+                activeObjects.Add(poolable);
+            }
+
             var mover = obj.GetComponent<PathMover>();
             if (mover != null)
             {

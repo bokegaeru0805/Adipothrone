@@ -55,6 +55,16 @@ public class CameraMoveArea : MonoBehaviour
     }
 
     /// <summary>
+    /// ドメインリロードが無効な場合や、シーン遷移時に静的変数が残るのを防ぐためのリセット処理
+    /// SubsystemRegistrationを指定することで、Awakeなどの実行前に確実にリセットされます。
+    /// </summary>
+    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+    private static void ResetStatics()
+    {
+        activeArea = null;
+    }
+
+    /// <summary>
     /// 現在プレイヤーがいるアクティブなエリアのBGMをフェードインで再生します。
     /// どのスクリプトからでも呼び出し可能です。
     /// </summary>
@@ -296,6 +306,7 @@ public class CameraMoveArea : MonoBehaviour
             }
 
             OnPlayerEnteredArea?.Invoke(this); // イベントを発行
+            Debug.Log("CameraMoveArea: プレイヤーがエリアに入りました。", this);
         }
     }
 

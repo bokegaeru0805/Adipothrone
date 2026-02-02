@@ -16,7 +16,6 @@ public class RareEnemyInfo
 }
 
 /// <summary>
-/// 【追加機能】
 /// 元の親（EnemyActivator）を記憶し、強制的に親元へ戻る機能を持つコンポーネント。
 /// EnemyActivatorによって動的に追加されます。
 /// リフトなどで親子関係が変わった場合でも、エリア管理下に復帰させるために使用します。

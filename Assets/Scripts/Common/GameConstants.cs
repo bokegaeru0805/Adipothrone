@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using Unity.VisualScripting;
 using UnityEngine;
 
 public static class GameConstants
@@ -131,11 +132,14 @@ public static class GameConstants
     public const string INTERACTABLE_OBJECT_TAG_NAME = "InteractableObject"; // インタラクト可能なオブジェクトのタグ名
     public const string AREA_TRANSITION_TAG_NAME = "AreaTransition"; // エリア遷移のタグ名
     public const string PHYSICS_OBJECT_TAG_NAME = "PhysicsObject"; // オブジェクトの地面判定タグ名
-    #endregion
-    #region レイヤー名
-    public const string PHYSICS_LAYER_NAME_GROUND = "GroundLayer"; // 当たり判定(Layer)用の名前
-    public const string SORTING_LAYER_NAME_GROUND = "Ground"; // 描画順(Sorting Layer)用の名前
     public const string MAIN_GLOBAL_VOLUME_TAG_NAME = "MainGlobalVolume"; // メインのGlobal Volumeのタグ名
+    #endregion
+    #region 物理レイヤー名
+    public const string PHYSICS_LAYER_NAME_GROUND = "GroundLayer"; // 当たり判定(Layer)用の名前
+    public const string PHYSICS_LAYER_NAME_OBJECT_GROUND = "ObjectGround"; // オブジェクトの地面判定用の名前
+    #region 描画順レイヤー名
+    public const string SORTING_LAYER_NAME_GROUND = "Ground"; // 描画順(Sorting Layer)用の名前
+    #endregion
     #endregion
     #region シーン名
     // 追加したら、SceneChangeCommand.csのSceneType Enumも変更すること
@@ -151,5 +155,5 @@ public static class GameConstants
 
     // ---　プールタグ名 ---
     public const string EFFECT_ENEMY_SPAWN_POOLTAG = "Effect_Enemy_Spawn";
-    public const string DROP_ITEM_POOLTAG = "DropItem" ;
+    public const string DROP_ITEM_POOLTAG = "DropItem";
 }

@@ -187,7 +187,7 @@ public class Heroin_move : MonoBehaviour
 
     private void InitializeComponents()
     {
-        groundLayer = LayerMask.GetMask(GameConstants.PHYSICS_LAYER_NAME_GROUND);
+        groundLayer = LayerMask.GetMask(GameConstants.PHYSICS_LAYER_NAME_GROUND, GameConstants.PHYSICS_LAYER_NAME_OBJECT_GROUND);
         _animator = GetComponent<Animator>();
         _rbody = GetComponent<Rigidbody2D>();
         _spriteRenderer = GetComponent<SpriteRenderer>();

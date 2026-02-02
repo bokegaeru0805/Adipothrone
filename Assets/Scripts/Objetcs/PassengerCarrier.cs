@@ -169,6 +169,11 @@ public class PassengerCarrier : MonoBehaviour
         // その他の物理オブジェクトの場合：親子付け解除
         else if (other.CompareTag(GameConstants.PHYSICS_OBJECT_TAG_NAME))
         {
+            // 自身が非アクティブ化されている最中（activeInHierarchyがfalse）は
+            // SetParentを行うとエラーになるため、処理をスキップする
+            if (!gameObject.activeInHierarchy)
+                return;
+
             if (other.transform.parent == this.transform)
             {
                 other.transform.SetParent(null);
