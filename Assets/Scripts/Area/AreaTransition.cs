@@ -30,21 +30,57 @@ public class AreaTransition : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// コンテキストメニュー（スクリプトを右クリック）から実行。
+    /// コライダーの見た目の位置を変えずに、Transformの位置を中心へ移動し、Offsetを(0,0)にします。
+    /// </summary>
+    [ContextMenu("Center Pivot to Collider")]
+    private void CenterPivotToCollider()
+    {
+        BoxCollider2D col = GetComponent<BoxCollider2D>();
+        if (col == null)
+            return;
+
+        // オフセットが既にほぼ0なら何もしない
+        if (col.offset.sqrMagnitude < 0.0001f)
+            return;
+
+        // 1. 現在のコライダーの中心座標（ワールド座標）を計算
+        // TransformPointを使うことで、回転やスケールも考慮された正確な位置が取れます
+        Vector3 worldCenter = transform.TransformPoint(col.offset);
+
+        // 2. 親オブジェクトへの影響を考慮し、Undoシステムに登録（Editor操作の安全策）
+#if UNITY_EDITOR
+        UnityEditor.Undo.RecordObject(transform, "Center Pivot");
+        UnityEditor.Undo.RecordObject(col, "Center Pivot");
+#endif
+
+        // 3. Transformの位置を、計算した中心座標へ移動
+        transform.position = worldCenter;
+
+        // 4. コライダーのオフセットを(0,0)にリセット
+        col.offset = Vector2.zero;
+
+        Debug.Log($"[{gameObject.name}] Pivot centered to collider bounds.", this);
+    }
+
     // Editor上でギズモを表示
     private void OnDrawGizmos()
     {
-        // トリガーゾーンのギズモ描画 (transformの位置とスケールを使用)
-        Vector3 gizmoCenter = transform.position;
-        Vector3 gizmoSize = transform.localScale;
-
         // 1. トリガーエリアの描画
-        // 塗りつぶし色 (青で透明度0.2)
-        Gizmos.color = new Color(0f, 0f, 1f, 0.2f);
-        Gizmos.DrawCube(gizmoCenter, gizmoSize);
+        Collider2D col = GetComponent<Collider2D>();
+        if (col == null)
+            return;
 
-        // 輪郭線 (純粋な青)
-        Gizmos.color = Color.blue;
-        Gizmos.DrawWireCube(gizmoCenter, gizmoSize);
+        // エリアの色 (青で透明度0.2)
+        Color fillColor = new Color(0f, 0f, 1f, 0.2f);
+        Gizmos.color = fillColor;
+        Gizmos.DrawCube(col.bounds.center, col.bounds.size);
+
+        // 枠線 (純粋な青)
+        Color borderColor = Color.blue;
+        Gizmos.color = borderColor;
+        Gizmos.DrawWireCube(col.bounds.center, col.bounds.size);
 
         // 2. 移動先への線とポイント描画
         // このオブジェクトのワールド座標
@@ -56,8 +92,6 @@ public class AreaTransition : MonoBehaviour
         Gizmos.color = Color.green;
         Gizmos.DrawLine(startPosition, endPosition);
 
-        // --- 追加: 移動先のポイント描画 ---
-
         // 移動先に球体を描画 (半透明の緑)
         Gizmos.color = new Color(0f, 1f, 0f, 0.4f);
         Gizmos.DrawSphere(endPosition, 0.5f);
@@ -66,4 +100,60 @@ public class AreaTransition : MonoBehaviour
         Gizmos.color = Color.green;
         Gizmos.DrawWireSphere(endPosition, 0.5f);
     }
+
+#if UNITY_EDITOR
+    /// <summary>
+    /// エディタ上部のメニューバー "Tools > AreaTransition > Center Pivot All (Current Scene)" から実行。
+    /// シーン内の全てのAreaTransitionを探し、ピボット位置を中心へ一括調整します。
+    /// </summary>
+    [UnityEditor.MenuItem("Tools/AreaTransition/Center Pivot All (Current Scene)")]
+    private static void CenterAllPivotsInScene()
+    {
+        // シーン内の全てのAreaTransitionコンポーネントを検索
+        // (Unity 2023.1以降は FindObjectsByType を推奨しますが、古いバージョン互換のため FindObjectsOfType を使用します)
+        AreaTransition[] targets = FindObjectsOfType<AreaTransition>();
+
+        if (targets.Length == 0)
+        {
+            Debug.Log("AreaTransitionが見つかりませんでした。");
+            return;
+        }
+
+        // Undoをひとまとめにするためのグループ作成
+        UnityEditor.Undo.IncrementCurrentGroup();
+        UnityEditor.Undo.SetCurrentGroupName("Center All AreaTransition Pivots");
+        var undoGroupIndex = UnityEditor.Undo.GetCurrentGroup();
+
+        int count = 0;
+
+        foreach (var target in targets)
+        {
+            BoxCollider2D col = target.GetComponent<BoxCollider2D>();
+            if (col == null)
+                continue;
+
+            // オフセットが既にほぼ0ならスキップ
+            if (col.offset.sqrMagnitude < 0.0001f)
+                continue;
+
+            // 1. 中心座標の計算
+            Vector3 worldCenter = target.transform.TransformPoint(col.offset);
+
+            // 2. Undo登録
+            UnityEditor.Undo.RecordObject(target.transform, "Center Pivot Transform");
+            UnityEditor.Undo.RecordObject(col, "Center Pivot Collider");
+
+            // 3. 移動とオフセットリセット
+            target.transform.position = worldCenter;
+            col.offset = Vector2.zero;
+
+            count++;
+        }
+
+        // Undoグループを閉じる
+        UnityEditor.Undo.CollapseUndoOperations(undoGroupIndex);
+
+        Debug.Log($"完了: {count} 個のAreaTransitionのピボットを調整しました。");
+    }
+#endif
 }

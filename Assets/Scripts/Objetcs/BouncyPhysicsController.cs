@@ -1,3 +1,4 @@
+using NaughtyAttributes;
 using UnityEngine;
 
 public class BoundPhysicsController : MonoBehaviour
@@ -6,8 +7,12 @@ public class BoundPhysicsController : MonoBehaviour
     private Vector2 lastVelocity; // 衝突直前の速度を保持
 
     [Header("設定")]
-    [Tooltip("壁として判定する角度の閾値（0.5なら45度以上の急斜面や壁を壁とみなす）")]
+    [Tooltip("Trueの場合、壁に当たった際に跳ね返る処理を行います")]
     [SerializeField]
+    private bool enableWallReflection = true;
+
+    [Tooltip("壁として判定する角度の閾値（0.5なら45度以上の急斜面や壁を壁とみなす）")]
+    [SerializeField, ShowIf(nameof(enableWallReflection))]
     private float wallNormalThreshold = 0.5f;
 
     [Tooltip("最低速度制限（壁にハマって止まるのを防ぐ）")]
@@ -63,7 +68,7 @@ public class BoundPhysicsController : MonoBehaviour
         lastVelocity = rb.velocity;
 
         // 最低速度を下回っている場合
-        if (rb.velocity.magnitude < minSpeed)
+        if (rb.velocity.x < minSpeed)
         {
             // 進行方向に力を加えて加速させる（AddForceを使うことで自然に加速）
             // ForceMode2D.Force は継続的な力を加えるモード
@@ -90,7 +95,7 @@ public class BoundPhysicsController : MonoBehaviour
 
             // --- 壁判定 ---
             // 法線のX成分の絶対値が大きい = 横向きの面（壁）に当たった
-            if (Mathf.Abs(normal.x) > wallNormalThreshold)
+            if (enableWallReflection && Mathf.Abs(normal.x) > wallNormalThreshold)
             {
                 // --- 反射処理 ---
                 // 記録しておいた「衝突前の速度」を使って反射ベクトルを計算

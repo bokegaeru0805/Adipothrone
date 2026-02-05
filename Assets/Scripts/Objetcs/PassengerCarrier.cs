@@ -14,6 +14,12 @@ public class PassengerCarrier : MonoBehaviour
     private Vector3 lastPosition;
     private Vector2 currentVelocity;
 
+    [Tooltip(
+        "Trueの場合、SpriteRendererのサイズに合わせてコライダーを自動調整します。Falseの場合は手動設定を使用します。"
+    )]
+    [SerializeField]
+    private bool autoAdjustCollider = true;
+
     // 乗っているプレイヤーのリスト（マルチプレイ対応も考慮しリスト化）
     private HashSet<Heroin_move> playerPassengers = new HashSet<Heroin_move>();
 
@@ -66,6 +72,10 @@ public class PassengerCarrier : MonoBehaviour
     /// </summary>
     private void UpdateColliderSize()
     {
+        // 自動調整が無効なら何もしない
+        if (!autoAdjustCollider)
+            return;
+
         if (spriteRenderer == null)
             return;
 

@@ -123,24 +123,24 @@ public class PlayerSpawnCorrectorArea : MonoBehaviour
         Gizmos.color = borderColor;
         Gizmos.DrawWireSphere(targetPos, 0.5f); // 目標地点に球体を表示
 
-        // --- 文字ラベルの表示 ---
-#if UNITY_EDITOR
-        // オブジェクト名から表示する文字列を作成
-        string labelText = gameObject.name;
-        string[] splitName = labelText.Split('_');
-        if (splitName.Length > 1)
-        {
-            labelText = splitName[splitName.Length - 1];
-        }
+//         // --- 文字ラベルの表示 ---
+// #if UNITY_EDITOR
+//         // オブジェクト名から表示する文字列を作成
+//         string labelText = gameObject.name;
+//         string[] splitName = labelText.Split('_');
+//         if (splitName.Length > 1)
+//         {
+//             labelText = splitName[splitName.Length - 1];
+//         }
 
-        GUIStyle style = new GUIStyle();
-        style.normal.textColor = Color.yellow; // ラベルも黄色系で統一
-        style.alignment = TextAnchor.MiddleCenter;
-        style.fontSize = 12;
-        style.fontStyle = FontStyle.Bold;
+//         GUIStyle style = new GUIStyle();
+//         style.normal.textColor = Color.yellow; // ラベルも黄色系で統一
+//         style.alignment = TextAnchor.MiddleCenter;
+//         style.fontSize = 12;
+//         style.fontStyle = FontStyle.Bold;
 
-        Handles.Label(centerPos, labelText, style);
-#endif
+//         Handles.Label(centerPos, labelText, style);
+// #endif
     }
 
     #endregion

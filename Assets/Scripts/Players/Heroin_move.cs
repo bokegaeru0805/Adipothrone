@@ -187,7 +187,10 @@ public class Heroin_move : MonoBehaviour
 
     private void InitializeComponents()
     {
-        groundLayer = LayerMask.GetMask(GameConstants.PHYSICS_LAYER_NAME_GROUND, GameConstants.PHYSICS_LAYER_NAME_OBJECT_GROUND);
+        groundLayer = LayerMask.GetMask(
+            GameConstants.PHYSICS_LAYER_NAME_GROUND,
+            GameConstants.PHYSICS_LAYER_NAME_OBJECT_GROUND
+        );
         _animator = GetComponent<Animator>();
         _rbody = GetComponent<Rigidbody2D>();
         _spriteRenderer = GetComponent<SpriteRenderer>();
@@ -453,87 +456,73 @@ public class Heroin_move : MonoBehaviour
     }
 
     /// <summary>
-    /// 物理的な移動の適用
+    /// 物理的な移動の適用（風、重力、落下制限、リフトの合成）
     /// </summary>
     private void ApplyMovement()
     {
         if (!move)
-            return; // 操作不能時は速度更新しない（ダメージリアクション等で制御されるため）
+            return; // 操作不能時は速度更新しない
 
-        // --- 環境効果（速度・風）の計算 ---
-        float finalSpeedMult = 1.0f;
-        Vector2 totalWindVelocity = Vector2.zero;
+        // --- 1. 環境効果の集計 ---
+        float globalSpeedMult = 1.0f;     // 地形による速度倍率
+        Vector2 totalWindVelocity = Vector2.zero; // 風の合成ベクトル
+        float restrictFallSpeed = -1f;    // 落下制限（-1は未設定を表す）
 
-        // アクティブな環境エリアすべてから効果を合成
         for (int i = 0; i < activeEnvironments.Count; i++)
         {
             var area = activeEnvironments[i];
             if (area == null)
                 continue;
 
-            // 1. 全体速度倍率の適用 (泥沼など)
-            finalSpeedMult *= area.GlobalSpeedMultiplier;
+            // 速度倍率を乗算
+            globalSpeedMult *= area.GlobalSpeedMultiplier;
 
-            // 2. 風ベクトル（方向と強さ）の合成
-            // ここでは風の「ベクトル」を加算していく（複数の風がある場合の合成）
+            // 風ベクトルを加算（X軸だけでなくY軸も合成）
             totalWindVelocity += area.WindVelocity;
-        }
 
-        // --- 風による抵抗計算 ---
-        // プレイヤーの移動方向(vxの符号)と、風向きの関係を調べる
-        if (Mathf.Abs(vx) > 0.01f && totalWindVelocity.sqrMagnitude > 0.01f)
-        {
-            // 正規化された移動方向ベクトル
-            Vector2 moveDir = new Vector2(Mathf.Sign(vx), 0);
-
-            // 風ベクトルとの内積を計算 (正なら追い風、負なら向かい風)
-            // WindVelocity自体が強さを持っているので、正規化せずにそのまま使うと強風ほど影響が出る
-            float dot = Vector2.Dot(moveDir, totalWindVelocity);
-
-            if (dot < 0)
+            // 落下制限の判定（最も「ゆっくり（値が小さい）」な制限を優先して採用する）
+            if (area.MaxFallSpeed > 0f)
             {
-                // 向かい風の場合: 内積がマイナスになるので、速度を減衰させる
-                // 例: dotが-5なら、1 - (5 * 0.1) = 0.5倍になる、等
-                // ※ここでは簡易的に、リストの最後のエリアのResistanceFactorを使うか、固定係数を使う
-                // 複数のエリアがある場合を考慮し、最も強い抵抗を採用する設計も可能だが、
-                // ここではシンプルに「内積値に応じた減速」を行う
-
-                // 抵抗係数を適当に定数化（またはエリアから取得）して調整
-                float resistance = 0.1f;
-                // 減速率を計算 (最低でも0.1倍は残すクランプ処理)
-                float windSlowDown = Mathf.Max(0.1f, 1.0f + (dot * resistance));
-
-                finalSpeedMult *= windSlowDown;
+                if (restrictFallSpeed < 0f || area.MaxFallSpeed < restrictFallSpeed)
+                {
+                    restrictFallSpeed = area.MaxFallSpeed;
+                }
             }
-            // 追い風の場合に加速させたい場合は else if (dot > 0) で処理を追加可能
         }
 
-        // 基本となる移動速度（入力 vx * 環境倍率）
-        float baseVelocityX = 0f;
-        // --- 最終速度の適用 ---
+        // --- 2. プレイヤー入力に基づく基本速度の計算 (X軸) ---
+        float baseInputVelocityX = 0f;
+
         if (!isAttacking)
         {
-            // 環境倍率を適用して速度決定
-            baseVelocityX = vx * finalSpeedMult;
+            // 通常時: 入力速度(vx) * 環境倍率
+            baseInputVelocityX = vx * globalSpeedMult;
         }
         else
         {
-            // 攻撃中は減速 (攻撃減速も環境倍率の影響を受けるようにする)
-            baseVelocityX = (vx / attackMoveSlowRate) * finalSpeedMult;
+            // 攻撃中: 減速適用 * 環境倍率
+            baseInputVelocityX = (vx / attackMoveSlowRate) * globalSpeedMult;
         }
 
-        // リフトの速度を加算する
-        // Y軸に関しては、リフトが下降する場合の追従性向上のため考慮しても良いが、
-        // 基本的には重力と衝突判定に任せるため、X軸の慣性をメインに加算する。
-        // ※ジャンプ中(ExitCarrier後)は、currentCarrierVelocityに「慣性」が残っている
+        // --- 3. 最終速度の合成 ---
+        
+        // [X軸] 入力 + 風(X) + リフト慣性
+        float finalVelocityX = baseInputVelocityX + totalWindVelocity.x + currentCarrierVelocity.x;
 
-        float finalVelocityX = baseVelocityX + currentCarrierVelocity.x;
+        // [Y軸] 現在の物理挙動(重力落下など) + 風(Y)
+        // ※風(Y)は、重力とは別に「外力」として加算します（上昇気流ならプラス、吹き下ろしならマイナス）
+        float finalVelocityY = _rbody.velocity.y + totalWindVelocity.y;
 
-        // Y軸にはリフト速度を加算しない（重力挙動と干渉するため）。
-        // ただし、リフトに接地中で、リフトが下向きに動いている場合のみ、浮き上がり防止で加算するアプローチもあり得るが、
-        // ここではシンプルにX軸の追従と慣性を優先する。
+        // --- 4. ゆっくり落下ギミック（落下速度のクランプ） ---
+        // 落下中（Yがマイナス）かつ、制限が設定されている場合
+        if (restrictFallSpeed > 0f && finalVelocityY < -restrictFallSpeed)
+        {
+            // 現在の落下速度が制限を超えていたら、制限速度に書き換える
+            finalVelocityY = -restrictFallSpeed;
+        }
 
-        _rbody.velocity = new Vector2(finalVelocityX, _rbody.velocity.y);
+        // 速度を適用
+        _rbody.velocity = new Vector2(finalVelocityX, finalVelocityY);
     }
 
     /// <summary>

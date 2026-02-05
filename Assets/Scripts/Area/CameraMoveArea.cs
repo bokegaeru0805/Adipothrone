@@ -306,7 +306,6 @@ public class CameraMoveArea : MonoBehaviour
             }
 
             OnPlayerEnteredArea?.Invoke(this); // イベントを発行
-            Debug.Log("CameraMoveArea: プレイヤーがエリアに入りました。", this);
         }
     }
 

@@ -38,6 +38,15 @@ public class PoolReturnArea : MonoBehaviour
             // プールへ返却を実行
             // (PoolableObject.ReturnToPool 内でタグの確認や、プールがない場合のDestroy処理が行われます)
             poolableObj.ReturnToPool();
+            return;
+        }
+
+        // 接触したオブジェクトが CharacterHealth コンポーネントを持っているか確認
+        var characterHealth = other.GetComponent<CharacterHealth>();
+        if (characterHealth != null)
+        {
+            // キャラクターが接触した場合は即死させる
+            characterHealth.Damage(characterHealth.MaxHP);
         }
     }
 
@@ -54,14 +63,12 @@ public class PoolReturnArea : MonoBehaviour
 
         if (boxCollider != null)
         {
-            // --- 色の設定 ---
-            // 既存の赤、グレー、マゼンタ、シアン、緑、オレンジ、黄色と被らない「青色」を採用
-            Color fillColor = new Color(0f, 0f, 1f, 0.2f); // 半透明の青
-            Color borderColor = Color.blue; // 青
+            Color fillColor = new Color(1f, 1f, 1f, 0.2f); // 半透明の白色
+            Color borderColor = new Color (1, 1, 1, 1); // 不透明の白色
 
             // BoxCollider2Dの範囲情報を使ってGizmoを描画
             Gizmos.matrix = transform.localToWorldMatrix;
-            
+
             Gizmos.color = fillColor;
             Gizmos.DrawCube(boxCollider.offset, boxCollider.size);
 

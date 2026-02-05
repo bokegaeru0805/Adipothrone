@@ -134,7 +134,6 @@ public class ObjectSeManager : MonoBehaviour
 
         // 再生してハンドルを保存
         loopPlayback = sePlayer.Play(selectedEnum);
-        Debug.Log("ObjectSeManager: ループSEを再生しました。", this);
     }
 
     /// <summary>
