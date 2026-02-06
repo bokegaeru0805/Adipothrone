@@ -240,6 +240,10 @@ public class CameraMoveArea : MonoBehaviour
         if (areaLight == null || areaCollider == null)
             return;
 
+        // LightTypeがGlobalの場合は形状（ShapePath）を持たないため、調整処理を行わない
+        if (areaLight.lightType == Light2D.LightType.Global)
+            return;
+
         // CompositeColliderのパスポイントを取得
         if (areaCollider.pathCount > 0)
         {

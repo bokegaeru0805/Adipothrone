@@ -283,6 +283,11 @@ public class EnemyDexPanelActive : MonoBehaviour, IPanelActive
         }
     }
 
+    /// <summary>
+    /// 敵の詳細情報を表示する
+    /// </summary>
+    /// <param name="enemyData">敵のデータ</param>
+    /// <param name="saveEntry">敵のセーブデータエントリー</param>
     public void DisplayEnemyDetails(EnemyData enemyData, EnemyRecordEntry saveEntry)
     {
         if (enemyData == null)
@@ -295,11 +300,11 @@ public class EnemyDexPanelActive : MonoBehaviour, IPanelActive
 
         // --- ステータスの表示 (StringBuilderで効率的に文字列を結合) ---
         StringBuilder statsBuilder = new StringBuilder();
-        statsBuilder.AppendLine($"レベル: {enemyData.requiredLevel}");
-        statsBuilder.AppendLine($"HP: {enemyData.enemyHP}");
-        statsBuilder.AppendLine($"経験値: {enemyData.rewardExp}");
-        statsBuilder.AppendLine($"コイン: {enemyData.dropMoney}");
-        statsBuilder.AppendLine($"討伐数: {saveEntry.killCount}");
+        statsBuilder.AppendLine($"レベル　: {enemyData.requiredLevel}");
+        statsBuilder.AppendLine($"ＨＰ　　: {enemyData.enemyHP}");
+        statsBuilder.AppendLine($"経験値　: {enemyData.rewardExp}");
+        statsBuilder.AppendLine($"コイン　: {enemyData.dropMoney}");
+        statsBuilder.AppendLine($"討伐数　: {saveEntry.killCount}");
         statsText.text = statsBuilder.ToString();
 
         // --- ドロップアイテムの表示 ---

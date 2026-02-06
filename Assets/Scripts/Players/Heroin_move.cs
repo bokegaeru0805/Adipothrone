@@ -65,7 +65,9 @@ public class Heroin_move : MonoBehaviour
     private float dashSpeed = 0; //ダッシュの速度
     private float jumpForce = 0; // 内部的に計算されるジャンプ力
     private float BoundIntervalTime; //揺れる音を鳴らす間を記録する変数
-    private float groundCheckRadius = 0.2f; // 接地判定の半径
+
+    [SerializeField]
+    private Vector2 groundCheckSize = new Vector2(0.8f, 0.2f); // 接地判定のサイズ(幅, 高さ)
     private float gravity; //重力の大きさを保存する変数
     private int BodyState; //体形の状態を保存する変数
     private int AnimBodyState; //アニメーションの体形の状態を保存する変数
@@ -178,7 +180,7 @@ public class Heroin_move : MonoBehaviour
             return;
 
         Gizmos.color = Color.green;
-        Gizmos.DrawWireSphere(groundCheck.position, groundCheckRadius);
+        Gizmos.DrawWireCube(groundCheck.position, groundCheckSize);
     }
 
     #endregion
@@ -464,9 +466,9 @@ public class Heroin_move : MonoBehaviour
             return; // 操作不能時は速度更新しない
 
         // --- 1. 環境効果の集計 ---
-        float globalSpeedMult = 1.0f;     // 地形による速度倍率
+        float globalSpeedMult = 1.0f; // 地形による速度倍率
         Vector2 totalWindVelocity = Vector2.zero; // 風の合成ベクトル
-        float restrictFallSpeed = -1f;    // 落下制限（-1は未設定を表す）
+        float restrictFallSpeed = -1f; // 落下制限（-1は未設定を表す）
 
         for (int i = 0; i < activeEnvironments.Count; i++)
         {
@@ -505,7 +507,7 @@ public class Heroin_move : MonoBehaviour
         }
 
         // --- 3. 最終速度の合成 ---
-        
+
         // [X軸] 入力 + 風(X) + リフト慣性
         float finalVelocityX = baseInputVelocityX + totalWindVelocity.x + currentCarrierVelocity.x;
 
@@ -530,7 +532,7 @@ public class Heroin_move : MonoBehaviour
     /// </summary>
     private void CheckGroundStatus()
     {
-        isGrounded = Physics2D.OverlapCircle(groundCheck.position, groundCheckRadius, groundLayer);
+        isGrounded = Physics2D.OverlapBox(groundCheck.position, groundCheckSize, 0f, groundLayer);
 
         // リフトに乗っておらず、かつ地面に着地しているなら、リフト由来の慣性を消す
         if (!isOnCarrier && isGrounded)
