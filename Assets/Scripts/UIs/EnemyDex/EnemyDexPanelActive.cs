@@ -29,7 +29,10 @@ public class EnemyDexPanelActive : MonoBehaviour, IPanelActive
     private TextMeshProUGUI statsText; // レベル, HP, EXP, Moneyなどを表示
 
     [SerializeField]
-    private TextMeshProUGUI dropItemsText; // ドロップアイテム一覧
+    private TextMeshProUGUI dropItemsTextLeft; // ドロップアイテム一覧(左側)
+
+    [SerializeField]
+    private TextMeshProUGUI dropItemsTextRight; // ドロップアイテム一覧(右側)
 
     [Header("空の状態の表示")]
     [SerializeField]
@@ -308,52 +311,116 @@ public class EnemyDexPanelActive : MonoBehaviour, IPanelActive
         statsText.text = statsBuilder.ToString();
 
         // --- ドロップアイテムの表示 ---
-        StringBuilder dropsBuilder = new StringBuilder();
-        if (enemyData.dropItems.Count > 0)
+        // 左列用と右列用のビルダーを用意
+        StringBuilder leftColumnBuilder = new StringBuilder();
+        StringBuilder rightColumnBuilder = new StringBuilder();
+
+        if (enemyData.dropItems != null && enemyData.dropItems.Count > 0)
         {
-            foreach (var item in enemyData.dropItems)
+            // ドロップアイテムは最大6種類。3つずつ2列に分ける
+            for (int i = 0; i < enemyData.dropItems.Count; i++)
             {
-               string displayName = "？？？"; // デフォルトは隠す
+                var item = enemyData.dropItems[i];
+                string displayName = "？？？"; // デフォルトは隠す
+                string conditionText = ""; // 条件未達時のテキスト
 
                 // 1. アイテムのID（int）を取得
-                // (注意: BaseItemManagerやEnumIDUtilityへのアクセスが必要)
                 var itemEnum = BaseItemManager.instance.GetItemIDFromData(item.baseItemData);
-                
                 if (itemEnum != null)
                 {
                     int itemID = EnumIDUtility.ToID(itemEnum);
 
-                    // 2. セーブデータを確認して、ドロップ済みなら本来の名前を表示
-                    if (GameManager.instance.savedata.EnemyRecordData.IsDropUnlocked(enemyData.enemyID, itemID))
+                    // 2. ドロップ条件がある場合のチェック
+                    // ドロップ自体が未確認でも、条件が設定されていればそのヒントを表示する
+                    if (item.hasCondition && item.conditionType != DropConditionType.None)
+                    {
+                        // 条件が既に解禁されているか？
+                        bool isConditionUnlocked =
+                            GameManager.instance.savedata.EnemyRecordData.IsItemConditionUnlocked(
+                                enemyData.enemyID,
+                                itemID
+                            );
+
+                        if (!isConditionUnlocked)
+                        {
+                            // 条件未達成の場合、条件文を作成
+                            switch (item.conditionType)
+                            {
+                                case DropConditionType.KillCountOver:
+                                    conditionText =
+                                        $" (<color=red>{item.conditionValue}</color>体以上撃破)";
+                                    break;
+                                case DropConditionType.PlayerLevelUnder:
+                                    conditionText =
+                                        $" (Lv<color=red>{item.conditionValue}</color>以下撃破)";
+                                    break;
+                                case DropConditionType.NoDamage:
+                                    conditionText = " (ノーダメージ撃破)";
+                                    break;
+                            }
+                        }
+                    }
+
+                    // 3. 既にドロップ確認済みなら名前を表示（条件テキストは消す）
+                    if (
+                        GameManager.instance.savedata.EnemyRecordData.IsDropUnlocked(
+                            enemyData.enemyID,
+                            itemID
+                        )
+                    )
                     {
                         displayName = item.baseItemData.itemName;
+                        conditionText = ""; // 取得済みなら条件ヒントは不要
                     }
                 }
 
-                // maxDropCountが1より大きいかどうかで表示を分岐させる
-                if (item.maxDropCount > 1)
-                {
-                    // 1. 実質確率を計算
-                    float singleChance = item.dropChance / 100.0f;
-                    float noDropChance = 1.0f - singleChance;
-                    float allFailChance = Mathf.Pow(noDropChance, item.maxDropCount);
-                    float effectiveChance = 1.0f - allFailChance;
-                    float effectiveChancePercent = effectiveChance * 100f;
+                // 4. 表示行の作成
+                string lineText;
 
-                    // 2. 表示を更新（名前には displayName 変数を使用）
-                    dropsBuilder.AppendLine($"・{displayName}  ({effectiveChancePercent:F1}%)");
+                // 条件テキストがある場合（＝条件付きかつ未解禁）
+                if (!string.IsNullOrEmpty(conditionText))
+                {
+                    lineText = $"・{conditionText}";
                 }
                 else
                 {
-                    // 1の場合
-                    dropsBuilder.AppendLine($"・{displayName} ({item.dropChance}%)");
+                    // 通常表示（確率計算含む）
+                    float displayChance;
+                    if (item.maxDropCount > 1)
+                    {
+                        float singleChance = item.dropChance / 100.0f;
+                        float noDropChance = 1.0f - singleChance;
+                        float allFailChance = Mathf.Pow(noDropChance, item.maxDropCount);
+                        displayChance = (1.0f - allFailChance) * 100f;
+                    }
+                    else
+                    {
+                        displayChance = item.dropChance;
+                    }
+                    lineText = $"・{displayName} ({displayChance:F1}%)";
+                }
+
+                // 5. 列への振り分け (0-2:左列, 3-5:右列)
+                if (i < 3)
+                {
+                    leftColumnBuilder.AppendLine(lineText);
+                }
+                else
+                {
+                    rightColumnBuilder.AppendLine(lineText);
                 }
             }
         }
         else
         {
-            dropsBuilder.AppendLine("ドロップアイテムなし");
+            leftColumnBuilder.AppendLine("ドロップアイテムなし");
         }
-        dropItemsText.text = dropsBuilder.ToString();
+
+        // テキストコンポーネントに反映
+        dropItemsTextLeft.text = leftColumnBuilder.ToString();
+        if (dropItemsTextRight != null)
+        {
+            dropItemsTextRight.text = rightColumnBuilder.ToString();
+        }
     }
 }

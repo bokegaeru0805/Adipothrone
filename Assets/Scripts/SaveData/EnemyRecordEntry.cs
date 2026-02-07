@@ -1,19 +1,42 @@
 using System;
 using System.Collections.Generic;
 
+#region Entry Class
+
 /// <summary>
-/// 個々の敵に関する記録を保持するエントリークラス
+/// 個々の敵に関する討伐記録やドロップアイテムの解放状況を保持するエントリークラス。
 /// </summary>
 [Serializable]
 public class EnemyRecordEntry
 {
-    public int enemyIdValue;
-    public int killCount;
-    public bool isNew = true; //新規討伐フラグ（デフォルトはtrue）
-    private List<int> _unlockedDropItemIds; //外部からは直接触れないように privateに
+    #region Fields
 
-    // 安全なアクセス用プロパティ
-    // これを使えば、アクセスした瞬間にnullなら自動で new してくれる
+    /// <summary>
+    /// 敵のID（EnemyName Enumの整数値）
+    /// </summary>
+    public int enemyIdValue;
+
+    /// <summary>
+    /// 総討伐数
+    /// </summary>
+    public int killCount;
+
+    /// <summary>
+    /// 新規討伐フラグ（図鑑で「NEW」を表示するため）。デフォルトはtrue。
+    /// </summary>
+    public bool isNew = true;
+
+    // 内部リスト（nullチェック用のプロパティ経由でアクセス推奨）
+    private List<int> _unlockedDropItemIds; // 解除済みドロップアイテムID
+    private List<int> _unlockedConditionItemIds; // 解除済み条件付きドロップアイテムID
+
+    #endregion
+
+    #region Properties (Safe Access)
+
+    /// <summary>
+    /// 解除済みのドロップアイテムIDリスト（nullなら自動生成）
+    /// </summary>
     public List<int> UnlockedDropItemIds
     {
         get
@@ -26,126 +49,107 @@ public class EnemyRecordEntry
         }
     }
 
-    // 今後、初めて遭遇した日時などの新しい記録をここに追加できます
-    // public bool hasEncountered = false;
-    // public int maxDamageDealt = 0;
+    /// <summary>
+    /// 解除済みの条件付きドロップアイテムIDリスト（nullなら自動生成）
+    /// </summary>
+    public List<int> UnlockedConditionItemIds
+    {
+        get
+        {
+            if (_unlockedConditionItemIds == null)
+            {
+                _unlockedConditionItemIds = new List<int>();
+            }
+            return _unlockedConditionItemIds;
+        }
+    }
 
-    // コンストラクタ
+    #endregion
+
+    #region Constructor
+
     public EnemyRecordEntry(int idValue, int amount)
     {
         enemyIdValue = idValue;
         killCount = amount;
-        isNew = true; // 新規登録時は必ずNew
+        isNew = true;
         _unlockedDropItemIds = new List<int>();
+        _unlockedConditionItemIds = new List<int>();
     }
+
+    #endregion
 }
 
+#endregion
+
+#region Manager Class (Data Container)
+
 /// <summary>
-/// 全ての敵関連のセーブデータを統括するクラス
+/// 全ての敵関連のセーブデータを統括するクラス。
+/// 討伐数の加算や、ドロップアイテムの解禁情報の管理を行います。
 /// </summary>
 [Serializable]
 public class EnemyRecordData
 {
+    // 全敵のレコードリスト
     public List<EnemyRecordEntry> enemyRecords = new();
 
+    #region Modification Methods (Write)
+
     /// <summary>
-    /// 指定された敵の討伐数を加算する
+    /// 指定された敵の討伐数を加算します。
+    /// レコードが存在しない場合は新規作成します。
     /// </summary>
     public void AddKillCount(EnemyName enemyID, int amount = 1)
     {
         int targetIdValue = (int)enemyID;
-
-        // 変数名とリスト名の変更を反映
         var entry = enemyRecords.Find(e => e.enemyIdValue == targetIdValue);
+
         if (entry != null)
         {
             entry.killCount += amount;
         }
         else
         {
+            // 初回討伐時は新規エントリーを作成
             enemyRecords.Add(new EnemyRecordEntry(targetIdValue, amount));
         }
     }
 
     /// <summary>
-    /// 指定された敵の討伐数を取得する
-    /// </summary>
-    public int GetKillCount(EnemyName enemyID)
-    {
-        int targetIdValue = (int)enemyID;
-        // 変数名とリスト名の変更を反映
-        var entry = enemyRecords.Find(e => e.enemyIdValue == targetIdValue);
-        return entry?.killCount ?? 0;
-    }
-
-    /// <summary>
-    /// 指定された敵のドロップアイテムを「確認済み」として記録する
+    /// 指定された敵のドロップアイテムを「確認済み（解禁）」として記録します。
     /// </summary>
     public void UnlockDropItem(EnemyName enemyID, int itemID)
     {
-        int targetEnemyIdValue = (int)enemyID;
-        var entry = enemyRecords.Find(e => e.enemyIdValue == targetEnemyIdValue);
-
+        var entry = GetEntry(enemyID);
         if (entry != null)
         {
-            // プロパティ経由でアクセスすれば勝手に初期化されるのでnullチェック不要
+            // 重複チェックを行ってから追加
             if (!entry.UnlockedDropItemIds.Contains(itemID))
             {
                 entry.UnlockedDropItemIds.Add(itemID);
             }
         }
-        // 補足: まだ一度も倒していない敵からアイテムがドロップすることは理論上ないため、
-        // entryがnullの場合（討伐記録がない場合）の作成処理はここでは行いません。
-        // （通常はAddKillCountが先に呼ばれるか、同時期に呼ばれるはずです）
     }
 
     /// <summary>
-    /// 指定された敵の特定のアイテムがドロップ確認済みかを判定する
+    /// 指定された敵の「条件付きドロップ」の条件を「解禁済み」として記録します。
     /// </summary>
-    public bool IsDropUnlocked(EnemyName enemyID, int itemID)
+    public void UnlockItemCondition(EnemyName enemyID, int itemID)
     {
-        int targetEnemyIdValue = (int)enemyID;
-        var entry = enemyRecords.Find(e => e.enemyIdValue == targetEnemyIdValue);
-
+        var entry = GetEntry(enemyID);
         if (entry != null)
         {
-            // こちらもプロパティ経由なら安全
-            return entry.UnlockedDropItemIds.Contains(itemID);
-        }
-        return false;
-    }
-
-    /// <summary>
-    /// 図鑑登録済みか（一度でも倒したか）を判定する
-    /// </summary>
-    public bool IsUnlocked(EnemyName enemyID)
-    {
-        return GetKillCount(enemyID) > 0;
-    }
-
-    /// <summary>
-    /// 図鑑に登録済みのすべての敵IDのリストを取得する
-    /// </summary>
-    public List<EnemyName> GetUnlockedEnemies()
-    {
-        List<EnemyName> unlockedList = new List<EnemyName>();
-        // リスト名の変更を反映
-        foreach (var entry in enemyRecords)
-        {
-            if (entry.killCount > 0)
+            if (!entry.UnlockedConditionItemIds.Contains(itemID))
             {
-                // 変数名の変更を反映
-                if (Enum.IsDefined(typeof(EnemyName), entry.enemyIdValue))
-                {
-                    unlockedList.Add((EnemyName)entry.enemyIdValue);
-                }
+                entry.UnlockedConditionItemIds.Add(itemID);
             }
         }
-        return unlockedList;
     }
 
     /// <summary>
-    /// 指定した敵を「確認済み」としてマークする
+    /// 指定した敵を「確認済み（NEWフラグ解除）」としてマークします。
+    /// 図鑑を開いた際などに呼び出します。
     /// </summary>
     public void MarkAsSeen(int enemyIdValue)
     {
@@ -157,11 +161,114 @@ public class EnemyRecordData
     }
 
     /// <summary>
-    /// isNewフラグを取得するためのヘルパーメソッド
+    /// 指定された敵のエントリーを取得し、存在しない場合は新規作成して返します。
+    /// 確実にエントリーが必要な場合に使用します。
+    /// </summary>
+    public EnemyRecordEntry GetOrCreateEntry(EnemyName enemyID)
+    {
+        int targetIdValue = (int)enemyID;
+        var entry = enemyRecords.Find(e => e.enemyIdValue == targetIdValue);
+        
+        if (entry == null)
+        {
+            entry = new EnemyRecordEntry(targetIdValue, 0);
+            enemyRecords.Add(entry);
+        }
+        return entry;
+    }
+
+    #endregion
+
+    #region Query Methods (Read)
+
+    /// <summary>
+    /// 指定された敵の討伐数を取得します。
+    /// </summary>
+    public int GetKillCount(EnemyName enemyID)
+    {
+        var entry = GetEntry(enemyID);
+        return entry?.killCount ?? 0;
+    }
+
+    /// <summary>
+    /// 図鑑登録済みか（一度でも倒したか）を判定します。
+    /// </summary>
+    public bool IsUnlocked(EnemyName enemyID)
+    {
+        return GetKillCount(enemyID) > 0;
+    }
+
+    /// <summary>
+    /// 指定された敵の特定のアイテムがドロップ解禁済みかを判定します。
+    /// </summary>
+    public bool IsDropUnlocked(EnemyName enemyID, int itemID)
+    {
+        var entry = GetEntry(enemyID);
+        if (entry != null)
+        {
+            return entry.UnlockedDropItemIds.Contains(itemID);
+        }
+        return false;
+    }
+
+    /// <summary>
+    /// 指定された敵の特定の条件付きドロップが解禁済みかを判定します。
+    /// </summary>
+    public bool IsItemConditionUnlocked(EnemyName enemyID, int itemID)
+    {
+        var entry = GetEntry(enemyID);
+        if (entry != null)
+        {
+            return entry.UnlockedConditionItemIds.Contains(itemID);
+        }
+        return false;
+    }
+
+    /// <summary>
+    /// 指定された敵が「NEW（新規討伐）」状態かを取得します。
     /// </summary>
     public bool IsNew(int enemyIdValue)
     {
         var entry = enemyRecords.Find(e => e.enemyIdValue == enemyIdValue);
         return entry?.isNew ?? false;
     }
+
+    /// <summary>
+    /// 図鑑に登録済み（討伐数 > 0）のすべての敵IDのリストを取得します。
+    /// </summary>
+    public List<EnemyName> GetUnlockedEnemies()
+    {
+        List<EnemyName> unlockedList = new List<EnemyName>();
+
+        foreach (var entry in enemyRecords)
+        {
+            if (entry.killCount > 0)
+            {
+                // int値がEnemyName Enumとして定義されているか確認して追加
+                if (Enum.IsDefined(typeof(EnemyName), entry.enemyIdValue))
+                {
+                    unlockedList.Add((EnemyName)entry.enemyIdValue);
+                }
+            }
+        }
+        return unlockedList;
+    }
+
+    #endregion
+
+    #region Helper Methods
+
+    /// <summary>
+    /// 指定された敵IDに対応するエントリーを検索して返します。
+    /// 見つからない場合はnullを返します。
+    /// </summary>
+    private EnemyRecordEntry GetEntry(EnemyName enemyID)
+    {
+        int targetIdValue = (int)enemyID;
+        return enemyRecords.Find(e => e.enemyIdValue == targetIdValue);
+    }
+
+    #endregion
 }
+
+#endregion

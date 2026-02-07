@@ -11,15 +11,22 @@ using UnityEngine;
 /// </summary>
 public class PlayerManager : MonoBehaviour
 {
+    #region Singleton & Components
+
     // シングルトンインスタンス
     public static PlayerManager instance { get; private set; }
 
-    // プレイヤーが操作不能状態（強制移動中など）のときtrue
-    public bool isControlLocked { get; private set; } = false;
+    /// <summary>
+    /// バフ・デバフなど一時的な効果を管理するマネージャーへの参照。
+    /// </summary>
+    public PlayerEffectManager EffectManager { get; private set; }
 
+    [Header("References")]
     [SerializeField]
     private HealItemDatabase healItemDatabase;
+
     private FastTravelManager fastTravelManager;
+    private Heroin_move heroinMove;
     private GameObject playerGameObject;
 
     /// <summary>
@@ -35,29 +42,45 @@ public class PlayerManager : MonoBehaviour
             return playerGameObject;
         }
     }
-    private Heroin_move heroinMove;
-    public int playerMaxHP { get; private set; } = GameConstants.GetMaxHP(1); // プレイヤーの最大HP
-    public int playerMaxWP { get; private set; } = GameConstants.GetMaxWP(1); // プレイヤーの最大WP
-    private float fadeOutDuration = 2f; // フェードアウトにかかる時間
-    private bool isDying = false; //死亡演出が進行中かどうかのフラグ
-    #region Events
-    public event Action OnQuickSlotAssigned; // クイックスロットが割り当てられたときに呼び出されるイベント
-    public event Action<int> OnChangeHP; // HPが変化したときに呼び出されるイベント
-    public event Action<int> OnChangeMaxHP; // 最大HPが変化したときに呼び出されるイベント
-    public event Action<int> OnChangeMaxWP; // 最大WPが変化したときに呼び出されるイベント
-    public event Action<int> OnChangeWP; // WPが変化したときに呼び出されるイベント
-    public event Action<PlayerAttackType> OnChangeAttackType; // 攻撃方法が変化したときに呼び出されるイベント
-    public event Action<KnockbackData> OnDamageReaction; // ダメージリアクション時に呼び出されるイベント
-    public event Action OnChangePlayerMoney; // プレイヤーの所持金が変化したときに呼び出されるイベント
-    public event Action OnPlayerDied; // プレイヤーが死亡したときに呼び出されるイベント
-    public event Action OnPlayerRevived; // プレイヤーが復活したときに呼び出されるイベント
-    public event Action<PlayerStatusBoolName, bool> OnBoolStatusChanged; // Boolステータスが変化したときに呼び出されるイベント
+
     #endregion
 
-    /// <summary>
-    /// バフ・デバフなど一時的な効果を管理するマネージャーへの参照。
-    /// </summary>
-    public PlayerEffectManager EffectManager { get; private set; }
+    #region Status Parameters
+
+    // プレイヤーが操作不能状態（強制移動中など）のときtrue
+    public bool isControlLocked { get; private set; } = false;
+
+    // ステータス関連
+    public int playerMaxHP { get; private set; } = GameConstants.GetMaxHP(1); // プレイヤーの最大HP
+    public int playerMaxWP { get; private set; } = GameConstants.GetMaxWP(1); // プレイヤーの最大WP
+    public float LastDamageTime { get; private set; } = float.MinValue; // 最後にダメージを受けた時間
+
+    // 演出用パラメータ
+    private float fadeOutDuration = 2f; // フェードアウトにかかる時間
+    private bool isDying = false;       // 死亡演出が進行中かどうかのフラグ
+
+    // インベントリソート用辞書（アイテムID -> 並び順インデックス）
+    private Dictionary<int, int> itemSortOrderMap;
+
+    #endregion
+
+    #region Events
+
+    public event Action OnQuickSlotAssigned;             // クイックスロットが割り当てられたとき
+    public event Action<int> OnChangeHP;                 // HPが変化したとき
+    public event Action<int> OnChangeMaxHP;              // 最大HPが変化したとき
+    public event Action<int> OnChangeMaxWP;              // 最大WPが変化したとき
+    public event Action<int> OnChangeWP;                 // WPが変化したとき
+    public event Action<PlayerAttackType> OnChangeAttackType; // 攻撃方法が変化したとき
+    public event Action<KnockbackData> OnDamageReaction; // ダメージリアクション時
+    public event Action OnChangePlayerMoney;             // 所持金が変化したとき
+    public event Action OnPlayerDied;                    // 死亡時
+    public event Action OnPlayerRevived;                 // 復活時
+    public event Action<PlayerStatusBoolName, bool> OnBoolStatusChanged; // Boolステータス変化時
+
+    #endregion
+
+    #region Unity Lifecycle Methods
 
     private void Awake()
     {
@@ -66,7 +89,6 @@ public class PlayerManager : MonoBehaviour
         // 毎シーンAwake時に同期を行うことでステータスを維持します。
         // 毒やバフなどの一時効果は保存データと連携し、シーンまたぎの継続性も確保しています。
         // シーンごとの参照（UI, Cameraなど）との依存関係を避けるため、シーンローカルの設計としています。
-
         if (instance == null)
         {
             instance = this;
@@ -89,12 +111,13 @@ public class PlayerManager : MonoBehaviour
         if (healItemDatabase == null)
             Debug.LogError("HealItemDatabaseが設定されていません");
 
-        //Awakeの最後に、ソート順マップの初期化処理を追加
+        // Awakeの最後に、ソート順マップの初期化処理を実行
         InitializeItemSortOrderMap();
     }
 
     public void Start()
     {
+        // プレイヤー参照の初期化
         if (playerGameObject == null)
         {
             playerGameObject = GameObject.FindGameObjectWithTag(GameConstants.PLAYER_TAG_NAME);
@@ -108,22 +131,28 @@ public class PlayerManager : MonoBehaviour
             }
         }
 
+        // ファストトラベルマネージャーの取得
         fastTravelManager = PersistentManagers.instance.GetComponentInChildren<FastTravelManager>();
         if (fastTravelManager == null)
         {
             Debug.LogError("FastTravelManagerが見つかりません");
         }
 
-        // シーン後の遷移先座標が設定されていれば移動
+        // シーン遷移後のプレイヤー移動処理（スポーン地点が指定されている場合）
         if (GameManager.instance.crossScenePlayerSpawnPoint != null)
         {
-            StartCoroutine(PlayerMove(GameManager.instance.crossScenePlayerSpawnPoint.Value)); // プレイヤーを次のスポーン位置に移動
+            StartCoroutine(PlayerMove(GameManager.instance.crossScenePlayerSpawnPoint.Value));
             GameManager.instance.crossScenePlayerSpawnPoint = null; // 一度使用したらリセット
         }
     }
 
-    #region PlayerStatusData Accessors
-    // Boolの取得
+    #endregion
+
+    #region Status Data Accessors (SaveData Bridge)
+    // ここではリフレクションを使用して、Enum名に対応する PlayerStatusData のフィールドへアクセスしています。
+    // これにより、Enum定義とフィールド名が一致していれば、自動的に値の取得・設定が可能です。
+
+    // --- Bool Status ---
     public bool GetPlayerBoolStatus(PlayerStatusBoolName flag)
     {
         var field = typeof(PlayerStatusData).GetField(flag.ToString());
@@ -135,18 +164,16 @@ public class PlayerManager : MonoBehaviour
         return false;
     }
 
-    // Boolの設定
     public void SetPlayerBoolStatus(PlayerStatusBoolName flag, bool value)
     {
         var field = typeof(PlayerStatusData).GetField(flag.ToString());
         if (field != null && field.FieldType == typeof(bool))
         {
             bool oldValue = (bool)field.GetValue(GameManager.instance.savedata.PlayerStatus);
-            if (oldValue == value)
-                return; // 値が変わらなければ何もしない
+            if (oldValue == value) return; // 値が変わらなければ何もしない
 
             field.SetValue(GameManager.instance.savedata.PlayerStatus, value);
-            OnBoolStatusChanged?.Invoke(flag, value); //汎用イベントを発行
+            OnBoolStatusChanged?.Invoke(flag, value); // 汎用イベントを発行
         }
         else
         {
@@ -154,7 +181,7 @@ public class PlayerManager : MonoBehaviour
         }
     }
 
-    // Intの取得
+    // --- Int Status ---
     public int GetPlayerIntStatus(PlayerStatusIntName flag)
     {
         var field = typeof(PlayerStatusData).GetField(flag.ToString());
@@ -166,7 +193,6 @@ public class PlayerManager : MonoBehaviour
         return 0;
     }
 
-    // Intの設定
     public void SetPlayerIntStatus(PlayerStatusIntName flag, int value)
     {
         var field = typeof(PlayerStatusData).GetField(flag.ToString());
@@ -180,7 +206,7 @@ public class PlayerManager : MonoBehaviour
         }
     }
 
-    // Floatの取得
+    // --- Float Status ---
     public float GetPlayerFloatStatus(PlayerStatusFloatName flag)
     {
         var field = typeof(PlayerStatusData).GetField(flag.ToString());
@@ -192,7 +218,6 @@ public class PlayerManager : MonoBehaviour
         return 0f;
     }
 
-    // Floatの設定
     public void SetPlayerFloatStatus(PlayerStatusFloatName flag, float value)
     {
         var field = typeof(PlayerStatusData).GetField(flag.ToString());
@@ -206,7 +231,7 @@ public class PlayerManager : MonoBehaviour
         }
     }
 
-    //攻撃方法の設定
+    // --- Attack Type ---
     public void SetPlayerAttackType(PlayerAttackType attackType)
     {
         var status = GameManager.instance.savedata.PlayerStatus;
@@ -219,7 +244,6 @@ public class PlayerManager : MonoBehaviour
         OnChangeAttackType?.Invoke(attackType); // 攻撃方法が変化したときに呼び出されるイベントを発火
     }
 
-    //攻撃方法の取得
     public PlayerAttackType GetPlayerAttackType()
     {
         var status = GameManager.instance.savedata.PlayerStatus;
@@ -230,58 +254,36 @@ public class PlayerManager : MonoBehaviour
         }
         return status.playerAttackType;
     }
+
+    // --- Max Status ---
+    /// <summary>
+    /// 外部システム（PlayerLevelManagerなど）から最大HPを更新し、イベントを発行します。
+    /// </summary>
+    public void SetMaxHP(int newMaxHP)
+    {
+        if (playerMaxHP == newMaxHP) return;
+        playerMaxHP = newMaxHP;
+        OnChangeMaxHP?.Invoke(playerMaxHP);
+    }
+
+    /// <summary>
+    /// 外部システム（PlayerLevelManagerなど）から最大WPを更新し、イベントを発行します。
+    /// </summary>
+    public void SetMaxWP(int newMaxWP)
+    {
+        if (playerMaxWP == newMaxWP) return;
+        playerMaxWP = newMaxWP;
+        OnChangeMaxWP?.Invoke(playerMaxWP);
+    }
+
     #endregion
 
-    #region Core Actions & Status
-    // プレイヤーの所持金を変更する関数
-    // number: 所持金の増減値、正の値で増加、負の値で減少
-    public void ChangeMoney(int number)
-    {
-        var status = GameManager.instance.savedata.PlayerStatus;
-        if (status == null)
-        {
-            Debug.LogWarning("PlayerStatusDataがnullです");
-            return;
-        }
-        status.playerMoney += number;
-        if (status.playerMoney < 0)
-        {
-            status.playerMoney = 0;
-        }
-        OnChangePlayerMoney?.Invoke(); // 所持金が変化したときに呼び出されるイベントを発火
-    }
-
-    //プレイヤーを強制的に移動させる関数
-    public IEnumerator PlayerMove(Vector2 targetPoint)
-    {
-        if (playerGameObject == null)
-        {
-            playerGameObject = GameObject.FindGameObjectWithTag(GameConstants.PLAYER_TAG_NAME);
-            if (playerGameObject == null)
-            {
-                Debug.LogError("PlayerGameObjectが見つかりません");
-                yield break; // PlayerGameObjectが見つからない場合は処理を中止
-            }
-        }
-
-        playerGameObject.transform.position = new Vector2(targetPoint.x, targetPoint.y); //プレイヤーの座標をtargetPointに移動
-        if (CameraManager.instance != null)
-        {
-            // CameraMoveコルーチンが完了するまで待つ
-            yield return CameraManager.instance.StartCoroutine(CameraManager.instance.CameraMove());
-        }
-        else
-        {
-            Debug.LogError("CameraManagerが存在しません");
-        }
-    }
+    #region HP Management & Damage Logic
 
     /// <summary>
     /// 【通常ダメージ】を受け付け、防御力を考慮した最終ダメージを計算して適用します。
     /// 外部（敵の攻撃やプレイヤーの被弾処理）からはこの関数を呼び出します。
     /// </summary>
-    /// <param name="baseDamage">防御計算前の基本ダメージ量</param>
-    /// <param name="knockbackData">ノックバック情報</param>
     public void TakeNormalDamage(int baseDamage, KnockbackData knockbackData = default)
     {
         // PlayerEffectManagerから最終的な防御力を取得
@@ -298,43 +300,28 @@ public class PlayerManager : MonoBehaviour
     }
 
     /// <summary>
-    /// 【最大HP】に対する割合でダメージを与えます。
+    /// 【最大HP】に対する割合でダメージを与えます（例: 0.25f = 25%）。
     /// </summary>
-    /// <param name="damageRatio">最大HPに対するダメージの割合（例: 0.25f = 25%）</param>
-    /// <param name="knockbackData">ノックバック情報</param>
     public void DamageHPByMaxHPRatio(float damageRatio, KnockbackData knockbackData = default)
     {
-        // ダメージ割合がマイナスや0の場合は処理を中断
-        if (damageRatio <= 0)
-            return;
+        if (damageRatio <= 0) return;
 
-        // プレイヤーの最大HPを基準に、実際のダメージ量を計算
         // 最低でも1ダメージは保証する
         int damageAmount = Mathf.Max(1, Mathf.RoundToInt(playerMaxHP * damageRatio));
-
-        // 既存のダメージ処理関数を呼び出す
         ApplyDamage(damageAmount, knockbackData);
     }
 
     /// <summary>
-    /// 【現在HP】に対する割合でダメージを与えます。HPが低いほどダメージ量が減るため、この攻撃単体で倒されることはありません。
+    /// 【現在HP】に対する割合でダメージを与えます（例: 0.5f = 50%）。
+    /// HPが低いほどダメージ量が減るため、この攻撃単体で倒されることはありません。
     /// </summary>
-    /// <param name="damageRatio">現在HPに対するダメージの割合（例: 0.5f = 50%）</param>
-    /// <param name="knockbackData">ノックバック情報</param>
     public void DamageHPByCurrentHPRatio(float damageRatio, KnockbackData knockbackData = default)
     {
-        // ダメージ割合がマイナスや0の場合は処理を中断
-        if (damageRatio <= 0)
-            return;
+        if (damageRatio <= 0) return;
 
-        // プレイヤーの現在HPを取得
         int currentHP = GetPlayerIntStatus(PlayerStatusIntName.playerCurrentHP);
-
-        // 現在HPを基準に、実際のダメージ量を計算
         // 最低でも1ダメージは保証する
         int damageAmount = Mathf.Max(1, Mathf.RoundToInt(currentHP * damageRatio));
-
-        // 既存のダメージ処理関数を呼び出す
         ApplyDamage(damageAmount, knockbackData);
     }
 
@@ -353,59 +340,65 @@ public class PlayerManager : MonoBehaviour
         }
 
         // 既に死亡処理が始まっている場合は、重複して実行しない
-        if (isDying)
-            return;
+        if (isDying) return;
 
-        // ダメージを受ける前のHPと最大HPを取得
+        // ダメージが1以上発生する場合、被弾時刻を更新する
+        if (damage > 0)
+        {
+            LastDamageTime = Time.time;
+        }
+
         int hpBeforeDamage = GetPlayerIntStatus(PlayerStatusIntName.playerCurrentHP);
         int playerCurrentMaxHP = playerMaxHP;
 
-        // HPがGutsEffectThresholdの閾値以上あるかどうかの条件を確認
-        bool hasGutsEffect =
-            (float)hpBeforeDamage / playerCurrentMaxHP >= GameConstants.GUTS_EFFECT_THRESHOLD;
+        // HPがGutsEffectThresholdの閾値以上あるかどうかの条件を確認（食いしばり効果）
+        bool hasGutsEffect = (float)hpBeforeDamage / playerCurrentMaxHP >= GameConstants.GUTS_EFFECT_THRESHOLD;
 
-        SEManager.instance?.PlayPlayerActionSE(SE_PlayerAction.Damage1); //ダメージの効果音を鳴らす
-        SetPlayerIntStatus(PlayerStatusIntName.playerCurrentHP, hpBeforeDamage - damage); //HPを更新
+        SEManager.instance?.PlayPlayerActionSE(SE_PlayerAction.Damage1); // ダメージの効果音を鳴らす
+        
+        int hpAfterDamage = hpBeforeDamage - damage;
+        SetPlayerIntStatus(PlayerStatusIntName.playerCurrentHP, hpAfterDamage); // HPを更新
 
         // HPを減らした直後に、リアクションを促すイベントを発行する
         OnDamageReaction?.Invoke(knockbackData);
-
-        int hpAfterDamage = hpBeforeDamage - damage;
 
         // HPが変化したときに呼び出されるイベントを発火
         // 復活の処理の関係から、OnPlayerDiedイベントの前に発火させる
         OnChangeHP?.Invoke(hpAfterDamage);
 
+        // 死亡判定
         if (hpAfterDamage <= 0)
         {
             if (hasGutsEffect)
             {
-                // 90%以上あった場合、HPを1にして耐える
+                // 閾値以上だった場合、HPを1にして耐える
                 SetPlayerIntStatus(PlayerStatusIntName.playerCurrentHP, 1);
-                OnChangeHP?.Invoke(1); // HPが変化したときに呼び出されるイベントを発火
+                OnChangeHP?.Invoke(1);
             }
             else
             {
-                // 死亡処理フラグを立て、重複実行を防ぐ
-                isDying = true;
-
-                // HPを0に確定
-                SetPlayerIntStatus(PlayerStatusIntName.playerCurrentHP, 0);
-
-                // 死亡時のSEを再生
-                SEManager.instance.PlayPlayerActionSE(SE_PlayerAction.Death1);
-
-                // プレイヤーが死亡したときに呼び出されるイベントを発火
-                // 復活処理の関係から、ExecuteDeathFastTravelの前に発火させる
-                OnPlayerDied?.Invoke();
-
-                // isEnableSaveの値を取得
-                bool isEnableSave = SaveLoadManager.instance?.isEnableSave ?? false;
-
-                // 死亡演出のコルーチンを開始
-                StartCoroutine(DeathSequenceCoroutine(isEnableSave));
+                // 死亡処理を開始
+                StartDeathProcess();
             }
         }
+    }
+
+    /// <summary>
+    /// 死亡処理を開始します。
+    /// </summary>
+    private void StartDeathProcess()
+    {
+        isDying = true; // 死亡処理フラグを立て、重複実行を防ぐ
+        SetPlayerIntStatus(PlayerStatusIntName.playerCurrentHP, 0); // HPを0に確定
+
+        SEManager.instance.PlayPlayerActionSE(SE_PlayerAction.Death1);
+
+        // プレイヤーが死亡したときに呼び出されるイベントを発火
+        // 復活処理の関係から、ExecuteDeathFastTravelの前に発火させる
+        OnPlayerDied?.Invoke();
+
+        bool isEnableSave = SaveLoadManager.instance?.isEnableSave ?? false;
+        StartCoroutine(DeathSequenceCoroutine(isEnableSave));
     }
 
     /// <summary>
@@ -427,9 +420,7 @@ public class PlayerManager : MonoBehaviour
         }
 
         // 3. さらに指定したfadeOutDuration秒数待機
-        yield return new WaitForSecondsRealtime(
-            isSaveEnabled ? fadeOutDuration : fadeOutDuration - 0.5f
-        );
+        yield return new WaitForSecondsRealtime(isSaveEnabled ? fadeOutDuration : fadeOutDuration - 0.5f);
 
         // 4. 時間の停止を解除し、最終処理を実行
         TimeManager.instance?.SetEnemyMovePaused(false); // 敵の動きを再開
@@ -440,41 +431,34 @@ public class PlayerManager : MonoBehaviour
         }
         else
         {
-            GameOverUIManager.instance.StartGameOver(); //ゲームオーバーの関数を呼び出す
+            GameOverUIManager.instance.StartGameOver(); // ゲームオーバーの関数を呼び出す
         }
 
         // 5. 死亡処理フラグをリセット
         isDying = false;
     }
 
+    /// <summary>
+    /// 指定値をHP回復します。死亡からの蘇生判定もここで行います。
+    /// </summary>
     public void HealHP(int heal)
     {
-        // 0以下の回復量は無意味なので、ここで処理を終了
-        if (heal <= 0)
-        {
-            return;
-        }
+        // 0以下の回復量は無意味なので終了
+        if (heal <= 0) return;
 
         int currentHP = GetPlayerIntStatus(PlayerStatusIntName.playerCurrentHP);
         int maxHP = playerMaxHP;
         bool wasDead = currentHP <= 0; // 回復前に死亡していたかを記録
 
         // すでにHPが満タンで、かつ死んでいない場合は回復不要
-        if (currentHP >= maxHP && !wasDead)
-        {
-            return;
-        }
+        if (currentHP >= maxHP && !wasDead) return;
 
         // 回復後のHPを計算し、0と最大値の間に収める
         int newHP = Mathf.Clamp(currentHP + heal, 0, maxHP);
 
-        // HPに変化がなければ、イベントを発火させる必要もない
-        if (newHP == currentHP)
-        {
-            return;
-        }
+        // HPに変化がなければイベント不要
+        if (newHP == currentHP) return;
 
-        // 計算結果を一度だけセット
         SetPlayerIntStatus(PlayerStatusIntName.playerCurrentHP, newHP);
 
         // 死亡状態から復活した場合のイベントを発火
@@ -483,10 +467,12 @@ public class PlayerManager : MonoBehaviour
             OnPlayerRevived?.Invoke();
         }
 
-        // HPが変化したイベントを発火
         OnChangeHP?.Invoke(newHP);
     }
 
+    /// <summary>
+    /// HPを全回復します。
+    /// </summary>
     public void RestoreFullHP()
     {
         int maxHP = playerMaxHP;
@@ -494,24 +480,69 @@ public class PlayerManager : MonoBehaviour
         int recoverAmount = maxHP - HP;
         if (recoverAmount > 0)
         {
-            HealHP(recoverAmount); // HPを最大値まで回復
+            HealHP(recoverAmount);
         }
     }
 
+    #endregion
+
+    #region WP Management Logic
+
     /// <summary>
-    /// WP（武器ポイント）消費のバッファを加算し、
-    /// 1以上になった場合は整数部分だけWPにダメージを与え、
-    /// 余りをバッファとして保存する。
+    /// WPを回復します。
+    /// </summary>
+    public void HealWP(int heal)
+    {
+        int maxWP = playerMaxWP;
+        int currentWP = GetPlayerIntStatus(PlayerStatusIntName.playerCurrentWP);
+
+        // すでにWPが満タンなら何もしない
+        if (currentWP >= maxWP) return;
+
+        int newWP = Mathf.Min(currentWP + heal, maxWP);
+        SetPlayerIntStatus(PlayerStatusIntName.playerCurrentWP, newWP);
+        OnChangeWP?.Invoke(newWP);
+    }
+
+    /// <summary>
+    /// WPを消費します。
+    /// </summary>
+    public void DamageWP(int damage)
+    {
+        if (!(GameManager.instance?.savedata?.PlayerStatus?.isChangeWP ?? false))
+            return;
+
+        int currentWP = GetPlayerIntStatus(PlayerStatusIntName.playerCurrentWP);
+        int newWP = Mathf.Max(0, currentWP - damage); // 0未満にならないようにする
+        
+        GameManager.instance.savedata.PlayerStatus.playerCurrentWP = newWP;
+        OnChangeWP?.Invoke(newWP);
+    }
+
+    /// <summary>
+    /// WPの値を直接設定します（演出用）。
+    /// </summary>
+    public void SetWP(int wp)
+    {
+        if (!(GameManager.instance?.savedata?.PlayerStatus?.isChangeWP ?? false))
+        {
+            Debug.LogWarning("WPの変更が無効化されています。PlayerStatusDataのisChangeWPを確認してください。");
+            return;
+        }
+
+        SetPlayerIntStatus(PlayerStatusIntName.playerCurrentWP, wp);
+        OnChangeWP?.Invoke(wp);
+    }
+
+    /// <summary>
+    /// WP消費のバッファを加算し、1以上になった場合は整数部分だけWPにダメージを与え、
+    /// 余りをバッファとして保存します。
+    /// (持続ダメージなどで小数点のWP消費を扱うために使用します)
     /// </summary>
     /// <param name="addedBufferValue">加算するWP消費のバッファ値（小数対応）</param>
     public void AddWpConsumptionBuffer(float addedBufferValue)
     {
-        // 現在のWP消費バッファ値を取得
-        float currentWpConsumptionBuffer = GetPlayerFloatStatus(
-            PlayerStatusFloatName.wpConsumptionBuffer
-        );
-
-        // 新たなバッファ値を加算
+        float currentWpConsumptionBuffer = GetPlayerFloatStatus(PlayerStatusFloatName.wpConsumptionBuffer);
         currentWpConsumptionBuffer += addedBufferValue;
 
         // 合計値が1以上であれば、整数部分をWPダメージとして反映
@@ -522,78 +553,12 @@ public class PlayerManager : MonoBehaviour
             DamageWP(intPart); // WPにダメージを加える
         }
 
-        // 残った小数部分のバッファを再保存
         SetPlayerFloatStatus(PlayerStatusFloatName.wpConsumptionBuffer, currentWpConsumptionBuffer);
     }
 
-    public void HealWP(int heal)
-    {
-        int maxWP = playerMaxWP;
-        int currentWP = GetPlayerIntStatus(PlayerStatusIntName.playerCurrentWP);
+    #endregion
 
-        // すでにWPが満タンなら、何もせず処理を終了（ガード節）
-        if (currentWP >= maxWP)
-        {
-            return;
-        }
-
-        // 回復後のWPを計算し、最大値を超えないようにMathf.Minで制限
-        int newWP = Mathf.Min(currentWP + heal, maxWP);
-
-        // 計算結果を一度だけセットする
-        SetPlayerIntStatus(PlayerStatusIntName.playerCurrentWP, newWP);
-
-        // 正しい最終的な値でイベントを発火させる
-        OnChangeWP?.Invoke(newWP);
-    }
-
-    public void DamageWP(int damage)
-    {
-        if (!(GameManager.instance?.savedata?.PlayerStatus?.isChangeWP ?? false))
-            return;
-
-        GameManager.instance.savedata.PlayerStatus.playerCurrentWP -= damage;
-        int WP = GetPlayerIntStatus(PlayerStatusIntName.playerCurrentWP);
-        if (WP < 0)
-        {
-            SetPlayerIntStatus(PlayerStatusIntName.playerCurrentWP, 0); // WPを0に設定
-        }
-        OnChangeWP?.Invoke(WP);
-    }
-
-    // プレイヤーのWPを設定する関数
-    // 主に演出用に使用される
-    /// <param name="wp">設定するWPの値</param>
-    public void SetWP(int wp)
-    {
-        if (!(GameManager.instance?.savedata?.PlayerStatus?.isChangeWP ?? false))
-        {
-            Debug.LogWarning(
-                "WPの変更が無効化されています。PlayerStatusDataのisChangeWPを確認してください。"
-            );
-            return;
-        }
-
-        SetPlayerIntStatus(PlayerStatusIntName.playerCurrentWP, wp);
-        OnChangeWP?.Invoke(wp); // WPが変化したときに呼び出されるイベントを発火
-    }
-
-    /// <summary>
-    /// 指定した時間だけプレイヤーを無敵状態にします。
-    /// Heroin_moveコンポーネントのEnableInvincibilityメソッドを呼び出します。
-    /// </summary>
-    /// <param name="time">無敵状態にする時間（秒）</param>
-    public void EnableInvincibility(float time)
-    {
-        if (playerGameObject != null)
-        {
-            Heroin_move heroin_Move = playerGameObject.GetComponent<Heroin_move>();
-            if (heroin_Move != null)
-            {
-                heroin_Move.EnableInvincibility(time);
-            }
-        }
-    }
+    #region Item & Inventory System
 
     /// <summary>
     /// 指定した回復アイテムを使用し、HP・WPの回復および特殊効果を適用します。
@@ -608,31 +573,33 @@ public class PlayerManager : MonoBehaviour
             Debug.Log("ItemInventoryが存在しません");
             return false;
         }
-        if (!ItemInventory.UseItem(ID, 1)) //アイテムを使用
+
+        // アイテムを消費（個数を減らす）
+        if (!ItemInventory.UseItem(ID, 1))
         {
             return false;
         }
 
-        SEManager.instance?.PlayPlayerActionSE(SE_PlayerAction.HealItem1); //効果音を鳴らす
-        HealItemData item = healItemDatabase.GetItemByID(ID); //itemのDataを取得
+        SEManager.instance?.PlayPlayerActionSE(SE_PlayerAction.HealItem1); // 効果音を鳴らす
+
+        HealItemData item = healItemDatabase.GetItemByID(ID); // itemのDataを取得
         if (item != null)
         {
-            if (item.hpHealAmount > 0)
-                HealHP(item.hpHealAmount);
-            if (item.wpHealAmount > 0)
-                HealWP(item.wpHealAmount);
+            if (item.hpHealAmount > 0) HealHP(item.hpHealAmount);
+            if (item.wpHealAmount > 0) HealWP(item.wpHealAmount);
 
             // 特殊効果の適用をPlayerEffectManagerに委任する
             foreach (var effect in item.buffEffects)
             {
-                // effect.EffectApply() は PlayerEffectManager のメソッドを呼び出すように実装されている想定
                 effect.EffectApply();
             }
         }
-        return true; //アイテムの使用に成功
+        return true; // アイテムの使用に成功
     }
 
-    //即座に使用できるアイテムを入れ替える関数
+    /// <summary>
+    /// 即座に使用できるアイテムを入れ替える関数（クイックスロットへの登録）
+    /// </summary>
     public void AssignItemToQuickSlot(Enum ID, int quickSlotIndex)
     {
         int IDNumber = EnumIDUtility.ToID(ID);
@@ -652,71 +619,13 @@ public class PlayerManager : MonoBehaviour
         }
 
         quickList[quickSlotIndex] = item;
-        SEManager.instance?.PlayUISE(SE_UI.Register1); //登録の効果音を鳴らす
+        SEManager.instance?.PlayUISE(SE_UI.Register1); // 登録の効果音を鳴らす
         OnQuickSlotAssigned?.Invoke();
     }
 
     /// <summary>
-    /// プレイヤーの現在のワールド座標をVector2で返します。
-    /// プレイヤーが見つからない場合は(0, 0)を返します。
-    /// </summary>
-    /// <returns>プレイヤーの座標 (Vector2)</returns>
-    public Vector2 GetPlayerPosition()
-    {
-        // playerGameObjectがまだキャッシュされていなければ、念のため探す
-        if (playerGameObject == null)
-        {
-            playerGameObject = GameObject.FindGameObjectWithTag(GameConstants.PLAYER_TAG_NAME);
-        }
-
-        // それでも見つからなければ、警告を出してデフォルト値を返す
-        if (playerGameObject == null)
-        {
-            Debug.LogWarning("プレイヤーのGameObjectが見つからないため、座標を取得できません。");
-            return Vector2.zero;
-        }
-
-        // 見つかれば、その座標を返す
-        return playerGameObject.transform.position;
-    }
-    #endregion
-
-    #region Level & Experience
-    /// <summary>
-    /// 外部システム（PlayerLevelManagerなど）から最大HPを更新し、イベントを発行します。
-    /// </summary>
-    /// <param name="newMaxHP">新しい最大HP</param>
-    public void SetMaxHP(int newMaxHP)
-    {
-        // 値に変化がなければ何もしない
-        if (playerMaxHP == newMaxHP)
-            return;
-
-        playerMaxHP = newMaxHP;
-        OnChangeMaxHP?.Invoke(playerMaxHP); // 最大HPが変化したときに呼び出されるイベントを発火
-    }
-
-    /// <summary>
-    /// 外部システム（PlayerLevelManagerなど）から最大WPを更新し、イベントを発行します。
-    /// </summary>
-    /// <param name="newMaxWP">新しい最大WP</param>
-    public void SetMaxWP(int newMaxWP)
-    {
-        // 値に変化がなければ何もしない
-        if (playerMaxWP == newMaxWP)
-            return;
-
-        playerMaxWP = newMaxWP;
-        OnChangeMaxWP?.Invoke(playerMaxWP); // 最大WPが変化したときに呼び出されるイベントを発火
-    }
-    #endregion
-
-    #region Inventory Management
-    // アイテムの正しい並び順を高速に検索するための辞書
-    private Dictionary<int, int> itemSortOrderMap;
-
-    /// <summary>
     /// HealItemDatabaseからアイテムの正しい表示順を読み込み、辞書としてキャッシュします。
+    /// これによりソート処理を高速化します。
     /// </summary>
     private void InitializeItemSortOrderMap()
     {
@@ -763,11 +672,13 @@ public class PlayerManager : MonoBehaviour
             )
             .ToList();
     }
+
     #endregion
 
-    #region Control Lock
+    #region Movement & Physics Control
+
     /// <summary>
-    /// 強制移動などの開始
+    /// 強制移動などの開始（操作ロック）
     /// </summary>
     public void LockControl()
     {
@@ -775,7 +686,7 @@ public class PlayerManager : MonoBehaviour
     }
 
     /// <summary>
-    /// 強制移動などの終了
+    /// 強制移動などの終了（操作ロック解除）
     /// </summary>
     public void UnlockControl()
     {
@@ -784,20 +695,11 @@ public class PlayerManager : MonoBehaviour
 
     /// <summary>
     /// プレイヤーの物理挙動（移動・ジャンプなど）を有効/無効に切り替えます。
-    /// Heroin_moveコンポーネントとRigidbody2DのisKinematicを操作します。
+    /// Rigidbody2DのisKinematicを操作して物理演算の影響を制御します。
     /// </summary>
     /// <param name="isActive">trueで有効化、falseで無効化</param>
     public void SetPlayerPhysicsActive(bool isActive)
     {
-        // if (heroinMove != null)
-        // {
-        //     heroinMove.enabled = isActive;
-        // }
-        // else
-        // {
-        //     Debug.LogWarning("Heroin_moveコンポーネントが見つかりません。");
-        // }
-
         var rb = PlayerGameObject?.GetComponent<Rigidbody2D>();
         if (rb != null)
         {
@@ -812,8 +714,96 @@ public class PlayerManager : MonoBehaviour
                 rb.velocity = Vector2.zero;
             }
         }
-
-        // Debug.Log("SetPlayerPhysicsActive: " + isActive);
     }
+
+    /// <summary>
+    /// プレイヤーを強制的に指定座標へ移動させます。
+    /// カメラの追従が完了するまで待機します。
+    /// </summary>
+    public IEnumerator PlayerMove(Vector2 targetPoint)
+    {
+        if (PlayerGameObject == null)
+        {
+            Debug.LogError("PlayerGameObjectが見つかりません");
+            yield break; // PlayerGameObjectが見つからない場合は処理を中止
+        }
+
+        playerGameObject.transform.position = new Vector2(targetPoint.x, targetPoint.y); // プレイヤーの座標を移動
+
+        if (CameraManager.instance != null)
+        {
+            // CameraMoveコルーチンが完了するまで待つ
+            yield return CameraManager.instance.StartCoroutine(CameraManager.instance.CameraMove());
+        }
+        else
+        {
+            Debug.LogError("CameraManagerが存在しません");
+        }
+    }
+
+    /// <summary>
+    /// プレイヤーの現在のワールド座標をVector2で返します。
+    /// プレイヤーが見つからない場合は(0, 0)を返します。
+    /// </summary>
+    public Vector2 GetPlayerPosition()
+    {
+        // playerGameObjectがまだキャッシュされていなければ、念のため探す
+        if (playerGameObject == null)
+        {
+            playerGameObject = GameObject.FindGameObjectWithTag(GameConstants.PLAYER_TAG_NAME);
+        }
+
+        // それでも見つからなければ、警告を出してデフォルト値を返す
+        if (playerGameObject == null)
+        {
+            Debug.LogWarning("プレイヤーのGameObjectが見つからないため、座標を取得できません。");
+            return Vector2.zero;
+        }
+
+        // 見つかれば、その座標を返す
+        return playerGameObject.transform.position;
+    }
+
+    #endregion
+
+    #region Other Actions
+
+    /// <summary>
+    /// プレイヤーの所持金を変更する関数
+    /// </summary>
+    /// <param name="number">所持金の増減値（正で増加、負で減少）</param>
+    public void ChangeMoney(int number)
+    {
+        var status = GameManager.instance.savedata.PlayerStatus;
+        if (status == null)
+        {
+            Debug.LogWarning("PlayerStatusDataがnullです");
+            return;
+        }
+        status.playerMoney += number;
+        if (status.playerMoney < 0)
+        {
+            status.playerMoney = 0;
+        }
+        OnChangePlayerMoney?.Invoke(); // 所持金が変化したときに呼び出されるイベントを発火
+    }
+
+    /// <summary>
+    /// 指定した時間だけプレイヤーを無敵状態にします。
+    /// Heroin_moveコンポーネントのEnableInvincibilityメソッドを呼び出します。
+    /// </summary>
+    /// <param name="time">無敵状態にする時間（秒）</param>
+    public void EnableInvincibility(float time)
+    {
+        if (playerGameObject != null)
+        {
+            Heroin_move heroin_Move = playerGameObject.GetComponent<Heroin_move>();
+            if (heroin_Move != null)
+            {
+                heroin_Move.EnableInvincibility(time);
+            }
+        }
+    }
+
     #endregion
 }

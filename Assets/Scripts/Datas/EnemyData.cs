@@ -1,5 +1,16 @@
 using System.Collections.Generic;
+using NaughtyAttributes;
 using UnityEngine;
+
+// ドロップ条件の種類を定義する列挙型
+public enum DropConditionType
+{
+    None, // 条件なし
+    KillCountOver, // 指定回数以上の撃破
+    PlayerLevelUnder, // プレイヤーレベル以下で討伐
+    NoDamage // ノーダメージで討伐
+    ,
+}
 
 [CreateAssetMenu(fileName = "NewEnemy", menuName = "Enemies/NormalEnemy")]
 public class EnemyData : ScriptableObject
@@ -15,11 +26,12 @@ public class EnemyData : ScriptableObject
     public int dropMoney; // 落とす金額
     public int requiredLevel; // 所要レベル
     public List<DropItemData> dropItems = new List<DropItemData>(); // ドロップアイテムリスト
+
     // public EffekseerEmitter destroyeffect; // 死亡エフェクトのアセット
     public float destroyeffectScale = 1.0f; // 死亡エフェクトの大きさ
+
     [Tooltip("この敵を図鑑に表示するかどうか")]
     public bool isListedInDex = true;
-
 }
 
 [System.Serializable]
@@ -37,5 +49,29 @@ public class DropItemData
     [BonusMultiplierPopup]
     [SerializeField]
     public float luckBonusMultiplier = 1.0f; // 幸運のボーナス倍率
+
     //ドロップ率の効果を追加するにはBonusMultiplierPopupDrawerを編集してください
+
+    [Header("Unlock Condition")]
+    [Tooltip("ドロップに特殊な解禁条件を設けるか")]
+    public bool hasCondition = false;
+
+    [Tooltip("条件の種類")]
+    [AllowNesting]
+    [ShowIf(nameof(hasCondition))]
+    public DropConditionType conditionType;
+
+    [Tooltip("条件の閾値（撃破数、レベルなど）")]
+    [AllowNesting]
+    [ShowIf(nameof(isShowConditionValue))]
+    public int conditionValue;
+
+    private bool isShowConditionValue()
+    {
+        return hasCondition
+            && (
+                conditionType == DropConditionType.KillCountOver
+                || conditionType == DropConditionType.PlayerLevelUnder
+            );
+    }
 }

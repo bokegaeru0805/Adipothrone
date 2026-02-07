@@ -19,6 +19,7 @@ public abstract class CharacterHealth : PoolableObject, IDamageable, IDroppable,
     public int MaxHP { get; protected set; }
     public int CurrentHP { get; protected set; }
     public bool IsDefeated { get; protected set; }
+    public float EncounterStartTime { get; private set; }
 
     /// <summary>
     /// HPが変動した際にUIなどに通知するためのイベント。
@@ -89,6 +90,11 @@ public abstract class CharacterHealth : PoolableObject, IDamageable, IDroppable,
 
         // スプライトの画面上でのサイズを計算し、大きいかどうかを判定する
         CalculateSpriteScreenSize();
+    }
+
+    protected virtual void OnEnable()
+    {
+        EncounterStartTime = Time.time; // 有効化された時間を記録
     }
 
     /// <summary>

@@ -356,6 +356,7 @@ public class FlagManager : MonoBehaviour
     {
         boolFlags.Clear();
         intFlags.Clear();
+        keyOpenStatus.Clear();
         InitializeAllEnums();
     }
 

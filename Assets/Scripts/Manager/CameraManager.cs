@@ -187,57 +187,82 @@ namespace MyGame.CameraControl
 
         #region Camera Movement Logic
         /// <summary>
-        /// （コルーチン）カメラのY軸追従を即座に行わせ（Damping=0）、ターゲットに十分近づくかカメラが端に達するまで待機し、
-        ///  その後Damping設定を元に戻します。タイムアウト付き。
+        /// （コルーチン）カメラの追従を即座に行わせ（Damping=0）、ターゲットに重なるまで待機します。
+        /// ワープ移動時の座標ズレやタイムアウトを防ぐため、強制的な位置同期を行います。
         /// </summary>
         public IEnumerator CameraMove()
         {
             if (framing != null)
             {
-                // YDampingを0にして即座にプレイヤー位置に追従させる
+                // 1. 元の設定値を保持
+                float prevXDamping = framing.m_XDamping;
+                float prevYDamping = framing.m_YDamping;
+
+                // 2. Dampingを無効化して即時追従モードにする
+                framing.m_XDamping = 0;
                 framing.m_YDamping = 0;
-                yield return null; // 1フレーム待ってCinemachineが位置を更新するのを待つ
+
+                // Cinemachineにワープを通知（内部演算のリセット）
+                virtualCamera.OnTargetObjectWarped(framing.FollowTarget, framing.FollowTargetPosition - cam.transform.position);
 
                 float timeElapsed = 0f;
-                float timeOut = 0.5f; // 最大待機時間（秒）。これを超えたら強制的にループを抜ける
+                float timeOut = 2.0f; // タイムアウト時間
+                
+                // 【重要】CameraMoveAreaのConfiner更新（最大10フレーム程度かかる）を待つため、
+                // 最低でもこの時間は強制同期を続け、完了判定を行わないようにする。
+                // これにより「古いエリアの端」で誤って完了判定され、カメラが置き去りになるのを防ぐ。
+                float minDuration = 0.25f; 
 
-                while (true) // ループ自体は常にtrueにし、中のbreakで抜ける
+                while (true)
                 {
-                    timeElapsed += Time.unscaledDeltaTime; // 時間計測
+                    timeElapsed += Time.unscaledDeltaTime;
 
-                    Vector3 cameraPos = Camera.main.transform.position;
+                    // 3. 毎フレーム強制的にカメラ位置をターゲット位置へ移動させる
+                    // Confinerが更新されるまでの間も位置合わせを試行し続けることで、
+                    // 更新された瞬間に正しい位置（低いエリア）へ即座に移動できるようにする
                     Vector3 targetPos = framing.FollowTargetPosition;
+                    targetPos.z = cam.transform.position.z;
+                    cam.transform.position = targetPos;
 
-                    // Z軸を無視してXY平面だけの距離を計算する（2Dゲームの場合、Z軸のズレで判定失敗するのを防ぐ）
+                    yield return null; // 1フレーム待機（物理・Confiner等の更新）
+
+                    // 4. 最低待機時間を超えるまでは完了判定をスキップ
+                    if (timeElapsed < minDuration)
+                    {
+                        continue;
+                    }
+
+                    // 5. 判定
+                    Vector3 currentCamPos = cam.transform.position;
+                    Vector3 currentTargetPos = framing.FollowTargetPosition;
+
                     float distanceXY = Vector2.Distance(
-                        new Vector2(cameraPos.x, cameraPos.y),
-                        new Vector2(targetPos.x, targetPos.y)
+                        new Vector2(currentCamPos.x, currentCamPos.y),
+                        new Vector2(currentTargetPos.x, currentTargetPos.y)
                     );
 
-                    // 条件1：カメラとターゲットの距離が閾値以下になったら
-                    // targetPosはオフセット込みの位置なので、理想的には距離0になるはずだが、余裕を持って判定
                     bool isCloseEnough = distanceXY <= 0.1f;
-
-                    // 条件2：カメラが移動範囲の端におり、かつX座標の差が閾値以下になったらループを抜ける
+                    
+                    // 端にいるかどうかの判定。
+                    // minDuration経過後であれば、Confinerは正しいものになっているはずなので、
+                    // ここで端判定が出れば「本当に端にいて動けない」と判断できる。
                     bool isAtEdge = boundaryChecker.CameraAtEdge != null;
-
-                    // 条件3：タイムアウト時間を超えたら強制終了（無限ループ防止）
+                    
                     bool isTimeOut = timeElapsed >= timeOut;
 
                     if (isCloseEnough || isAtEdge || isTimeOut)
                     {
                         if (isTimeOut)
                         {
-                            // ログを出したくない場合はコメントアウトしてください
-                            Debug.LogWarning("CameraMoveがタイムアウトしました。強制終了します。");
+                            Debug.LogWarning($"CameraMove Timeout (Dist:{distanceXY:F2}).");
                         }
-                        break; // いずれかの条件を満たしたら待機を終了
+                        break;
                     }
-
-                    yield return null; // 条件を満たさない場合は1フレーム待つ
                 }
 
-                framing.m_YDamping = currentBaseYDamping; // 元のYDamping値に戻す
+                // 6. Damping設定を元に戻す
+                framing.m_XDamping = prevXDamping;
+                framing.m_YDamping = prevYDamping;
             }
             else
             {

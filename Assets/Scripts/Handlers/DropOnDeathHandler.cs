@@ -13,6 +13,12 @@ public static class DropOnDeathHandler
         if (enemyData == null || GameManager.instance == null)
             return;
 
+        // ループに入る前に、セーブデータのエントリーを1回だけ取得しておく
+        // これでループごとの Find 検索(重い処理)を回避する
+        var recordEntry = GameManager.instance.savedata.EnemyRecordData.GetOrCreateEntry(
+            enemyData.enemyID
+        );
+
         // EnemyActivatorのTransformを取得
         Transform parent = droppable.GetDropParent();
         // ドロップ位置を取得
@@ -36,9 +42,75 @@ public static class DropOnDeathHandler
         // 幸運の効果を取得
         float luckEffectDelta = PlayerEffectManager.instance.GetDeltaValue(StatusEffectType.Luck);
 
+        // 現在の討伐数を取得（CharacterHealth.HandleDeathFlowで加算済みと仮定）
+        // Entryから直接値を取るので高速
+        int currentKillCount = recordEntry.killCount;
+
+        //プレイヤーレベルを取得（PlayerLevelManagerが存在すると仮定）
+        int currentPlayerLevel =
+            PlayerLevelManager.instance != null ? PlayerLevelManager.instance.playerLv : 1;
+
+        // ノーダメージフラグを取得
+        // ※現状のコードには判定ロジックがないため、仮の実装としています。
+        // ※実際にはGameManagerやPlayerControllerから「今回の戦闘で被弾したか」を取得してください。
+        bool isNoDamage = true; // 仮: 常に成功
+
         // 敵が持つすべてのドロップ候補アイテムについて処理
         foreach (var drop in enemyData.dropItems)
         {
+            // ドロップに条件がある場合、条件をチェックする
+            if (drop.hasCondition && drop.conditionType != DropConditionType.None)
+            {
+                // アイテムIDを取得（Enum -> int変換）
+                Enum tempDropID = BaseItemManager.instance.GetItemIDFromData(drop.baseItemData);
+                if (tempDropID != null)
+                {
+                    int itemIDInt = EnumIDUtility.ToID(tempDropID);
+
+                    // 1. 既に条件が解禁されているかチェック
+                    // Entryのプロパティに直接アクセスする（検索処理が走らない）
+                    bool isUnlocked = recordEntry.UnlockedConditionItemIds.Contains(itemIDInt);
+
+                    // 2. まだ解禁されていない場合、条件判定を行う
+                    if (!isUnlocked)
+                    {
+                        bool conditionMet = false;
+
+                        switch (drop.conditionType)
+                        {
+                            case DropConditionType.KillCountOver:
+                                // 指定回数「以上」の撃破で解禁
+                                conditionMet = currentKillCount >= drop.conditionValue;
+                                break;
+                            case DropConditionType.PlayerLevelUnder:
+                                // プレイヤーレベルが指定値「以下」で解禁
+                                conditionMet = currentPlayerLevel <= drop.conditionValue;
+                                break;
+                            case DropConditionType.NoDamage:
+                                // ノーダメージで解禁
+                                conditionMet = isNoDamage;
+                                break;
+                        }
+
+                        if (conditionMet)
+                        {
+                            // 条件達成！ セーブデータに記録して解禁する
+                            // Entryに直接追加する
+                            if (!recordEntry.UnlockedConditionItemIds.Contains(itemIDInt))
+                            {
+                                recordEntry.UnlockedConditionItemIds.Add(itemIDInt);
+                            }
+                            // ※即時ドロップさせたい場合はそのまま下へ進む
+                        }
+                        else
+                        {
+                            // 条件未達成かつ未解禁なので、このアイテムはドロップしない
+                            continue;
+                        }
+                    }
+                }
+            }
+
             //実際のドロップ率への加算数値を計算
             float luckBonusRate = luckEffectDelta * drop.luckBonusMultiplier;
 
@@ -92,10 +164,10 @@ public static class DropOnDeathHandler
                 // ドロップしたアイテムを図鑑の「確認済みリスト」に登録する
                 // Enumをint型IDに変換して保存
                 int itemIDInt = EnumIDUtility.ToID(dropID);
-                GameManager.instance.savedata.EnemyRecordData.UnlockDropItem(
-                    enemyData.enemyID,
-                    itemIDInt
-                );
+                if (!recordEntry.UnlockedDropItemIds.Contains(itemIDInt))
+                {
+                    recordEntry.UnlockedDropItemIds.Add(itemIDInt);
+                }
 
                 // アイテムの種類ID（TypeID）を取得
                 int dropIDType = EnumIDUtility.ExtractTypeID(itemIDInt); // 変数再利用で少し効率化
