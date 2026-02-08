@@ -15,6 +15,7 @@ public class DoorOpener : MonoBehaviour
         WoodenGate = 25,
         Well = 20,
         DesertGate = 30,
+        DesertTempleDoor = 35,
     }
 
     /// <summary>
@@ -53,6 +54,9 @@ public class DoorOpener : MonoBehaviour
                 break;
             case DoorType.DesertGate:
                 // 砂漠の門の特別な処理があればここに追加
+                break;
+            case DoorType.DesertTempleDoor:
+                // 砂漠の神殿のドアの特別な処理があればここに追加
                 break;
             default:
                 // 特に何もしない

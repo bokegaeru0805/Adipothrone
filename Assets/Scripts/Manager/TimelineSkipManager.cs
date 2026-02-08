@@ -201,6 +201,12 @@ public class TimelineSkipManager : MonoBehaviour
         // プレイヤーの物理移動を停止する
         PlayerManager.instance.SetPlayerPhysicsActive(false);
 
+        // 敵の物理演算・移動も停止する（床抜け防止）
+        if (TimeManager.instance != null)
+        {
+            TimeManager.instance.SetEnemyMovePaused(true);
+        }
+
         // 1. フェードアウト
         if (FadeCanvas.instance != null)
         {
@@ -214,7 +220,10 @@ public class TimelineSkipManager : MonoBehaviour
 
         // 3. 時間加速
         Time.timeScale = skipTimeScale;
-        Time.fixedDeltaTime = 0.02f * skipTimeScale; // 物理演算の破綻防止
+        // Time.fixedDeltaTime = 0.02f * skipTimeScale;
+        // ↑ これを有効にすると、物理演算の1ステップが大きくなりすぎ（例: 1秒）、
+        //   敵が地面をすり抜けて落下してしまうため無効化しました。
+        //   （計算回数が増えて負荷は高まりますが、衝突判定の正確性を優先します）
 
         // 4. 高速ループ
         while (IsSkipping)
@@ -243,6 +252,12 @@ public class TimelineSkipManager : MonoBehaviour
 
         // --- プレイヤーの物理挙動を復元する ---
         PlayerManager.instance.SetPlayerPhysicsActive(true);
+        
+        // 敵の動きを再開
+        if (TimeManager.instance != null)
+        {
+            TimeManager.instance.SetEnemyMovePaused(false);
+        }
 
         // 6. フェードイン
         if (FadeCanvas.instance != null)

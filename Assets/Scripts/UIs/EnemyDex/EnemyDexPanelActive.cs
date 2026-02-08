@@ -166,13 +166,13 @@ public class EnemyDexPanelActive : MonoBehaviour, IPanelActive
         // 1. EnemyDatabaseに登録されている全ての敵リストを取得する（これが表示順の基準になる）
         foreach (var masterData in enemyDatabase.enemies)
         {
-            // 2. その敵が討伐済み(Unlocked)かどうかをセーブデータで確認する
-            if (enemyRecordData.IsUnlocked(masterData.enemyID))
+            // 2. その敵が遭遇済みかどうかをセーブデータで確認する
+            if (enemyRecordData.IsEncountered(masterData.enemyID))
             {
-                // 3. 討伐済み、かつ「図鑑に表示する」設定の敵だけをリストに追加する
+                // 3. 遭遇済み、かつ「図鑑に表示する」設定の敵だけをリストに追加する
                 if (masterData.isListedInDex)
                 {
-                    // 討伐数などのセーブデータも取得
+                    // 遭遇データなどのセーブデータも取得
                     var saveEntry = enemyRecordData.enemyRecords.Find(e =>
                         e.enemyIdValue == (int)masterData.enemyID
                     );
@@ -296,6 +296,39 @@ public class EnemyDexPanelActive : MonoBehaviour, IPanelActive
         if (enemyData == null)
             return;
 
+        // --- 未討伐（遭遇のみ）の場合の表示処理 ---
+        if (saveEntry.killCount == 0)
+        {
+            // 名前は未登録
+            enemyNameText.text = "未登録";
+
+            // 画像はシルエット（真っ黒）
+            UIUtility.SetSpriteFitToSquare(enemyImage, enemyData.encyclopediaSprite, baseSize);
+            enemyImage.color = Color.black;
+
+            // ステータスは不明
+            StringBuilder unknownStats = new StringBuilder();
+            unknownStats.AppendLine("レベル　: 不明");
+            unknownStats.AppendLine("ＨＰ　　: 不明");
+            unknownStats.AppendLine("経験値　: 不明");
+            unknownStats.AppendLine("コイン　: 不明");
+            unknownStats.AppendLine($"討伐数　: {saveEntry.killCount}"); // 0を表示
+            statsText.text = unknownStats.ToString();
+
+            // ドロップアイテムは不明
+            dropItemsTextLeft.text = "不明";
+            if (dropItemsTextRight != null)
+            {
+                dropItemsTextRight.text = "";
+            }
+
+            // これ以降の処理（詳細なドロップ表示など）はスキップ
+            return;
+        }
+
+        // 画像の色を白（通常）に戻す（重要：オブジェクト再利用のため）
+        enemyImage.color = Color.white;
+
         // --- 基本情報の表示 ---
         enemyNameText.text = enemyData.enemyName;
         UIUtility.SetSpriteFitToSquare(enemyImage, enemyData.encyclopediaSprite, baseSize);
@@ -413,7 +446,7 @@ public class EnemyDexPanelActive : MonoBehaviour, IPanelActive
         }
         else
         {
-            leftColumnBuilder.AppendLine("ドロップアイテムなし");
+            leftColumnBuilder.AppendLine("ドロップアイテム\nなし");
         }
 
         // テキストコンポーネントに反映

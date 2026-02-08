@@ -8,7 +8,7 @@ using UnityEngine.SceneManagement;
 /// <summary>
 /// 各セーブスロットの概要情報（プレイ時間と経験値）を格納するクラス
 /// </summary>
-[System.Serializable] // InspectorやES3で扱えるようにする
+[System.Serializable]
 public class SaveSlotInfo
 {
     public float playTime; // プレイ時間（秒）
@@ -1000,12 +1000,10 @@ public class SaveLoadManager : MonoBehaviour
                     MigrateToV1_1_0(saveData);
                 }
 
-                // 例: 将来 1.2.0 がリリースされた場合
-                // if (loadedDataVersion < new Version("1.2.0"))
-                // {
-                //     MigrateToV1_2_0(saveData);
-                // }
-
+                if (loadedDataVersion < new Version("1.2.0"))
+                {
+                    MigrateToV1_2_0(saveData);
+                }
 
                 // 全ての移行処理後、セーブデータ内のバージョンを最新に更新
                 saveData.GameVersion = Application.version;
@@ -1043,11 +1041,25 @@ public class SaveLoadManager : MonoBehaviour
         // }
     }
 
-    // 将来のバージョンアップ用
-    // private void MigrateToV1_2_0(SaveData saveData)
-    // {
-    //     Debug.Log("バージョン 1.2.0 への更新処理を実行中...");
-    // }
+    /// <summary>
+    /// ver 1.2.0 への具体的な移行処理
+    /// </summary>
+    private void MigrateToV1_2_0(SaveData saveData)
+    {
+        Debug.Log("バージョン 1.2.0 への更新処理を実行中...");
+
+        if (saveData.EnemyRecordData != null && saveData.EnemyRecordData.enemyRecords != null)
+        {
+            // 既存の全エントリに対して遭遇済みフラグを立てる
+            foreach (var entry in saveData.EnemyRecordData.enemyRecords)
+            {
+                entry.hasEncountered = true;
+            }
+            Debug.Log(
+                $"EnemyRecordDataの {saveData.EnemyRecordData.enemyRecords.Count} 件のレコードを遭遇済みに更新しました。"
+            );
+        }
+    }
 
     /// <summary>
     /// SettingsファイルからBGMとSEの音量設定を読み込み、各Managerに適用します。

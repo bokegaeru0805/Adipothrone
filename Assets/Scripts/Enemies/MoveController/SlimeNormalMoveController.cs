@@ -320,7 +320,9 @@ public class SlimeNormalMoveController : MonoBehaviour, IEnemyResettable
             return;
         }
         else if (!rbody.simulated)
+        {
             rbody.simulated = true;
+        }
 
         pos = transform.position;
         Vector3 dir = (Vector2)playerTransform.position - pos;

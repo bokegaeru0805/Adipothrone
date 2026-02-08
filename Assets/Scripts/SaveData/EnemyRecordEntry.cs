@@ -26,10 +26,14 @@ public class EnemyRecordEntry
     /// </summary>
     public bool isNew = true;
 
+    /// <summary>
+    /// 遭遇済みフラグ（図鑑で敵のシルエットを表示するため）。
+    /// </summary>
+    public bool hasEncountered = false;
+
     // 内部リスト（nullチェック用のプロパティ経由でアクセス推奨）
     private List<int> _unlockedDropItemIds; // 解除済みドロップアイテムID
     private List<int> _unlockedConditionItemIds; // 解除済み条件付きドロップアイテムID
-
     #endregion
 
     #region Properties (Safe Access)
@@ -73,6 +77,7 @@ public class EnemyRecordEntry
         enemyIdValue = idValue;
         killCount = amount;
         isNew = true;
+        hasEncountered = true;
         _unlockedDropItemIds = new List<int>();
         _unlockedConditionItemIds = new List<int>();
     }
@@ -108,6 +113,8 @@ public class EnemyRecordData
         if (entry != null)
         {
             entry.killCount += amount;
+            // 念のためここでもtrueに
+            entry.hasEncountered = true;
         }
         else
         {
@@ -168,13 +175,32 @@ public class EnemyRecordData
     {
         int targetIdValue = (int)enemyID;
         var entry = enemyRecords.Find(e => e.enemyIdValue == targetIdValue);
-        
+
         if (entry == null)
         {
             entry = new EnemyRecordEntry(targetIdValue, 0);
             enemyRecords.Add(entry);
         }
         return entry;
+    }
+
+    /// <summary>
+    /// 指定された敵を「遭遇済み」として登録します。
+    /// </summary>
+    /// <param name="enemyID">敵の識別子</param>
+    public void RegisterEncounter(EnemyName enemyID)
+    {
+        int targetIdValue = (int)enemyID;
+        var entry = enemyRecords.Find(e => e.enemyIdValue == targetIdValue);
+
+        if (entry == null)
+        {
+            // 討伐数0でエントリを作成
+            entry = new EnemyRecordEntry(targetIdValue, 0);
+            enemyRecords.Add(entry);
+        }
+        // 遭遇フラグをON
+        entry.hasEncountered = true;
     }
 
     #endregion
@@ -231,6 +257,17 @@ public class EnemyRecordData
     {
         var entry = enemyRecords.Find(e => e.enemyIdValue == enemyIdValue);
         return entry?.isNew ?? false;
+    }
+
+    /// <summary>
+    /// 指定された敵が「遭遇済み」かを取得します。
+    /// </summary>
+    public bool IsEncountered(EnemyName enemyID)
+    {
+        int targetIdValue = (int)enemyID;
+        var entry = enemyRecords.Find(e => e.enemyIdValue == targetIdValue);
+        // エントリが存在し、かつ遭遇フラグがtrueならOK
+        return entry != null && entry.hasEncountered;
     }
 
     /// <summary>
