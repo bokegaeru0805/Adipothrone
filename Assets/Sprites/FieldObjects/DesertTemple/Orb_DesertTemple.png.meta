@@ -1,5 +1,5 @@
 fileFormatVersion: 2
-guid: e14759b20458dfd4dbbcea255a4636be
+guid: b0497b875b025cc4887a0109485660d0
 TextureImporter:
   internalIDToNameTable: []
   externalObjects: {}
@@ -46,8 +46,8 @@ TextureImporter:
   spriteMode: 2
   spriteExtrude: 1
   spriteMeshType: 0
-  alignment: 7
-  spritePivot: {x: 0.5, y: 0}
+  alignment: 0
+  spritePivot: {x: 0.5, y: 0.5}
   spritePixelsToUnits: 16
   spriteBorder: {x: 0, y: 0, z: 0, w: 0}
   spriteGenerateFallbackPhysicsShape: 1
@@ -110,85 +110,85 @@ TextureImporter:
     serializedVersion: 2
     sprites:
     - serializedVersion: 2
-      name: Frontdoor_DesertTemple_Normal
+      name: Orb_DesertTemple_0
       rect:
         serializedVersion: 2
         x: 0
         y: 0
-        width: 64
-        height: 86
-      alignment: 7
-      pivot: {x: 0.5, y: 0}
+        width: 24
+        height: 24
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
       outline: []
       physicsShape: []
       tessellationDetail: 0
       bones: []
-      spriteID: f6cb4d3d1c78ee047a4da9f07fe9c63e
-      internalID: 328845646
+      spriteID: 3642ee3c650f3c247b54ea5ff1e7f7fa
+      internalID: 1743249853
       vertices: []
       indices: 
       edges: []
       weights: []
     - serializedVersion: 2
-      name: Frontdoor_DesertTemple_Green
+      name: Orb_DesertTemple_1
       rect:
         serializedVersion: 2
-        x: 64
+        x: 24
         y: 0
-        width: 64
-        height: 86
-      alignment: 7
-      pivot: {x: 0.5, y: 0}
+        width: 24
+        height: 24
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
       outline: []
       physicsShape: []
       tessellationDetail: 0
       bones: []
-      spriteID: fc5b2d4a175d19343a6566afcbedf8f1
-      internalID: -138369687
+      spriteID: de22f9eddceb03a4d93d108c384e3852
+      internalID: 1856397526
       vertices: []
       indices: 
       edges: []
       weights: []
     - serializedVersion: 2
-      name: Frontdoor_DesertTemple_Yellow
+      name: Orb_DesertTemple_2
       rect:
         serializedVersion: 2
-        x: 128
+        x: 48
         y: 0
-        width: 64
-        height: 86
-      alignment: 7
-      pivot: {x: 0.5, y: 0}
+        width: 24
+        height: 24
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
       outline: []
       physicsShape: []
       tessellationDetail: 0
       bones: []
-      spriteID: ac0a3e14fec07a44190e9a0464b7ff1a
-      internalID: 214080702
+      spriteID: ee9b31df4dff9eb43bf53dea1dc474c2
+      internalID: -1601018876
       vertices: []
       indices: 
       edges: []
       weights: []
     - serializedVersion: 2
-      name: Frontdoor_DesertTemple_Purple
+      name: Orb_DesertTemple_3
       rect:
         serializedVersion: 2
-        x: 192
+        x: 72
         y: 0
-        width: 64
-        height: 86
-      alignment: 7
-      pivot: {x: 0.5, y: 0}
+        width: 24
+        height: 24
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
       outline: []
       physicsShape: []
       tessellationDetail: 0
       bones: []
-      spriteID: 822ec56853e49e54d906db807a7ee102
-      internalID: 563508627
+      spriteID: 724c8d0a8641f734fa85c7c39c175ab9
+      internalID: 1466438193
       vertices: []
       indices: 
       edges: []
@@ -204,10 +204,10 @@ TextureImporter:
     weights: []
     secondaryTextures: []
     nameFileIdTable:
-      Frontdoor_DesertTemple_Green: -138369687
-      Frontdoor_DesertTemple_Normal: 328845646
-      Frontdoor_DesertTemple_Purple: 563508627
-      Frontdoor_DesertTemple_Yellow: 214080702
+      Orb_DesertTemple_0: 1743249853
+      Orb_DesertTemple_1: 1856397526
+      Orb_DesertTemple_2: -1601018876
+      Orb_DesertTemple_3: 1466438193
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 

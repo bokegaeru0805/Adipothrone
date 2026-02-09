@@ -30,4 +30,6 @@ public class InputSettings : ScriptableObject
     public KeyCode QuickItemHighlight = KeyCode.LeftControl;
     public KeyCode TabLeft = KeyCode.Q;
     public KeyCode TabRight = KeyCode.E;
+    public KeyCode TimelineGlobalSkip = KeyCode.T;
+    public KeyCode TimelineFastForward = KeyCode.Z;
 }

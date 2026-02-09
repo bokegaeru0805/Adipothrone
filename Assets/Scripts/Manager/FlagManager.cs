@@ -71,8 +71,7 @@ public class FlagManager : MonoBehaviour
     // Bool型の初期値（必要に応じて定義）
     private readonly Dictionary<Enum, bool> defaultBoolValues = new();
 
-    // 大ドアの条件設定（インスペクター上で編集可能）
-    [SerializeField]
+    // 大ドアの条件設定
     private List<DoorUnlockCondition> doorConditions =
         new()
         {
@@ -95,6 +94,36 @@ public class FlagManager : MonoBehaviour
             {
                 doorId = 4,
                 requiredKeys = new List<KeyID> { KeyID.K4_1, KeyID.K4_2, KeyID.K4_3 },
+            },
+            new DoorUnlockCondition
+            {
+                doorId = 5,
+                requiredKeys = new List<KeyID> { KeyID.K5 },
+            },
+            new DoorUnlockCondition
+            {
+                doorId = 6,
+                requiredKeys = new List<KeyID> { KeyID.K6 },
+            },
+            new DoorUnlockCondition
+            {
+                doorId = 7,
+                requiredKeys = new List<KeyID> { KeyID.K7_1, KeyID.K7_2, KeyID.K7_3, KeyID.K7_4 },
+            },
+            new DoorUnlockCondition
+            {
+                doorId = 8,
+                requiredKeys = new List<KeyID> { KeyID.K8 },
+            },
+            new DoorUnlockCondition
+            {
+                doorId = 9,
+                requiredKeys = new List<KeyID> { KeyID.K9 },
+            },
+            new DoorUnlockCondition
+            {
+                doorId = 10,
+                requiredKeys = new List<KeyID> { KeyID.K10 },
             },
         };
 

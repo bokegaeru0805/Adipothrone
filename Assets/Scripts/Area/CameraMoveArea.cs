@@ -68,7 +68,9 @@ public class CameraMoveArea : MonoBehaviour
     {
         if (BGMManager.instance == null || activeArea == null)
         {
-            Debug.LogWarning("BGMManagerまたはアクティブなエリアが見つからないため、BGMを再生できません。");
+            Debug.LogWarning(
+                "BGMManagerまたはアクティブなエリアが見つからないため、BGMを再生できません。"
+            );
             return;
         }
 
@@ -100,7 +102,9 @@ public class CameraMoveArea : MonoBehaviour
     [SerializeField]
     private BGMCategory defaultBgm;
 
-    [Tooltip("特定のフラグが立っている場合に、優先的に再生するBGMのリスト。上にあるものほど優先度が高いです。")]
+    [Tooltip(
+        "特定のフラグが立っている場合に、優先的に再生するBGMのリスト。上にあるものほど優先度が高いです。"
+    )]
     [SerializeField]
     private List<ConditionalBgm> conditionalBgms = new List<ConditionalBgm>();
 
@@ -171,6 +175,11 @@ public class CameraMoveArea : MonoBehaviour
             backGround.SetActive(false);
         }
 
+        if (areaLight != null)
+        {
+            areaLight.gameObject.SetActive(false);
+        }
+
 #if UNITY_EDITOR
         isDebugScene = SceneManager.GetActiveScene().name.Contains("Debug");
 #endif
@@ -190,7 +199,8 @@ public class CameraMoveArea : MonoBehaviour
         if (other.CompareTag(GameConstants.PLAYER_TAG_NAME))
         {
             // 多重実行防止
-            if (activeArea == this) return;
+            if (activeArea == this)
+                return;
 
             // 他のエリアからの遷移処理
             if (activeArea != null && activeArea != this)
@@ -343,8 +353,9 @@ public class CameraMoveArea : MonoBehaviour
 
     private void PlayBgmBasedOnFlags()
     {
-        if (BGMManager.instance == null) return;
-        
+        if (BGMManager.instance == null)
+            return;
+
         BGMCategory bgmToPlay = GetBgmForCurrentFlags();
         BGMManager.instance.Play(bgmToPlay);
     }
@@ -374,7 +385,8 @@ public class CameraMoveArea : MonoBehaviour
     /// </summary>
     public void ActivateFromTimeline()
     {
-        if (activeArea == this) return;
+        if (activeArea == this)
+            return;
 
         if (activeArea != null)
         {
@@ -384,8 +396,9 @@ public class CameraMoveArea : MonoBehaviour
         activeArea = this;
 
         // 簡易的な進入処理（イベント発行などは省略）
-        if (areaLight != null) areaLight.gameObject.SetActive(true);
-        
+        if (areaLight != null)
+            areaLight.gameObject.SetActive(true);
+
         ApplyAreaSettings();
 
         if (backGround != null)
@@ -407,12 +420,15 @@ public class CameraMoveArea : MonoBehaviour
     /// </summary>
     private void UpdateLightShapeToCollider()
     {
-        if (areaLight != null) areaLight.gameObject.SetActive(true);
+        // if (areaLight != null)
+        //     areaLight.gameObject.SetActive(true);
 
-        if (areaLight == null || areaCollider == null) return;
+        if (areaLight == null || areaCollider == null)
+            return;
 
         // Global Lightの場合は形状を持たないためスキップ
-        if (areaLight.lightType == Light2D.LightType.Global) return;
+        if (areaLight.lightType == Light2D.LightType.Global)
+            return;
 
         if (areaCollider.pathCount > 0)
         {
@@ -469,18 +485,24 @@ public class CameraMoveArea : MonoBehaviour
         {
             if (backGround != null)
             {
-                if (!backGround.activeSelf) backGround.SetActive(true);
+                if (!backGround.activeSelf)
+                    backGround.SetActive(true);
 
                 Vector3 cameraPosition = Camera.main.transform.position;
-                Vector3 playerPosition = (playerTransform != null) ? playerTransform.position : Vector3.zero;
+                Vector3 playerPosition =
+                    (playerTransform != null) ? playerTransform.position : Vector3.zero;
 
                 bool isBrainEnabled = Camera.main.GetComponent<CinemachineBrain>().enabled;
-                bool isTimelineMode = (CameraManager.instance != null && CameraManager.instance.IsTimelineControlMode);
+                bool isTimelineMode = (
+                    CameraManager.instance != null && CameraManager.instance.IsTimelineControlMode
+                );
 
                 // 通常プレイ時はプレイヤー基準、Timeline時はカメラ基準
                 if (isBrainEnabled && !isTimelineMode)
                 {
-                    string cameraAtEdge = Camera.main.GetComponent<CameraBoundaryChecker>().CameraAtEdge;
+                    string cameraAtEdge = Camera
+                        .main.GetComponent<CameraBoundaryChecker>()
+                        .CameraAtEdge;
 
                     if (playerTransform != null)
                     {
@@ -493,13 +515,19 @@ public class CameraMoveArea : MonoBehaviour
                         else if (cameraAtEdge == "right")
                             adjustedPlayerPos.x = areaCollider.bounds.max.x - cameraHalfWidth;
 
-                        backGround.transform.position = new Vector2(adjustedPlayerPos.x, backGround.transform.position.y);
+                        backGround.transform.position = new Vector2(
+                            adjustedPlayerPos.x,
+                            backGround.transform.position.y
+                        );
                     }
                 }
                 else
                 {
                     // Timeline中などはカメラに直接追従
-                    backGround.transform.position = new Vector2(cameraPosition.x, backGround.transform.position.y);
+                    backGround.transform.position = new Vector2(
+                        cameraPosition.x,
+                        backGround.transform.position.y
+                    );
                 }
             }
             yield return null;
@@ -512,10 +540,45 @@ public class CameraMoveArea : MonoBehaviour
 
     #region Editor / Debug
 
+#if UNITY_EDITOR
+    /// <summary>
+    /// シーン内に存在する全てのCameraMoveAreaに対して、Light2Dの形状更新を一括実行します。
+    /// </summary>
+    [MenuItem("Tools/CameraMoveArea/Update All CameraMoveArea Light Shapes")]
+    public static void UpdateAllLightShapes()
+    {
+        // シーン内のCameraMoveAreaを全て検索（アクティブなもののみ）
+        CameraMoveArea[] allAreas = FindObjectsOfType<CameraMoveArea>();
+        int count = 0;
+
+        foreach (var area in allAreas)
+        {
+            // エディタ実行用にColliderの参照が切れていないか確認
+            if (area.areaCollider == null)
+                area.areaCollider = area.GetComponent<CompositeCollider2D>();
+
+            if (area.areaLight != null)
+            {
+                // Undo（Ctrl+Z）で戻せるように記録
+                Undo.RecordObject(area.areaLight, "Update Light Shape");
+
+                // 既存の更新メソッドを呼び出し
+                area.UpdateLightShapeToCollider();
+
+                // 変更があったことをエディタに通知（保存対象にする）
+                EditorUtility.SetDirty(area.areaLight);
+                count++;
+            }
+        }
+        Debug.Log($"シーン内の {count} 個のCameraMoveArea (Light2D) の形状を更新しました。");
+    }
+#endif
+
     private void OnDrawGizmos()
     {
         BoxCollider2D box2D = GetComponent<BoxCollider2D>();
-        if (box2D == null) return;
+        if (box2D == null)
+            return;
 
         Color fillColor = new Color(1f, 0f, 1f, 0.2f); // 半透明のマゼンタ
         Color borderColor = Color.magenta;
@@ -533,7 +596,8 @@ public class CameraMoveArea : MonoBehaviour
         // エディタ上でのラベル表示
         string labelText = gameObject.name;
         string[] splitName = labelText.Split('_');
-        if (splitName.Length > 1) labelText = splitName[splitName.Length - 1];
+        if (splitName.Length > 1)
+            labelText = splitName[splitName.Length - 1];
 
         GUIStyle style = new GUIStyle();
         style.normal.textColor = Color.white;

@@ -175,4 +175,19 @@ public class InputManager : MonoBehaviour
     {
         return InputAllowed() && Input.GetKeyDown(inputSettings.TabLeft);
     }
+
+    public bool TimelineGlobalSkip()
+    {
+        return InputAllowed() && Input.GetKey(inputSettings.TimelineGlobalSkip);
+    }
+
+    public bool GetTimelineFastForwardDown()
+    {
+        return InputAllowed() && Input.GetKeyDown(inputSettings.TimelineFastForward);
+    }
+
+    public bool GetTimelineFastForwardUp()
+    {
+        return InputAllowed() && Input.GetKeyUp(inputSettings.TimelineFastForward);
+    }
 }

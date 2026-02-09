@@ -1046,7 +1046,6 @@ public class SaveLoadManager : MonoBehaviour
     /// </summary>
     private void MigrateToV1_2_0(SaveData saveData)
     {
-        Debug.Log("バージョン 1.2.0 への更新処理を実行中...");
 
         if (saveData.EnemyRecordData != null && saveData.EnemyRecordData.enemyRecords != null)
         {
@@ -1055,9 +1054,6 @@ public class SaveLoadManager : MonoBehaviour
             {
                 entry.hasEncountered = true;
             }
-            Debug.Log(
-                $"EnemyRecordDataの {saveData.EnemyRecordData.enemyRecords.Count} 件のレコードを遭遇済みに更新しました。"
-            );
         }
     }
 

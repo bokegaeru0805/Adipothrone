@@ -6,7 +6,7 @@ using UnityEngine;
 /// PoolableObjectを継承し、プール管理に対応します。
 /// </summary>
 [RequireComponent(typeof(Rigidbody2D))]
-public class PathMover : PoolableObject // BaseMovingPlatformではなくPoolableObjectを直接継承
+public class PathMover : PoolableObject
 {
     private List<Vector3> pathPoints;
     private int currentTargetIndex = 0;
@@ -39,11 +39,26 @@ public class PathMover : PoolableObject // BaseMovingPlatformではなくPoolabl
         }
 
         isInitialized = true;
-        if (platformAudio != null) platformAudio.PlayMoveSound();
+        if (platformAudio != null)
+            platformAudio.PlayMoveSound();
     }
 
     void FixedUpdate()
     {
+        if (TimeManager.instance != null && TimeManager.instance.isEnemyMovePaused)
+        {
+            // ポーズ中は音を停止して処理を中断（移動しない）
+            if (platformAudio != null)
+                platformAudio.StopMoveSound();
+            return;
+        }
+        else
+        {
+            // ポーズ解除中かつ初期化済みなら音を再生（MovingPlatformAudio側で重複再生は制御されている前提）
+            if (isInitialized && platformAudio != null)
+                platformAudio.PlayMoveSound();
+        }
+
         if (!isInitialized || pathPoints == null || pathPoints.Count <= 1)
             return;
 
@@ -78,8 +93,9 @@ public class PathMover : PoolableObject // BaseMovingPlatformではなくPoolabl
     private void ReturnSelf()
     {
         isInitialized = false;
-        
-        if (platformAudio != null) platformAudio.StopMoveSound();
+
+        if (platformAudio != null)
+            platformAudio.StopMoveSound();
 
         // PassengerCarrierを使って乗客を安全に降ろす
         if (carrier != null)

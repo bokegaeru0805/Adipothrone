@@ -178,6 +178,20 @@ public class WaypointMover : MonoBehaviour
 
     private void FixedUpdate()
     {
+        if (TimeManager.instance != null && TimeManager.instance.isEnemyMovePaused)
+        {
+            // ポーズ中は音を停止して処理を中断（移動しない）
+            if (platformAudio != null)
+                platformAudio.StopMoveSound();
+            return;
+        }
+        else
+        {
+            // ポーズ解除中、起動済みで待機中でなければ音を再生（移動音の復帰）
+            if (hasStarted && !isWaiting && platformAudio != null)
+                platformAudio.PlayMoveSound();
+        }
+
         // まだ起動していない場合は動かない
         if (!hasStarted)
             return;

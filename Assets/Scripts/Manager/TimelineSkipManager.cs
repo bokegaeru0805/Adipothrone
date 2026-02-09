@@ -15,6 +15,9 @@ public class TimelineSkipManager : MonoBehaviour
     [Tooltip("全スキップ中のタイムスケール倍率")]
     [SerializeField]
     private float skipTimeScale = 50.0f;
+    [Tooltip("全スキップを開始するために必要な長押し時間（秒）")]
+    [SerializeField]
+    private float skipHoldDuration = 1.5f;
 
     [Tooltip("全スキップ開始/終了時のフェード時間")]
     [SerializeField]
@@ -38,6 +41,27 @@ public class TimelineSkipManager : MonoBehaviour
 
     // --- 内部変数 ---
     private bool isTalking = false;
+    private float currentSkipHoldTimer = 0f;
+
+    /// <summary>
+    /// 現在のスキップ長押しの進捗率 (0.0f ～ 1.0f)
+    /// </summary>
+    public float SkipProgress => Mathf.Clamp01(currentSkipHoldTimer / skipHoldDuration);
+
+    /// <summary>
+    /// 現在Globalスキップが可能かどうか（UI表示用）
+    /// 会話中であり、Fungus側で許可されており、かつ現在すでにスキップ中でない場合
+    /// </summary>
+    public bool IsSkipAvailable
+    {
+        get
+        {
+            return isTalking
+                && !IsSkipping
+                && FungusSkipController.instance != null
+                && FungusSkipController.instance.IsSkipAllowed();
+        }
+    }
 
     private void Awake()
     {
@@ -109,26 +133,48 @@ public class TimelineSkipManager : MonoBehaviour
     #endregion
     private void Update()
     {
-        // 全スキップ中もしくは会話中でない場合は入力を受け付けない
-        if (!isTalking || IsSkipping)
-            return;
-
-        // --- Zキー: ローカル早送り (Timeline速度変更) ---
-        if (Input.GetKeyDown(KeyCode.Z))
-            SetLocalFastForward(true);
-        if (Input.GetKeyUp(KeyCode.Z))
-            SetLocalFastForward(false);
-
-        if (Input.GetKeyDown(KeyCode.T))
+        // 会話中でない場合は入力を受け付けない
+        // ※IsSkipping中はコルーチン側で制御するためここでの入力は無視するが、停止処理はSkipRoutine内で行われる
+        if (!isTalking)
         {
-            if (
-                FungusSkipController.instance != null
-                && FungusSkipController.instance.IsSkipAllowed()
-            )
+            currentSkipHoldTimer = 0f;
+            return;
+        }
+
+       if (InputManager.instance == null) return;
+
+        // ローカル早送り (Timeline速度変更)
+        // ※スキップ中は操作させない
+        if (!IsSkipping)
+        {
+            if (InputManager.instance.GetTimelineFastForwardDown())
+                SetLocalFastForward(true);
+            if (InputManager.instance.GetTimelineFastForwardUp())
+                SetLocalFastForward(false);
+        }
+
+        // 全スキップ
+        if (InputManager.instance.TimelineGlobalSkip())
+        {
+            // スキップ可能な状態、かつまだスキップしていない場合のみタイマーを進める
+            if (IsSkipAvailable)
             {
-                StartGlobalSkip();
-                Debug.Log("Global Skip Started");
+                currentSkipHoldTimer += Time.unscaledDeltaTime;
+                Debug.Log($"Skip Hold Timer: {currentSkipHoldTimer:F2}s");
+
+                // 閾値を超えたら発動
+                if (currentSkipHoldTimer >= skipHoldDuration)
+                {
+                    StartGlobalSkip();
+                    currentSkipHoldTimer = 0f; // 発動したらタイマーリセット
+                    Debug.Log("Global Skip Started");
+                }
             }
+        }
+        else
+        {
+            // キーを離したらタイマーリセット
+            currentSkipHoldTimer = 0f;
         }
     }
 
