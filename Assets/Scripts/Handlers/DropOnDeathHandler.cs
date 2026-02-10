@@ -58,55 +58,63 @@ public static class DropOnDeathHandler
         // 敵が持つすべてのドロップ候補アイテムについて処理
         foreach (var drop in enemyData.dropItems)
         {
+            // アイテムIDを取得（Enum -> int変換）
+            Enum tempDropID = BaseItemManager.instance.GetItemIDFromData(drop.baseItemData);
+            if (tempDropID == null)
+                continue;
+            int itemIDInt = EnumIDUtility.ToID(tempDropID);
+
             // ドロップに条件がある場合、条件をチェックする
             if (drop.hasCondition && drop.conditionType != DropConditionType.None)
             {
-                // アイテムIDを取得（Enum -> int変換）
-                Enum tempDropID = BaseItemManager.instance.GetItemIDFromData(drop.baseItemData);
-                if (tempDropID != null)
+                // Uniqueアイテムの入手済みチェック
+                if (
+                    drop.isUnique
+                    && GameManager.instance.savedata.EnemyRecordData.IsUniqueItemObtained(itemIDInt)
+                )
                 {
-                    int itemIDInt = EnumIDUtility.ToID(tempDropID);
+                    continue; // 既に入手済みならスキップ
+                }
 
-                    // 1. 既に条件が解禁されているかチェック
-                    // Entryのプロパティに直接アクセスする（検索処理が走らない）
-                    bool isUnlocked = recordEntry.UnlockedConditionItemIds.Contains(itemIDInt);
+                // 1. 既に条件が解禁されているかチェック
+                // Entryのプロパティに直接アクセスする（検索処理が走らない）
+                bool isUnlocked = recordEntry.UnlockedConditionItemIds.Contains(itemIDInt);
 
-                    // 2. まだ解禁されていない場合、条件判定を行う
-                    if (!isUnlocked)
+                // 2. まだ解禁されていない場合、条件判定を行う
+                if (!isUnlocked)
+                {
+                    bool conditionMet = false;
+
+                    switch (drop.conditionType)
                     {
-                        bool conditionMet = false;
+                        case DropConditionType.KillCountOver:
+                            // 指定回数「以上」の撃破で解禁
+                            conditionMet = currentKillCount >= drop.conditionValue;
+                            break;
+                        case DropConditionType.PlayerLevelUnder:
+                            // プレイヤーレベルが指定値「以下」で解禁
+                            conditionMet = currentPlayerLevel <= drop.conditionValue;
+                            break;
+                        case DropConditionType.NoDamage:
+                            // ノーダメージで解禁
+                            conditionMet = isNoDamage;
+                            break;
+                    }
 
-                        switch (drop.conditionType)
+                    if (conditionMet)
+                    {
+                        // 条件達成！ セーブデータに記録して解禁する
+                        // Entryに直接追加する
+                        if (!recordEntry.UnlockedConditionItemIds.Contains(itemIDInt))
                         {
-                            case DropConditionType.KillCountOver:
-                                // 指定回数「以上」の撃破で解禁
-                                conditionMet = currentKillCount >= drop.conditionValue;
-                                break;
-                            case DropConditionType.PlayerLevelUnder:
-                                // プレイヤーレベルが指定値「以下」で解禁
-                                conditionMet = currentPlayerLevel <= drop.conditionValue;
-                                break;
-                            case DropConditionType.NoDamage:
-                                // ノーダメージで解禁
-                                conditionMet = isNoDamage;
-                                break;
+                            recordEntry.UnlockedConditionItemIds.Add(itemIDInt);
                         }
-
-                        if (conditionMet)
-                        {
-                            // 条件達成！ セーブデータに記録して解禁する
-                            // Entryに直接追加する
-                            if (!recordEntry.UnlockedConditionItemIds.Contains(itemIDInt))
-                            {
-                                recordEntry.UnlockedConditionItemIds.Add(itemIDInt);
-                            }
-                            // ※即時ドロップさせたい場合はそのまま下へ進む
-                        }
-                        else
-                        {
-                            // 条件未達成かつ未解禁なので、このアイテムはドロップしない
-                            continue;
-                        }
+                        // ※即時ドロップさせたい場合はそのまま下へ進む
+                    }
+                    else
+                    {
+                        // 条件未達成かつ未解禁なので、このアイテムはドロップしない
+                        continue;
                     }
                 }
             }
@@ -114,14 +122,28 @@ public static class DropOnDeathHandler
             //実際のドロップ率への加算数値を計算
             float luckBonusRate = luckEffectDelta * drop.luckBonusMultiplier;
 
-            for (int i = 0; i < drop.maxDropCount; i++)
+            if (drop.isUnique)
             {
-                // ドロップ確率によって抽選
+                // 確率判定
                 bool isDropped =
                     UnityEngine.Random.Range(0f, 100f) <= drop.dropChance + luckBonusRate;
                 if (!isDropped)
-                    continue;
+                    continue; // 外れたら終了
 
+                // 当選！ 即座に「入手済み」としてマーキング (同時ドロップ防止)
+                GameManager.instance.savedata.EnemyRecordData.MarkUniqueItemAsObtained(itemIDInt);
+            }
+
+            for (int i = 0; i < drop.maxDropCount; i++)
+            {
+                // 通常アイテムの場合は個別に確率判定
+                if (!drop.isUnique)
+                {
+                    bool isDropped =
+                        UnityEngine.Random.Range(0f, 100f) <= drop.dropChance + luckBonusRate;
+                    if (!isDropped)
+                        continue;
+                }
                 // ドロップ位置を少しランダムにずらす（自然な演出のため）
                 Vector2 offset = UnityEngine.Random.insideUnitCircle * ItemPositionOffsetRadius;
                 Vector3 dropPos = dropBasePos + new Vector3(offset.x, offset.y, 0);
@@ -162,25 +184,32 @@ public static class DropOnDeathHandler
                 dropScript.DropID = dropID;
 
                 // ドロップしたアイテムを図鑑の「確認済みリスト」に登録する
-                // Enumをint型IDに変換して保存
-                int itemIDInt = EnumIDUtility.ToID(dropID);
                 if (!recordEntry.UnlockedDropItemIds.Contains(itemIDInt))
                 {
                     recordEntry.UnlockedDropItemIds.Add(itemIDInt);
                 }
 
-                // アイテムの種類ID（TypeID）を取得
-                int dropIDType = EnumIDUtility.ExtractTypeID(itemIDInt); // 変数再利用で少し効率化
-
-                // 装備アイテムなら宝箱スプライトを表示（通常アイテムとは区別）
-                if ((int)TypeID.Blade <= dropIDType && dropIDType < (int)TypeID.Jewelry3)
+                if (drop.isUnique)
                 {
-                    dropScript.SetTreasureSprite();
+                    // 即座に獲得して消滅させる（ロスト防止）
+                    dropScript.AcquireInstantly();
+                    break;
                 }
                 else
                 {
-                    // 通常アイテムのスプライトを設定
-                    dropScript.SetDropItemSprite();
+                    // アイテムの種類ID（TypeID）を取得
+                    int dropIDType = EnumIDUtility.ExtractTypeID(itemIDInt); // 変数再利用で少し効率化
+
+                    // 装備アイテムなら宝箱スプライトを表示（通常アイテムとは区別）
+                    if ((int)TypeID.Blade <= dropIDType && dropIDType < (int)TypeID.Jewelry3)
+                    {
+                        dropScript.SetTreasureSprite();
+                    }
+                    else
+                    {
+                        // 通常アイテムのスプライトを設定
+                        dropScript.SetDropItemSprite();
+                    }
                 }
             }
         }

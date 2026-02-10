@@ -383,23 +383,53 @@ public class DropItem : PoolableObject
                 && collision.CompareTag(GameConstants.PLAYER_TAG_NAME)
             )
             {
-                var treasureData = GameManager.instance.savedata.TreasureData;
-                if (treasureData == null)
-                {
-                    Debug.LogWarning("宝箱に関するセーブデータが存在しません");
-                    return;
-                }
-
-                //インベントリにアイテムを保存はFungusのFlowchartで行います
-                // GameManager.instance.AddAllTypeIDToInventory(DropID); //インベントにアイテムを保存
-
-                var baseItemData = ItemDataManager.instance.GetBaseItemDataByID(DropID); //アイテムのデータを取得
-                this.tag = "Untagged"; //tagを外す
-                spriteRenderer.sprite = _currentTargetOpenSprite; //予め保存しておいた「開いた」スプライトに変更
-                SEManager.instance?.PlaySystemEventSE(SE_SystemEvent.ItemGet2); //効果音を鳴らす
-                GameManager.instance.TreasureFungus(baseItemData, 1); //Fungusを起動
+                ForceAcquire(); // アイテム獲得処理を実行する
             }
         }
+    }
+
+    /// <summary>
+    /// アイテム獲得処理を強制的に実行する
+    /// </summary>
+    public void ForceAcquire()
+    {
+        var treasureData = GameManager.instance.savedata.TreasureData;
+        if (treasureData == null)
+        {
+            Debug.LogWarning("宝箱に関するセーブデータが存在しません");
+            return;
+        }
+
+        // 既に開いている(Untagged)かつ、スプライトが表示されているなら二重取得防止
+        if (
+            this.tag == GameConstants.UNTAGGED_TAG_NAME
+            && spriteRenderer.sprite == _currentTargetOpenSprite
+        )
+            return;
+
+        var baseItemData = ItemDataManager.instance.GetBaseItemDataByID(DropID);
+        this.tag = GameConstants.UNTAGGED_TAG_NAME;
+
+        if (_currentTargetOpenSprite != null)
+            spriteRenderer.sprite = _currentTargetOpenSprite;
+
+        SEManager.instance?.PlaySystemEventSE(SE_SystemEvent.ItemGet2);
+        GameManager.instance.TreasureFungus(baseItemData, 1);
+        //インベントリにアイテムを保存はFungusのFlowchartで行います
+        // GameManager.instance.AddAllTypeIDToInventory(DropID); //インベントにアイテムを保存
+    }
+
+    /// <summary>
+    /// スプライトを表示せず、即座に獲得処理を行ってプールに戻る
+    /// （ユニークアイテムのロスト防止用）
+    /// </summary>
+    public void AcquireInstantly()
+    {
+        // 1. 獲得処理を実行
+        ForceAcquire();
+
+        // 2. 即座にプールへ返却
+        ReturnToPool();
     }
 
     private void OnCollisionEnter2D(Collision2D collision)

@@ -74,4 +74,8 @@ public class DropItemData
                 || conditionType == DropConditionType.PlayerLevelUnder
             );
     }
+
+    [Header("Unique Settings")]
+    [Tooltip("一度しか入手できない貴重品か（取得即セーブ＆重複ドロップ防止）")]
+    public bool isUnique = false;
 }

@@ -12,6 +12,7 @@ public class FieldEvent_Chapter2 : BaseFieldEvent
         // Chapter2StartField = 1, // 第二章開始フィールド
         VillageEntranceField = 2, // 村の入り口フィールド
         CoachmanField = 3, // 馬車の御者フィールド
+        WaterSourceFrontField = 7, // オアシスの源泉前フィールド
         WaterSourceField = 4, // オアシスの源泉フィールド
         TempleEntranceField = 5, // 砂漠の神殿入口フィールド
         DustWindBossField = 6, // 砂嵐のボスフィールド
@@ -66,7 +67,17 @@ public class FieldEvent_Chapter2 : BaseFieldEvent
                     );
                     FungusHelper.ExecuteBlock(targetFlowchart, "ReportCoachManQuestComplete");
                 }
-
+                break;
+            case FieldName.WaterSourceFrontField:
+                if (!flagManager.GetBoolFlag(Chapter2TriggeredEvent.FirstEnteredWaterSourceFrontField))
+                {
+                    flagManager.SetBoolFlag(
+                        Chapter2TriggeredEvent.FirstEnteredWaterSourceFrontField,
+                        true
+                    );
+                    isEventTriggered = true; // イベントがトリガーされたことを記録
+                    FungusHelper.ExecuteBlock(targetFlowchart, "FirstEnteredWaterSourceFront");
+                }
                 break;
             case FieldName.WaterSourceField:
                 if (!flagManager.GetBoolFlag(Chapter2TriggeredEvent.OasisSpringEnemiesDefeated))

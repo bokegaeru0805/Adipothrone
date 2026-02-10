@@ -19,14 +19,17 @@ public enum KeyID
     K4_1 = 401,
     K4_2 = 402,
     K4_3 = 403,
+
     // --- 砂漠の神殿のそれぞれのステージへのキー ---
     K5 = 501,
     K6 = 601,
+
     // --- 砂漠の神殿Stage1-2のキー ---
     K7_1 = 701,
     K7_2 = 702,
     K7_3 = 703,
     K7_4 = 704,
+
     // --- 砂漠の神殿の素ぞれのステージからのキー
     K8 = 801,
     K9 = 901,
@@ -144,6 +147,7 @@ public enum Chapter2TriggeredEvent
     Chapter2Start = 2001, // 第二章が始まった
     FirstEnteredVillage = 2002, // 初めて村に入った
     FirstMetCoachman = 2005, // 初めて御者に会った
+    FirstEnteredWaterSourceFrontField = 2007, // オアシスの源泉前フィールドに初めて入った
     OasisSpringEnemiesDefeated = 2008, // オアシスの源泉の敵を全て倒した
     ReportedCoachmanQuestComplete = 2011, // 御者にクエスト完了の報告をした
     FirstMetDesertTempleBoss = 2015, // 砂漠の神殿のボスと初めて会った

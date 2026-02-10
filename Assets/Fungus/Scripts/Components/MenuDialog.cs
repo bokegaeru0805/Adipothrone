@@ -42,7 +42,7 @@ namespace Fungus
             public UnityEngine.Events.UnityAction action;
         }
 
-        public static KeyCode cancelKey = KeyCode.Z; // デフォルトのキャンセルキー
+        public static KeyCode cancelKey = KeyCode.X; // デフォルトのキャンセルキー
         private const string cancelIconName = "CancelKeyIcon"; // キャンセルアイコンのデフォルト名
 
         /// <summary>

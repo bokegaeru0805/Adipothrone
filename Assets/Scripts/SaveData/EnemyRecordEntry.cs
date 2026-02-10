@@ -98,6 +98,8 @@ public class EnemyRecordData
 {
     // 全敵のレコードリスト
     public List<EnemyRecordEntry> enemyRecords = new();
+    // 入手済みユニークアイテムIDリスト
+    public List<int> ObtainedUniqueItemIds = new List<int>();
 
     #region Modification Methods (Write)
 
@@ -203,6 +205,18 @@ public class EnemyRecordData
         entry.hasEncountered = true;
     }
 
+    /// <summary>
+    /// ユニークアイテムを入手済みとして即座に記録する
+    /// </summary>
+    public void MarkUniqueItemAsObtained(int itemID)
+    {
+        if (!ObtainedUniqueItemIds.Contains(itemID))
+        {
+            ObtainedUniqueItemIds.Add(itemID);
+            // 必要に応じてここでSaveLoadManager.Save()などを呼ぶことも検討してください
+        }
+    }
+
     #endregion
 
     #region Query Methods (Read)
@@ -290,6 +304,15 @@ public class EnemyRecordData
         }
         return unlockedList;
     }
+
+        /// <summary>
+    /// 指定したアイテムが既に入手済みのユニークアイテムか判定する
+    /// </summary>
+    public bool IsUniqueItemObtained(int itemID)
+    {
+        return ObtainedUniqueItemIds.Contains(itemID);
+    }
+
 
     #endregion
 

@@ -23,6 +23,8 @@ namespace Fungus
         /// </summary>
         public override void OnEnter()
         {
+            // キャンセルキーはMenuDialog.csで設定されたキーを使用
+
             // もしカスタムのメニューダイアログが設定されていれば
             if (setMenuDialog != null)
             {
@@ -48,7 +50,7 @@ namespace Fungus
                 var flowchart = GetFlowchart();
                 string displayText = flowchart.SubstituteVariables(text);
 
-                // ★ MenuDialogにキャンセル可能な選択肢として追加する
+                // MenuDialogにキャンセル可能な選択肢として追加する
                 menuDialog.AddCancelableOption(displayText, interactable, hideOption, targetBlock);
             }
 

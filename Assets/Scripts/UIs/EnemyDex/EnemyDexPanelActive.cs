@@ -407,13 +407,19 @@ public class EnemyDexPanelActive : MonoBehaviour, IPanelActive
                     }
                 }
 
+                // ユニークアイテムの場合は、名前（???含む）を常に金色にする
+                if (item.isUnique)
+                {
+                    displayName = $"<color=#FFD700>{displayName}</color>";
+                }
+
                 // 4. 表示行の作成
                 string lineText;
 
                 // 条件テキストがある場合（＝条件付きかつ未解禁）
                 if (!string.IsNullOrEmpty(conditionText))
                 {
-                    lineText = $"・{conditionText}";
+                    lineText = $"・{displayName}{conditionText}";
                 }
                 else
                 {

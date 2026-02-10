@@ -210,6 +210,7 @@ public class GameManager : MonoBehaviour
     /// 宝箱を開けた際のFungus会話ブロックを起動します。
     /// グローバルFlowchart内の "Treasurebox" ブロックを探し、
     /// 取得したアイテムの情報を設定してから実行します。
+    /// 実際のアイテム取得処理は、Fungus内のAddItemCommandで行われます。
     /// </summary>
     /// <param name="itemData">取得したアイテムのデータ</param>
     /// <param name="itemAmount">取得したアイテムの数</param>
