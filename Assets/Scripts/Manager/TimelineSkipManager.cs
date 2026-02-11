@@ -160,7 +160,6 @@ public class TimelineSkipManager : MonoBehaviour
             if (IsSkipAvailable)
             {
                 currentSkipHoldTimer += Time.unscaledDeltaTime;
-                Debug.Log($"Skip Hold Timer: {currentSkipHoldTimer:F2}s");
 
                 // 閾値を超えたら発動
                 if (currentSkipHoldTimer >= skipHoldDuration)

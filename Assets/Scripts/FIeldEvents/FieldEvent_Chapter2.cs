@@ -15,7 +15,9 @@ public class FieldEvent_Chapter2 : BaseFieldEvent
         WaterSourceFrontField = 7, // オアシスの源泉前フィールド
         WaterSourceField = 4, // オアシスの源泉フィールド
         TempleEntranceField = 5, // 砂漠の神殿入口フィールド
-        DustWindBossField = 6, // 砂嵐のボスフィールド
+        BeforeDeepDesertField = 6, // 砂漠の奥地手前フィールド
+        DeepDesertField = 8, // 砂漠の奥地フィールド
+        DustWindBossField = 9, // 砂嵐のボスフィールド
     }
 
     protected override string EventName => fieldname.ToString();
@@ -45,6 +47,9 @@ public class FieldEvent_Chapter2 : BaseFieldEvent
                     GameManager.instance.savedata.FastTravelData.RegisterFastTravelData(
                         FastTravelName.DesertVillage
                     ); // ファストトラベル地点を登録
+                    GameManager.instance.savedata.FastTravelData.SetLastUsedFastTravel(
+                        FastTravelName.DesertVillage
+                    ); // 最後に使用した地点を設定
                     FungusHelper.ExecuteBlock(targetFlowchart, "FirstEnteredVillage");
                 }
                 break;
@@ -69,7 +74,11 @@ public class FieldEvent_Chapter2 : BaseFieldEvent
                 }
                 break;
             case FieldName.WaterSourceFrontField:
-                if (!flagManager.GetBoolFlag(Chapter2TriggeredEvent.FirstEnteredWaterSourceFrontField))
+                if (
+                    !flagManager.GetBoolFlag(
+                        Chapter2TriggeredEvent.FirstEnteredWaterSourceFrontField
+                    )
+                )
                 {
                     flagManager.SetBoolFlag(
                         Chapter2TriggeredEvent.FirstEnteredWaterSourceFrontField,
@@ -96,10 +105,30 @@ public class FieldEvent_Chapter2 : BaseFieldEvent
                     FungusHelper.ExecuteBlock(targetFlowchart, "FirstMetDesertTempleBoss");
                 }
                 break;
-            case FieldName.DustWindBossField:
+            case FieldName.BeforeDeepDesertField:
                 if (
-                    !flagManager.GetBoolFlag(Chapter2TriggeredEvent.DustDevilBossDefeated)
+                    !flagManager.GetBoolFlag(Chapter2TriggeredEvent.FirstEnteredDeepDesert)
                 )
+                {
+                    flagManager.SetBoolFlag(
+                        Chapter2TriggeredEvent.FirstEnteredDeepDesert,
+                        true
+                    );
+                    isEventTriggered = true; // イベントがトリガーされたことを記録
+                }
+                break;
+            case FieldName.DeepDesertField:
+                if (
+                    !flagManager.GetBoolFlag(Chapter2TriggeredEvent.BeforeDustDevilBoss)
+                )
+                {
+                    flagManager.SetBoolFlag(Chapter2TriggeredEvent.BeforeDustDevilBoss, true);
+                    isEventTriggered = true; // イベントがトリガーされたことを記録
+                    FungusHelper.ExecuteBlock(targetFlowchart, "BeforeDustDevilBoss");
+                }
+                break;
+            case FieldName.DustWindBossField:
+                if (!flagManager.GetBoolFlag(Chapter2TriggeredEvent.DustDevilBossDefeated))
                 {
                     isEventTriggered = true; // イベントがトリガーされたことを記録
                     FungusHelper.ExecuteBlock(targetFlowchart, "DustDevilBossAppear");

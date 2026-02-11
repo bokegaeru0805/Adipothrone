@@ -203,15 +203,21 @@ namespace MyGame.CameraControl
                 framing.m_YDamping = 0;
 
                 // Cinemachineにワープを通知（内部演算のリセット）
-                virtualCamera.OnTargetObjectWarped(framing.FollowTarget, framing.FollowTargetPosition - cam.transform.position);
+                virtualCamera.OnTargetObjectWarped(
+                    framing.FollowTarget,
+                    framing.FollowTargetPosition - cam.transform.position
+                );
 
                 float timeElapsed = 0f;
-                float timeOut = 2.0f; // タイムアウト時間
-                
+                float timeOut = 2.0f;
+
+                // 【追加】カメラが静止したことを検知するための変数
+                Vector3 lastCamPos = cam.transform.position;
+
                 // 【重要】CameraMoveAreaのConfiner更新（最大10フレーム程度かかる）を待つため、
                 // 最低でもこの時間は強制同期を続け、完了判定を行わないようにする。
                 // これにより「古いエリアの端」で誤って完了判定され、カメラが置き去りになるのを防ぐ。
-                float minDuration = 0.25f; 
+                float minDuration = 0.25f;
 
                 while (true)
                 {
@@ -242,22 +248,30 @@ namespace MyGame.CameraControl
                     );
 
                     bool isCloseEnough = distanceXY <= 0.1f;
-                    
+
                     // 端にいるかどうかの判定。
                     // minDuration経過後であれば、Confinerは正しいものになっているはずなので、
                     // ここで端判定が出れば「本当に端にいて動けない」と判断できる。
                     bool isAtEdge = boundaryChecker.CameraAtEdge != null;
-                    
+
+                    // 静止判定（上下の壁に当たって動けないケースなどに対応）
+                    // 強制移動させているにも関わらず座標が変わらない＝Confiner等で止められていると判断
+                    bool isStationary = Vector3.Distance(currentCamPos, lastCamPos) < 0.001f;
+
                     bool isTimeOut = timeElapsed >= timeOut;
 
-                    if (isCloseEnough || isAtEdge || isTimeOut)
+                    if (isCloseEnough || isAtEdge || isStationary || isTimeOut)
                     {
-                        if (isTimeOut)
+                        // タイムアウトかつ、静止もしていない（何かに引っかかって震えている等）場合のみ警告
+                        if (isTimeOut && !isStationary && !isCloseEnough)
                         {
                             Debug.LogWarning($"CameraMove Timeout (Dist:{distanceXY:F2}).");
                         }
                         break;
                     }
+
+                    // 次フレーム比較用に座標を更新
+                    lastCamPos = currentCamPos;
                 }
 
                 // 6. Damping設定を元に戻す

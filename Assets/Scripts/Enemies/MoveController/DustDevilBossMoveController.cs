@@ -184,6 +184,11 @@ public class DustDevilBossMoveController : MonoBehaviour, IEnemyResettable
 
         // 初期状態は不透明（Alpha 1）で表示
         ControlSpiralEffectFade(1f, 0f);
+
+        if (_characterHpScript is BossHealth boss)
+        {
+            boss.InitializeBossSpecifics(); // BossHealthの初期化処理を呼び出す
+        }
     }
 
     /// <summary>
@@ -653,6 +658,12 @@ public class DustDevilBossMoveController : MonoBehaviour, IEnemyResettable
         }
 
         this.tag = GameConstants.UNTAGGED_TAG_NAME; // タグをリセット
+    }
+
+    private void OnDisable()
+    {
+        // 全てのプールオブジェクトをプールに戻す
+        ObjectPooler.SceneInstance?.ReturnAllToPool();
     }
 
     private void OnDrawGizmosSelected()

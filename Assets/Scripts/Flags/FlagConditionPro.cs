@@ -108,6 +108,9 @@ public class StatePro
     [AllowNesting, ShowIf("changeSprite")]
     public Sprite sprite;
 
+    [AllowNesting, ShowIf("changeSprite")]
+    public bool flipX = false;
+
     [Header("位置")]
     public bool changePosition;
 

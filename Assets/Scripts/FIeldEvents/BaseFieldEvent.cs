@@ -88,7 +88,7 @@ public abstract class BaseFieldEvent : MonoBehaviour
         Gizmos.color = borderColor;
         Gizmos.DrawWireCube(Vector3.zero, (Vector3)box2D.size);
 
-        // --- 追加: Enum名の文字表示 ---
+        // --- Enum名の文字表示 ---
 #if UNITY_EDITOR
         // 文字列が空でない場合のみ表示
         if (!string.IsNullOrEmpty(EventName))

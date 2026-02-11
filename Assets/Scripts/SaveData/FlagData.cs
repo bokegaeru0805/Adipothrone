@@ -152,6 +152,8 @@ public enum Chapter2TriggeredEvent
     ReportedCoachmanQuestComplete = 2011, // 御者にクエスト完了の報告をした
     FirstMetDesertTempleBoss = 2015, // 砂漠の神殿のボスと初めて会った
     OasisDriedUpByDesertTempleBoss = 2016, // 砂漠の神殿のボスによってオアシスが干上がった
+    FirstEnteredDeepDesert = 2021, // 砂漠の奥地に初めて入った
+    BeforeDustDevilBoss = 2023, // 砂嵐のボス直前イベント
     DustDevilBossDefeated = 2025, // 砂嵐のボスを倒した
 }
 

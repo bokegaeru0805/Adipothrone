@@ -730,6 +730,11 @@ public class PlayerManager : MonoBehaviour
 
         playerGameObject.transform.position = new Vector2(targetPoint.x, targetPoint.y); // プレイヤーの座標を移動
 
+        // 座標移動直後に物理演算のトランスフォーム同期を強制実行する
+        // これにより、CameraMoveAreaのOnTriggerEnter2Dが即座に呼ばれ、
+        // カメラ移動開始前に「新しいエリアのConfiner設定」が完了するようになります。
+        Physics2D.SyncTransforms();
+
         if (CameraManager.instance != null)
         {
             // CameraMoveコルーチンが完了するまで待つ

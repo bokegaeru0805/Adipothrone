@@ -16,4 +16,5 @@ public enum EnemyName
     dustDevil = 15016,
     desertTempleGolem = 15017,
     dustDevilActive = 15018,
+    dustDevilBoss = 15025,
 }
