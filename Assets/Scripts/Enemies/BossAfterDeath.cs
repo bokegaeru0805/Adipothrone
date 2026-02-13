@@ -229,6 +229,11 @@ public class BossAfterDeath : MonoBehaviour
                 ); // 家の洞窟のボス撃破のログを登録
                 break;
 
+            case BossHealth.BossName.DustDevilBoss:
+                flagManager.SetBoolFlag(Chapter2TriggeredEvent.DustDevilBossDefeated, true);
+                FungusHelper.ExecuteBlock(flowchart, "DustDevilBossDefeat");
+                break;
+
             case BossHealth.BossName.None:
                 Debug.LogWarning(
                     "BossNameがNoneに設定されています。撃破イベントを処理できません。"

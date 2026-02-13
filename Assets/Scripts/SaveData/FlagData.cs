@@ -155,6 +155,8 @@ public enum Chapter2TriggeredEvent
     FirstEnteredDeepDesert = 2021, // 砂漠の奥地に初めて入った
     BeforeDustDevilBoss = 2023, // 砂嵐のボス直前イベント
     DustDevilBossDefeated = 2025, // 砂嵐のボスを倒した
+    OasisPartiallyRestoredByFill = 2030, // Fillによってオアシスが部分的に復活した
+    TempleBossSmokeDefeated = 2035, // 砂漠の神殿のボス（煙）を倒した
 }
 
 /// <summary>

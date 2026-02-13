@@ -17,7 +17,7 @@ public class FrontDoor : MonoBehaviour
 
         if (doorType == DoorOpener.DoorType.None)
         {
-            Debug.LogError($"{this.name}のdoorTypeが設定されていません");
+            Debug.LogWarning($"{this.name}のdoorTypeが設定されていません",this);
         }
     }
 

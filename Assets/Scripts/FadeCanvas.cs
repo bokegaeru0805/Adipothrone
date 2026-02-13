@@ -92,13 +92,28 @@ public class FadeCanvas : MonoBehaviour
     /// <param name="duration">フェードにかかる時間</param>
     public void FadeOut(float duration)
     {
-        if (fadeImage == null)
-            return;
+        if (fadeImage == null) return;
 
-        fadeImage.gameObject.SetActive(true);
-        // 既存のTweenを停止してから新しいTweenを開始
+        // 1. 競合するTweenを確実に停止
         fadeImage.DOKill();
-        fadeImage.DOFade(1.0f, duration).SetUpdate(true); // Time.timeScale=0でも動作
+
+        // 2. 確実にActiveにする (Tween開始前に表示状態にしておく)
+        fadeImage.gameObject.SetActive(true);
+
+        // 3. durationが0以下の場合は、Tweenを使わず即座に値を適用して終了
+        // (0秒Tweenは稀に不安定になるため、手動設定が最も確実です)
+        if (duration <= 0f)
+        {
+            Color c = fadeImage.color;
+            c.a = 1.0f;
+            fadeImage.color = c;
+            return;
+        }
+
+        // 4. Tween開始
+        fadeImage.DOFade(1.0f, duration)
+            .SetUpdate(true)            // TimeScale=0でも動作
+            .SetLink(fadeImage.gameObject); // GameObjectが破棄されたらTweenも破棄（エラー防止）
     }
 
     /// /// <summary>
@@ -107,17 +122,29 @@ public class FadeCanvas : MonoBehaviour
     /// <param name="duration">フェードにかかる時間</param>
     public void FadeIn(float duration)
     {
-        if (fadeImage == null)
-            return;
+        if (fadeImage == null) return;
 
-        fadeImage.gameObject.SetActive(true);
         fadeImage.DOKill();
-        // フェード完了後（OnComplete）に自動で非表示にする
+        fadeImage.gameObject.SetActive(true);
+
+        // 0秒対応
+        if (duration <= 0f)
+        {
+            Color c = fadeImage.color;
+            c.a = 0.0f;
+            fadeImage.color = c;
+            fadeImage.gameObject.SetActive(false);
+            return;
+        }
+
         fadeImage
             .DOFade(0.0f, duration)
             .SetUpdate(true)
+            .SetLink(fadeImage.gameObject)
             .OnComplete(() =>
             {
+                // 完了時に非表示にする
+                // ※この間にFadeOutが呼ばれてDOKillされた場合は、ここは実行されないので安全
                 fadeImage.gameObject.SetActive(false);
             });
     }
