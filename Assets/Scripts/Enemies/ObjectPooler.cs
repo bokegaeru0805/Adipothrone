@@ -167,7 +167,7 @@ public class ObjectPooler : MonoBehaviour
     {
         if (!poolDictionary.ContainsKey(tag))
         {
-            Debug.LogWarning($"オブジェクトプール '{tag}' が存在しません。");
+            Debug.LogError($"オブジェクトプール '{tag}' が存在しません。");
             return null;
         }
 

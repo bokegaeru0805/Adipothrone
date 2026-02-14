@@ -26,6 +26,7 @@ public class BossHealth : CharacterHealth
         SlimeBoss = 20,
         StoneGolemBoss = 30,
         DustDevilBoss = 40,
+        DesertTempleBossSmoke = 50,
     }
 
     /// <summary>
@@ -38,12 +39,8 @@ public class BossHealth : CharacterHealth
 
         // --- 元のAwakeにあったエラーチェック ---
         if (bossname == BossName.None)
-            Debug.LogError($"{this.gameObject.name}のボス名が設定されていません");
-        if (AfterDeathGameObject == null)
-        {
-            Debug.LogWarning($"{this.gameObject.name}はAfterDeathGameObjectを持っていません");
-        }
-        else
+            Debug.LogError($"{this.gameObject.name}のボス名が設定されていません", this);
+        if (AfterDeathGameObject != null)
         {
             AfterDeathGameObject.SetActive(false); //最初は非表示
 
@@ -55,12 +52,26 @@ public class BossHealth : CharacterHealth
             else
             {
                 Debug.LogWarning(
-                    $"{AfterDeathGameObject.name}にBossAfterDeathスクリプトがアタッチされていません。撃破後イベントが正しく動作しません。"
+                    $"{AfterDeathGameObject.name}にBossAfterDeathスクリプトがアタッチされていません。撃破後イベントが正しく動作しません。",
+                    AfterDeathGameObject
                 );
             }
+
+            AfterDeathGameObject.SetActive(false); //撃破後のゲームオブジェクトを非表示
         }
+        else
+        {
+            Debug.LogWarning(
+                $"{this.gameObject.name}のAfterDeathGameObjectが設定されていません。",
+                this
+            );
+        }
+
         if (enemyData == null)
-            Debug.LogError($"{this.gameObject.name}のEnemyDataが設定されていません");
+        {
+            Debug.LogError($"{this.gameObject.name}のEnemyDataが設定されていません", this);
+            return; // EnemyDataがないとHPを初期化できないので、以降の処理を中断
+        }
 
         // EnemyDataから最大HPを取得
         MaxHP = enemyData.enemyHP;
@@ -68,11 +79,6 @@ public class BossHealth : CharacterHealth
         //以下の動作は、他の関数からStart関数でこのスクリプトが無効化される可能性があるため、Start関数ではなくここで行う
         IsDefeated = false;
         CurrentHP = MaxHP;
-
-        if (AfterDeathGameObject != null)
-        {
-            AfterDeathGameObject.SetActive(false); //撃破後のゲームオブジェクトを非表示
-        }
     }
 
     /// <summary>

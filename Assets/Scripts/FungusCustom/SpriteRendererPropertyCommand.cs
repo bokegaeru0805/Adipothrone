@@ -1,84 +1,105 @@
-using UnityEngine;
 using System.Collections;
 using Fungus;
 using NaughtyAttributes;
+using UnityEngine;
 
-[CommandInfo("Sprite", "Set Sprite Property", "SpriteRendererの色(Tween対応)、反転、描画順、画像を変更します。")]
+[CommandInfo(
+    "Sprite",
+    "Set Sprite Property",
+    "SpriteRendererの色(Tween対応)、反転、描画順、画像を変更します。"
+)]
 [AddComponentMenu("")]
 public class SpriteRendererPropertyCommand : Command
 {
     public enum SpritePropertyMode
     {
-        Color,          // 色・透明度 (Tween対応)
-        Flip,           // 上下・左右反転
-        SortingOrder,   // 描画順 (Sorting Order)
-        ChangeSprite    // スプライト画像の差し替え
+        Color, // 色・透明度 (Tween対応)
+        Flip, // 上下・左右反転
+        SortingOrder, // 描画順 (Sorting Order)
+        ChangeSprite // スプライト画像の差し替え
+        ,
     }
 
     public enum OperationMode
     {
         Set, // 指定した値にする
-        Add  // 現在の値に加算する（Sorting Order用）
+        Add // 現在の値に加算する（Sorting Order用）
+        ,
     }
 
     // --- ターゲット設定 ---
     [BoxGroup("Target Settings")]
     [Tooltip("変更対象のSpriteRendererを持つGameObject")]
-    [SerializeField] protected GameObjectData targetGameObject;
+    [SerializeField]
+    protected GameObjectData targetGameObject;
 
     [BoxGroup("Target Settings")]
-    [SerializeField] protected SpritePropertyMode propertyMode = SpritePropertyMode.Color;
+    [Tooltip("子オブジェクトのSpriteRendererも含めて変更するか")]
+    [SerializeField]
+    protected bool applyRecursively = false;
+
+    [BoxGroup("Target Settings")]
+    [SerializeField]
+    protected SpritePropertyMode propertyMode = SpritePropertyMode.Color;
 
     // --- Color 設定 ---
     [BoxGroup("Color Settings")]
     [AllowNesting]
     [ShowIf("IsColorMode")]
     [Tooltip("目標の色 (Alphaを変えればフェードになります)")]
-    [SerializeField] protected ColorData targetColor = new ColorData(Color.white);
+    [SerializeField]
+    protected ColorData targetColor = new ColorData(Color.white);
 
     // --- Flip 設定 ---
     [BoxGroup("Flip Settings")]
     [AllowNesting]
     [ShowIf("IsFlipMode")]
     [Tooltip("X方向(左右)の反転を変更するか")]
-    [SerializeField] protected bool modifyFlipX = true;
+    [SerializeField]
+    protected bool modifyFlipX = true;
 
     [BoxGroup("Flip Settings")]
     [AllowNesting]
     [ShowIf("IsFlipModeAndModifyX")]
     [Tooltip("左右反転の状態")]
-    [SerializeField] protected BooleanData flipX;
+    [SerializeField]
+    protected BooleanData flipX;
 
     [BoxGroup("Flip Settings")]
     [AllowNesting]
     [ShowIf("IsFlipMode")]
     [Tooltip("Y方向(上下)の反転を変更するか")]
-    [SerializeField] protected bool modifyFlipY = false;
+    [SerializeField]
+    protected bool modifyFlipY = false;
 
     [BoxGroup("Flip Settings")]
     [AllowNesting]
     [ShowIf("IsFlipModeAndModifyY")]
     [Tooltip("上下反転の状態")]
-    [SerializeField] protected BooleanData flipY;
+    [SerializeField]
+    protected BooleanData flipY;
 
     // --- Sorting Order 設定 ---
     [BoxGroup("Sorting Order Settings")]
     [AllowNesting]
     [ShowIf("IsSortingOrderMode")]
-    [SerializeField] protected OperationMode orderOperation = OperationMode.Set;
+    [SerializeField]
+    protected OperationMode orderOperation = OperationMode.Set;
 
     [BoxGroup("Sorting Order Settings")]
     [AllowNesting]
     [ShowIf("IsSortingOrderMode")]
     [Tooltip("描画順序の値")]
-    [SerializeField] protected IntegerData sortingOrder;
+    [SerializeField]
+    protected IntegerData sortingOrder;
 
     // --- Sprite 画像設定 ---
     [BoxGroup("Sprite Settings")]
     [AllowNesting]
     [ShowIf("IsChangeSpriteMode")]
     [Tooltip("差し替えるスプライト画像")]
-    [SerializeField] protected Sprite targetSprite;
+    [SerializeField]
+    protected Sprite targetSprite;
 
     // --- アニメーション (Tween) ---
     // ※ Colorモードのときのみ表示
@@ -86,27 +107,36 @@ public class SpriteRendererPropertyCommand : Command
     [AllowNesting]
     [ShowIf("IsColorMode")]
     [Tooltip("変化にかける時間(秒)。0の場合は即座に変更されます。")]
-    [SerializeField] protected FloatData duration = new FloatData(0f);
+    [SerializeField]
+    protected FloatData duration = new FloatData(0f);
 
     [BoxGroup("Tween Settings")]
     [AllowNesting]
     [ShowIf("IsTweening")]
     [Tooltip("待機するかどうか")]
-    [SerializeField] protected bool waitUntilFinished = true;
+    [SerializeField]
+    protected bool waitUntilFinished = true;
 
     [BoxGroup("Tween Settings")]
     [AllowNesting]
     [ShowIf("IsTweening")]
     [Tooltip("変化のカーブ")]
-    [SerializeField] protected AnimationCurve easeCurve = AnimationCurve.Linear(0, 0, 1, 1);
+    [SerializeField]
+    protected AnimationCurve easeCurve = AnimationCurve.Linear(0, 0, 1, 1);
 
     // --- NaughtyAttributes用のバリデーション ---
     private bool IsColorMode() => propertyMode == SpritePropertyMode.Color;
+
     private bool IsFlipMode() => propertyMode == SpritePropertyMode.Flip;
+
     private bool IsFlipModeAndModifyX() => IsFlipMode() && modifyFlipX;
+
     private bool IsFlipModeAndModifyY() => IsFlipMode() && modifyFlipY;
+
     private bool IsSortingOrderMode() => propertyMode == SpritePropertyMode.SortingOrder;
+
     private bool IsChangeSpriteMode() => propertyMode == SpritePropertyMode.ChangeSprite;
+
     private bool IsTweening() => IsColorMode() && duration.Value > 0f;
 
     public override void OnEnter()
@@ -117,55 +147,68 @@ public class SpriteRendererPropertyCommand : Command
             return;
         }
 
-        SpriteRenderer sr = targetGameObject.Value.GetComponent<SpriteRenderer>();
-        if (sr == null)
+        SpriteRenderer[] srs;
+        if (applyRecursively)
         {
-            Debug.LogWarning($"Target GameObject '{targetGameObject.Value.name}' does not have a SpriteRenderer component.");
-            Continue();
-            return;
+            // 子オブジェクトも含めて全て取得
+            srs = targetGameObject.Value.GetComponentsInChildren<SpriteRenderer>();
+        }
+        else
+        {
+            // 対象オブジェクトのみ（配列にラップする）
+            var sr = targetGameObject.Value.GetComponent<SpriteRenderer>();
+            srs = sr != null ? new SpriteRenderer[] { sr } : new SpriteRenderer[0];
         }
 
         switch (propertyMode)
         {
             case SpritePropertyMode.Color:
-                HandleColorChange(sr);
+                HandleColorChange(srs);
                 break;
 
             case SpritePropertyMode.Flip:
-                HandleFlipChange(sr);
+                HandleFlipChange(srs);
                 Continue();
                 break;
 
             case SpritePropertyMode.SortingOrder:
-                HandleSortingOrderChange(sr);
+                HandleSortingOrderChange(srs);
                 Continue();
                 break;
 
             case SpritePropertyMode.ChangeSprite:
-                HandleSpriteChange(sr);
+                HandleSpriteChange(srs);
                 Continue();
                 break;
         }
     }
 
-    private void HandleColorChange(SpriteRenderer sr)
+    private void HandleColorChange(SpriteRenderer[] srs)
     {
-        Color startColor = sr.color;
         Color endColor = targetColor.Value;
 
         if (duration.Value <= 0f)
         {
-            sr.color = endColor;
+            foreach (var sr in srs)
+                sr.color = endColor;
             Continue();
         }
         else
         {
-            StartCoroutine(TweenColorRoutine(sr, startColor, endColor));
+            StartCoroutine(TweenColorRoutine(srs, endColor));
         }
     }
 
-    private IEnumerator TweenColorRoutine(SpriteRenderer sr, Color start, Color end)
+    private IEnumerator TweenColorRoutine(SpriteRenderer[] srs, Color end)
     {
+        // 全てのスプライトの開始色を個別に保存
+        Color[] startColors = new Color[srs.Length];
+        for (int i = 0; i < srs.Length; i++)
+        {
+            if (srs[i] != null)
+                startColors[i] = srs[i].color;
+        }
+
         float timer = 0f;
         float time = duration.Value;
 
@@ -175,17 +218,22 @@ public class SpriteRendererPropertyCommand : Command
             float t = Mathf.Clamp01(timer / time);
             float curveValue = easeCurve.Evaluate(t);
 
-            if (sr != null)
+            for (int i = 0; i < srs.Length; i++)
             {
-                sr.color = Color.Lerp(start, end, curveValue);
+                if (srs[i] != null)
+                {
+                    srs[i].color = Color.Lerp(startColors[i], end, curveValue);
+                }
             }
 
             yield return null;
         }
 
-        if (sr != null)
+        // 最終値を確実に適用
+        for (int i = 0; i < srs.Length; i++)
         {
-            sr.color = end;
+            if (srs[i] != null)
+                srs[i].color = end;
         }
 
         if (waitUntilFinished)
@@ -194,35 +242,38 @@ public class SpriteRendererPropertyCommand : Command
         }
     }
 
-    private void HandleFlipChange(SpriteRenderer sr)
+    private void HandleFlipChange(SpriteRenderer[] srs)
     {
-        if (modifyFlipX)
+        foreach (var sr in srs)
         {
-            sr.flipX = flipX.Value;
-        }
-        if (modifyFlipY)
-        {
-            sr.flipY = flipY.Value;
+            if (modifyFlipX)
+                sr.flipX = flipX.Value;
+            if (modifyFlipY)
+                sr.flipY = flipY.Value;
         }
     }
 
-    private void HandleSortingOrderChange(SpriteRenderer sr)
+    private void HandleSortingOrderChange(SpriteRenderer[] srs)
     {
-        if (orderOperation == OperationMode.Set)
+        foreach (var sr in srs)
         {
-            sr.sortingOrder = sortingOrder.Value;
-        }
-        else // Add
-        {
-            sr.sortingOrder += sortingOrder.Value;
+            if (orderOperation == OperationMode.Set)
+            {
+                sr.sortingOrder = sortingOrder.Value;
+            }
+            else // Add
+            {
+                sr.sortingOrder += sortingOrder.Value;
+            }
         }
     }
 
-    private void HandleSpriteChange(SpriteRenderer sr)
+    private void HandleSpriteChange(SpriteRenderer[] srs)
     {
         if (targetSprite != null)
         {
-            sr.sprite = targetSprite;
+            foreach (var sr in srs)
+                sr.sprite = targetSprite;
         }
     }
 
@@ -234,7 +285,8 @@ public class SpriteRendererPropertyCommand : Command
 
     public override string GetSummary()
     {
-        if (targetGameObject.Value == null) return "Error: No Target GameObject";
+        if (targetGameObject.Value == null)
+            return "Error: No Target GameObject";
 
         string modeInfo = "";
         switch (propertyMode)
@@ -257,7 +309,8 @@ public class SpriteRendererPropertyCommand : Command
                 break;
         }
 
-        return $"{targetGameObject.Value.name} : {modeInfo}";
+        string recursiveStr = applyRecursively ? " (Recursive)" : "";
+        return $"{targetGameObject.Value.name}{recursiveStr} : {modeInfo}";
     }
 
     public override Color GetButtonColor()

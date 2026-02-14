@@ -411,7 +411,7 @@ public class Heroin_move : MonoBehaviour
     /// <summary>
     /// ロボットも含めた向きの設定
     /// </summary>
-    private void SetFacingDirection(bool isRight)
+    public void SetFacingDirection(bool isRight)
     {
         rightFlag = isRight;
         robotMoveScript.SetRightFlag(isRight);

@@ -43,7 +43,7 @@ public class BossAfterDeath : MonoBehaviour
     #endregion
 
     #region Private Fields
-
+    private bool shouldHideAfterDefeat = true; //撃破後に非表示にするか
     private FlagManager flagManager;
     private SpriteRenderer spriteRenderer;
     ParticleSystem[] psList = null;
@@ -66,6 +66,16 @@ public class BossAfterDeath : MonoBehaviour
                 "SpriteRendererが見つかりません。ボス撃破後のスプライトが正しく設定されていない可能性があります。"
             );
         }
+    }
+
+    public void Start()
+    {
+        flagManager = FlagManager.instance;
+        if (flagManager == null)
+        {
+            Debug.LogError("FlagManagerが見つかりません。ボス撃破イベントが正しく動作しません。");
+            return;
+        }
 
         switch (bossName)
         {
@@ -81,16 +91,9 @@ public class BossAfterDeath : MonoBehaviour
                     );
                 }
                 break;
-        }
-    }
-
-    public void Start()
-    {
-        flagManager = FlagManager.instance;
-        if (flagManager == null)
-        {
-            Debug.LogError("FlagManagerが見つかりません。ボス撃破イベントが正しく動作しません。");
-            return;
+            case BossHealth.BossName.DesertTempleBossSmoke:
+                shouldHideAfterDefeat = false;
+                break;
         }
         StartCoroutine(DefeatBoss());
     }
@@ -146,56 +149,59 @@ public class BossAfterDeath : MonoBehaviour
         }
         FlashPanel.SetActive(false); // FlashPanelを非表示にする
 
-        // --- パーティクル生成 ---
-
-        // SpriteRendererのboundsからワールド空間での実際の横幅を取得
-        Bounds bossBounds = spriteRenderer.bounds;
-        float bossWidth = bossBounds.size.x;
-
-        Vector3 newPos = this.transform.position; // 自分の座標を取得
-        GameObject newGameObject = Instantiate(BossDefeatParticle); // Particleを出現させる
-        newGameObject.transform.position = new Vector2(newPos.x, newPos.y + particleoffsetY); // Particleの座標を設定
-
-        ParticleSystem particleSystem = newGameObject.GetComponent<ParticleSystem>();
-        if (particleSystem != null)
+        if (shouldHideAfterDefeat)
         {
-            // Shapeモジュールを取得
-            var shapeModule = particleSystem.shape;
+            // --- パーティクル生成 ---
 
-            // Shapeのスケール（出現範囲の大きさ）をボスの横幅に合わせる
-            // YとZのスケールは元の値を維持する
-            shapeModule.radius = bossWidth * 0.25f + PARTICLE_RADIUS_OFFSET; // ボスの横幅の半分を設定
-        }
+            // SpriteRendererのboundsからワールド空間での実際の横幅を取得
+            Bounds bossBounds = spriteRenderer.bounds;
+            float bossWidth = bossBounds.size.x;
 
-        // --- 演出と消滅 ---
+            Vector3 newPos = this.transform.position; // 自分の座標を取得
+            GameObject newGameObject = Instantiate(BossDefeatParticle); // Particleを出現させる
+            newGameObject.transform.position = new Vector2(newPos.x, newPos.y + particleoffsetY); // Particleの座標を設定
 
-        BGMManager.instance?.FadeOut(3.0f); // BGMをフェードアウトする
-        CameraManager.instance?.PlayCustomShake(3.0f, 0.5f, 0.3f * 10); // カメラシェイクを再生
-
-        for (int i = 0; i < 10; i++)
-        {
-            float ratio = 1f - (i + 1) / 10f; // 現在の不透明度を計算
-
-            // Bossの透明度を徐々に下げていく
-            spriteRenderer.color = new Color(bossCol.r, bossCol.g, bossCol.b, ratio);
-
-            switch (bossName)
+            ParticleSystem particleSystem = newGameObject.GetComponent<ParticleSystem>();
+            if (particleSystem != null)
             {
-                case BossHealth.BossName.DustDevilBoss:
-                    if (psList != null)
-                    {
-                        foreach (var ps in psList)
-                        {
-                            var emission = ps.emission;
-                            emission.rateOverTimeMultiplier = ratio;
-                        }
-                    }
-                    break;
+                // Shapeモジュールを取得
+                var shapeModule = particleSystem.shape;
+
+                // Shapeのスケール（出現範囲の大きさ）をボスの横幅に合わせる
+                // YとZのスケールは元の値を維持する
+                shapeModule.radius = bossWidth * 0.25f + PARTICLE_RADIUS_OFFSET; // ボスの横幅の半分を設定
             }
-            yield return new WaitForSeconds(0.3f); // 0.3秒待つ
-            if (i % 2 == 0)
+
+            // --- 演出と消滅 ---
+
+            BGMManager.instance?.FadeOut(3.0f); // BGMをフェードアウトする
+            CameraManager.instance?.PlayCustomShake(3.0f, 0.5f, 0.3f * 10); // カメラシェイクを再生
+
+            for (int i = 0; i < 10; i++)
             {
-                SEManager.instance?.PlaySystemEventSE(SE_SystemEvent.Vanish1); // 消滅音を鳴らす
+                float ratio = 1f - (i + 1) / 10f; // 現在の不透明度を計算
+
+                // Bossの透明度を徐々に下げていく
+                spriteRenderer.color = new Color(bossCol.r, bossCol.g, bossCol.b, ratio);
+
+                switch (bossName)
+                {
+                    case BossHealth.BossName.DustDevilBoss:
+                        if (psList != null)
+                        {
+                            foreach (var ps in psList)
+                            {
+                                var emission = ps.emission;
+                                emission.rateOverTimeMultiplier = ratio;
+                            }
+                        }
+                        break;
+                }
+                yield return new WaitForSeconds(0.3f); // 0.3秒待つ
+                if (i % 2 == 0)
+                {
+                    SEManager.instance?.PlaySystemEventSE(SE_SystemEvent.Vanish1); // 消滅音を鳴らす
+                }
             }
         }
 
@@ -206,7 +212,7 @@ public class BossAfterDeath : MonoBehaviour
             case BossHealth.BossName.FirstBoss:
                 flagManager.SetBoolFlag(PrologueTriggeredEvent.DefeatFirstBoss, true);
                 FungusHelper.ExecuteBlock(flowchart, "FirstBossDefeat");
-                BGMManager.instance.Play(BGMCategory.Field_Quiet); // 指定したBGMを再生
+                BGMManager.instance.Play(BGMCategory.Field_Quiet);
                 GameManager.instance.savedata.ProgressLogData.RegisterProgressData(
                     ProgressLogName.DefeatFirstBoss
                 ); // 初ボス撃破のログを登録
@@ -215,7 +221,7 @@ public class BossAfterDeath : MonoBehaviour
             case BossHealth.BossName.SlimeBoss:
                 flagManager.SetBoolFlag(Chapter1TriggeredEvent.RiverBossDefeated, true);
                 FungusHelper.ExecuteBlock(flowchart, "RiverBossDefeat");
-                BGMManager.instance.Play(BGMCategory.Env_Water_Stream1); // 指定したBGMを再生
+                BGMManager.instance.Play(BGMCategory.Env_Water_Stream1);
                 GameManager.instance.savedata.ProgressLogData.RegisterProgressData(
                     ProgressLogName.DefeatRiverBoss
                 ); // 川のボス撃破のログを登録
@@ -233,6 +239,12 @@ public class BossAfterDeath : MonoBehaviour
                 flagManager.SetBoolFlag(Chapter2TriggeredEvent.DustDevilBossDefeated, true);
                 FungusHelper.ExecuteBlock(flowchart, "DustDevilBossDefeat");
                 break;
+            case BossHealth.BossName.DesertTempleBossSmoke:
+                BGMManager.instance?.FadeOut(3.0f); // BGMをフェードアウトする
+                // フラグはFlowchart側で立てるため、ここでは立てない
+                // flagManager.SetBoolFlag(Chapter2TriggeredEvent.TempleBossSmokeDefeated, true);
+                FungusHelper.ExecuteBlock(flowchart, "TempleBossSmokeDefeat");
+                break;
 
             case BossHealth.BossName.None:
                 Debug.LogWarning(
@@ -241,7 +253,10 @@ public class BossAfterDeath : MonoBehaviour
                 break;
         }
 
-        Destroy(this.gameObject); // このオブジェクトを消す
+        if (shouldHideAfterDefeat)
+        {
+            Destroy(this.gameObject); // 自分を消す
+        }
     }
 
     #endregion

@@ -4,11 +4,19 @@ using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
 
+/// <summary>
+/// ゲーム内の主要なUI（プレイヤーHP/WP、ボスHP、アイテムログ、レベルアップ通知など）を一括管理するマネージャクラス。
+/// </summary>
 public class GameUIManager : MonoBehaviour
 {
+    #region Singleton & Properties
+
     public static GameUIManager instance { get; private set; }
-    private PlayerManager playerManager;
-    public bool IsInBossBattle { get; private set; } = false; //現在ボスとの戦闘中か（ボスUIが表示されているか）どうか。
+
+    /// <summary>
+    /// 現在ボスとの戦闘中か（ボスUIが表示されているか）どうか。
+    /// </summary>
+    public bool IsInBossBattle { get; private set; } = false;
 
     /// <summary>
     /// ボス戦の状態が変更されたときに発行されるイベント
@@ -16,95 +24,73 @@ public class GameUIManager : MonoBehaviour
     /// </summary>
     public static event Action<bool> OnBossBattleStateChanged;
 
+    #endregion
+
+    #region Inspector Settings & References
+
     [Header("UI参照のルート")]
     [SerializeField]
-    private GameUIRefs uiRefs = null;
-    private Queue<ItemInfo> recentGetItems = new Queue<ItemInfo>();
-    private float itemDisplayDuration = 5f; // アイテム獲得UI表示時間（秒）
-    private float levelUpDisplayTime = 3f; // レベルアップポップアップの表示時間（秒）
-    private float skillNameDisplayTime = 3f; // 技名表示の表示時間（秒）
+    private GameUIRefs _uiRefs = null;
 
+    [Header("UI表示設定")]
+    [SerializeField, Tooltip("アイテム獲得UIの表示時間（秒）")]
+    private float _itemDisplayDuration = 5f;
+
+    [SerializeField, Tooltip("レベルアップポップアップの表示時間（秒）")]
+    private float _levelUpDisplayTime = 3f;
+
+    [SerializeField, Tooltip("技名表示の表示時間（秒）")]
+    private float _skillNameDisplayTime = 3f;
+
+    #endregion
+
+    #region Private Variables
+
+    // --- 外部参照 ---
+    private PlayerManager _playerManager;
+
+    // --- プレイヤー状態キャッシュ ---
+    private int _currentPlayerHP;
+    private int _playerMaxHP;
+    private int _currentPlayerWP;
+    private int _playerMaxWP;
+
+    // --- ボス状態キャッシュ ---
+    private GameObject _currentBossGameObject = null;
+    private CharacterHealth _currentBossHealthScript = null; // 現在のボスHPスクリプト
+    private int _currentBossHP;
+    private int _bossMaxHP;
+
+    // --- UIアニメーション用変数 (SmoothDamp) ---
+    private float _maxSpeed = float.PositiveInfinity; // 最高速度
+    private float _playerHPBarVelocity = 0f;
+    private float _playerWPBarVelocity = 0f;
+    private float _bossHPBarVelocity = 0f;
+
+    // --- アイテムログ管理 ---
     private class ItemInfo
     {
         public string itemName;
         public float timestamp;
     }
+    private Queue<ItemInfo> _itemLogQueue = new Queue<ItemInfo>();
 
-    private int playerHP;
-    private int playerMaxHP;
-    private int playerWP;
-    private int playerMaxWP;
-    private int bossHP;
-    private int bossMaxHP;
-    private float _maxSpeed = float.PositiveInfinity; // 最高速度
-    private float _playerCurrentHPVelocity = 0f;
-    private float _playerCurrentWPVelocity = 0f;
-    private float _bossCurrentVelocity = 0f;
-    private GameObject bossObject = null;
-    private CharacterHealth currentBossHPScript = null; // 現在のボスHPスクリプト
-    private bool isTalking = false; // 会話状態を保存するローカル変数
+    // --- 状態フラグ ---
+    private bool _isTalking = false; // 会話状態を保存するローカル変数
+
+    #endregion
+
+    #region Unity Lifecycle Methods
 
     private void Awake()
     {
         if (instance == null)
         {
             instance = this;
-            SetBossBattleState(false);
-            ; // 起動時は必ずfalse
-            if (uiRefs == null)
-            {
-                Debug.LogError("GameUIManagerにGameUIRefsが設定されていません！");
-                return;
-            }
+            SetBossBattleState(false); // 起動時は必ずfalse
 
-            if (
-                uiRefs.BossHealthBarImage == null
-                || uiRefs.BossHealthUIPanel == null
-                || uiRefs.BossLevelNumberText == null
-            )
-            {
-                Debug.LogError(
-                    "GameUIRefsにボスのHPバー、背景、、レベルUI、レベル番号テキストが設定されていません"
-                );
-                return;
-            }
-            else
-            {
-                SetBossUIVisibility(false);
-                ; //ボスのHPバーのパネルを非表示
-                uiRefs.BossLevelNumberText.text = $"???"; //ボスのレベルテキストをリセット
-            }
-
-            if (uiRefs.SkillNameDisplay == null)
-            {
-                Debug.LogError("GameUIRefsに技名表示のUIが設定されていません");
-                return;
-            }
-            else
-            {
-                uiRefs.SkillNameDisplay.SetActive(false); // 技名表示のUIを非表示にする
-            }
-
-            if (uiRefs.FastTravelPanel == null)
-            {
-                Debug.LogError("GameUIRefsにファストトラベルのパネルUIが設定されていません");
-            }
-            else
-            {
-                uiRefs.FastTravelPanel.SetActive(false); // ファストトラベルのパネルUIを非表示にする
-            }
-
-            // 入手アイテムのログのUIを非表示にする
-            foreach (var slot in uiRefs.ItemLogSlots)
-            {
-                slot.SetActive(false);
-            }
-
-            // レベルアップのポップアップのUIを非表示にする
-            if (uiRefs.LevelUpPopup != null)
-            {
-                uiRefs.LevelUpPopup.SetActive(false);
-            }
+            CheckAndInitReferences();
+            HideInitialUI();
         }
         else
         {
@@ -115,102 +101,151 @@ public class GameUIManager : MonoBehaviour
     private void Start()
     {
         // StartでPlayerManagerのインスタンスを一度だけ取得し、保持する
-        playerManager = PlayerManager.instance;
-        if (playerManager == null)
+        _playerManager = PlayerManager.instance;
+        if (_playerManager == null)
         {
-            Debug.LogError(
-                "PlayerManagerのインスタンスが見つかりません！このスクリプトは動作しません。"
-            );
+            Debug.LogError("PlayerManagerのインスタンスが見つかりません！このスクリプトは動作しません。");
             return; // PlayerManagerがなければ、ここで処理を中断
         }
 
-        if (playerManager != null)
+        // イベント購読と初期値の取得
+        if (_playerManager != null)
         {
-            playerManager.OnChangeHP += OnChangeHP;
-            playerManager.OnChangeWP += OnChangeWP;
-            playerManager.OnChangeMaxHP += InitializePlayerHPData;
-            InitializePlayerHPData(playerManager.playerMaxHP); //プレイヤーのHPの初期値を取得
-            OnChangeWP(playerManager.GetPlayerIntStatus(PlayerStatusIntName.playerCurrentWP)); // プレイヤーのWPの初期値を取得
-        }
-        else
-        {
-            Debug.LogError("PlayerManagerが見つかりません。GameUIManagerは動作しません。");
+            _playerManager.OnChangeHP += UpdatePlayerHPCache;
+            _playerManager.OnChangeWP += UpdatePlayerWPCache;
+            _playerManager.OnChangeMaxHP += InitializePlayerHPData;
+
+            InitializePlayerHPData(_playerManager.playerMaxHP); //プレイヤーのHPの初期値を取得
+            UpdatePlayerWPCache(_playerManager.GetPlayerIntStatus(PlayerStatusIntName.playerCurrentWP)); // プレイヤーのWPの初期値を取得
         }
 
-        GameManager.OnTalkingStateChanged += SetActiveBossUI; // 会話状態の変更に応じてボスのUIをアクティブにする
+        GameManager.OnTalkingStateChanged += HandleTalkingStateChanged; // 会話状態の変更に応じてボスのUIをアクティブにする
 
         InitializePlayerWPData(); // プレイヤーのWPの初期値を取得
+    }
+
+    private void Update()
+    {
+        // 各種UIの更新処理
+        UpdatePlayerUI();
+        UpdateItemLogUI();
+        UpdateBossUI();
     }
 
     private void OnDisable()
     {
         // オブジェクトが破棄される際などにも呼ばれるため、playerManagerが存在するか確認
-        if (playerManager != null)
+        if (_playerManager != null)
         {
-            playerManager.OnChangeHP -= OnChangeHP;
-            playerManager.OnChangeWP -= OnChangeWP;
-            playerManager.OnChangeMaxHP -= InitializePlayerHPData;
+            _playerManager.OnChangeHP -= UpdatePlayerHPCache;
+            _playerManager.OnChangeWP -= UpdatePlayerWPCache;
+            _playerManager.OnChangeMaxHP -= InitializePlayerHPData;
         }
 
-        GameManager.OnTalkingStateChanged -= SetActiveBossUI; // 会話状態の変更に応じてボスのUIをアクティブにするイベントの購読を解除
+        GameManager.OnTalkingStateChanged -= HandleTalkingStateChanged;
     }
 
-    private void Update()
+    #endregion
+
+    #region Initialization Helpers
+
+    /// <summary>
+    /// 必要なUI参照が設定されているか確認し、エラーログを出力します。
+    /// </summary>
+    private void CheckAndInitReferences()
     {
-        //プレイヤーのHPに関するUIの更新
-        if (uiRefs.PlayerHPHealthBarImage != null && playerMaxHP > 0)
+        if (_uiRefs == null)
         {
-            uiRefs.PlayerHPHealthBarImage.fillAmount = Mathf.SmoothDamp(
-                uiRefs.PlayerHPHealthBarImage.fillAmount,
-                (float)playerHP / (float)playerMaxHP,
-                ref _playerCurrentHPVelocity,
-                GameConstants.GAUGE_SMOOTH_TIME,
-                _maxSpeed,
-                Time.unscaledDeltaTime
-            );
-        }
-
-        //プレイヤーのWPに関するUIの更新
-        if (uiRefs.PlayerWPHealthBarImage != null && playerMaxWP > 0)
-        {
-            uiRefs.PlayerWPHealthBarImage.fillAmount = Mathf.SmoothDamp(
-                uiRefs.PlayerWPHealthBarImage.fillAmount,
-                (float)playerWP / (float)playerMaxWP,
-                ref _playerCurrentWPVelocity,
-                GameConstants.GAUGE_SMOOTH_TIME,
-                _maxSpeed,
-                Time.unscaledDeltaTime
-            );
-        }
-
-        // 表示対象のアイテムが存在するか確認
-        if (recentGetItems.Count != 0)
-        {
-            // キューの先頭にあるアイテムの表示時間が過ぎていれば順に削除
-            while (
-                recentGetItems.Count > 0
-                && Time.time - recentGetItems.Peek().timestamp > itemDisplayDuration
-            )
-            {
-                // 先頭のアイテムの表示時間が経過したため、キューから削除
-                recentGetItems.Dequeue();
-
-                // 表示中のアイテムUIを最新の状態に更新（空いたスロットを反映）
-                UpdateItemUI();
-            }
-        }
-
-        if (bossObject == null)
-        { //ボスがいない場合は処理を終了
+            Debug.LogError("GameUIManagerにGameUIRefsが設定されていません！");
             return;
         }
 
-        if (uiRefs.BossHealthBarImage != null && bossObject != null && bossMaxHP > 0)
+        if (_uiRefs.BossHealthBarImage == null ||
+            _uiRefs.BossHealthUIPanel == null ||
+            _uiRefs.BossLevelNumberText == null)
         {
-            uiRefs.BossHealthBarImage.fillAmount = Mathf.SmoothDamp(
-                uiRefs.BossHealthBarImage.fillAmount,
-                (float)bossHP / (float)bossMaxHP,
-                ref _bossCurrentVelocity,
+            Debug.LogError("GameUIRefsにボスのHPバー、背景、レベルUI、レベル番号テキストが設定されていません");
+        }
+
+        if (_uiRefs.SkillNameDisplay == null)
+        {
+            Debug.LogError("GameUIRefsに技名表示のUIが設定されていません");
+        }
+
+        if (_uiRefs.FastTravelPanel == null)
+        {
+            Debug.LogError("GameUIRefsにファストトラベルのパネルUIが設定されていません");
+        }
+    }
+
+    /// <summary>
+    /// ゲーム開始時に非表示にしておくべきUIを隠します。
+    /// </summary>
+    private void HideInitialUI()
+    {
+        if (_uiRefs == null) return;
+
+        // ボスUI非表示
+        SetBossUIVisibility(false);
+        if (_uiRefs.BossLevelNumberText != null)
+        {
+            _uiRefs.BossLevelNumberText.text = "???";
+        }
+
+        // 技名UI非表示
+        if (_uiRefs.SkillNameDisplay != null)
+        {
+            _uiRefs.SkillNameDisplay.SetActive(false);
+        }
+
+        // ファストトラベルUI非表示
+        if (_uiRefs.FastTravelPanel != null)
+        {
+            _uiRefs.FastTravelPanel.SetActive(false);
+        }
+
+        // アイテムログUI非表示
+        foreach (var slot in _uiRefs.ItemLogSlots)
+        {
+            if (slot != null) slot.SetActive(false);
+        }
+
+        // レベルアップポップアップ非表示
+        if (_uiRefs.LevelUpPopup != null)
+        {
+            _uiRefs.LevelUpPopup.SetActive(false);
+        }
+    }
+
+    #endregion
+
+    #region Update Loop Logic
+
+    /// <summary>
+    /// プレイヤーのHP/WPバーを滑らかに更新します。
+    /// </summary>
+    private void UpdatePlayerUI()
+    {
+        // HPバーの更新
+        if (_uiRefs.PlayerHPHealthBarImage != null && _playerMaxHP > 0)
+        {
+            _uiRefs.PlayerHPHealthBarImage.fillAmount = Mathf.SmoothDamp(
+                _uiRefs.PlayerHPHealthBarImage.fillAmount,
+                (float)_currentPlayerHP / (float)_playerMaxHP,
+                ref _playerHPBarVelocity,
+                GameConstants.GAUGE_SMOOTH_TIME,
+                _maxSpeed,
+                Time.unscaledDeltaTime
+            );
+        }
+
+        // WPバーの更新
+        if (_uiRefs.PlayerWPHealthBarImage != null && _playerMaxWP > 0)
+        {
+            _uiRefs.PlayerWPHealthBarImage.fillAmount = Mathf.SmoothDamp(
+                _uiRefs.PlayerWPHealthBarImage.fillAmount,
+                (float)_currentPlayerWP / (float)_playerMaxWP,
+                ref _playerWPBarVelocity,
                 GameConstants.GAUGE_SMOOTH_TIME,
                 _maxSpeed,
                 Time.unscaledDeltaTime
@@ -219,173 +254,232 @@ public class GameUIManager : MonoBehaviour
     }
 
     /// <summary>
-    /// プレイヤーの最大HP変更時（または初期化時）に呼び出され、HP関連UIを更新します。
-    /// </summary>
+    /// アイテムログの表示時間を管理し、期限切れの項目を削除します。
+    /// </summary>
+    private void UpdateItemLogUI()
+    {
+        // 表示対象のアイテムが存在するか確認
+        if (_itemLogQueue.Count != 0)
+        {
+            // キューの先頭にあるアイテムの表示時間が過ぎていれば順に削除
+            while (_itemLogQueue.Count > 0 &&
+                   Time.time - _itemLogQueue.Peek().timestamp > _itemDisplayDuration)
+            {
+                // 先頭のアイテムの表示時間が経過したため、キューから削除
+                _itemLogQueue.Dequeue();
+
+                // 表示中のアイテムUIを最新の状態に更新（空いたスロットを反映）
+                RefreshItemLogDisplay();
+            }
+        }
+    }
+
+    /// <summary>
+    /// ボスのHPバーを滑らかに更新します。
+    /// </summary>
+    private void UpdateBossUI()
+    {
+        if (_currentBossGameObject == null)
+        {
+            return; // ボスがいない場合は処理を終了
+        }
+
+        if (_uiRefs.BossHealthBarImage != null && _bossMaxHP > 0)
+        {
+            _uiRefs.BossHealthBarImage.fillAmount = Mathf.SmoothDamp(
+                _uiRefs.BossHealthBarImage.fillAmount,
+                (float)_currentBossHP / (float)_bossMaxHP,
+                ref _bossHPBarVelocity,
+                GameConstants.GAUGE_SMOOTH_TIME,
+                _maxSpeed,
+                Time.unscaledDeltaTime
+            );
+        }
+    }
+
+    #endregion
+
+    #region Player UI Control
+
+    /// <summary>
+    /// プレイヤーの最大HP変更時（または初期化時）に呼び出され、HP関連UIを更新します。
+    /// </summary>
     /// <param name="newMaxHP">新しい最大HP</param>
     private void InitializePlayerHPData(int newMaxHP)
     {
-        playerMaxHP = newMaxHP;
-        playerHP = playerManager.GetPlayerIntStatus(PlayerStatusIntName.playerCurrentHP);
+        _playerMaxHP = newMaxHP;
+        _currentPlayerHP = _playerManager.GetPlayerIntStatus(PlayerStatusIntName.playerCurrentHP);
 
-        if (uiRefs.PlayerMaxHPText != null)
+        if (_uiRefs.PlayerMaxHPText != null)
         {
-            uiRefs.PlayerMaxHPText.text = playerMaxHP.ToString();
+            _uiRefs.PlayerMaxHPText.text = _playerMaxHP.ToString();
         }
 
-        if (uiRefs.PlayerHPText != null)
+        if (_uiRefs.PlayerHPText != null)
         {
-            uiRefs.PlayerHPText.text = playerHP.ToString();
+            _uiRefs.PlayerHPText.text = _currentPlayerHP.ToString();
         }
 
-        if (uiRefs.PlayerHPHealthBarImage != null)
+        if (_uiRefs.PlayerHPHealthBarImage != null)
         {
-            uiRefs.PlayerHPHealthBarImage.fillAmount = (float)playerHP / (float)playerMaxHP;
+            // 初期化時は即座に反映
+            _uiRefs.PlayerHPHealthBarImage.fillAmount = (float)_currentPlayerHP / (float)_playerMaxHP;
         }
     }
 
-    //// <summary>
-    /// プレイヤーのWPデータを初期化し、UI（テキストとゲージ）に反映します。
-    /// </summary>
+    /// <summary>
+    /// プレイヤーのWPデータを初期化し、UI（テキストとゲージ）に反映します。
+    /// </summary>
     private void InitializePlayerWPData()
     {
-        playerMaxWP = playerManager.playerMaxWP;
-        playerWP = playerManager.GetPlayerIntStatus(PlayerStatusIntName.playerCurrentWP);
+        _playerMaxWP = _playerManager.playerMaxWP;
+        _currentPlayerWP = _playerManager.GetPlayerIntStatus(PlayerStatusIntName.playerCurrentWP);
 
-        if (uiRefs.PlayerMaxWPText != null)
+        if (_uiRefs.PlayerMaxWPText != null)
         {
-            uiRefs.PlayerMaxWPText.text = playerMaxWP.ToString();
+            _uiRefs.PlayerMaxWPText.text = _playerMaxWP.ToString();
         }
 
-        if (uiRefs.PlayerWPText != null)
+        if (_uiRefs.PlayerWPText != null)
         {
-            uiRefs.PlayerWPText.text = playerWP.ToString();
+            _uiRefs.PlayerWPText.text = _currentPlayerWP.ToString();
         }
 
-        if (uiRefs.PlayerWPHealthBarImage != null)
+        if (_uiRefs.PlayerWPHealthBarImage != null)
         {
-            uiRefs.PlayerWPHealthBarImage.fillAmount = (float)playerWP / (float)playerMaxWP;
+            // 初期化時は即座に反映
+            _uiRefs.PlayerWPHealthBarImage.fillAmount = (float)_currentPlayerWP / (float)_playerMaxWP;
         }
     }
 
     /// <summary>
-    /// ボスのHPが変更されたときにイベント経由で呼ばれ、内部のボスHP変数を更新します。
+    /// プレイヤーのHP変更イベント（OnChangeHP）から呼び出されるコールバック。
     /// </summary>
-    /// <param name="bossCurrentHP">ボスの新しい現在HP</param>
-    private void GetBossData(int bossCurrentHP)
-    {
-        bossHP = bossCurrentHP;
-    }
-
-    /// <summary>
-    /// プレイヤーのHP変更イベント（OnChangeHP）から呼び出されるコールバック。
-    /// </summary>
     /// <param name="newHP">プレイヤーの新しい現在HP</param>
-    private void OnChangeHP(int newHP)
+    private void UpdatePlayerHPCache(int newHP)
     {
-        playerHP = newHP; // プレイヤーの現在のHPを更新
+        _currentPlayerHP = newHP; // プレイヤーの現在のHPを更新
 
         // HPテキストを更新
-        if (uiRefs.PlayerHPText != null)
+        if (_uiRefs.PlayerHPText != null)
         {
-            uiRefs.PlayerHPText.text = newHP.ToString();
+            _uiRefs.PlayerHPText.text = newHP.ToString();
         }
     }
 
     /// <summary>
-    /// プレイヤーのWP変更イベント（OnChangeWP）から呼び出されるコールバック。
-    /// </summary>
+    /// プレイヤーのWP変更イベント（OnChangeWP）から呼び出されるコールバック。
+    /// </summary>
     /// <param name="newWP">プレイヤーの新しい現在WP</param>
-    private void OnChangeWP(int newWP)
+    private void UpdatePlayerWPCache(int newWP)
     {
-        playerWP = newWP;
+        _currentPlayerWP = newWP;
 
-        if (uiRefs.PlayerWPText != null)
+        if (_uiRefs.PlayerWPText != null)
         {
-            uiRefs.PlayerWPText.text = playerWP.ToString();
+            _uiRefs.PlayerWPText.text = _currentPlayerWP.ToString();
         }
     }
 
-    // <summary>
-    /// ボス戦開始時に外部から呼び出され、ボスUIの表示とHPイベントの購読を開始します。
-    /// </summary>
-    /// <param name="gameObject">ボスのGameObject</param>
-    public void SetGameUIBossData(GameObject gameObject)
-    {
-        bossObject = gameObject; //ボスゲームオブジェクトを設定
-        currentBossHPScript = gameObject.GetComponent<CharacterHealth>(); //スクリプトへの参照を取得
+    #endregion
 
-        if (currentBossHPScript == null)
+    #region Boss UI Control
+
+    /// <summary>
+    /// ボス戦開始時に外部から呼び出され、ボスUIの表示とHPイベントの購読を開始します。
+    /// </summary>
+    /// <param name="bossGameObject">ボスのGameObject</param>
+    public void SetGameUIBossData(GameObject bossGameObject)
+    {
+        _currentBossGameObject = bossGameObject; // ボスゲームオブジェクトを設定
+        _currentBossHealthScript = bossGameObject.GetComponent<CharacterHealth>(); // スクリプトへの参照を取得
+
+        if (_currentBossHealthScript == null)
         {
             // スクリプトがない場合でもUIを非表示にするなどの処理は行う
             SetBossUIVisibility(false);
-            //念のためfalseに設定
-            SetBossBattleState(false);
-            Debug.LogWarning("ボスオブジェクトにboss_HPスクリプトが見つかりません。", gameObject);
+            SetBossBattleState(false); // 念のためfalseに設定
+            Debug.LogWarning("ボスオブジェクトにCharacterHealthスクリプトが見つかりません。", bossGameObject);
             return;
         }
 
-        bossHP = currentBossHPScript.CurrentHP; //ボスの現在のHPを取得
-        bossMaxHP = currentBossHPScript.MaxHP; //ボスの最大HPを取得
-        int bossLevel = currentBossHPScript.Level; //ボスのレベルを取得
-        if (uiRefs.BossLevelNumberText != null)
+        // 初期データの取得
+        _currentBossHP = _currentBossHealthScript.CurrentHP;
+        _bossMaxHP = _currentBossHealthScript.MaxHP;
+        int bossLevel = _currentBossHealthScript.Level;
+
+        // UI反映
+        if (_uiRefs.BossLevelNumberText != null)
         {
-            uiRefs.BossLevelNumberText.text = $"{bossLevel}"; //ボスのレベルをUIに設定
+            _uiRefs.BossLevelNumberText.text = $"{bossLevel}";
         }
         else
         {
             Debug.LogWarning("ボスのレベルテキストが設定されていません。");
         }
 
-        currentBossHPScript.OnHPChanged += GetBossData; //イベントの購読
-        SetBossBattleState(true); //ボス戦闘中フラグをtrueにする
+        _currentBossHealthScript.OnHPChanged += OnBossHPChanged; // イベントの購読
+        SetBossBattleState(true); // ボス戦闘中フラグをtrueにする
 
         // ボスのHP関係UIを表示
-        //GameManager.IsTalkingがtrue、つまり会話中はUIを非表示(false)にする
-        SetBossUIVisibility(!isTalking);
+        // 会話中はUIを非表示(false)にする
+        SetBossUIVisibility(!_isTalking);
     }
 
     /// <summary>
-    /// ボス戦終了時に外部から呼び出され、ボスUIを非表示にし、HPイベントの購読を解除します。
-    /// </summary>
-    /// <param name="gameObject">ボスのGameObject（対象確認用）</param>
-    public void RemoveUIBossData(GameObject gameObject)
+    /// ボスのHPが変更されたときにイベント経由で呼ばれ、内部のボスHP変数を更新します。
+    /// </summary>
+    /// <param name="bossCurrentHP">ボスの新しい現在HP</param>
+    private void OnBossHPChanged(int bossCurrentHP)
     {
-        if (bossObject != gameObject)
+        _currentBossHP = bossCurrentHP;
+    }
+
+    /// <summary>
+    /// ボス戦終了時に外部から呼び出され、ボスUIを非表示にし、HPイベントの購読を解除します。
+    /// </summary>
+    /// <param name="targetGameObject">ボスのGameObject（対象確認用）</param>
+    public void RemoveUIBossData(GameObject targetGameObject)
+    {
+        if (_currentBossGameObject != targetGameObject)
         {
             return;
         }
 
         // イベントの購読を解除
-        if (currentBossHPScript != null)
+        if (_currentBossHealthScript != null)
         {
-            currentBossHPScript.OnHPChanged -= GetBossData;
-            currentBossHPScript = null; // 参照をクリア
+            _currentBossHealthScript.OnHPChanged -= OnBossHPChanged;
+            _currentBossHealthScript = null; // 参照をクリア
         }
 
-        SetBossUIVisibility(false); //ボスのHPバーのパネルを非表示
-        if (uiRefs.BossLevelNumberText != null)
+        // UIリセット
+        SetBossUIVisibility(false);
+        if (_uiRefs.BossLevelNumberText != null)
         {
-            uiRefs.BossLevelNumberText.text = $"???"; //ボスのレベルテキストをリセット
+            _uiRefs.BossLevelNumberText.text = "???";
         }
-        bossObject = null; //ボスゲームオブジェクトをnullにする
-        SetBossBattleState(false); //ボス戦闘中フラグをfalseにする
+
+        _currentBossGameObject = null;
+        SetBossBattleState(false);
     }
 
     /// <summary>
-    /// 会話状態の変更イベント（GameManager.OnTalkingStateChanged）から呼び出されるコールバック。
-    /// </summary>
+    /// 会話状態の変更イベント（GameManager.OnTalkingStateChanged）から呼び出されるコールバック。
+    /// </summary>
     /// <param name="talkState">true=会話中, false=会話終了</param>
-    private void SetActiveBossUI(bool talkState)
+    private void HandleTalkingStateChanged(bool talkState)
     {
-        isTalking = talkState; // ローカル変数に会話状態を保存
+        _isTalking = talkState; // ローカル変数に会話状態を保存
 
-        if (bossObject == null)
+        if (_currentBossGameObject == null)
         {
             // ボスがいないなら、もちろんボス戦中でもない
             SetBossBattleState(false);
-            return; // ボスオブジェクトが存在しない場合は何もしない
+            return;
         }
 
+        // 会話中はボスUIを隠す
         SetBossUIVisibility(!talkState);
     }
 
@@ -395,7 +489,7 @@ public class GameUIManager : MonoBehaviour
     /// <param name="isVisible">表示する場合はtrue、非表示にする場合はfalse</param>
     private void SetBossUIVisibility(bool isVisible)
     {
-        if (uiRefs.BossHealthUIPanel == null)
+        if (_uiRefs.BossHealthUIPanel == null)
         {
             Debug.LogError("BossHealthUIPanelが設定されていません！");
             return;
@@ -403,134 +497,11 @@ public class GameUIManager : MonoBehaviour
 
         if (isVisible)
         {
-            uiRefs.BossHealthUIPanel.alpha = 1f; // 透明度を1にして表示
-            // uiRefs.BossHealthUIPanel.interactable = true; // 操作を有効化
-            // uiRefs.BossHealthUIPanel.blocksRaycasts = true; // マウスイベントなどをブロック
+            _uiRefs.BossHealthUIPanel.alpha = 1f; // 透明度を1にして表示
         }
         else
         {
-            uiRefs.BossHealthUIPanel.alpha = 0f; // 透明度を0にして非表示
-            // uiRefs.BossHealthUIPanel.interactable = false; // 操作を無効化
-            // uiRefs.BossHealthUIPanel.blocksRaycasts = false; // マウスイベントなどを透過
-        }
-    }
-
-    /// <summary>
-    /// 外部から呼び出され、取得したアイテム名をログUIのキューに追加します。
-    /// </summary>
-    /// <param name="itemName">取得したアイテムの名前</param>
-    public void AddGetItemLog(string itemName)
-    {
-        float now = Time.time;
-
-        // 4つ目が来たら先頭を削除
-        if (recentGetItems.Count >= 3)
-            recentGetItems.Dequeue();
-
-        // 追加
-        recentGetItems.Enqueue(new ItemInfo { itemName = itemName, timestamp = now });
-
-        UpdateItemUI();
-    }
-
-    /// <summary>
-    /// アイテムログのキュー（recentGetItems）の内容を、実際のUIスロットに反映させます。
-    /// </summary>
-    private void UpdateItemUI()
-    {
-        // recentGetItems（Queue型）を配列に変換して、インデックスアクセスを可能にする。
-        // Queueはインデックスアクセス（items[0]など）ができないため、UI表示で順番に参照するために配列に変換している。
-        var itemsArray = recentGetItems.ToArray();
-
-        for (int i = 0; i < uiRefs.ItemLogSlots.Count; i++)
-        {
-            // アイテムログのスロットを取得
-            TextMeshProUGUI itemText = uiRefs
-                .ItemLogSlots[i]
-                .GetComponentInChildren<TextMeshProUGUI>();
-
-            if (i < itemsArray.Length)
-            {
-                itemText.text = itemsArray[i].itemName; // アイテム名を設定
-                uiRefs.ItemLogSlots[i].SetActive(true); // アイテムログのスロットをアクティブにする
-            }
-            else
-            {
-                itemText.text = ""; // アイテム名を空にする
-                uiRefs.ItemLogSlots[i].SetActive(false); // アイテムログのスロットを非アクティブにする
-            }
-        }
-    }
-
-    /// <summary>
-        /// 外部から呼び出され、レベルアップのポップアップUIを表示します。
-        /// </summary>
-    /// <param name="level">新しいレベル</param>
-    public void ShowLevelUpUI(int level)
-    {
-        if (uiRefs.LevelUpPopup == null)
-            return;
-
-        uiRefs.LevelUpPopup.SetActive(true);
-
-        // UI内のテキストを更新（TextMeshProUGUI を使っている前提）
-        TextMeshProUGUI text = uiRefs.LevelUpPopup.GetComponentInChildren<TextMeshProUGUI>();
-        if (text != null)
-        {
-            text.text = $"レベル {level} にアップ！";
-        }
-
-        StartCoroutine(HideLevelUpUIAfterDelay());
-    }
-
-    /// <summary>
-    /// （コルーチン）レベルアップUIを一定時間表示した後に非表示にします。
-    /// </summary>
-    private IEnumerator HideLevelUpUIAfterDelay()
-    {
-        yield return new WaitForSeconds(levelUpDisplayTime);
-        uiRefs.LevelUpPopup.SetActive(false);
-    }
-
-    /// <summary>
-    /// 外部から呼び出され、技名のUIを表示します。
-    /// </summary>
-    /// <param name="skillName">表示する技名</param>
-    public void ShowSkillNameUI(string skillName)
-    {
-        if (uiRefs.SkillNameDisplay == null || uiRefs.SkillNameText == null)
-            return;
-
-        uiRefs.SkillNameText.text = skillName;
-        uiRefs.SkillNameDisplay.SetActive(true);
-
-        StartCoroutine(HideSkillNameUIAfterDelay());
-    }
-
-    /// <summary>
-    /// （コルーチン）技名UIを一定時間表示した後に非表示にします。
-    /// </summary>
-    private IEnumerator HideSkillNameUIAfterDelay()
-    {
-        yield return new WaitForSeconds(skillNameDisplayTime);
-        uiRefs.SkillNameDisplay.SetActive(false);
-    }
-
-    /// <summary>
-    /// 外部から呼び出され、ファストトラベルのパネルUIを開きます。
-    /// </summary>
-    public void OpenFastTravelPanel()
-    {
-        if (uiRefs.FastTravelPanel == null)
-        {
-            Debug.LogError("ファストトラベルのパネルUIが設定されていません");
-            return;
-        }
-
-        var fastTravelPanelActive = uiRefs.FastTravelPanel.GetComponent<FastTravelPanelActive>();
-        if (fastTravelPanelActive != null)
-        {
-            fastTravelPanelActive.OpenFastTravelPanel();
+            _uiRefs.BossHealthUIPanel.alpha = 0f; // 透明度を0にして非表示
         }
     }
 
@@ -552,4 +523,126 @@ public class GameUIManager : MonoBehaviour
         // 状態の変更をイベントで通知
         OnBossBattleStateChanged?.Invoke(isFighting);
     }
+
+    #endregion
+
+    #region Sub UI Control (ItemLog, LevelUp, Skill, FastTravel)
+
+    /// <summary>
+    /// 外部から呼び出され、取得したアイテム名をログUIのキューに追加します。
+    /// </summary>
+    /// <param name="itemName">取得したアイテムの名前</param>
+    public void AddGetItemLog(string itemName)
+    {
+        float now = Time.time;
+
+        // 4つ目が来たら先頭を削除（最大表示数3）
+        if (_itemLogQueue.Count >= 3)
+            _itemLogQueue.Dequeue();
+
+        // 追加
+        _itemLogQueue.Enqueue(new ItemInfo { itemName = itemName, timestamp = now });
+
+        RefreshItemLogDisplay();
+    }
+
+    /// <summary>
+    /// アイテムログのキュー（recentGetItems）の内容を、実際のUIスロットに反映させます。
+    /// </summary>
+    private void RefreshItemLogDisplay()
+    {
+        // Queueを配列に変換して、インデックスアクセスを可能にする
+        var itemsArray = _itemLogQueue.ToArray();
+
+        for (int i = 0; i < _uiRefs.ItemLogSlots.Count; i++)
+        {
+            // アイテムログのスロットを取得
+            TextMeshProUGUI itemText = _uiRefs.ItemLogSlots[i].GetComponentInChildren<TextMeshProUGUI>();
+
+            if (i < itemsArray.Length)
+            {
+                itemText.text = itemsArray[i].itemName; // アイテム名を設定
+                _uiRefs.ItemLogSlots[i].SetActive(true); // スロットを表示
+            }
+            else
+            {
+                itemText.text = ""; // アイテム名を空にする
+                _uiRefs.ItemLogSlots[i].SetActive(false); // スロットを非表示
+            }
+        }
+    }
+
+    /// <summary>
+    /// 外部から呼び出され、レベルアップのポップアップUIを表示します。
+    /// </summary>
+    /// <param name="level">新しいレベル</param>
+    public void ShowLevelUpUI(int level)
+    {
+        if (_uiRefs.LevelUpPopup == null)
+            return;
+
+        _uiRefs.LevelUpPopup.SetActive(true);
+
+        // UI内のテキストを更新
+        TextMeshProUGUI text = _uiRefs.LevelUpPopup.GetComponentInChildren<TextMeshProUGUI>();
+        if (text != null)
+        {
+            text.text = $"レベル {level} にアップ！";
+        }
+
+        StartCoroutine(HideLevelUpUIAfterDelay());
+    }
+
+    /// <summary>
+    /// （コルーチン）レベルアップUIを一定時間表示した後に非表示にします。
+    /// </summary>
+    private IEnumerator HideLevelUpUIAfterDelay()
+    {
+        yield return new WaitForSeconds(_levelUpDisplayTime);
+        _uiRefs.LevelUpPopup.SetActive(false);
+    }
+
+    /// <summary>
+    /// 外部から呼び出され、技名のUIを表示します。
+    /// </summary>
+    /// <param name="skillName">表示する技名</param>
+    public void ShowSkillNameUI(string skillName)
+    {
+        if (_uiRefs.SkillNameDisplay == null || _uiRefs.SkillNameText == null)
+            return;
+
+        _uiRefs.SkillNameText.text = skillName;
+        _uiRefs.SkillNameDisplay.SetActive(true);
+
+        StartCoroutine(HideSkillNameUIAfterDelay());
+    }
+
+    /// <summary>
+    /// （コルーチン）技名UIを一定時間表示した後に非表示にします。
+    /// </summary>
+    private IEnumerator HideSkillNameUIAfterDelay()
+    {
+        yield return new WaitForSeconds(_skillNameDisplayTime);
+        _uiRefs.SkillNameDisplay.SetActive(false);
+    }
+
+    /// <summary>
+    /// 外部から呼び出され、ファストトラベルのパネルUIを開きます。
+    /// </summary>
+    public void OpenFastTravelPanel()
+    {
+        if (_uiRefs.FastTravelPanel == null)
+        {
+            Debug.LogError("ファストトラベルのパネルUIが設定されていません");
+            return;
+        }
+
+        var fastTravelPanelActive = _uiRefs.FastTravelPanel.GetComponent<FastTravelPanelActive>();
+        if (fastTravelPanelActive != null)
+        {
+            fastTravelPanelActive.OpenFastTravelPanel();
+        }
+    }
+
+    #endregion
 }

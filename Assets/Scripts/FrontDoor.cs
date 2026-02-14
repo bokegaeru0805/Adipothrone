@@ -2,11 +2,15 @@ using UnityEngine;
 
 public class FrontDoor : MonoBehaviour
 {
+    #region Inspector Fields
     [SerializeField]
     private Vector2 movepos = Vector2.zero; //移動位置を保存する変数
 
     [SerializeField]
     private DoorOpener.DoorType doorType = DoorOpener.DoorType.None; //ドアの種類
+    #endregion
+
+    #region Unity Event Methods
 
     private void Awake()
     {
@@ -17,12 +21,16 @@ public class FrontDoor : MonoBehaviour
 
         if (doorType == DoorOpener.DoorType.None)
         {
-            Debug.LogWarning($"{this.name}のdoorTypeが設定されていません",this);
+            Debug.LogWarning($"{this.name}のdoorTypeが設定されていません", this);
         }
     }
 
     private void OnTriggerStay2D(Collider2D collision)
     {
+        // コンポーネントが無効(false)なら、ここで処理を終了する
+        if (!this.enabled)
+            return;
+
         if (Time.timeScale > 0)
         {
             //プレイヤーが操作不能状態でない場合のみドアを開く
@@ -36,6 +44,36 @@ public class FrontDoor : MonoBehaviour
             }
         }
     }
+
+    #endregion
+    #region Public Methods
+
+    /// <summary>
+    /// 外部からドア機能の有効/無効を切り替えます。
+    /// 無効時はタグを変更してプレイヤーが検知できないようにします。
+    /// </summary>
+    public void SetDoorActive(bool isActive)
+    {
+        // 1. スクリプト自体の有効/無効を切り替える
+        // (OnTriggerStay2D内の if(!this.enabled) return; と連携します)
+        this.enabled = isActive;
+
+        // 2. タグを切り替える
+        // プレイヤー側の判定（アイコン表示など）がタグ依存の場合、これで完全に反応しなくなります
+        if (isActive)
+        {
+            // 有効時はドア用タグを設定
+            this.gameObject.tag = GameConstants.AREA_TRANSITION_TAG_NAME;
+        }
+        else
+        {
+            // 無効時はタグなし（Untagged）にする
+            this.gameObject.tag = GameConstants.UNTAGGED_TAG_NAME;
+        }
+    }
+    #endregion
+
+    #region Gizmos
 
     private void OnDrawGizmos()
     {
@@ -75,4 +113,5 @@ public class FrontDoor : MonoBehaviour
         Gizmos.color = Color.green;
         Gizmos.DrawWireSphere(endPosition, 0.5f);
     }
+    #endregion
 }

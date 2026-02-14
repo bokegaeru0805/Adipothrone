@@ -171,6 +171,7 @@ public class DesertTempleBossSmokeMoveController : MonoBehaviour
     private float bothArmsAttackTimer = 0f; // 両腕攻撃タイマー
     private int lastPhaseIndex = 0; // πの倍数を通過したかを判定するためのインデックス
     private bool rightFlag = false;
+    private bool isMoveStarted = false; //移動開始フラグ
     private bool isRightArmAttacking = false; // 右手攻撃実行中
     private bool isLeftArmAttacking = false; // 左手攻撃実行中
     private bool isBothArmsAttacking = false; // 両手攻撃実行中
@@ -190,6 +191,7 @@ public class DesertTempleBossSmokeMoveController : MonoBehaviour
     private SpriteRenderer rightArmSpriteRenderer;
     private SpriteRenderer leftArmSpriteRenderer;
     private CriWare.Assets.CriAtomSePlayer _sePlayer;
+    private CharacterHealth _characterHpScript;
 
     // Tween管理用変数
     private Tweener leftArmTween;
@@ -219,6 +221,7 @@ public class DesertTempleBossSmokeMoveController : MonoBehaviour
         }
 
         _sePlayer = GetComponent<CriWare.Assets.CriAtomSePlayer>();
+        _characterHpScript = GetComponent<CharacterHealth>();
 
         // パーツのSpriteRendererを取得
         rightArmSpriteRenderer = rightArmObject.GetComponent<SpriteRenderer>();
@@ -229,10 +232,10 @@ public class DesertTempleBossSmokeMoveController : MonoBehaviour
         rightArmDefaultY = rightArmObject.transform.localPosition.y;
     }
 
-    private void Start()
-    {
-        ResetState();
-    }
+    // private void Start()
+    // {
+    //     ResetState();
+    // }
 
     public void ResetState()
     {
@@ -268,6 +271,12 @@ public class DesertTempleBossSmokeMoveController : MonoBehaviour
         isLeftArmAttacking = false;
         isBothArmsAttacking = false;
         isBothArmsPending = false;
+        isMoveStarted = true;
+
+        if (_characterHpScript is BossHealth boss)
+        {
+            boss.InitializeBossSpecifics(); // BossHealthの初期化処理を呼び出す
+        }
 
         movementPattern = MovementPattern.Standard;
         rightFlag = IsTargetToRight();
@@ -278,6 +287,10 @@ public class DesertTempleBossSmokeMoveController : MonoBehaviour
 
     private void FixedUpdate()
     {
+        // 移動開始前は何もしない
+        if (!isMoveStarted)
+            return;
+
         // 敵の動きがポーズされているかどうかを確認
         // もしポーズされていれば何もせずに戻る
         if (TimeManager.instance.isEnemyMovePaused)
@@ -819,11 +832,10 @@ public class DesertTempleBossSmokeMoveController : MonoBehaviour
     }
 
     /// <summary>
-    /// 全てのパーツの向き（flipX）を一括で更新します。
-    /// Pivot調整済みのため、位置の反転処理は不要です。
+    /// すべてのパーツの向きを更新します
     /// </summary>
     /// <param name="isFacingRight">右を向いているか</param>
-    private void UpdateFacingDirection(bool isFacingRight)
+    public void UpdateFacingDirection(bool isFacingRight)
     {
         //弾の子オブジェクトの向きを合わせるため
         //SpriteRendererを用いずに、Transformの回転で対応

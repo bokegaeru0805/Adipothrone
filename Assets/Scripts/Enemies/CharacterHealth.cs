@@ -1,6 +1,8 @@
 using System;
 using System.Collections;
 using MyGame.CameraControl;
+using NaughtyAttributes;
+using UnityEditor.EditorTools;
 using UnityEngine;
 
 /// <summary>
@@ -20,6 +22,23 @@ public abstract class CharacterHealth : PoolableObject, IDamageable, IDroppable,
     public int CurrentHP { get; protected set; }
     public bool IsDefeated { get; protected set; }
     public float EncounterStartTime { get; private set; }
+
+    [Header("シールド連携設定")]
+    [Tooltip("【受信側】シールド機能を有効にするか")]
+    [SerializeField]
+    private bool enableShield = false;
+
+    [Tooltip("【受信側】自分自身のシールドを管理するコントローラー（ボスなどが設定）")]
+    [SerializeField, ShowIf(nameof(enableShield))]
+    protected ShieldController myShieldController;
+
+    [Tooltip("【発信側】死亡時にシールド破壊を通知するか（雑魚敵などが設定）")]
+    [SerializeField]
+    protected bool linkToShieldController = false;
+
+    [Tooltip("【発信側】破壊通知を送る対象のシールドコントローラー")]
+    [SerializeField, ShowIf(nameof(linkToShieldController))]
+    protected ShieldController targetShieldController;
 
     /// <summary>
     /// HPが変動した際にUIなどに通知するためのイベント。
@@ -83,6 +102,17 @@ public abstract class CharacterHealth : PoolableObject, IDamageable, IDroppable,
             material = spriteRenderer.material;
         }
 
+        if (enableShield && myShieldController == null)
+        {
+            myShieldController = GetComponent<ShieldController>();
+            if (myShieldController == null)
+            {
+                Debug.LogError(
+                    $"[{this.gameObject.name}] シールド機能が有効ですが、同じオブジェクトにShieldControllerが見つかりませんでした。"
+                );
+            }
+        }
+
         animator = GetComponent<Animator>();
 
         // オーバーレイテクスチャ効果の初期設定
@@ -109,6 +139,16 @@ public abstract class CharacterHealth : PoolableObject, IDamageable, IDroppable,
         // --- Step 1: ダメージ適用前の共通処理 ---
         TimeManager.instance.TriggerHitStop(); //ヒットストップを行う
         CameraManager.instance.PlayHitShake(); //カメラ揺れを行う
+
+        // シールドによるダメージ軽減計算
+        if (myShieldController != null)
+        {
+            // シールドコントローラーに計算を依頼し、軽減後のダメージを受け取る
+            damage = myShieldController.CalculateDamageAfterShield(damage);
+
+            // （オプション）シールドで0ダメージになった場合の演出分岐などをここに書いても良い
+        }
+        //
 
         // --- Step 2: HPの減算 ---
         CurrentHP -= damage;
@@ -157,6 +197,13 @@ public abstract class CharacterHealth : PoolableObject, IDamageable, IDroppable,
         if (IsDefeated)
             return;
         IsDefeated = true;
+
+        // 自分がシールドとリンクしている場合、対象のシールドを破壊する
+        if (linkToShieldController && targetShieldController != null)
+        {
+            // 自分自身(this)を渡して、対応するシールドを割ってもらう
+            targetShieldController.BreakSpecificShield(this.gameObject);
+        }
 
         //討伐記録をセーブデータに反映する処理を呼び出す
         RecordDefeat();
