@@ -36,11 +36,15 @@ public abstract class BaseFieldEvent : MonoBehaviour
 
     private void OnTriggerStay2D(Collider2D collision)
     {
+        // Flowchartが存在し、かつ何かブロックを実行中なら、新しいトリガーを無視する
+        bool isFungusBusy = targetFlowchart != null && targetFlowchart.HasExecutingBlocks();
+
         // 共通の実行条件チェック
         bool canTrigger =
             collision.CompareTag(GameConstants.PLAYER_TAG_NAME)
             && Time.timeScale > 0
             && !isEventTriggered
+            && !isFungusBusy
             && (PlayerManager.instance?.isControlLocked ?? false) == false;
 
         if (canTrigger && flagManager != null)

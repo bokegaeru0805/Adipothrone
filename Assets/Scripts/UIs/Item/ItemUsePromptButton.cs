@@ -5,7 +5,7 @@ using UnityEngine.UI;
 
 public class ItemUsePromptButton : MonoBehaviour
 {
-    private PlayerManager playerManager; // プレイヤーマネージャーの参照
+    private PlayerManager playerManager;
 
     [HideInInspector]
     public Enum itemID;

@@ -30,19 +30,10 @@ public class IfHasItemCommand : Condition
             return false;
         }
 
-        // 1. ScriptableObjectからアイテムID (Enum) を取り出す
-        System.Enum itemID = targetItemData.GetItemID();
+        // 1. GameManagerを使って所持数を取得
+        int currentAmount = GameManager.instance.GetAllTypeIDToAmount(targetItemData);
 
-        if (itemID == null)
-        {
-            Debug.LogError($"IfHasItem: サポートされていないアイテムデータ型です: {targetItemData.GetType().Name}");
-            return false;
-        }
-
-        // 2. GameManagerを使って所持数を取得
-        int currentAmount = GameManager.instance.GetAllTypeIDToAmount(itemID);
-
-        // 3. 判定 (所持数 >= 必要数)
+        // 2. 判定 (所持数 >= 必要数)
         return currentAmount >= requiredAmount.Value;
     }
 

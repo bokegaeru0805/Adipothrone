@@ -7,24 +7,33 @@ using UnityEngine;
 /// <summary>
 /// 宝箱くじ引きの進行管理クラス。
 /// Fungusと連携し、抽選、モンティ・ホール問題の提示、結果判定を行う。
-/// TreasureFungus（アイテム獲得演出）と店主の会話の連続実行を制御する。
+/// フラグやアイテム所持状況に応じて、景品内容や価格（プロファイル）を動的に切り替える機能を持つ。
 /// </summary>
 public class LotteryGameManager : MonoBehaviour
 {
     #region Settings & References
 
-    [Header("Settings")]
+    [Header("Chest Settings")]
     [SerializeField]
     private List<LotteryChestController> chests; // 使用する宝箱のリスト
 
+    [Header("Default Profile")]
+    [Tooltip("条件に一致するプロファイルがない場合に使用されるデフォルトの景品リスト")]
     [SerializeField]
-    private List<LotteryItemEntry> lotteryItems; // 抽選対象アイテムリスト
+    private List<LotteryItemEntry> defaultLotteryItems;
 
+    [Tooltip("条件に一致するプロファイルがない場合に使用されるデフォルトの参加費")]
     [SerializeField]
-    private int entryFee; //一回のゲームの参加費
+    private int defaultEntryFee;
 
+    [Tooltip("条件に一致するプロファイルがない場合に使用されるデフォルトのヒント代")]
     [SerializeField]
-    private int hintCost; // ハズレを開けるために必要な金額
+    private int defaultHintCost;
+
+    [Header("Conditional Profiles")]
+    [Tooltip("条件に応じて切り替わる設定のリスト。上から順に評価され、最初に条件を満たしたものが適用されます。")]
+    [SerializeField]
+    private List<LotteryProfile> lotteryProfiles;
 
     [Header("Fungus Integration")]
     [SerializeField]
@@ -34,7 +43,10 @@ public class LotteryGameManager : MonoBehaviour
     private string entryBlockName = "Lottery_Entry"; // 受付開始用ブロック名
 
     [SerializeField]
-    private string entryDeniedBlockName = "Lottery_EntryDenied"; //参加拒否用ブロック名
+    private string entryDeniedBlockName = "Lottery_EntryDenied"; // 参加拒否（金不足）用ブロック名
+
+    [SerializeField]
+    private string invalidConditionBlockName = "Lottery_InvalidCondition"; // 条件不一致（開催不可）用ブロック名
 
     [SerializeField]
     private string waitFirstSelectBlockName = "Lottery_WaitFirstSelect"; // 最初の選択待ち用ブロック名
@@ -43,7 +55,7 @@ public class LotteryGameManager : MonoBehaviour
     private string offerBlockName = "Lottery_Offer"; // 2択提示用ブロック名
 
     [SerializeField]
-    private string hintDeniedBlockName = "Lottery_HintDenied"; //ヒント拒否用ブロック名
+    private string hintDeniedBlockName = "Lottery_HintDenied"; // ヒント拒否用ブロック名
 
     [SerializeField]
     private string waitFinalSelectBlockName = "Lottery_WaitFinalSelect"; // 最終選択待ち用ブロック名
@@ -54,8 +66,16 @@ public class LotteryGameManager : MonoBehaviour
     [SerializeField]
     private string resultLoseBlockName = "Lottery_Lose"; // ハズレ時の店主コメント用ブロック名
 
+    [Header("Fungus Variables")]
     [SerializeField]
-    private string variableNameSelectedChest = "SelectedChestID"; // Fungusに渡す選択した宝箱番号の変数名
+    private string variableNameSelectedChest = "SelectedChestID"; // 選択した宝箱番号
+
+    [SerializeField]
+    private string variableNameEntryFee = "EntryFee"; // 現在の参加費
+
+    [SerializeField]
+    private string variableNameHintCost = "HintCost"; // 現在のヒント代
+
     #endregion
 
     #region Internal State
@@ -63,12 +83,11 @@ public class LotteryGameManager : MonoBehaviour
     // 内部ステート
     private enum GameState
     {
-        Idle, // 待機中（初期化前など）
-        WaitingForEntry, // 受付中（プレイヤーからのインタラクト待ち）
+        Idle,               // 待機中（初期化前など）
+        WaitingForEntry,    // 受付中（プレイヤーからのインタラクト待ち）
         WaitingFirstSelect, // 最初の選択待ち
-        WaitingOffer, // 変更するかどうかの会話中
-        WaitingFinalSelect // 最終選択待ち
-        ,
+        WaitingOffer,       // 変更するかどうかの会話中
+        WaitingFinalSelect  // 最終選択待ち
     }
 
     private GameState currentState = GameState.Idle;
@@ -76,6 +95,12 @@ public class LotteryGameManager : MonoBehaviour
     private int firstSelectedIndex = -1; // 最初に選んだ宝箱インデックス
     private LotteryItemEntry currentRoundPrize = null; // SetupGameで決定したアイテムを保持しておくための変数
     private bool isTalking = false; // 会話状態を保存するローカル変数
+
+    // 現在適用されている設定（プロファイル評価後に値が入る）
+    private List<LotteryItemEntry> currentLotteryItems;
+    private int currentEntryFee;
+    private int currentHintCost;
+
     #endregion
 
     #region Unity Lifecycle Methods
@@ -107,7 +132,6 @@ public class LotteryGameManager : MonoBehaviour
     private void OnTriggerStay2D(Collider2D collision)
     {
         // ゲームが動作中、他の会話が実行中でなく、プレイヤーがインタラクトした場合に会話を試みる
-        // ※このスクリプトがアタッチされているオブジェクトにCollider2Dが必要です
         if (
             Time.timeScale > 0
             && !isTalking
@@ -120,23 +144,62 @@ public class LotteryGameManager : MonoBehaviour
                 case GameState.WaitingForEntry:
                     HandleEntryInteraction();
                     break;
+
                 case GameState.WaitingFirstSelect:
+                    // 選択待ちの時に話しかけた場合の会話
                     if (lotteryFlowchart != null)
                     {
                         lotteryFlowchart.ExecuteBlock(waitFirstSelectBlockName);
                     }
                     break;
+
                 case GameState.WaitingFinalSelect:
+                    // 最終選択待ちの時に話しかけた場合の会話
                     if (lotteryFlowchart != null)
                     {
                         lotteryFlowchart.ExecuteBlock(waitFinalSelectBlockName);
                     }
                     break;
+
                 default:
                     // 他の状態では無視
                     break;
             }
         }
+    }
+
+    #endregion
+
+    #region Profile Management
+
+    /// <summary>
+    /// 現在のフラグやアイテム所持状況に基づいて、適用するプロファイルを決定します。
+    /// </summary>
+    /// <returns>有効な設定が見つかった（またはデフォルトが有効）場合はtrue、開催不可能な場合はfalse</returns>
+    private bool UpdateActiveProfile()
+    {
+        // 1. プロファイルリストを上から順に評価
+        foreach (var profile in lotteryProfiles)
+        {
+            if (profile.AreConditionsMet())
+            {
+                // 条件に合致したプロファイルの設定を適用
+                currentLotteryItems = profile.lotteryItems;
+                currentEntryFee = profile.entryFee;
+                currentHintCost = profile.hintCost;
+                
+                // アイテムリストが空でないか確認
+                return currentLotteryItems != null && currentLotteryItems.Count > 0;
+            }
+        }
+
+        // 2. どのプロファイルにも合致しない場合はデフォルト設定を使用
+        currentLotteryItems = defaultLotteryItems;
+        currentEntryFee = defaultEntryFee;
+        currentHintCost = defaultHintCost;
+
+        // デフォルト設定も空の場合は「開催不可」とする
+        return currentLotteryItems != null && currentLotteryItems.Count > 0;
     }
 
     #endregion
@@ -154,8 +217,9 @@ public class LotteryGameManager : MonoBehaviour
             Debug.LogError("宝箱が少なすぎてゲームが成立しません（最低2つ必要）");
             return;
         }
-        // 1. 参加費を払う
-        PlayerManager.instance.ChangeMoney(-entryFee);
+
+        // 1. 参加費を払う（現在の設定価格を使用）
+        PlayerManager.instance.ChangeMoney(-currentEntryFee);
 
         // 2. 当たりアイテムの抽選（重み付きランダム）を行い、保持する
         currentRoundPrize = DrawRandomItem();
@@ -186,8 +250,8 @@ public class LotteryGameManager : MonoBehaviour
     /// </summary>
     public void PayAndRevealEmpty()
     {
-        // 金を支払う
-        PlayerManager.instance.ChangeMoney(-hintCost);
+        // 金を支払う（現在の設定価格を使用）
+        PlayerManager.instance.ChangeMoney(-currentHintCost);
 
         // 「当たり」でもなく、「プレイヤーが選んだ箱」でもない箱を探す
         List<int> openableIndices = new List<int>();
@@ -217,6 +281,13 @@ public class LotteryGameManager : MonoBehaviour
     /// </summary>
     public void SkipReveal()
     {
+        // 安全装置: 宝箱未選択時の呼び出し防止
+        if (firstSelectedIndex < 0 || firstSelectedIndex >= chests.Count)
+        {
+            Debug.LogError($"[LotteryError] 不正な宝箱インデックス: {firstSelectedIndex}");
+            return;
+        }
+
         // 何も開けずに最終選択へ（プレイヤーの最初の選択で確定させる）
         currentState = GameState.WaitingForEntry;
         ResolveGame(firstSelectedIndex);
@@ -237,12 +308,18 @@ public class LotteryGameManager : MonoBehaviour
             firstSelectedIndex = index;
             currentState = GameState.WaitingOffer; // 会話待ち状態へロック
 
-            // 所持金チェック
+            // Fungusにヒント価格情報を渡す
+            if (lotteryFlowchart != null)
+            {
+                lotteryFlowchart.SetIntegerVariable(variableNameHintCost, currentHintCost);
+            }
+
+            // 所持金チェック（現在のヒント代と比較）
             int currentMoney = PlayerManager.instance.GetPlayerIntStatus(
                 PlayerStatusIntName.playerMoney
             );
 
-            if (currentMoney < hintCost)
+            if (currentMoney < currentHintCost)
             {
                 // 金が足りない場合はヒント拒否ブロックを呼ぶ
                 Debug.Log("所持金不足のためヒントなし");
@@ -256,7 +333,7 @@ public class LotteryGameManager : MonoBehaviour
             // Fungusに選択した番号を渡す（必要なら会話で使用）
             if (lotteryFlowchart != null)
             {
-                lotteryFlowchart.SetIntegerVariable(variableNameSelectedChest, index + 1); // 1始まりで渡す
+                lotteryFlowchart.SetIntegerVariable(variableNameSelectedChest, index + 1); // 1始まりで表示
                 // 提案ブロックを実行
                 lotteryFlowchart.ExecuteBlock(offerBlockName);
             }
@@ -278,29 +355,38 @@ public class LotteryGameManager : MonoBehaviour
     /// </summary>
     private void HandleEntryInteraction()
     {
+        if (lotteryFlowchart == null)
+        {
+            Debug.LogError("Flowchartが設定されていません");
+            return;
+        }
+
+        // 1. プロファイルを更新し、開催可能かチェック
+        // プロファイルが無い、またはデフォルト設定も空の場合はfalseが返る
+        if (!UpdateActiveProfile())
+        {
+            Debug.Log("[Lottery] 条件に合うプロファイルがなく、デフォルト設定も無効なためキャンセルします。");
+            lotteryFlowchart.ExecuteBlock(invalidConditionBlockName);
+            return;
+        }
+
+        // 2. Fungusに参加費情報を渡す（会話テキストで金額を表示するため）
+        lotteryFlowchart.SetIntegerVariable(variableNameEntryFee, currentEntryFee);
+
+        // 3. 所持金チェック
         int currentMoney = PlayerManager.instance.GetPlayerIntStatus(
             PlayerStatusIntName.playerMoney
         );
 
-        if (currentMoney >= entryFee)
+        if (currentMoney >= currentEntryFee)
         {
             // ゲーム開始ブロックを実行
-            if (lotteryFlowchart != null)
-            {
-                lotteryFlowchart.ExecuteBlock(entryBlockName);
-            }
-            else
-            {
-                Debug.LogError("Flowchartが設定されていません");
-            }
+            lotteryFlowchart.ExecuteBlock(entryBlockName);
         }
         else
         {
             // 金が足りない場合は参加拒否ブロックを呼ぶ
-            if (lotteryFlowchart != null)
-            {
-                lotteryFlowchart.ExecuteBlock(entryDeniedBlockName);
-            }
+            lotteryFlowchart.ExecuteBlock(entryDeniedBlockName);
         }
     }
 
@@ -310,6 +396,9 @@ public class LotteryGameManager : MonoBehaviour
     /// </summary>
     private void ResolveGame(int selectedIndex)
     {
+        // インデックス安全チェック
+        if (selectedIndex < 0 || selectedIndex >= chests.Count) return;
+
         bool isWin = (selectedIndex == winningChestIndex);
 
         // 選んだ宝箱を開く
@@ -318,7 +407,7 @@ public class LotteryGameManager : MonoBehaviour
         // 演出として、選ばれなかった他の宝箱も全て開けてネタ晴らしする
         foreach (var chest in chests)
         {
-            chest.OpenVisual();
+            if (chest != null) chest.OpenVisual();
         }
 
         if (isWin)
@@ -365,21 +454,21 @@ public class LotteryGameManager : MonoBehaviour
     }
 
     /// <summary>
-    /// 重みに基づく抽選
+    /// 現在のリスト（currentLotteryItems）から重みに基づく抽選を行う
     /// </summary>
     private LotteryItemEntry DrawRandomItem()
     {
-        if (lotteryItems == null || lotteryItems.Count == 0)
+        if (currentLotteryItems == null || currentLotteryItems.Count == 0)
             return null;
 
         int totalWeight = 0;
-        foreach (var entry in lotteryItems)
+        foreach (var entry in currentLotteryItems)
             totalWeight += entry.weight;
 
         int randomValue = UnityEngine.Random.Range(0, totalWeight);
         int currentWeight = 0;
 
-        foreach (var entry in lotteryItems)
+        foreach (var entry in currentLotteryItems)
         {
             currentWeight += entry.weight;
             if (randomValue < currentWeight)
@@ -387,7 +476,7 @@ public class LotteryGameManager : MonoBehaviour
                 return entry;
             }
         }
-        return lotteryItems[0]; // フォールバック
+        return currentLotteryItems[0]; // フォールバック
     }
 
     #endregion
@@ -399,62 +488,117 @@ public class LotteryGameManager : MonoBehaviour
     /// </summary>
     private IEnumerator DelayedInitialization()
     {
-        // 最初のフレームの描画が終わるまで待つ
-        // これにより、全てのシングルトンが確実に初期化されている状態になる
         yield return new WaitForEndOfFrame();
-
-        // イベントを購読する
         GameManager.OnTalkingStateChanged += HandleTalkingStateChanged;
     }
 
-    /// <summary>
-    /// GameManagerから会話状態の変更通知を受け取る
-    /// </summary>
     private void HandleTalkingStateChanged(bool talkState)
     {
         isTalking = talkState;
     }
 
     /// <summary>
-    /// 会話状態（GameManager.isTalking）が終了するのを監視し、
-    /// 終了したタイミングで次のFungusブロックを実行するコルーチン。
-    /// TalkEndCommandが実行され、制御が戻ってきた後に店主の会話を始めるために使用。
+    /// 会話終了を待機して次のブロックを実行する
     /// </summary>
     private IEnumerator WaitTalkEndAndExecuteBlock(string nextBlockName)
     {
-        // GameManager.TreasureFungus実行直後だと、Fungusが動き出してisTalkingがtrueになるまで
-        // 1フレーム程度のラグがある可能性があるため、念のため少し待つ
         yield return null;
 
-        // GameManagerのイベントを利用して会話終了を待機する
         bool isTalkFinished = false;
-
-        // 会話状態変更イベントのリスナーを定義
         Action<bool> onTalkingChanged = (isTalking) =>
         {
-            // 会話が終わった（isTalking == false）ならフラグを立てる
-            if (!isTalking)
-            {
-                isTalkFinished = true;
-            }
+            if (!isTalking) isTalkFinished = true;
         };
 
-        // イベント登録
         GameManager.OnTalkingStateChanged += onTalkingChanged;
-
-        // 会話が終わるまで待機
-        // TreasureFungusの最後のTalkEndCommandが実行されるとisTalkingがfalseになり、ここを抜ける
         yield return new WaitUntil(() => isTalkFinished);
-
-        // イベント解除
         GameManager.OnTalkingStateChanged -= onTalkingChanged;
 
-        // 少しだけ間を空けて（演出的な余韻）、次のブロックを実行
         yield return new WaitForSeconds(0.2f);
 
-        // 店主のリアクションブロック実行
-        lotteryFlowchart.ExecuteBlock(nextBlockName);
+        if (lotteryFlowchart != null)
+        {
+            lotteryFlowchart.ExecuteBlock(nextBlockName);
+        }
     }
 
     #endregion
 }
+
+#region Data Structures
+
+/// <summary>
+/// アイテム所持条件を定義するクラス
+/// </summary>
+[System.Serializable]
+public class ItemCondition
+{
+    [Tooltip("所持判定を行うアイテム")]
+    public BaseItemData targetItem;
+
+    [Tooltip("必要な所持数（以上）")]
+    public int requiredAmount = 1;
+
+    [Tooltip("条件を反転するか（持っていない場合に真とする）")]
+    public bool invert = false;
+
+    /// <summary>
+    /// 条件を満たしているか判定
+    /// </summary>
+    public bool IsMet()
+    {
+        if (targetItem == null) return true; // 設定なしは常にTrue扱い
+
+        // GameManager経由で所持数を取得
+        int currentAmount = GameManager.instance.GetAllTypeIDToAmount(targetItem);
+        bool hasEnough = currentAmount >= requiredAmount;
+
+        return invert ? !hasEnough : hasEnough;
+    }
+}
+
+/// <summary>
+/// くじの設定プロファイル。条件と、適用される設定のセット。
+/// </summary>
+[System.Serializable]
+public class LotteryProfile
+{
+    [Header("Conditions (AND)")]
+    [Tooltip("これらのフラグ条件がすべて満たされた場合に適用されます")]
+    public List<FlagConditionPro> flagConditions = new List<FlagConditionPro>();
+
+    [Tooltip("これらのアイテム所持条件がすべて満たされた場合に適用されます")]
+    public List<ItemCondition> itemConditions = new List<ItemCondition>();
+
+    [Header("Override Settings")]
+    [Tooltip("この条件が満たされたときの景品リスト")]
+    public List<LotteryItemEntry> lotteryItems;
+
+    [Tooltip("この条件が満たされたときの参加費")]
+    public int entryFee;
+
+    [Tooltip("この条件が満たされたときのヒント代")]
+    public int hintCost;
+
+    /// <summary>
+    /// すべての条件（フラグ＆アイテム）を満たしているか確認
+    /// </summary>
+    public bool AreConditionsMet()
+    {
+        // フラグチェック
+        foreach (var flag in flagConditions)
+        {
+            if (!flag.IsMet()) return false;
+        }
+
+        // アイテムチェック
+        foreach (var item in itemConditions)
+        {
+            if (!item.IsMet()) return false;
+        }
+
+        return true;
+    }
+}
+
+#endregion

@@ -14,8 +14,13 @@ public class ItemSelectButton : MonoBehaviour, IItemAssignable
 
     public void AssignItem(Enum itemID)
     {
+        // 強制的に更新がかかるように前回値をリセット
+        // これがないと、所持数が0個のときに「0 != 0」で更新がスキップされ、デフォルトの値のままになる
+        preItemAmount = -1;
+
         assignedItemID = itemID;
         UpdateItemIcon(); // アイテムのアイコンを更新
+        UpdateItemCount(); // アイテムの所持数を更新
     }
 
     [Header("アイテム選択ボタンのUIコンポーネント")]
@@ -31,15 +36,11 @@ public class ItemSelectButton : MonoBehaviour, IItemAssignable
     private int itemAmount = 0; //アイテムの現在の個数
     private int preItemAmount = 0; //前フレームでのアイテムの個数
     private float baseSize = 0; // ボタンのアイテム画像のベースサイズ（初期化時に設定）
-    private ItemType itemType;
-
-    [Header("アイテムデータベース")]
-    [SerializeField]
-    private HealItemDatabase healItemDatabase;
 
     private enum ItemType
     {
         HealItem = 8,
+        KeyItem = 12,
     }
 
     private void Awake()
@@ -56,10 +57,9 @@ public class ItemSelectButton : MonoBehaviour, IItemAssignable
             return;
         }
 
-        if (healItemDatabase == null)
+        if(ItemAmount_text == null)
         {
-            Debug.LogError("HealItemDatabaseが設定されていません。");
-            return;
+            Debug.LogWarning("アイテム選択ボタンの所持数表示テキストが設定されていません。所持数は表示されません。");
         }
 
         // アイテム画像のベースサイズを取得
@@ -78,16 +78,57 @@ public class ItemSelectButton : MonoBehaviour, IItemAssignable
             .onClick.AddListener(SelectItem);
     }
 
-    private void Update()
+    private void OnEnable()
     {
-        itemAmount = GameManager.instance.savedata.ItemInventoryData.GetItemAmount(assignedItemID); //アイテムの所持数を取得
+        // アイテム数変更イベントに登録
+        if (GameManager.instance != null)
+        {
+            GameManager.instance.savedata.ItemInventoryData.OnItemCountChanged += UpdateItemCount;
+        }
+    }
+
+    private void OnDisable()
+    {
+        assignedItemID = null; //itemIDを初期化
+
+        // オブジェクト破棄時にイベント解除
+        if (GameManager.instance != null)
+        {
+            GameManager.instance.savedata.ItemInventoryData.OnItemCountChanged -= UpdateItemCount;
+        }
+    }
+
+    /// <summary>
+    /// イベントから呼ばれる、または初期化時に呼ぶ更新処理
+    /// </summary>
+    private void UpdateItemCount()
+    {
+        if (assignedItemID == null)
+            return;
+
+        // 所持数を取得
+        itemAmount = GameManager.instance.savedata.ItemInventoryData.GetItemAmount(assignedItemID);
+
+        // UI更新（所持数が変わった場合のみテキスト更新）
         if (itemAmount != preItemAmount)
         {
-            string _text = $"<color=#FFD700>{itemAmount}</color>"; //所持数の字体を取得
-            ItemAmount_text.text = _text; //所持数の表記を変更
+            string _text = $"<color=#FFD700>{itemAmount}</color>";
+            if (ItemAmount_text != null)
+            {
+                ItemAmount_text.text = _text;
+            }
         }
-        preItemAmount = itemAmount; //アイテムの所持数を合わせる
+        preItemAmount = itemAmount;
 
+        // 色の更新ロジック
+        UpdateIconColor();
+    }
+
+    /// <summary>
+    /// アイテムの所持数に応じてアイコンの色を更新します。
+    /// </summary>
+    private void UpdateIconColor()
+    {
         if (itemAmount <= 0 && IconImage != null)
         {
             Color originalColor = IconImage.color;
@@ -108,11 +149,6 @@ public class ItemSelectButton : MonoBehaviour, IItemAssignable
         }
     }
 
-    private void OnEnable()
-    {
-        UpdateItemIcon(); // アイテムのアイコンを更新
-    }
-
     /// <summary>
     /// アイテムのアイコンを更新します。
     /// </summary>
@@ -121,29 +157,49 @@ public class ItemSelectButton : MonoBehaviour, IItemAssignable
         Sprite itemSprite = null;
 
         if (assignedItemID == null)
-        {
             return;
-        }
+        if (GameManager.instance == null)
+            return;
+
+        // GameManagerからデータベースへのショートカット参照
+        var healDB = GameManager.instance.healItemDatabase;
+        var keyDB = GameManager.instance.keyItemDatabase;
 
         // アイテムタイプを識別
+        ItemType itemType = default;
         switch (EnumIDUtility.ExtractTypeID(EnumIDUtility.ToID(assignedItemID)))
         {
             case (int)TypeID.HealItem:
                 itemType = ItemType.HealItem;
                 break;
+            case (int)TypeID.KeyItem:
+                itemType = ItemType.KeyItem;
+                break;
+            default:
+                Debug.LogError($"このID{assignedItemID}はアイテムタイプを識別できません");
+                return;
         }
 
         // アイテムタイプに応じた処理
         switch (itemType)
         {
             case ItemType.HealItem:
-                HealItemData item = healItemDatabase.GetItemByID(assignedItemID);
+                HealItemData item = healDB.GetItemByID(assignedItemID);
                 if (item == null)
                 {
-                    Debug.LogWarning("該当するIDのアイテムが見つかりませんでした。");
+                    Debug.LogError("該当するIDのアイテムが見つかりませんでした。");
                     return;
                 }
                 itemSprite = item.itemSprite;
+                break;
+            case ItemType.KeyItem:
+                KeyItemData keyItem = keyDB.GetItemByID(assignedItemID);
+                if (keyItem == null)
+                {
+                    Debug.LogError("該当するIDのキーアイテムが見つかりませんでした。");
+                    return;
+                }
+                itemSprite = keyItem.itemSprite;
                 break;
         }
 
@@ -156,11 +212,6 @@ public class ItemSelectButton : MonoBehaviour, IItemAssignable
         {
             Debug.LogWarning("アイテム選択ボタンがImageコンポーネントを持っていません");
         }
-    }
-
-    private void OnDisable()
-    {
-        assignedItemID = null; //itemIDを初期化
     }
 
     private void SelectItem()

@@ -1,9 +1,19 @@
+using NaughtyAttributes;
 using UnityEngine;
 
 public class FieldEvent_Chapter2 : BaseFieldEvent
 {
     [SerializeField]
     private FieldName fieldname = FieldName.None; // フィールド名を設定するための変数
+
+    [SerializeField]
+    [ShowIf(nameof(requiresOrbItem))]
+    private BaseItemData orbItemData;
+    private bool requiresOrbItem =>
+        fieldname == FieldName.BlueOrbDeviceField
+        || fieldname == FieldName.GreenOrbDeviceField
+        || fieldname == FieldName.OrangeOrbDeviceField
+        || fieldname == FieldName.PurpleOrbDeviceField;
 
     private enum FieldName
     {
@@ -19,6 +29,10 @@ public class FieldEvent_Chapter2 : BaseFieldEvent
         DeepDesertField = 8, // 砂漠の奥地フィールド
         DustWindBossField = 9, // 砂嵐のボスフィールド
         TempleEntranceField = 15, // 砂漠の神殿入り口フィールド
+        BlueOrbDeviceField = 21, // 青いオーブの装置フィールド
+        GreenOrbDeviceField = 22, // 緑のオーブの装置フィールド
+        OrangeOrbDeviceField = 23, // オレンジのオーブの装置フィールド
+        PurpleOrbDeviceField = 24, // 紫のオーブの装置フィールド
     }
 
     protected override string EventName => fieldname.ToString();
@@ -143,6 +157,46 @@ public class FieldEvent_Chapter2 : BaseFieldEvent
                 {
                     isEventTriggered = true; // イベントがトリガーされたことを記録
                     FungusHelper.ExecuteBlock(targetFlowchart, "TempleBossSmokeAppear");
+                }
+                break;
+            case FieldName.BlueOrbDeviceField:
+                if (
+                    !flagManager.GetBoolFlag(Chapter2TriggeredEvent.BlueOrbPlacedInDevice)
+                    && GameManager.instance.savedata.ItemInventoryData.GetItemAmount(orbItemData)
+                        > 0
+                )
+                {
+                    FungusHelper.ExecuteBlock(targetFlowchart, "BlueOrbPlacedInDevice");
+                }
+                break;
+            case FieldName.GreenOrbDeviceField:
+                if (
+                    !flagManager.GetBoolFlag(Chapter2TriggeredEvent.GreenOrbPlacedInDevice)
+                    && GameManager.instance.savedata.ItemInventoryData.GetItemAmount(orbItemData)
+                        > 0
+                )
+                {
+                    FungusHelper.ExecuteBlock(targetFlowchart, "GreenOrbPlacedInDevice");
+                }
+                break;
+            case FieldName.OrangeOrbDeviceField:
+                if (
+                    !flagManager.GetBoolFlag(Chapter2TriggeredEvent.OrangeOrbPlacedInDevice)
+                    && GameManager.instance.savedata.ItemInventoryData.GetItemAmount(orbItemData)
+                        > 0
+                )
+                {
+                    FungusHelper.ExecuteBlock(targetFlowchart, "OrangeOrbPlacedInDevice");
+                }
+                break;
+            case FieldName.PurpleOrbDeviceField:
+                if (
+                    !flagManager.GetBoolFlag(Chapter2TriggeredEvent.PurpleOrbPlacedInDevice)
+                    && GameManager.instance.savedata.ItemInventoryData.GetItemAmount(orbItemData)
+                        > 0
+                )
+                {
+                    FungusHelper.ExecuteBlock(targetFlowchart, "PurpleOrbPlacedInDevice");
                 }
                 break;
         }

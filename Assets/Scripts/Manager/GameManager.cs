@@ -15,10 +15,12 @@ public class GameManager : MonoBehaviour
     public SaveData savedata = new SaveData(); //セーブデータを保存する変数
 
     [HideInInspector]
-    public Fungus.Flowchart globalFlowchart; //ゲーム全体のflowchart
+    public Fungus.Flowchart globalFlowchart; //ゲーム全体のflowchartの参照
 
-    [SerializeField]
-    private TipsInfoDatabase tipsInfoDatabase;
+    [Header("ゲーム全体で使用するデータベース")]
+    public HealItemDatabase healItemDatabase;
+    public KeyItemDatabase keyItemDatabase;
+    public TipsInfoDatabase tipsInfoDatabase;
     public GameObject DropItemPrefab;
     public static bool isFirstGameOpen = false; //初めてゲームが起動されたか
     public static bool isFirstGameSceneOpen = false; //初めてゲームシーンが開かれたか
@@ -79,9 +81,9 @@ public class GameManager : MonoBehaviour
             Debug.LogError("GameManagerにDropItemPrefabが設定されていません");
         }
 
-        if (tipsInfoDatabase == null)
+        if (healItemDatabase == null || keyItemDatabase == null || tipsInfoDatabase == null)
         {
-            Debug.LogError("GameManagerにTipsInfoDatabaseが設定されていません");
+            Debug.LogError("GameManagerに必要なデータベースが設定されていません");
             return;
         }
 
@@ -231,7 +233,7 @@ public class GameManager : MonoBehaviour
         }
         else
         {
-            Debug.LogWarning($"GlobalFlowchart もしくは TreasureBlock が見つかりません");
+            Debug.LogError($"GlobalFlowchart もしくは TreasureBlock が見つかりません");
         }
     }
 
@@ -256,7 +258,9 @@ public class GameManager : MonoBehaviour
             case (int)TypeID.HealItem:
                 itemPrefix = "回復アイテム";
                 break;
-            // 他のタイプが増えたらここに追加
+            case (int)TypeID.KeyItem:
+                itemPrefix = "重要アイテム";
+                break;
         }
 
         return itemPrefix;
@@ -271,7 +275,7 @@ public class GameManager : MonoBehaviour
         int typeNumber = EnumIDUtility.ExtractTypeID(EnumIDUtility.ToID(ID));
         if (GameManager.instance.savedata == null)
         {
-            Debug.LogWarning("SaveDataが存在しません");
+            Debug.LogError("SaveDataが存在しません");
             return;
         }
 
@@ -286,10 +290,11 @@ public class GameManager : MonoBehaviour
                     GameManager.instance.savedata.WeaponInventoryData.AddWeapon(ID);
                     break;
                 case (int)TypeID.HealItem:
+                case (int)TypeID.KeyItem:
                     GameManager.instance.savedata.ItemInventoryData.AddItem(ID);
                     break;
                 default:
-                    Debug.LogWarning($"このID{ID}はSaveDataに保存できません");
+                    Debug.LogError($"このID{ID}はSaveDataに保存できません");
                     break;
             }
         }
@@ -306,7 +311,7 @@ public class GameManager : MonoBehaviour
         }
         else
         {
-            Debug.LogWarning($"アイテム名が取得できませんでした。ID: {ID}");
+            Debug.LogError($"アイテム名が取得できませんでした。ID: {ID}");
         }
     }
 
@@ -321,7 +326,7 @@ public class GameManager : MonoBehaviour
         int typeNumber = EnumIDUtility.ExtractTypeID(EnumIDUtility.ToID(ID));
         if (GameManager.instance.savedata == null)
         {
-            Debug.LogWarning("SaveDataが存在しません");
+            Debug.LogError("SaveDataが存在しません");
             return;
         }
 
@@ -336,10 +341,11 @@ public class GameManager : MonoBehaviour
                     GameManager.instance.savedata.WeaponInventoryData.UseWeapon(ID);
                     break;
                 case (int)TypeID.HealItem:
+                case (int)TypeID.KeyItem:
                     GameManager.instance.savedata.ItemInventoryData.UseItem(ID);
                     break;
                 default:
-                    Debug.LogWarning($"このID{ID}はSaveDataに保存できません");
+                    Debug.LogError($"このID{ID}はSaveDataに保存できません");
                     break;
             }
         }
@@ -361,34 +367,48 @@ public class GameManager : MonoBehaviour
         int typeNumber = EnumIDUtility.ExtractTypeID(EnumIDUtility.ToID(ID));
         int amount = 0;
 
+        if (GameManager.instance.savedata == null)
+        {
+            Debug.LogError("SaveDataが存在しません");
+            return 0;
+        }
+
         // SaveDataが存在しない場合は警告を出して0を返す
         switch (typeNumber)
         {
             case (int)TypeID.Blade:
             case (int)TypeID.Shoot:
-                // 武器の数を取得
-                if (GameManager.instance.savedata == null)
-                {
-                    Debug.LogWarning("SaveDataが存在しません");
-                    return 0;
-                }
                 amount = GameManager.instance.savedata.WeaponInventoryData.GetWeaponAmount(ID);
                 break;
             case (int)TypeID.HealItem:
-                // アイテムの数を取得
-                if (GameManager.instance.savedata == null)
-                {
-                    Debug.LogWarning("SaveDataが存在しません");
-                    return 0;
-                }
+                amount = GameManager.instance.savedata.ItemInventoryData.GetItemAmount(ID);
+                break;
+            case (int)TypeID.KeyItem:
                 amount = GameManager.instance.savedata.ItemInventoryData.GetItemAmount(ID);
                 break;
             default:
-                Debug.LogWarning($"このID{ID}は数を取得できません");
+                Debug.LogError($"このID{ID}は数を取得できません");
                 break;
         }
 
         return amount;
+    }
+
+    /// <summary>
+    /// アイテムデータ（ScriptableObject）から直接所持数を取得するオーバーロード
+    /// </summary>
+    /// <param name="itemData">対象のBaseItemData</param>
+    /// <returns>所持数</returns>
+    public int GetAllTypeIDToAmount(BaseItemData itemData)
+    {
+        if (itemData == null)
+        {
+            Debug.LogError("GetAllTypeIDToAmount: itemDataがnullです。");
+            return 0;
+        }
+
+        // 内部で既存のEnum用メソッドを呼び出すだけなので処理の重複はありません
+        return GetAllTypeIDToAmount(itemData.GetItemID());
     }
 
     #region Tips Management

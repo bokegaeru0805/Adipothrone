@@ -124,7 +124,7 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: 0
       bones: []
-      spriteID: 41b54791be118b74da3e1e33f70e32f1
+      spriteID: 363ce14497e8aa94bb7ea03676547aff
       internalID: -628902967
       vertices: []
       indices: 
@@ -134,7 +134,7 @@ TextureImporter:
       name: Pedestal_DesertTemple_blue
       rect:
         serializedVersion: 2
-        x: 72
+        x: 68
         y: 0
         width: 68
         height: 80
@@ -145,7 +145,7 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: 0
       bones: []
-      spriteID: 22ab9d0d10b00e041917dc0e10515586
+      spriteID: 9d291aa32e3316247a59b85d5bce547d
       internalID: 1002740887
       vertices: []
       indices: 
@@ -155,7 +155,7 @@ TextureImporter:
       name: Pedestal_DesertTemple_green
       rect:
         serializedVersion: 2
-        x: 136
+        x: 140
         y: 0
         width: 68
         height: 80
@@ -166,7 +166,7 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: 0
       bones: []
-      spriteID: fbd74568b8e12564cb979798dc2c61b3
+      spriteID: 512d67c343a573f48ad449faffac3176
       internalID: 371676249
       vertices: []
       indices: 
@@ -187,7 +187,7 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: 0
       bones: []
-      spriteID: 038f2872978dfce469fcc8a3f240a2c3
+      spriteID: cdd9bf4d351d93349809506e10b6ffc5
       internalID: 521342376
       vertices: []
       indices: 
@@ -208,7 +208,7 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: 0
       bones: []
-      spriteID: 03e393fc039209a4f9826d5be1295c85
+      spriteID: 89f6a383e01a5574c9acee6310f0610b
       internalID: 1204292557
       vertices: []
       indices: 

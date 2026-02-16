@@ -349,6 +349,53 @@ public class CameraMoveArea : MonoBehaviour
 
     #endregion
 
+    #region Public Static Methods
+
+    /// <summary>
+    /// シーン内の全てのCameraMoveAreaを走査し、プレイヤーが現在いるエリアを強制的にアクティブにします。
+    /// セーブロード時やファストトラベル後の初期化に使用してください。
+    /// </summary>
+    public static void RefreshActiveArea()
+    {
+        // プレイヤーの取得
+        GameObject player = GameObject.FindGameObjectWithTag(GameConstants.PLAYER_TAG_NAME);
+        if (player == null)
+            return;
+
+        Collider2D playerCollider = player.GetComponent<Collider2D>();
+        if (playerCollider == null)
+            return;
+
+        Vector2 playerPos = player.transform.position;
+
+        // シーン上の全てのアクティブなエリアを取得
+        // (重い処理なので毎フレーム呼ぶのはNGですが、ロード時1回なら問題ありません)
+        CameraMoveArea[] allAreas = FindObjectsOfType<CameraMoveArea>();
+
+        foreach (var area in allAreas)
+        {
+            // エリアのコライダーを取得
+            if (area.areaCollider == null)
+                area.areaCollider = area.GetComponent<CompositeCollider2D>();
+
+            if (area.areaCollider == null)
+                continue;
+
+            // プレイヤーの座標がエリア内にあるか判定
+            if (area.areaCollider.OverlapPoint(playerPos))
+            {
+                // エリア内なら強制的にEnter処理を実行
+                // (内部で activeArea == this のチェックがあるため、二重実行は防がれます)
+                area.HandlePlayerEnter(playerCollider);
+
+                // 1つのエリアに入ったら終了（エリアが重なっていない前提）
+                return;
+            }
+        }
+    }
+
+    #endregion
+
     #region BGM Logic
 
     private void PlayBgmBasedOnFlags()

@@ -110,7 +110,7 @@ TextureImporter:
     serializedVersion: 2
     sprites:
     - serializedVersion: 2
-      name: Orb_DesertTemple_0
+      name: Orb_DesertTemple_blue
       rect:
         serializedVersion: 2
         x: 0
@@ -131,7 +131,7 @@ TextureImporter:
       edges: []
       weights: []
     - serializedVersion: 2
-      name: Orb_DesertTemple_1
+      name: Orb_DesertTemple_green
       rect:
         serializedVersion: 2
         x: 24
@@ -152,7 +152,7 @@ TextureImporter:
       edges: []
       weights: []
     - serializedVersion: 2
-      name: Orb_DesertTemple_2
+      name: Orb_DesertTemple_orange
       rect:
         serializedVersion: 2
         x: 48
@@ -173,7 +173,7 @@ TextureImporter:
       edges: []
       weights: []
     - serializedVersion: 2
-      name: Orb_DesertTemple_3
+      name: Orb_DesertTemple_purple
       rect:
         serializedVersion: 2
         x: 72
@@ -204,10 +204,10 @@ TextureImporter:
     weights: []
     secondaryTextures: []
     nameFileIdTable:
-      Orb_DesertTemple_0: 1743249853
-      Orb_DesertTemple_1: 1856397526
-      Orb_DesertTemple_2: -1601018876
-      Orb_DesertTemple_3: 1466438193
+      Orb_DesertTemple_blue: 1743249853
+      Orb_DesertTemple_green: 1856397526
+      Orb_DesertTemple_orange: -1601018876
+      Orb_DesertTemple_purple: 1466438193
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 

@@ -157,6 +157,10 @@ public enum Chapter2TriggeredEvent
     DustDevilBossDefeated = 2025, // 砂嵐のボスを倒した
     OasisPartiallyRestoredByFill = 2030, // Fillによってオアシスが部分的に復活した
     TempleBossSmokeDefeated = 2035, // 砂漠の神殿のボス（煙）を倒した
+    BlueOrbPlacedInDevice = 2036, // 青いオーブを装置に置いた
+    GreenOrbPlacedInDevice = 2040, // 緑のオーブを装置に置いた
+    OrangeOrbPlacedInDevice = 2050, // オレンジのオーブを装置に置いた
+    PurpleOrbPlacedInDevice = 2060, // 紫のオーブを装置に置いた
 }
 
 /// <summary>

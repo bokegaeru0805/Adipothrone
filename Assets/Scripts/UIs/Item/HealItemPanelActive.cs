@@ -238,6 +238,12 @@ public class HealItemPanelActive : MonoBehaviour, IPanelActive, IPageNavigable
     /// <param name="selectedButton">クリックされたボタン</param>
     public void SetPromptPanel(Enum itemID, Button selectedButton)
     {
+        // パネルが非アクティブ状態なら、処理を中断
+        if(this.gameObject.activeSelf == false)
+        {
+            return;
+        }
+
         // 引数で渡されたボタンがnullなら処理を中断
         if (selectedButton == null)
             return;

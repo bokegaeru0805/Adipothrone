@@ -39,7 +39,7 @@ public class TreasureBoxController : MonoBehaviour
         //宝箱の開封状態を確認
         if (treasureData.GetTreasureOpened(treasureBoxID))
         {
-            this.tag = "Untagged"; //tagを外す
+            this.tag = GameConstants.UNTAGGED_TAG_NAME; //tagを外す
             spriteRenderer.sprite = opensprite; //spriteを変更
             isBoxOpened = true;
             return;
@@ -91,7 +91,7 @@ public class TreasureBoxController : MonoBehaviour
                 //インベントリにアイテムを保存はFungusのFlowchartで行います
                 // GameManager.instance.AddAllTypeIDToInventory(containedItemID, itemAmount);
 
-                this.tag = "Untagged"; //tagを外す
+                this.tag = GameConstants.UNTAGGED_TAG_NAME; //tagを外す
                 spriteRenderer.sprite = opensprite; //spriteを変更
                 GameManager.instance.TreasureFungus(boxData.baseItemData, itemAmount); //Fungusを起動
                 SEManager.instance?.PlayFieldSE(SE_Field.OpenTreasurebox1); //宝箱開封時の効果音を鳴らす

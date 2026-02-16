@@ -99,7 +99,6 @@ public class CameraMoveMixerBehaviour : PlayableBehaviour
         {
             // Weightが0（クリップがない区間、または終端ピッタリ）の場合の処理
 
-            // 追加修正:
             // 「有効な座標記録がある」かつ「Timelineがほぼ終わりの時間」ならば、
             // 制御を放棄せずに、最後の座標で固定し続ける（Hold対策）
 
@@ -147,7 +146,7 @@ public class CameraMoveMixerBehaviour : PlayableBehaviour
             return;
         }
 
-        // 本当に停止（Stop）した時だけここに来る
+        // 停止時は必ず通常制御（Brain ON）に戻す
         if (trackBinding != null)
         {
             trackBinding.SetTimelineControlMode(false);

@@ -105,6 +105,21 @@ public class InventoryItemData
     }
 
     /// <summary>
+    /// 指定されたアイテムの所持数を取得（BaseItemData版）
+    /// </summary>
+    /// <param name="itemData">取得したいアイテムのデータ</param>
+    /// <returns>指定されたアイテムの所持数</returns>
+    public int GetItemAmount(BaseItemData itemData)
+    {
+        if (itemData == null)
+        {
+            Debug.LogWarning("GetItemAmount: itemDataがnullです。");
+            return 0;
+        }
+        return GetItemAmount(itemData.GetItemID());
+    }
+
+    /// <summary>
     /// 指定されたタイプの全アイテムを取得します。
     /// </summary>
     /// <param name="type">取得したいアイテムのタイプ</param>

@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Generic;
 
 public static class EnumIDUtility
 {
@@ -21,6 +20,7 @@ public static class EnumIDUtility
             (int)TypeID.HealItem => (HealItemName)id,
             (int)TypeID.ProgressLog => (ProgressLogName)id,
             (int)TypeID.Tips => (TipsName)id,
+            (int)TypeID.KeyItem => (KeyItemName)id,
             _ => throw new ArgumentException($"不明なID種別: {id}"),
         };
     }

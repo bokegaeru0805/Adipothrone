@@ -42,6 +42,7 @@ public class LotteryChestController : MonoBehaviour
         if (openSprite != null)
         {
             spriteRenderer.sprite = openSprite;
+            this.tag = GameConstants.UNTAGGED_TAG_NAME;
         }
     }
 
@@ -62,7 +63,7 @@ public class LotteryChestController : MonoBehaviour
         isOpened = false;
         if (closeSprite != null)
             spriteRenderer.sprite = closeSprite;
-        this.tag = GameConstants.PLAYER_TAG_NAME; // 必要に応じてタグ調整（ここではインタラクト対象として機能させるため）
+        this.tag = GameConstants.INTERACTABLE_OBJECT_TAG_NAME;
     }
 
     /// <summary>
@@ -73,6 +74,7 @@ public class LotteryChestController : MonoBehaviour
         isOpened = true;
         if (openSprite != null)
             spriteRenderer.sprite = openSprite;
+        this.tag = GameConstants.UNTAGGED_TAG_NAME;
     }
 
     private void OnTriggerStay2D(Collider2D collision)

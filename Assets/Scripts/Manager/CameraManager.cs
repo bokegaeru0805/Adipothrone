@@ -32,6 +32,7 @@ namespace MyGame.CameraControl
         private CinemachineTransposer framing;
         private CameraBoundaryChecker boundaryChecker;
         private CinemachineBasicMultiChannelPerlin perlinNoise;
+        private CinemachineConfiner2D confiner;
         private const float HIT_SHAKE_DURATION = 0.1f; // 敵ヒット時0.1秒間揺らす
         private Coroutine shakeCoroutine = null; // 実行中のシェイクコルーチンを管理
         private Coroutine dampingResetCoroutine = null; // 実行中のダンピングリセットコルーチンを管理するための変数
@@ -147,6 +148,15 @@ namespace MyGame.CameraControl
                     // このエラーが出た場合、VCamにNoiseコンポーネントを追加し、Profileを設定してください
                     Debug.LogError(
                         "CameraManagerはCinemachineBasicMultiChannelPerlinを取得できませんでした。ダメージ時の揺れは機能しません。"
+                    );
+                }
+
+                // CinemachineConfiner2Dを取得
+                confiner = virtualCamera.GetComponent<CinemachineConfiner2D>();
+                if (confiner == null)
+                {
+                    Debug.LogError(
+                        "CameraManagerはCinemachineConfiner2Dを取得できませんでした。カメラのエリア制限が機能しません。"
                     );
                 }
 
@@ -641,15 +651,41 @@ namespace MyGame.CameraControl
             }
             else
             {
-                // Timelineモード終了。元に戻す
+                // Timelineモード終了時の復帰処理
+
+                // 1. 追尾対象の復元
+                // Timeline中に追尾していたダミーオブジェクトから、元の対象（プレイヤー等）に戻す
                 if (originalFollowTarget != null)
                 {
                     virtualCamera.Follow = originalFollowTarget;
                 }
 
-                // Dampingを復元
+                // 2. Confiner（移動制限）の一時解除
+                // これを行わないと、Timelineの最終地点からプレイヤー位置へ戻る際、
+                // 「前のエリアの壁」に衝突してカメラが戻れなくなる場合があるため、一旦無効化する。
+                if (confiner != null)
+                {
+                    confiner.m_BoundingShape2D = null;
+                }
+
+                // 3. Damping（追従遅延）設定の復元
+                // 通常プレイ用の滑らかな動きに戻すため、保存しておいた値を適用する。
                 framing.m_XDamping = originalXDamping;
                 framing.m_YDamping = originalYDamping;
+
+                // 4. カメラ位置の強制ワープ（重要！）
+                // PreviousStateIsValid を false にセットすることで、Cinemachineに
+                // 「前フレームまでの位置計算や慣性をすべて破棄せよ」と命令する。
+                // これにより、Damping設定（滑らかさ）を無視して、次のフレームで即座に
+                // ターゲット（プレイヤー）の位置へカメラが「カット（瞬間移動）」する。
+                // ※これをしないと、カメラが遠くからゆっくりプレイヤーへ戻ってきてしまう。
+                virtualCamera.PreviousStateIsValid = false;
+
+                // 5. 現在地のエリア情報の再適用
+                // Confinerをnullにした状態なので、現在プレイヤーがいる場所の
+                // CameraMoveArea（境界線やズーム設定など）を即座に再検索・適用させる。
+                // これにより、正しいエリア制限がセットされた状態でゲームに復帰できる。
+                CameraMoveArea.RefreshActiveArea();
             }
 
             // Debug.Log($"[CameraManager] TimelineMode: {isTimelineControlling}");
