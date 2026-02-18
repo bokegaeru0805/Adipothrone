@@ -9,7 +9,12 @@ using UnityEngine.Rendering.Universal;
 public class PinchEffectManager : MonoBehaviour
 {
     [Header("エフェクト設定")]
-    [SerializeField, Tooltip("制御対象のGlobal Volumeコンポーネント")]
+    [
+        SerializeField,
+        Tooltip(
+            "制御対象のGlobal Volumeコンポーネント(これはGlobalVolumeManagerが管理するVolumeとは別のVolumeである必要があります)"
+        )
+    ]
     private Volume globalVolume;
 
     [SerializeField, Range(0.01f, 1f), Tooltip("このHP割合以下になったらエフェクトを開始します")]

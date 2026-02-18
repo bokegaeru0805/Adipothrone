@@ -33,6 +33,7 @@ public class FieldEvent_Chapter2 : BaseFieldEvent
         GreenOrbDeviceField = 22, // 緑のオーブの装置フィールド
         OrangeOrbDeviceField = 23, // オレンジのオーブの装置フィールド
         PurpleOrbDeviceField = 24, // 紫のオーブの装置フィールド
+        TempleRoofField = 30, // 砂漠の神殿の屋上フィールド
     }
 
     protected override string EventName => fieldname.ToString();
@@ -148,6 +149,8 @@ public class FieldEvent_Chapter2 : BaseFieldEvent
             case FieldName.DustWindBossField:
                 if (!flagManager.GetBoolFlag(Chapter2TriggeredEvent.DustDevilBossDefeated))
                 {
+                    // フラグを立てるのはFlowchart内で行う
+                    //flagManager.SetBoolFlag(Chapter2TriggeredEvent.DustDevilBossDefeated, true);
                     isEventTriggered = true; // イベントがトリガーされたことを記録
                     FungusHelper.ExecuteBlock(targetFlowchart, "DustDevilBossAppear");
                 }
@@ -155,50 +158,103 @@ public class FieldEvent_Chapter2 : BaseFieldEvent
             case FieldName.TempleEntranceField:
                 if (!flagManager.GetBoolFlag(Chapter2TriggeredEvent.TempleBossSmokeDefeated))
                 {
-                    isEventTriggered = true; // イベントがトリガーされたことを記録
                     FungusHelper.ExecuteBlock(targetFlowchart, "TempleBossSmokeAppear");
+                }
+                else if (
+                    !flagManager.GetBoolFlag(Chapter2TriggeredEvent.TalkedToFillAfterAllOrbsPlaced)
+                )
+                {
+                    isEventTriggered = true; // イベントがトリガーされたことを記録
+                    FungusHelper.ExecuteBlock(targetFlowchart, "TalkToFillAfterAllOrbsPlaced");
                 }
                 break;
             case FieldName.BlueOrbDeviceField:
-                if (
-                    !flagManager.GetBoolFlag(Chapter2TriggeredEvent.BlueOrbPlacedInDevice)
-                    && GameManager.instance.savedata.ItemInventoryData.GetItemAmount(orbItemData)
-                        > 0
-                )
-                {
-                    FungusHelper.ExecuteBlock(targetFlowchart, "BlueOrbPlacedInDevice");
-                }
+                HandleOrbDevice(
+                    Chapter2TriggeredEvent.BlueOrbPlacedInDevice,
+                    "BlueOrbPlacedInDevice"
+                );
                 break;
+
             case FieldName.GreenOrbDeviceField:
-                if (
-                    !flagManager.GetBoolFlag(Chapter2TriggeredEvent.GreenOrbPlacedInDevice)
-                    && GameManager.instance.savedata.ItemInventoryData.GetItemAmount(orbItemData)
-                        > 0
-                )
-                {
-                    FungusHelper.ExecuteBlock(targetFlowchart, "GreenOrbPlacedInDevice");
-                }
+                HandleOrbDevice(
+                    Chapter2TriggeredEvent.GreenOrbPlacedInDevice,
+                    "GreenOrbPlacedInDevice"
+                );
                 break;
+
             case FieldName.OrangeOrbDeviceField:
-                if (
-                    !flagManager.GetBoolFlag(Chapter2TriggeredEvent.OrangeOrbPlacedInDevice)
-                    && GameManager.instance.savedata.ItemInventoryData.GetItemAmount(orbItemData)
-                        > 0
-                )
-                {
-                    FungusHelper.ExecuteBlock(targetFlowchart, "OrangeOrbPlacedInDevice");
-                }
+                HandleOrbDevice(
+                    Chapter2TriggeredEvent.OrangeOrbPlacedInDevice,
+                    "OrangeOrbPlacedInDevice"
+                );
                 break;
+
             case FieldName.PurpleOrbDeviceField:
-                if (
-                    !flagManager.GetBoolFlag(Chapter2TriggeredEvent.PurpleOrbPlacedInDevice)
-                    && GameManager.instance.savedata.ItemInventoryData.GetItemAmount(orbItemData)
-                        > 0
-                )
-                {
-                    FungusHelper.ExecuteBlock(targetFlowchart, "PurpleOrbPlacedInDevice");
-                }
+                HandleOrbDevice(
+                    Chapter2TriggeredEvent.PurpleOrbPlacedInDevice,
+                    "PurpleOrbPlacedInDevice"
+                );
+                break;
+            case FieldName.TempleRoofField:
+                isEventTriggered = true; // イベントがトリガーされたことを記録
+                FungusHelper.ExecuteBlock(targetFlowchart, "TempleBossAppear");
                 break;
         }
     }
+
+    #region オーブ装置関連の共通処理
+    /// <summary>
+    /// オーブ装置共通の処理
+    /// </summary>
+    /// <param name="orbFlag">この装置に対応する完了フラグ</param>
+    /// <param name="blockName">実行するFungusブロック名</param>
+    private void HandleOrbDevice(Chapter2TriggeredEvent orbFlag, string blockName)
+    {
+        // まずは全てのオーブが配置されたか確認して、完了イベントが発火していないなら発火させる
+        CheckAllOrbsPlaced();
+
+        // 既にこのオーブがはまっているなら何もしない
+        if (flagManager.GetBoolFlag(orbFlag))
+            return;
+
+        // アイテムを持っているか確認
+        if (GameManager.instance.savedata.ItemInventoryData.GetItemAmount(orbItemData) > 0)
+        {
+            // 1. フラグを即座に立てる（これにより、直後の全数チェックでカウントされる）
+            flagManager.SetBoolFlag(orbFlag, true);
+
+            // 2. この装置のイベント(オーブをはめる演出)を実行
+            // ※isEventTriggeredはこの装置単体の再起動防止用
+            // （BaseFieldEventのExecuteEventBlockを使うと楽ですが、ここでは明示的に書きます）
+            isEventTriggered = true;
+            FungusHelper.ExecuteBlock(targetFlowchart, blockName);
+        }
+    }
+
+    /// <summary>
+    /// 全てのオーブが配置されたか確認し、完了イベントを実行する
+    /// </summary>
+    private void CheckAllOrbsPlaced()
+    {
+        // 既に完了イベントが発火済みなら何もしない
+        if (flagManager.GetBoolFlag(Chapter2TriggeredEvent.AllOrbsPlacedInDevice))
+            return;
+
+        // 4つのオーブフラグが全てTrueか確認
+        bool isAllPlaced =
+            flagManager.GetBoolFlag(Chapter2TriggeredEvent.BlueOrbPlacedInDevice)
+            && flagManager.GetBoolFlag(Chapter2TriggeredEvent.GreenOrbPlacedInDevice)
+            && flagManager.GetBoolFlag(Chapter2TriggeredEvent.OrangeOrbPlacedInDevice)
+            && flagManager.GetBoolFlag(Chapter2TriggeredEvent.PurpleOrbPlacedInDevice);
+
+        if (isAllPlaced)
+        {
+            // 完了フラグを立てる
+            flagManager.SetBoolFlag(Chapter2TriggeredEvent.AllOrbsPlacedInDevice, true);
+
+            // 全てのオーブがはまったときのイベントを実行
+            FungusHelper.ExecuteBlock(targetFlowchart, "AllOrbsPlacedInDevice");
+        }
+    }
+    #endregion
 }

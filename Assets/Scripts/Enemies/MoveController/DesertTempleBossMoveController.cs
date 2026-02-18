@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using DG.Tweening;
+using NaughtyAttributes;
 using UnityEngine;
 
 [RequireComponent(typeof(CriWare.Assets.CriAtomSePlayer))]
@@ -17,6 +18,15 @@ public class DesertTempleBossMoveController : MonoBehaviour
     [Tooltip("移動速度")]
     [SerializeField]
     private float moveSpeedX = 3.0f;
+
+    [Header("登場演出の設定")]
+    [Tooltip("ResetState時に特定位置まで移動してから行動を開始するか")]
+    [SerializeField]
+    private bool useIntroMovement = false;
+
+    [Tooltip("登場移動の目標X座標")]
+    [SerializeField, ShowIf(nameof(useIntroMovement))]
+    private float introTargetX = 0f;
 
     [Header("移動範囲の設定(必須)")]
     [SerializeField]
@@ -240,8 +250,10 @@ public class DesertTempleBossMoveController : MonoBehaviour
     private float initialY; // 初期のY座標
     private bool isMovingLeft = false; // trueなら左移動、falseなら右移動
     private bool isHorizontalMoveActive = false; // 横移動が有効か
+    private bool isIntroMoving = false; // 登場演出の移動中かどうか
     private Tweener floatTween; // 浮遊アニメーション管理用
     private float haloRotationSpeed = 0f; // 光輪の回転速度
+    private float moveStartHpThreshold = 0.8f; // HPがこの割合を下回ったら移動開始
     private const float DEFAULT_HALO_ROTATION_SPEED = 10f; // デフォルトの光輪回転速度
     private bool isHaloRotatingClockwise = false; // true: 時計回り(CW), false: 反時計回り(CCW)
     private Coroutine rightArmAttackCoroutine; // 右腕攻撃用コルーチン
@@ -265,6 +277,8 @@ public class DesertTempleBossMoveController : MonoBehaviour
 
     // --- 内部参照 ---
     private SpriteRenderer bodySpriteRenderer;
+    private CharacterHealth _characterHpScript;
+    private ShieldController _shieldController;
 
     // --- 外部参照 ---
     private SpriteRenderer rightArmSpriteRenderer;
@@ -313,18 +327,30 @@ public class DesertTempleBossMoveController : MonoBehaviour
             sparkEffectObject.SetActive(false);
         }
 
-        if(auraEffectObject != null)
+        if (auraEffectObject != null)
         {
             auraEffectObject.SetActive(true);
         }
 
         bodySpriteRenderer = GetComponent<SpriteRenderer>();
+        _characterHpScript = GetComponent<CharacterHealth>();
+        _shieldController = GetComponent<ShieldController>();
     }
 
     private void Start()
     {
         InitializeClonePool(); // 分身プールの初期化
-        ResetState();
+
+        // --- イベントの購読 ---
+        if (_characterHpScript != null)
+        {
+            _characterHpScript.OnHPChanged += HandleHPChanged;
+        }
+
+        if (_shieldController != null)
+        {
+            _shieldController.OnAllShieldsBroken += HandleAllShieldsBroken;
+        }
     }
 
     /// <summary>
@@ -362,6 +388,35 @@ public class DesertTempleBossMoveController : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// HPが変化した際に呼び出され、閾値を下回っていたら横移動を有効にする
+    /// </summary>
+    private void HandleHPChanged(int currentHP)
+    {
+        if (isHorizontalMoveActive)
+            return; // 既に動いているなら無視
+
+        if (_characterHpScript != null && _characterHpScript.MaxHP > 0)
+        {
+            float ratio = _characterHpScript.NormalizedHP; // 0〜1の割合でHPを取得
+            if (ratio <= moveStartHpThreshold)
+            {
+                isHorizontalMoveActive = true;
+            }
+        }
+    }
+
+    /// <summary>
+    /// シールドが全て破壊された際に呼び出され、横移動を有効にする
+    /// </summary>
+    private void HandleAllShieldsBroken()
+    {
+        if (!isHorizontalMoveActive)
+        {
+            isHorizontalMoveActive = true;
+        }
+    }
+
     public void ResetState()
     {
         if (playerTransform == null)
@@ -390,6 +445,7 @@ public class DesertTempleBossMoveController : MonoBehaviour
         haloRotationSpeed = DEFAULT_HALO_ROTATION_SPEED;
         isHaloRotatingClockwise = true;
         isFacingLocked = false;
+        isHorizontalMoveActive = false;
 
         // 状態のリセット
         StopFloating(); // 浮遊を停止
@@ -398,13 +454,20 @@ public class DesertTempleBossMoveController : MonoBehaviour
         laserObject.SetActive(false); // レーザーを非表示
         sparkEffectObject.SetActive(false); // スパークエフェクトを非表示
 
-        // 移動と浮遊を開始
-        StartFloating();
-
-        // Debug用
-        isHorizontalMoveActive = true; // 横移動を有効化
+        StartFloating(); // 移動と浮遊を開始
         StartRightArmAttack(); // 右腕攻撃を開始
         StartBodyAttackLoop(); // 本体の攻撃ループを開始
+
+        // 登場演出の分岐
+        if (useIntroMovement)
+        {
+            isIntroMoving = true;
+            // 攻撃ループは開始せず、移動完了を待つ
+        }
+        else
+        {
+            isIntroMoving = false;
+        }
     }
 
     private void FixedUpdate()
@@ -424,8 +487,13 @@ public class DesertTempleBossMoveController : MonoBehaviour
                 floatTween.Play();
         }
 
+        // --- 登場移動の処理 ---
+        if (isIntroMoving)
+        {
+            UpdateIntroMove();
+        }
         // --- 追横移動の処理 ---
-        if (isHorizontalMoveActive)
+        else if (isHorizontalMoveActive)
         {
             UpdateHorizontalMove();
         }
@@ -593,7 +661,7 @@ public class DesertTempleBossMoveController : MonoBehaviour
     {
         while (true)
         {
-            // --- 変更: 0〜4の範囲でランダム選択 ---
+            // --- 0〜4の範囲でランダム選択 ---
             int attackType = Random.Range(0, 5); // 0:レーザー, 1:分身, 2:囲い込み, 3:降雨, 4:通常攻撃
 
             // 攻撃種別に応じたインターバル設定用変数
@@ -622,7 +690,7 @@ public class DesertTempleBossMoveController : MonoBehaviour
                     maxInterval = rainAttackIntervalMax;
                     yield return StartCoroutine(PerformRainAttack());
                     break;
-                case 4: // 通常攻撃 (追加)
+                case 4: // 通常攻撃
                     // 左腕攻撃用のインターバル変数を流用、または別途定義
                     minInterval = leftArmAttackIntervalMin;
                     maxInterval = leftArmAttackIntervalMax;
@@ -1259,12 +1327,27 @@ public class DesertTempleBossMoveController : MonoBehaviour
                     if (bullets[i] == null || !bullets[i].activeInHierarchy)
                         continue;
 
-                    // 角度から座標を計算
-                    float rad = angles[i] * Mathf.Deg2Rad;
-                    Vector2 offset =
-                        new Vector2(Mathf.Cos(rad), Mathf.Sin(rad)) * encirclementRadius;
+                    // 浮遊・振動の計算
+                    // 時間(timer)とインデックス(i)を使って、弾ごとに異なる動きを作る
+                    float floatFreq = 3.0f; // 振動の速さ
+                    float floatAmp = 0.3f; // 振動の幅（浮遊感の強さ）
 
-                    bulletTransforms[i].position = center + offset;
+                    // X軸とY軸で異なる周期の波を作り、有機的な浮遊感を出す
+                    float wobbleX = Mathf.Sin(timer * floatFreq + i * 0.5f) * floatAmp;
+                    float wobbleY = Mathf.Cos(timer * floatFreq * 0.8f + i * 0.3f) * floatAmp;
+
+                    // 半径方向にも少し呼吸のような伸縮を加える
+                    float radiusBreath = Mathf.Sin(timer * 2.0f + i * 0.1f) * 0.2f;
+
+                    // 角度から基本座標を計算 + 半径の伸縮
+                    float rad = angles[i] * Mathf.Deg2Rad;
+                    Vector2 baseOffset =
+                        new Vector2(Mathf.Cos(rad), Mathf.Sin(rad))
+                        * (encirclementRadius + radiusBreath);
+
+                    // 最終座標 = 中心 + 基本円周位置 + 浮遊振動
+                    bulletTransforms[i].position =
+                        center + baseOffset + new Vector2(wobbleX, wobbleY);
 
                     // --- エフェクトの生成と追従処理 ---
                     if (!hasShownSpawnEffect)
@@ -1483,6 +1566,33 @@ public class DesertTempleBossMoveController : MonoBehaviour
     }
 
     /// <summary>
+    /// 目標X座標まで moveSpeedX で移動する
+    /// </summary>
+    private void UpdateIntroMove()
+    {
+        // 現在位置から目標位置への1フレーム分の移動量を計算
+        float step = moveSpeedX * Time.deltaTime;
+
+        // YとZは維持したまま、Xだけ目標へ移動
+        Vector3 targetPos = new Vector3(introTargetX, transform.position.y, transform.position.z);
+        transform.position = Vector3.MoveTowards(transform.position, targetPos, step);
+
+        // 到着判定 (誤差0.01f以内)
+        if (Mathf.Abs(transform.position.x - introTargetX) < 0.01f)
+        {
+            // 移動完了
+            isIntroMoving = false;
+
+            // 通常行動の開始
+            isHorizontalMoveActive = true;
+
+            // 次の移動方向を決定（エリアの中央より左にいれば右へ、右にいれば左へなど）
+            // ここではプレイヤーの方向に合わせて自然に戦い始めるように設定
+            isMovingLeft = IsTargetToRight();
+        }
+    }
+
+    /// <summary>
     /// 上下の浮遊アニメーションを開始します
     /// </summary>
     private void StartFloating()
@@ -1663,6 +1773,17 @@ public class DesertTempleBossMoveController : MonoBehaviour
         if (floatTween != null)
         {
             floatTween.Kill();
+        }
+
+        // --- イベントの購読解除 ---
+        if (_characterHpScript != null)
+        {
+            _characterHpScript.OnHPChanged -= HandleHPChanged;
+        }
+
+        if (_shieldController != null)
+        {
+            _shieldController.OnAllShieldsBroken -= HandleAllShieldsBroken;
         }
     }
 

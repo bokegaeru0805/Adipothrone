@@ -90,9 +90,8 @@ public class DirectionalObjectSpawner : MonoBehaviour, IEnemyResettable
     public void StartSpawning()
     {
         if (spawnCoroutine == null)
-        {
-            spawnCoroutine = StartCoroutine(SpawnRoutine());
-        }
+            spawnCoroutine = null;
+        spawnCoroutine = StartCoroutine(SpawnRoutine());
     }
 
     /// <summary>

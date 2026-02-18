@@ -161,6 +161,8 @@ public enum Chapter2TriggeredEvent
     GreenOrbPlacedInDevice = 2040, // 緑のオーブを装置に置いた
     OrangeOrbPlacedInDevice = 2050, // オレンジのオーブを装置に置いた
     PurpleOrbPlacedInDevice = 2060, // 紫のオーブを装置に置いた
+    AllOrbsPlacedInDevice = 2070, // 全てのオーブを装置に置いた
+    TalkedToFillAfterAllOrbsPlaced = 2075, // 全てのオーブを置いた後にFillと話した
 }
 
 /// <summary>

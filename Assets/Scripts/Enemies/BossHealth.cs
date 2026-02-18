@@ -27,6 +27,7 @@ public class BossHealth : CharacterHealth
         StoneGolemBoss = 30,
         DustDevilBoss = 40,
         DesertTempleBossSmoke = 50,
+        DesertTempleBoss = 60,
     }
 
     /// <summary>

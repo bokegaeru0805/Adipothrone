@@ -19,6 +19,32 @@ public class BoundPhysicsController : MonoBehaviour
     [SerializeField]
     private float minSpeed = 5.0f;
 
+    private enum MaxVelocityType
+    {
+        None, // 制限なし
+        Vector2, // X, Y それぞれで制限
+        Float // ベクトルの長さ(速さ)で制限
+        ,
+    }
+
+    [Header("速度制限設定")]
+    [Tooltip("最大速度の制限モード")]
+    [SerializeField]
+    private MaxVelocityType maxVelocityMode = MaxVelocityType.None;
+
+    [Tooltip("各軸ごとの最大速度（絶対値）。これを超えないように制限されます。")]
+    [SerializeField, ShowIf(nameof(IsVector2Mode))]
+    private Vector2 maxVelocityVector = new Vector2(10f, 10f);
+
+    [Tooltip("速度ベクトル全体の長さ（Magnitude）の最大値")]
+    [SerializeField, ShowIf(nameof(IsFloatMode))]
+    private float maxSpeedLimit = 10f;
+
+    // NaughtyAttributes用の判定プロパティ
+    private bool IsVector2Mode => maxVelocityMode == MaxVelocityType.Vector2;
+    private bool IsFloatMode => maxVelocityMode == MaxVelocityType.Float;
+
+    [Header("回転設定")]
     [Tooltip("移動方向に合わせて回転させるか")]
     [SerializeField]
     private bool rotateTowardsDirection = true;
@@ -63,7 +89,24 @@ public class BoundPhysicsController : MonoBehaviour
 
     void FixedUpdate()
     {
-        // 物理演算の直前の速度を常に記録しておく
+        // 1. 速度制限の適用
+        if (maxVelocityMode == MaxVelocityType.Float)
+        {
+            // ベクトルの長さを制限
+            rb.velocity = Vector2.ClampMagnitude(rb.velocity, maxSpeedLimit);
+        }
+        else if (maxVelocityMode == MaxVelocityType.Vector2)
+        {
+            // X, Y それぞれを制限
+            Vector2 v = rb.velocity;
+            if (maxVelocityVector.x > 0f)
+                v.x = Mathf.Clamp(v.x, -maxVelocityVector.x, maxVelocityVector.x);
+            if (maxVelocityVector.y > 0f)
+                v.y = Mathf.Clamp(v.y, -maxVelocityVector.y, maxVelocityVector.y);
+            rb.velocity = v;
+        }
+
+        // 2. 物理演算の直前の速度を常に記録しておく
         // (OnCollisionEnter2Dが呼ばれる時点では、すでに衝突して速度が変わっているため)
         lastVelocity = rb.velocity;
 

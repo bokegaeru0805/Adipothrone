@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using NaughtyAttributes;
 using UnityEngine;
@@ -15,8 +16,13 @@ public class ShieldData
     public GameObject linkedObject;
 }
 
+/// <summary>
+/// シールドによるダメージ軽減、破壊ロジック、および視覚効果（パーティクル）を管理するクラス。
+/// </summary>
 public class ShieldController : MonoBehaviour
 {
+    #region Settings
+
     [Header("シールド設定")]
     [Tooltip("シールド機能を有効にするか")]
     [SerializeField]
@@ -48,9 +54,61 @@ public class ShieldController : MonoBehaviour
     [SerializeField]
     private bool showVisuals = true;
 
-    // 内部変数
-    private float maxShieldCount; // 開始時の枚数（比率計算用）
-    private Color baseParticleColor; // 初期設定の色
+    #endregion
+
+    #region Internal Variables
+
+    // 開始時の枚数（比率計算用）
+    private float maxShieldCount;
+
+    // パーティクルの初期色
+    private Color baseParticleColor;
+
+    #endregion
+
+    #region Events
+
+    /// <summary>
+    /// シールドが1枚破壊されたときに発行されるイベント。
+    /// </summary>
+    public event Action OnShieldBroken;
+
+    /// <summary>
+    /// 全てのシールドが破壊された（枚数が0になった）瞬間に発行されるイベント。
+    /// </summary>
+    public event Action OnAllShieldsBroken;
+
+    #endregion
+
+    #region Public Accessors
+
+    /// <summary>
+    /// 現在のシールド枚数を取得します。
+    /// </summary>
+    public int CurrentShieldCount => shieldLayers.Count;
+
+    /// <summary>
+    /// 現在のシールドによる合計ダメージ軽減率（0.0f ～ 1.0f）を取得します。
+    /// </summary>
+    public float CurrentReductionRate
+    {
+        get
+        {
+            if (!isShieldActive || shieldLayers.Count == 0)
+                return 0f;
+
+            float total = 0f;
+            foreach (var shield in shieldLayers)
+            {
+                total += shield.reductionPercentage;
+            }
+            return Mathf.Clamp01(total);
+        }
+    }
+
+    #endregion
+
+    #region Unity Lifecycle Methods
 
     private void Start()
     {
@@ -71,6 +129,10 @@ public class ShieldController : MonoBehaviour
 
         UpdateVisuals();
     }
+
+    #endregion
+
+    #region Logic Methods
 
     /// <summary>
     /// 設定の検証（一対一モードなら全てのシールドに敵が割り当てられているか確認）
@@ -100,14 +162,8 @@ public class ShieldController : MonoBehaviour
         }
 
         // 軽減率を加算方式で計算（例: 0.2 + 0.2 = 0.4 (40%カット)）
-        float totalReduction = 0f;
-        foreach (var shield in shieldLayers)
-        {
-            totalReduction += shield.reductionPercentage;
-        }
-
-        // 軽減率が100%を超えないようにクランプ
-        totalReduction = Mathf.Clamp01(totalReduction);
+        // Accessorを使って現在の軽減率を取得
+        float totalReduction = CurrentReductionRate;
 
         // ダメージ計算: ダメージ * (1 - 軽減率)
         float finalDamageFloat = rawDamage * (1.0f - totalReduction);
@@ -125,6 +181,15 @@ public class ShieldController : MonoBehaviour
         {
             // 末尾を削除
             shieldLayers.RemoveAt(shieldLayers.Count - 1);
+
+            // イベント発行
+            OnShieldBroken?.Invoke();
+
+            if (shieldLayers.Count == 0)
+            {
+                OnAllShieldsBroken?.Invoke();
+            }
+
             UpdateVisuals();
         }
     }
@@ -156,9 +221,21 @@ public class ShieldController : MonoBehaviour
 
         if (removed)
         {
+            // イベント発行
+            OnShieldBroken?.Invoke();
+
+            if (shieldLayers.Count == 0)
+            {
+                OnAllShieldsBroken?.Invoke();
+            }
+
             UpdateVisuals();
         }
     }
+
+    #endregion
+
+    #region Visuals Methods
 
     /// <summary>
     /// 外部からシールドの表示/非表示を切り替える
@@ -217,6 +294,10 @@ public class ShieldController : MonoBehaviour
         mainModule.startColor = newColor;
     }
 
+    #endregion
+
+    #region UI Methods
+
     /// <summary>
     /// 現在のシールド軽減率を計算し、GameUIManager経由で状況メッセージを表示します。
     /// プレイヤーが攻撃した際や、シールドの状態が変化した際に呼び出すことを想定しています。
@@ -230,15 +311,9 @@ public class ShieldController : MonoBehaviour
             return;
         }
 
-        // 現在の軽減率を計算（CalculateDamageAfterShieldと同じロジック）
-        float totalReduction = 0f;
-        if (isShieldActive)
-        {
-            foreach (var shield in shieldLayers)
-            {
-                totalReduction += shield.reductionPercentage;
-            }
-        }
+        // 現在の軽減率を計算
+        // Accessorを使って取得
+        float totalReduction = CurrentReductionRate;
 
         // メッセージを生成して表示
         string message = GetStatusMessage(enemyName, totalReduction);
@@ -277,4 +352,6 @@ public class ShieldController : MonoBehaviour
             return $"{name}は無防備になった！";
         }
     }
+
+    #endregion
 }

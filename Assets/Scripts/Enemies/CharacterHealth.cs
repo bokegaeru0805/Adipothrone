@@ -12,16 +12,69 @@ using UnityEngine;
 /// </summary>
 public abstract class CharacterHealth : PoolableObject, IDamageable, IDroppable, IDefeatable
 {
+    #region Constants
+
     // --- シェーダープロパティ・キーワード名 ---
     private const string SHADER_PROP_FLASH_AMOUNT = "_FlashAmount";
     private const string SHADER_PROP_OVERLAY_ON = "_OverlayOn";
     private const string SHADER_KEYWORD_OVERLAY_ON = "_OVERLAY_ON";
+
+    #endregion
+
+    #region Properties
 
     // --- プロパティ（継承先クラスから読み書き可能） ---
     public int MaxHP { get; protected set; }
     public int CurrentHP { get; protected set; }
     public bool IsDefeated { get; protected set; }
     public float EncounterStartTime { get; private set; }
+
+    /// <summary>
+    /// このキャラクターのレベルを取得します。EnemyDataから参照されます。
+    /// </summary>
+    public int Level => enemyData != null ? enemyData.requiredLevel : 0;
+
+    /// <summary>
+    /// 現在のHPの割合を0.0f～1.0fの範囲で取得します。
+    /// UIの更新やAIの条件分岐などに使用します。
+    /// </summary>
+    public float NormalizedHP
+    {
+        get
+        {
+            // MaxHPが0以下の場合に、ゼロ除算エラーを防ぐためのチェック
+            if (MaxHP <= 0)
+            {
+                return 0f;
+            }
+
+            // CurrentHPとMaxHPはどちらも整数(int)なため、
+            // そのまま割り算すると小数点以下が切り捨てられてしまいます。(例: 50 / 100 = 0)
+            // (float)とキャスト（型変換）することで、正しい小数点の割合(0.5)を算出します。
+            return (float)CurrentHP / MaxHP;
+        }
+    }
+
+    #endregion
+
+    #region Events
+
+    /// <summary>
+    /// HPが変動した際にUIなどに通知するためのイベント。
+    /// </summary>
+    public event Action<int> OnHPChanged;
+
+    /// <summary>
+    /// 派生クラスから安全にOnHPChangedイベントを発火させるためのメソッド。
+    /// </summary>
+    protected void InvokeHPChangedEvent()
+    {
+        OnHPChanged?.Invoke(CurrentHP);
+    }
+
+    #endregion
+
+    #region Inspector Settings
 
     [Header("シールド連携設定")]
     [Tooltip("【受信側】シールド機能を有効にするか")]
@@ -40,24 +93,6 @@ public abstract class CharacterHealth : PoolableObject, IDamageable, IDroppable,
     [SerializeField, ShowIf(nameof(linkToShieldController))]
     protected ShieldController targetShieldController;
 
-    /// <summary>
-    /// HPが変動した際にUIなどに通知するためのイベント。
-    /// </summary>
-    public event Action<int> OnHPChanged;
-
-    /// <summary>
-    /// 派生クラスから安全にOnHPChangedイベントを発火させるためのメソッド。
-    /// </summary>
-    protected void InvokeHPChangedEvent()
-    {
-        OnHPChanged?.Invoke(CurrentHP);
-    }
-
-    /// <summary>
-    /// このキャラクターのレベルを取得します。EnemyDataから参照されます。
-    /// </summary>
-    public int Level => enemyData != null ? enemyData.requiredLevel : 0;
-
     // --- Inspector設定（継承先クラスで利用） ---
     [Tooltip("キャラクターの基本データを設定します")]
     [SerializeField]
@@ -66,6 +101,10 @@ public abstract class CharacterHealth : PoolableObject, IDamageable, IDroppable,
     [Tooltip("このキャラクターがオーバーレイテクスチャ効果を使用するかどうか")]
     [SerializeField]
     private bool enableOverlayTexture = false;
+
+    #endregion
+
+    #region Internal Variables
 
     // --- 内部参照（継承先クラスで利用） ---
     protected SpriteRenderer spriteRenderer;
@@ -81,6 +120,10 @@ public abstract class CharacterHealth : PoolableObject, IDamageable, IDroppable,
     private float reducedFlashAmount = 0.25f; //大きいスプライト用の、抑えめのフラッシュの明るさ
 
     private bool isLargeSprite = false; // Awakeでサイズを判定して設定するフラグ
+
+    #endregion
+
+    #region Unity Lifecycle Methods
 
     /// <summary>
     /// コンポーネントが有効になった際の初期化処理。
@@ -127,6 +170,10 @@ public abstract class CharacterHealth : PoolableObject, IDamageable, IDroppable,
         EncounterStartTime = Time.time; // 有効化された時間を記録
     }
 
+    #endregion
+
+    #region Damage & Death Logic
+
     /// <summary>
     /// ダメージ処理の全体の流れを定義するテンプレートメソッド。
     /// </summary>
@@ -167,7 +214,7 @@ public abstract class CharacterHealth : PoolableObject, IDamageable, IDroppable,
     }
 
     /// <summary>
-    /// [フック] ダメージが適用された直後に呼ばれる仮想メソッド。
+    /// ダメージが適用された直後に呼ばれる仮想メソッド。
     /// 派生クラスはこれを上書きして、HPバーの更新など固有の処理を追加できます。
     /// </summary>
     protected virtual void OnDamageApplied()
@@ -176,7 +223,7 @@ public abstract class CharacterHealth : PoolableObject, IDamageable, IDroppable,
     }
 
     /// <summary>
-    /// [フック] 死亡判定を行うための仮想メソッド。
+    /// 死亡判定を行うための仮想メソッド。
     /// 派生クラスはこれを上書きして、特別な死亡条件を追加できます。
     /// </summary>
     protected virtual void CheckForDeath()
@@ -240,6 +287,10 @@ public abstract class CharacterHealth : PoolableObject, IDamageable, IDroppable,
     /// abstract: このクラスを継承するクラスは、必ずこのメソッドを実装しなければなりません。
     /// </summary>
     protected abstract void OnDeath();
+
+    #endregion
+
+    #region Visual Effects
 
     /// <summary>
     /// 被弾時にキャラクターを点滅させる共通のコルーチン。
@@ -317,111 +368,6 @@ public abstract class CharacterHealth : PoolableObject, IDamageable, IDroppable,
         }
     }
 
-    //元の点滅処理（参考用）
-    // protected IEnumerator FlashOnDamage()
-    // {
-    //     if (spriteRenderer == null) yield break;
-
-    //     // --- 1. 現在の色をHSVに変換し、V値（明度）を取得 ---
-    //     Color.RGBToHSV(spriteRenderer.color, out float h, out float s, out float v);
-
-    //     // 元の不透明度を保存しておく
-    //     float originalAlpha = spriteRenderer.color.a;
-    //     // 元の色（HSV）を保存しておく
-    //     Color originalColor = spriteRenderer.color;
-
-    //     // --- 2. V値（明度）が最大かどうかで処理を分岐 ---
-    //     // わずかな誤差を許容するため、0.99fより小さいかで判定
-    //     if (v < 0.99f)
-    //     {
-    //         // 【V値が最大でない場合】-> 一瞬、白く光らせる（V値を最大にする）
-
-    //         // a. V値を最大(1.0f)にした色を計算
-    //         Color flashColor = Color.HSVToRGB(h, s, 1.0f);
-    //         flashColor.a = originalAlpha; // 不透明度は維持
-
-    //         // b. 一瞬だけ色を差し替え
-    //         spriteRenderer.color = flashColor;
-    //         yield return new WaitForSeconds(0.1f);
-
-    //         // c. 元の色に戻す
-    //         spriteRenderer.color = originalColor;
-    //         yield return new WaitForSeconds(0.1f);
-    //     }
-    //     else
-    //     {
-    //         // 【V値がすでに最大に近い場合（白など）】-> 従来通り、半透明にする
-
-    //         // a. 一瞬暗く（半透明に）する
-    //         Color transparentColor = originalColor;
-    //         transparentColor.a = originalAlpha * 0.2f; // 80%カット
-    //         spriteRenderer.color = transparentColor;
-    //         yield return new WaitForSeconds(0.1f);
-
-    //         // b. 元の不透明度に戻す
-    //         spriteRenderer.color = originalColor;
-    //         yield return new WaitForSeconds(0.1f);
-    //     }
-    // }
-
-    // --- ヘルパーメソッド ---
-    /// <summary>
-    /// 指定時間後にこのゲームオブジェクトを非アクティブ化します。
-    /// </summary>
-    /// <param name="time">非アクティブ化までの待機時間</param>
-    protected virtual IEnumerator DeactivateAfterTime(float time)
-    {
-        yield return new WaitForSeconds(time);
-
-        // プールタグが設定されていればプールに戻す
-        if (!string.IsNullOrEmpty(myPoolTag))
-        {
-            ReturnToPool(); // PoolableObjectのメソッドを呼び出す
-        }
-        else
-        {
-            this.gameObject.SetActive(false);
-        }
-    }
-
-    /// <summary>
-    /// Animatorに指定したパラメーターが存在するかを確認します。
-    /// </summary>
-    /// <param name="paramName">確認したいパラメーター名</param>
-    /// <returns>存在する場合はtrue、存在しない場合はfalseを返します。</returns>
-    protected bool HasParameter(string paramName)
-    {
-        if (animator == null)
-            return false;
-        foreach (var param in animator.parameters)
-        {
-            if (param.name == paramName)
-                return true;
-        }
-        return false;
-    }
-
-    /// <summary>
-    /// 現在のHPの割合を0.0f～1.0fの範囲で取得します。
-    /// UIの更新やAIの条件分岐などに使用します。
-    /// </summary>
-    public float NormalizedHP
-    {
-        get
-        {
-            // MaxHPが0以下の場合に、ゼロ除算エラーを防ぐためのチェック
-            if (MaxHP <= 0)
-            {
-                return 0f;
-            }
-
-            // CurrentHPとMaxHPはどちらも整数(int)なため、
-            // そのまま割り算すると小数点以下が切り捨てられてしまいます。(例: 50 / 100 = 0)
-            // (float)とキャスト（型変換）することで、正しい小数点の割合(0.5)を算出します。
-            return (float)CurrentHP / MaxHP;
-        }
-    }
-
     /// <summary>
     /// シェーダーのオーバーレイ機能を有効または無効にします。
     /// このメソッドを呼び出すと、このオブジェクトに割り当てられたマテリアルが複製され、設定が独立します。
@@ -472,12 +418,104 @@ public abstract class CharacterHealth : PoolableObject, IDamageable, IDroppable,
         }
     }
 
+    //元の点滅処理（参考用）
+    // protected IEnumerator FlashOnDamage()
+    // {
+    //     if (spriteRenderer == null) yield break;
+
+    //     // --- 1. 現在の色をHSVに変換し、V値（明度）を取得 ---
+    //     Color.RGBToHSV(spriteRenderer.color, out float h, out float s, out float v);
+
+    //     // 元の不透明度を保存しておく
+    //     float originalAlpha = spriteRenderer.color.a;
+    //     // 元の色（HSV）を保存しておく
+    //     Color originalColor = spriteRenderer.color;
+
+    //     // --- 2. V値（明度）が最大かどうかで処理を分岐 ---
+    //     // わずかな誤差を許容するため、0.99fより小さいかで判定
+    //     if (v < 0.99f)
+    //     {
+    //         // 【V値が最大でない場合】-> 一瞬、白く光らせる（V値を最大にする）
+
+    //         // a. V値を最大(1.0f)にした色を計算
+    //         Color flashColor = Color.HSVToRGB(h, s, 1.0f);
+    //         flashColor.a = originalAlpha; // 不透明度は維持
+
+    //         // b. 一瞬だけ色を差し替え
+    //         spriteRenderer.color = flashColor;
+    //         yield return new WaitForSeconds(0.1f);
+
+    //         // c. 元の色に戻す
+    //         spriteRenderer.color = originalColor;
+    //         yield return new WaitForSeconds(0.1f);
+    //     }
+    //     else
+    //     {
+    //         // 【V値がすでに最大に近い場合（白など）】-> 従来通り、半透明にする
+
+    //         // a. 一瞬暗く（半透明に）する
+    //         Color transparentColor = originalColor;
+    //         transparentColor.a = originalAlpha * 0.2f; // 80%カット
+    //         spriteRenderer.color = transparentColor;
+    //         yield return new WaitForSeconds(0.1f);
+
+    //         // b. 元の不透明度に戻す
+    //         spriteRenderer.color = originalColor;
+    //         yield return new WaitForSeconds(0.1f);
+    //     }
+    // }
+
+    #endregion
+
+    #region Helper Methods
+
+    // --- ヘルパーメソッド ---
+    /// <summary>
+    /// 指定時間後にこのゲームオブジェクトを非アクティブ化します。
+    /// </summary>
+    /// <param name="time">非アクティブ化までの待機時間</param>
+    protected virtual IEnumerator DeactivateAfterTime(float time)
+    {
+        yield return new WaitForSeconds(time);
+
+        // プールタグが設定されていればプールに戻す
+        if (!string.IsNullOrEmpty(myPoolTag))
+        {
+            ReturnToPool(); // PoolableObjectのメソッドを呼び出す
+        }
+        else
+        {
+            this.gameObject.SetActive(false);
+        }
+    }
+
+    /// <summary>
+    /// Animatorに指定したパラメーターが存在するかを確認します。
+    /// </summary>
+    /// <param name="paramName">確認したいパラメーター名</param>
+    /// <returns>存在する場合はtrue、存在しない場合はfalseを返します。</returns>
+    protected bool HasParameter(string paramName)
+    {
+        if (animator == null)
+            return false;
+        foreach (var param in animator.parameters)
+        {
+            if (param.name == paramName)
+                return true;
+        }
+        return false;
+    }
+
+    #endregion
+
     #region Interface Implementations
+
     // --- インターフェースの共通実装 ---
     public EnemyData GetEnemyData() => enemyData;
 
     public Vector3 GetDropPosition() => transform.position;
 
     public virtual Transform GetDropParent() => transform.parent;
+
     #endregion
 }

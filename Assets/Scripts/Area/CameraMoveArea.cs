@@ -141,7 +141,6 @@ public class CameraMoveArea : MonoBehaviour
     #region Internal State & References
 
     // コンポーネント参照
-    private Volume globalVolume;
     private CompositeCollider2D areaCollider;
     private Transform playerTransform;
 
@@ -223,18 +222,6 @@ public class CameraMoveArea : MonoBehaviour
     {
         areaCollider = GetComponent<CompositeCollider2D>();
 
-        // Global Volumeの取得
-        globalVolume = GameObject
-            .FindGameObjectWithTag(GameConstants.MAIN_GLOBAL_VOLUME_TAG_NAME)
-            ?.GetComponent<Volume>();
-
-        if (globalVolume == null)
-        {
-            Debug.LogError("シーン内にVolumeコンポーネントが見つかりません。", this);
-            this.enabled = false;
-            return;
-        }
-
         UpdateLightShapeToCollider();
 
         // Main Cameraチェック
@@ -291,9 +278,9 @@ public class CameraMoveArea : MonoBehaviour
     private void ApplyAreaSettings()
     {
         // 1. Volume Profile
-        if (globalVolume != null && areaVolumeProfile != null)
+        if (GlobalVolumeManager.instance != null && areaVolumeProfile != null)
         {
-            globalVolume.profile = areaVolumeProfile;
+            GlobalVolumeManager.instance.ChangeProfileImmediate(areaVolumeProfile);
         }
 
         // 2. Camera Settings
