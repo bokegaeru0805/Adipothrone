@@ -8,17 +8,20 @@ public class InputSettings : ScriptableObject
     public KeyCode PlayerDash = KeyCode.LeftShift;
     public KeyCode PlayerChange = KeyCode.Q;
     public KeyCode PlayerJump = KeyCode.Space;
+
     // public KeyCode RobotJump = KeyCode.W;
     // public KeyCode RobotDip = KeyCode.S;
     public KeyCode RobotAttack = KeyCode.S;
     public KeyCode Interact = KeyCode.E;
     public KeyCode MenuUIOpen = KeyCode.Escape;
-    public KeyCode UIConfirm = KeyCode.Space;
+    public KeyCode UIConfirm = KeyCode.Z;
+    public KeyCode UIConfirmAlternative = KeyCode.Space;
     public KeyCode UIMoveLeft = KeyCode.A;
     public KeyCode UIMoveRight = KeyCode.D;
     public KeyCode UIMoveUp = KeyCode.W;
     public KeyCode UIMoveDown = KeyCode.S;
-    public KeyCode UISelectYes = KeyCode.A;
+    public KeyCode UISelectYes = KeyCode.Z;
+    public KeyCode UISelectYesAlternative = KeyCode.Space;
     public KeyCode UISelectNo = KeyCode.D;
     public KeyCode UIClose = KeyCode.Tab;
     public KeyCode Skip = KeyCode.Escape;

@@ -220,7 +220,7 @@ public class ObjectHealth : CharacterHealth, IEnemyResettable
         }
 
         // --- 2. 物理挙動の停止 ---
-        if (rbody != null)
+        if (rbody != null && rbody.bodyType != RigidbodyType2D.Static)
         {
             rbody.velocity = Vector2.zero;
         }
@@ -305,7 +305,8 @@ public class ObjectHealth : CharacterHealth, IEnemyResettable
             this.transform.rotation = initialRotation;
 
             // Rigidbodyがある場合、回転速度もリセットしておくのが安全です
-            if (rbody != null)
+            // （ただし、StaticなRigidbodyには速度を設定できないためチェックする）
+            if (rbody != null && rbody.bodyType != RigidbodyType2D.Static)
             {
                 rbody.angularVelocity = 0f;
             }

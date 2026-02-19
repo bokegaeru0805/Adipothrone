@@ -138,12 +138,6 @@ public class DesertTempleGolemMoveController : MonoBehaviour, IEnemyResettable
         if (activator == null)
         {
             activator = GetComponentInParent<EnemyActivator>();
-            if (activator == null)
-            {
-                Debug.LogWarning(
-                    $"{this.name}の親にEnemyActivatorが見つかりませんでした。移動範囲の自動設定は行いません。"
-                );
-            }
         }
 
         spriteRenderer = this.GetComponent<SpriteRenderer>();
@@ -183,11 +177,6 @@ public class DesertTempleGolemMoveController : MonoBehaviour, IEnemyResettable
                 return;
             }
         }
-    }
-
-    private void Start()
-    {
-        ResetState();
     }
 
     public void ResetState()
@@ -290,6 +279,28 @@ public class DesertTempleGolemMoveController : MonoBehaviour, IEnemyResettable
         spriteRenderer.flipX = rightFlag;
 
         animator?.SetTrigger("IdleTrigger");
+    }
+
+    /// <summary>
+    /// 外部から移動範囲を指定して状態をリセットします。
+    /// 指定された範囲内で移動するように設定が上書きされます。
+    /// </summary>
+    /// <param name="minX">移動範囲の左端（ワールド座標X）</param>
+    /// <param name="maxX">移動範囲の右端（ワールド座標X）</param>
+    public void ResetStateWithBounds(float minX, float maxX)
+    {
+        // 1. 手動設定モードを強制的に有効化
+        isUseManualBounds = true;
+
+        // 2. 境界値を更新
+        // 大小関係が逆転していても補正して格納
+        leftBound = Mathf.Min(minX, maxX);
+        rightBound = Mathf.Max(minX, maxX);
+
+        // 3. 通常のリセット処理を呼び出す
+        // ResetState内で !isUseManualBounds の分岐により自動計算がスキップされ、
+        // 上記で設定した leftBound/rightBound が使用されます。
+        ResetState();
     }
 
     private void FixedUpdate()

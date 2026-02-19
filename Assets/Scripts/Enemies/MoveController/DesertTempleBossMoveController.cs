@@ -11,6 +11,7 @@ public class DesertTempleBossMoveController : MonoBehaviour
     //TODO: 攻撃毎の弾のスプライト・オブジェクトの変更
     private const string RIGHT_ARM_BULLET_POOLTAG = "DesertTempleGolemShoot";
     public const string RIGHT_ARM_BULLET_SPAWN_EFFECT_POOLTAG = "DesertTempleBossShootSpawnEffect"; //61D2FF
+    private const string GOLEM_POOLTAG = "DesertTempleGolem";
     public const float LEFTARM_ARMUP_ANIMATION_DURATION = 0.938f;
     public const float LEFTARM_ATTACK_ANIMATION_DURATION = 0.188f;
 
@@ -209,6 +210,15 @@ public class DesertTempleBossMoveController : MonoBehaviour
     [SerializeField]
     private float groundY = 0.0f;
 
+    [Header("ゴーレム召喚攻撃の設定")]
+    [Tooltip("ゴーレム召喚攻撃後の時間間隔の最小値")]
+    [SerializeField]
+    private float golemSpawnAttackIntervalMin = 10.0f;
+
+    [Tooltip("ゴーレム召喚攻撃後の時間間隔の最大値")]
+    [SerializeField]
+    private float golemSpawnAttackIntervalMax = 15.0f;
+
     [Space(50)]
     [Header("ゲームオブジェクト設定")]
     [SerializeField]
@@ -249,7 +259,8 @@ public class DesertTempleBossMoveController : MonoBehaviour
     private bool rightFlag = false;
     private float initialY; // 初期のY座標
     private bool isMovingLeft = false; // trueなら左移動、falseなら右移動
-    private bool isHorizontalMoveActive = false; // 横移動が有効か
+    private bool isHorizontalMoveActive = false; // 「今、移動しようとしているか」（攻撃中などはfalseになる）
+    private bool isMovementUnlocked = false; // 「移動能力が解禁されているか」（HP低下などでtrueになり、以降ずっとtrue）
     private bool isIntroMoving = false; // 登場演出の移動中かどうか
     private Tweener floatTween; // 浮遊アニメーション管理用
     private float haloRotationSpeed = 0f; // 光輪の回転速度
@@ -263,9 +274,31 @@ public class DesertTempleBossMoveController : MonoBehaviour
     private const float MAX_GROUND_DETECT_DISTANCE = 40.0f; // 地面検出の最大距離
     private List<DesertTempleBossClone> activeClones = new List<DesertTempleBossClone>(); // アクティブな分身リスト
     private List<DesertTempleBossClone> clonePool = new List<DesertTempleBossClone>(); // 分身プール
-    private DesertTempleBossState currentState = DesertTempleBossState.Idle;
 
-    private enum DesertTempleBossState
+    /// <summary>
+    /// ボスの状態が変化した際に呼ばれるイベント
+    /// </summary>
+    public event System.Action<DesertTempleBossState> OnStateChanged;
+
+    private DesertTempleBossState _currentState = DesertTempleBossState.Idle;
+
+    /// <summary>
+    /// ボスの現在の状態。値が変更されたらイベントを発火します。
+    /// </summary>
+    public DesertTempleBossState CurrentState
+    {
+        get => _currentState;
+        private set
+        {
+            if (_currentState != value)
+            {
+                _currentState = value;
+                OnStateChanged?.Invoke(_currentState);
+            }
+        }
+    }
+
+    public enum DesertTempleBossState
     {
         Idle,
         NormalAttacking,
@@ -273,7 +306,14 @@ public class DesertTempleBossMoveController : MonoBehaviour
         CloneAttacking,
         EncirclementAttacking,
         RainAttacking,
+        GolemSpawning,
     }
+
+    /// <summary>
+    /// 降雨攻撃の弾が生成された際に発火するイベント
+    /// 引数には生成された弾の GameObject を渡します
+    /// </summary>
+    public event System.Action<GameObject> OnRainBulletFired;
 
     // --- 内部参照 ---
     private SpriteRenderer bodySpriteRenderer;
@@ -393,15 +433,15 @@ public class DesertTempleBossMoveController : MonoBehaviour
     /// </summary>
     private void HandleHPChanged(int currentHP)
     {
-        if (isHorizontalMoveActive)
-            return; // 既に動いているなら無視
+        if (isMovementUnlocked)
+            return; // 既に移動能力が解禁されているなら無視
 
         if (_characterHpScript != null && _characterHpScript.MaxHP > 0)
         {
             float ratio = _characterHpScript.NormalizedHP; // 0〜1の割合でHPを取得
             if (ratio <= moveStartHpThreshold)
             {
-                isHorizontalMoveActive = true;
+                isMovementUnlocked = true;
             }
         }
     }
@@ -411,9 +451,9 @@ public class DesertTempleBossMoveController : MonoBehaviour
     /// </summary>
     private void HandleAllShieldsBroken()
     {
-        if (!isHorizontalMoveActive)
+        if (!isMovementUnlocked)
         {
-            isHorizontalMoveActive = true;
+            isMovementUnlocked = true;
         }
     }
 
@@ -445,7 +485,12 @@ public class DesertTempleBossMoveController : MonoBehaviour
         haloRotationSpeed = DEFAULT_HALO_ROTATION_SPEED;
         isHaloRotatingClockwise = true;
         isFacingLocked = false;
-        isHorizontalMoveActive = false;
+        // 初期状態では、移動能力はロックしておく（設定次第で最初からtrueも可）
+        // ※ useIntroMovementなどの兼ね合いで調整
+        isMovementUnlocked = false;
+        // isHorizontalMoveActive は「アイドル状態なら動く気がある」ので true にしておく
+        // ただし isMovementUnlocked が false なので実際には動かない
+        isHorizontalMoveActive = true;
 
         // 状態のリセット
         StopFloating(); // 浮遊を停止
@@ -493,7 +538,7 @@ public class DesertTempleBossMoveController : MonoBehaviour
             UpdateIntroMove();
         }
         // --- 追横移動の処理 ---
-        else if (isHorizontalMoveActive)
+        else if (isHorizontalMoveActive && isMovementUnlocked)
         {
             UpdateHorizontalMove();
         }
@@ -662,7 +707,8 @@ public class DesertTempleBossMoveController : MonoBehaviour
         while (true)
         {
             // --- 0〜4の範囲でランダム選択 ---
-            int attackType = Random.Range(0, 5); // 0:レーザー, 1:分身, 2:囲い込み, 3:降雨, 4:通常攻撃
+            // int attackType = Random.Range(0, 6); // 0:レーザー, 1:分身, 2:囲い込み, 3:降雨, 4:通常攻撃, 5:ゴーレム召喚
+            int attackType = 3; // デバッグ用に固定（降雨攻撃）
 
             // 攻撃種別に応じたインターバル設定用変数
             float minInterval = 0f;
@@ -696,6 +742,11 @@ public class DesertTempleBossMoveController : MonoBehaviour
                     maxInterval = leftArmAttackIntervalMax;
                     yield return StartCoroutine(PerformNormalAttack());
                     break;
+                case 5: // ゴーレム召喚攻撃
+                    minInterval = golemSpawnAttackIntervalMin;
+                    maxInterval = golemSpawnAttackIntervalMax;
+                    yield return StartCoroutine(PerformGolemSpawnAttack());
+                    break;
             }
 
             // 攻撃後のインターバル待機
@@ -711,7 +762,7 @@ public class DesertTempleBossMoveController : MonoBehaviour
     private IEnumerator PerformNormalAttack()
     {
         // 1. 準備フェーズ
-        currentState = DesertTempleBossState.NormalAttacking;
+        CurrentState = DesertTempleBossState.NormalAttacking;
 
         // 2. チャージ動作
         leftArmAnimator.SetFloat(
@@ -789,7 +840,7 @@ public class DesertTempleBossMoveController : MonoBehaviour
         // 5. 復帰
         leftArmAnimator.SetTrigger("IdleTrigger"); // 腕を戻す
         isFacingLocked = false; // 向き固定解除
-        currentState = DesertTempleBossState.Idle;
+        CurrentState = DesertTempleBossState.Idle;
     }
 
     /// <summary>
@@ -906,7 +957,7 @@ public class DesertTempleBossMoveController : MonoBehaviour
 
         // 攻撃フェーズ: レーザー発射
         isFacingLocked = true; // 向きを固定
-        currentState = DesertTempleBossState.LaserAttacking;
+        CurrentState = DesertTempleBossState.LaserAttacking;
         //TODO: 攻撃SE再生
 
         if (laserObject != null)
@@ -950,7 +1001,7 @@ public class DesertTempleBossMoveController : MonoBehaviour
         // 復帰フェーズ
         isFacingLocked = false; // 向き固定解除
         isHorizontalMoveActive = true; // 移動再開
-        currentState = DesertTempleBossState.Idle;
+        CurrentState = DesertTempleBossState.Idle;
 
         // 光輪の回転をデフォルトに戻す
         SetHaloRotation(DEFAULT_HALO_ROTATION_SPEED, true);
@@ -967,7 +1018,7 @@ public class DesertTempleBossMoveController : MonoBehaviour
         // 1. 準備フェーズ
         isHorizontalMoveActive = false;
         StopRightArmAttack();
-        currentState = DesertTempleBossState.CloneAttacking;
+        CurrentState = DesertTempleBossState.CloneAttacking;
 
         SetHaloRotation(DEFAULT_HALO_ROTATION_SPEED, true);
         activeClones.Clear(); // 今回使用するリストをクリア
@@ -1077,7 +1128,7 @@ public class DesertTempleBossMoveController : MonoBehaviour
         CleanupClones();
 
         // 8. 復帰
-        currentState = DesertTempleBossState.Idle;
+        CurrentState = DesertTempleBossState.Idle;
         auraEffectObject.SetActive(true); // オーラを再表示
         isHorizontalMoveActive = true;
         StartRightArmAttack();
@@ -1238,7 +1289,7 @@ public class DesertTempleBossMoveController : MonoBehaviour
     private IEnumerator PerformEncirclementAttack()
     {
         // 1. 準備フェーズ
-        currentState = DesertTempleBossState.EncirclementAttacking;
+        CurrentState = DesertTempleBossState.EncirclementAttacking;
         leftArmAnimator.SetFloat("ArmUpSpeed", LEFTARM_ARMUP_ANIMATION_DURATION / 0.2f); // 0.2秒で上げる
         leftArmAnimator.SetTrigger("ArmUpTrigger"); // 左腕を上げる
 
@@ -1457,7 +1508,7 @@ public class DesertTempleBossMoveController : MonoBehaviour
         }
 
         // 6. 復帰
-        currentState = DesertTempleBossState.Idle;
+        CurrentState = DesertTempleBossState.Idle;
         SetHaloRotation(DEFAULT_HALO_ROTATION_SPEED, true); // 光輪回転戻す
     }
     #endregion
@@ -1470,7 +1521,7 @@ public class DesertTempleBossMoveController : MonoBehaviour
     {
         // 1. 準備フェーズ
         // ※この攻撃は移動と右腕攻撃を止めないため、isHorizontalMoveActive等は変更しない
-        currentState = DesertTempleBossState.RainAttacking;
+        CurrentState = DesertTempleBossState.RainAttacking;
         leftArmAnimator.SetTrigger("ArmUpTrigger"); // 左腕を上げる
         yield return StartCoroutine(WaitForTime(LEFTARM_ARMUP_ANIMATION_DURATION)); // 腕上げ完了待ち
 
@@ -1492,7 +1543,7 @@ public class DesertTempleBossMoveController : MonoBehaviour
 
         // 3. 復帰
         leftArmAnimator.SetTrigger("IdleTrigger"); // 左腕を戻す
-        currentState = DesertTempleBossState.Idle;
+        CurrentState = DesertTempleBossState.Idle;
         // 移動等は止められていないため、再開処理は不要
     }
 
@@ -1535,7 +1586,70 @@ public class DesertTempleBossMoveController : MonoBehaviour
             var sePlayer = GetComponent<CriWare.Assets.CriAtomSePlayer>();
             if (sePlayer != null) sePlayer.Play(SE_EnemyAction.Shoot_Water1);
             */
+
+            // 降雨の弾が生成されたことを通知するイベントを発火
+            OnRainBulletFired?.Invoke(bullet);
         }
+    }
+    #endregion
+
+    #region ゴーレム召喚攻撃の処理
+    /// <summary>
+    /// ゴーレムを召喚する一連の動作
+    /// </summary>
+    private IEnumerator PerformGolemSpawnAttack()
+    {
+        // 1. 準備フェーズ
+        CurrentState = DesertTempleBossState.GolemSpawning;
+
+        // 2. 召喚モーション（左腕を上げる）
+        leftArmAnimator.SetFloat(
+            "ArmUpSpeed",
+            LEFTARM_ARMUP_ANIMATION_DURATION / 1.0f // 1秒程度で上げる
+        );
+        leftArmAnimator.SetTrigger("ArmUpTrigger");
+
+        // モーション待機
+        yield return StartCoroutine(WaitForTime(LEFTARM_ARMUP_ANIMATION_DURATION));
+
+        // 3. ゴーレム生成
+        // 生成位置はY座標（地面）のみ確定させ、Xは仮置きする
+        // (ResetStateWithBounds内でランダムなX座標に再配置されるため)
+        Vector3 spawnPos = new Vector3(transform.position.x, groundY, 0f);
+
+        GameObject golem = ObjectPooler.SceneInstance.SpawnFromPool(
+            GOLEM_POOLTAG,
+            spawnPos,
+            Quaternion.identity
+        );
+
+        if (golem != null)
+        {
+            var golemCtrl = golem.GetComponent<DesertTempleGolemMoveController>();
+            if (golemCtrl != null)
+            {
+                // ボスの移動範囲（leftBound, rightBound）を渡して初期化
+                // これにより、ゴーレムは範囲内のランダムな位置に移動します
+                golemCtrl.ResetStateWithBounds(leftBound, rightBound);
+            }
+
+            // ゴーレムの出現位置に合わせてエフェクトを生成
+            // (ResetStateで位置が変わった後の座標を取得)
+            Vector3 effectPos = golem.transform.position;
+
+            ObjectPooler.PersistentInstance.SpawnFromPool(
+                GameConstants.EFFECT_ENEMY_SPAWN_POOLTAG,
+                effectPos,
+                Quaternion.identity
+            );
+
+            // TODO: 召喚SE再生
+        }
+
+        // 4. 復帰
+        yield return StartCoroutine(WaitForTime(0.5f)); // 余韻
+        leftArmAnimator.SetTrigger("IdleTrigger"); // 腕を戻す
+        CurrentState = DesertTempleBossState.Idle;
     }
     #endregion
 
@@ -1811,5 +1925,25 @@ public class DesertTempleBossMoveController : MonoBehaviour
         );
         Vector3 size = new Vector3(rightBound - leftBound, 13.0f, 0.1f);
         Gizmos.DrawCube(center, size);
+
+        // --- 天井と地面のY座標の描画 ---
+        // 線の長さを leftBound から rightBound までとする。
+        // もし範囲が設定されていない（両方0など）場合は、ボスの現在位置から左右10の長さで描画する。
+        float drawLeft = (leftBound != rightBound) ? leftBound : transform.position.x - 10f;
+        float drawRight = (leftBound != rightBound) ? rightBound : transform.position.x + 10f;
+
+        // 天井 (ceilingY) を緑色の線で描画
+        Gizmos.color = Color.green;
+        Gizmos.DrawLine(
+            new Vector3(drawLeft, ceilingY, transform.position.z),
+            new Vector3(drawRight, ceilingY, transform.position.z)
+        );
+
+        // 地面 (groundY) を黄色の線で描画
+        Gizmos.color = Color.yellow;
+        Gizmos.DrawLine(
+            new Vector3(drawLeft, groundY, transform.position.z),
+            new Vector3(drawRight, groundY, transform.position.z)
+        );
     }
 }

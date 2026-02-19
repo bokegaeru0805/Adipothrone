@@ -1,5 +1,5 @@
 fileFormatVersion: 2
-guid: afb956eb476b10546b27449243f547b6
+guid: 4778161abb052444daaf10689a7f701a
 TextureImporter:
   internalIDToNameTable: []
   externalObjects: {}
@@ -110,85 +110,190 @@ TextureImporter:
     serializedVersion: 2
     sprites:
     - serializedVersion: 2
-      name: DesertTempleGolemShoot_0
+      name: FillShoot_0
       rect:
         serializedVersion: 2
         x: 0
         y: 0
-        width: 24
-        height: 24
-      alignment: 0
-      pivot: {x: 0, y: 0}
+        width: 50
+        height: 20
+      alignment: 9
+      pivot: {x: 0.7, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
       outline: []
       physicsShape: []
       tessellationDetail: 0
       bones: []
-      spriteID: 0a13f2ec7a7e93849bb9cffd4151355d
-      internalID: -1475089554
+      spriteID: ee0816c82ce23884fab761684dfd05e4
+      internalID: 324360763
       vertices: []
       indices: 
       edges: []
       weights: []
     - serializedVersion: 2
-      name: DesertTempleGolemShoot_1
+      name: FillShoot_1
       rect:
         serializedVersion: 2
-        x: 24
+        x: 50
         y: 0
-        width: 24
-        height: 24
-      alignment: 0
-      pivot: {x: 0, y: 0}
+        width: 50
+        height: 20
+      alignment: 9
+      pivot: {x: 0.7, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
       outline: []
       physicsShape: []
       tessellationDetail: 0
       bones: []
-      spriteID: fcfb43bf4fbf4744d98c7879ddf66b90
-      internalID: 1158382915
+      spriteID: 5249d0c778cb2784fae2f34d646fd355
+      internalID: -391437621
       vertices: []
       indices: 
       edges: []
       weights: []
     - serializedVersion: 2
-      name: DesertTempleGolemShoot_2
+      name: FillShoot_2
       rect:
         serializedVersion: 2
-        x: 48
+        x: 100
         y: 0
-        width: 24
-        height: 24
-      alignment: 0
-      pivot: {x: 0, y: 0}
+        width: 50
+        height: 20
+      alignment: 9
+      pivot: {x: 0.7, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
       outline: []
       physicsShape: []
       tessellationDetail: 0
       bones: []
-      spriteID: 3f3f001e152fcb144bbc103cf36fd0e5
-      internalID: -808652275
+      spriteID: 2af5665038971554789148fe8fa230a7
+      internalID: -949981950
       vertices: []
       indices: 
       edges: []
       weights: []
     - serializedVersion: 2
-      name: DesertTempleGolemShoot_3
+      name: FillShoot_3
       rect:
         serializedVersion: 2
-        x: 72
+        x: 150
         y: 0
-        width: 24
-        height: 24
-      alignment: 0
-      pivot: {x: 0, y: 0}
+        width: 50
+        height: 20
+      alignment: 9
+      pivot: {x: 0.7, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
       outline: []
       physicsShape: []
       tessellationDetail: 0
       bones: []
-      spriteID: d24b40a399f2e044aa73a4d2a0781482
-      internalID: 1701985912
+      spriteID: e2c076a5fd090ef40b54a17dfbd2fdf5
+      internalID: 34007614
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: FillShoot_4
+      rect:
+        serializedVersion: 2
+        x: 200
+        y: 0
+        width: 50
+        height: 20
+      alignment: 9
+      pivot: {x: 0.7, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 0d3c97d5d67c93c40917c55b05f273f9
+      internalID: -1665829403
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: FillShoot_5
+      rect:
+        serializedVersion: 2
+        x: 250
+        y: 0
+        width: 50
+        height: 20
+      alignment: 9
+      pivot: {x: 0.7, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 9ca464dd8ae947946940ba47670e4fd7
+      internalID: 296440661
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: FillShoot_6
+      rect:
+        serializedVersion: 2
+        x: 300
+        y: 0
+        width: 50
+        height: 20
+      alignment: 9
+      pivot: {x: 0.7, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: b8668a30adbfdde49b1cc6e98127df4e
+      internalID: 250108752
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: FillShoot_7
+      rect:
+        serializedVersion: 2
+        x: 350
+        y: 0
+        width: 50
+        height: 20
+      alignment: 9
+      pivot: {x: 0.7, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: f111670f58235c64b865b6784faf8d14
+      internalID: -1170967707
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: FillShoot_8
+      rect:
+        serializedVersion: 2
+        x: 400
+        y: 0
+        width: 50
+        height: 20
+      alignment: 9
+      pivot: {x: 0.7, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 608962da33b6a6e4a8633d05c68d1b2d
+      internalID: 215058907
       vertices: []
       indices: 
       edges: []
@@ -204,10 +309,15 @@ TextureImporter:
     weights: []
     secondaryTextures: []
     nameFileIdTable:
-      DesertTempleGolemShoot_0: -1475089554
-      DesertTempleGolemShoot_1: 1158382915
-      DesertTempleGolemShoot_2: -808652275
-      DesertTempleGolemShoot_3: 1701985912
+      FillShoot_0: 324360763
+      FillShoot_1: -391437621
+      FillShoot_2: -949981950
+      FillShoot_3: 34007614
+      FillShoot_4: -1665829403
+      FillShoot_5: 296440661
+      FillShoot_6: 250108752
+      FillShoot_7: -1170967707
+      FillShoot_8: 215058907
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 

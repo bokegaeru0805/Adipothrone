@@ -84,7 +84,11 @@ public class InputManager : MonoBehaviour
 
     public bool UIConfirm()
     {
-        return InputAllowed() && Input.GetKeyDown(inputSettings.UIConfirm);
+        return InputAllowed()
+            && (
+                Input.GetKeyDown(inputSettings.UIConfirm)
+                || Input.GetKeyDown(inputSettings.UIConfirmAlternative)
+            );
     }
 
     public bool UIMoveRight()
@@ -119,7 +123,11 @@ public class InputManager : MonoBehaviour
 
     public bool UISelectYes()
     {
-        return InputAllowed() && Input.GetKeyDown(inputSettings.UISelectYes);
+        return InputAllowed()
+            && (
+                Input.GetKeyDown(inputSettings.UISelectYes)
+                || Input.GetKeyDown(inputSettings.UISelectYesAlternative)
+            );
     }
 
     public bool UIClose()

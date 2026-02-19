@@ -23,6 +23,8 @@ public abstract class PoolableObject : MonoBehaviour
 
     public void SetPoolType(PoolType type) => returnToPool = type;
 
+    public string PoolTag => myPoolTag;
+
     /// <summary>
     /// 自分自身をプールに返却する共通ロジック
     /// </summary>
