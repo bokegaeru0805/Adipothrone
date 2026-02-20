@@ -72,6 +72,11 @@ public class InputManager : MonoBehaviour
         return InputAllowed() && Input.GetKey(inputSettings.RobotAttack);
     }
 
+    public bool GetPlayerShieldHold()
+    {
+        return InputAllowed() && Input.GetKey(inputSettings.PlayerShield);
+    }
+
     public bool GetInteract()
     {
         return InputAllowed() && Input.GetKey(inputSettings.Interact);

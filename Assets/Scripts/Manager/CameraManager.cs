@@ -42,6 +42,8 @@ namespace MyGame.CameraControl
         private Tweener offsetTween;
         private Tweener xDampingTween;
         private Tweener yDampingTween;
+        public bool IsContinuousShakeActive { get; private set; } // 持続シェイクが実行中か
+        private Tweener continuousShakeTween; // フェードアウト用のTween
 
         // 現在設定されているDampingの基準値を保持する変数
         private float currentBaseXDamping = GameConstants.CAMERA_FOLLOW_DAMPING_X;
@@ -55,7 +57,7 @@ namespace MyGame.CameraControl
         private float originalXDamping; // 元のDamping設定保存用
         private float originalYDamping; // 元のDamping設定保存用
         private bool isDebugScene = false; // 開発用フラグ：デバッグシーンかどうか
-        #region Unity Methods /// <summary>
+        #region Unity Methods
         private void Awake()
         {
             if (instance == null)
@@ -348,7 +350,7 @@ namespace MyGame.CameraControl
         }
 
         /// <summary>
-        /// （コルーチン）指定時間だけPerlinNoiseを有効化し、その後無効化します。
+        /// 指定時間だけPerlinNoiseを有効化し、その後無効化します。
         /// </summary>
         private IEnumerator ShakeCoroutine()
         {
@@ -404,7 +406,7 @@ namespace MyGame.CameraControl
         }
 
         /// <summary>
-        /// （コルーチン）指定されたパラメータでPerlinNoiseを有効化し、時間経過後に停止します。
+        /// 指定されたパラメータでPerlinNoiseを有効化し、時間経過後に停止します。
         /// </summary>
         private IEnumerator CustomShakeCoroutine(float amplitude, float frequency, float duration)
         {
@@ -447,7 +449,7 @@ namespace MyGame.CameraControl
         }
 
         /// <summary>
-        /// （コルーチン）Cinemachine Brainを一時的に無効化し、DOTweenを使用してカメラを振動させます。完了後、CameraResetを呼び出します。
+        /// Cinemachine Brainを一時的に無効化し、DOTweenを使用してカメラを振動させます。完了後、CameraResetを呼び出します。
         /// </summary>
         /// <param name="positionStrength">シェイクの強さ（各軸）</param>
         /// <param name="shakeDuration">シェイクの時間（秒）</param>
@@ -473,6 +475,67 @@ namespace MyGame.CameraControl
             Camera.main.GetComponent<CinemachineBrain>().enabled = true;
         }
 
+        /// <summary>
+        /// 外部コマンドから無期限（または指定時間）の持続的なカメラシェイクを開始します。
+        /// </summary>
+        public void PlayContinuousShake(float amplitude, float frequency)
+        {
+            if (perlinNoise == null)
+                return;
+
+            // 既存のシェイク処理があれば強制停止
+            if (shakeCoroutine != null)
+                StopCoroutine(shakeCoroutine);
+            continuousShakeTween?.Kill();
+
+            IsContinuousShakeActive = true;
+            isPriorityShakeActive = true; // 他のヒットストップ等による上書きを防止
+
+            perlinNoise.m_NoiseProfile = takeHitNoiseSettings; // ヒット時と同じProfileを使用
+            perlinNoise.m_AmplitudeGain = amplitude;
+            perlinNoise.m_FrequencyGain = frequency;
+        }
+
+        /// <summary>
+        /// 実行中の持続的なカメラシェイクを停止します。
+        /// </summary>
+        /// <param name="fadeDuration">フェードアウトにかける時間（0で即座に停止）</param>
+        public void StopContinuousShake(float fadeDuration)
+        {
+            // 実行中でなければ何もしない
+            if (perlinNoise == null || !IsContinuousShakeActive)
+                return;
+
+            IsContinuousShakeActive = false; // フラグを即座に折り、多重実行を防止
+            continuousShakeTween?.Kill();
+
+            if (fadeDuration <= 0f)
+            {
+                // 即座に停止
+                perlinNoise.m_AmplitudeGain = 0f;
+                perlinNoise.m_FrequencyGain = 0f;
+                perlinNoise.m_NoiseProfile = null;
+                isPriorityShakeActive = false; // 優先フラグを解除して通常ヒット時の揺れを許可
+            }
+            else
+            {
+                // DOTweenを使って徐々に揺れ（Amplitude）を0に近づける
+                continuousShakeTween = DOTween
+                    .To(
+                        () => perlinNoise.m_AmplitudeGain,
+                        x => perlinNoise.m_AmplitudeGain = x,
+                        0f,
+                        fadeDuration
+                    )
+                    .SetUpdate(true) // TimeScale=0でもフェードアウトさせる
+                    .OnComplete(() =>
+                    {
+                        perlinNoise.m_FrequencyGain = 0f;
+                        perlinNoise.m_NoiseProfile = null;
+                        isPriorityShakeActive = false;
+                    });
+            }
+        }
         #endregion
 
         #region Damping Control

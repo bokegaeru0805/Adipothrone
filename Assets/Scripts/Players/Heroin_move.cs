@@ -852,7 +852,7 @@ public class Heroin_move : MonoBehaviour
     }
 
     /// <summary>
-    /// 環境エリアに入ったときに呼ばれる登録メソッド (新規追加)
+    /// 環境エリアに入ったときに呼ばれる登録メソッド
     /// </summary>
     public void EnterEnvironmentArea(EnvironmentArea area)
     {
@@ -863,7 +863,7 @@ public class Heroin_move : MonoBehaviour
     }
 
     /// <summary>
-    /// 環境エリアから出たときに呼ばれる解除メソッド (新規追加)
+    /// 環境エリアから出たときに呼ばれる解除メソッド
     /// </summary>
     public void ExitEnvironmentArea(EnvironmentArea area)
     {

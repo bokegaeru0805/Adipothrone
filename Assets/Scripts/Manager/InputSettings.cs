@@ -8,6 +8,7 @@ public class InputSettings : ScriptableObject
     public KeyCode PlayerDash = KeyCode.LeftShift;
     public KeyCode PlayerChange = KeyCode.Q;
     public KeyCode PlayerJump = KeyCode.Space;
+    public KeyCode PlayerShield = KeyCode.DownArrow;
 
     // public KeyCode RobotJump = KeyCode.W;
     // public KeyCode RobotDip = KeyCode.S;

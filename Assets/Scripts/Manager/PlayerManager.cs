@@ -57,27 +57,29 @@ public class PlayerManager : MonoBehaviour
 
     // 演出用パラメータ
     private float fadeOutDuration = 2f; // フェードアウトにかかる時間
-    private bool isDying = false;       // 死亡演出が進行中かどうかのフラグ
+    private bool isDying = false; // 死亡演出が進行中かどうかのフラグ
 
     // インベントリソート用辞書（アイテムID -> 並び順インデックス）
     private Dictionary<int, int> itemSortOrderMap;
+
+    // シールドコントローラーへの参照
+    private PlayerShieldController shieldController;
 
     #endregion
 
     #region Events
 
-    public event Action OnQuickSlotAssigned;             // クイックスロットが割り当てられたとき
-    public event Action<int> OnChangeHP;                 // HPが変化したとき
-    public event Action<int> OnChangeMaxHP;              // 最大HPが変化したとき
-    public event Action<int> OnChangeMaxWP;              // 最大WPが変化したとき
-    public event Action<int> OnChangeWP;                 // WPが変化したとき
+    public event Action OnQuickSlotAssigned; // クイックスロットが割り当てられたとき
+    public event Action<int> OnChangeHP; // HPが変化したとき
+    public event Action<int> OnChangeMaxHP; // 最大HPが変化したとき
+    public event Action<int> OnChangeMaxWP; // 最大WPが変化したとき
+    public event Action<int> OnChangeWP; // WPが変化したとき
     public event Action<PlayerAttackType> OnChangeAttackType; // 攻撃方法が変化したとき
     public event Action<KnockbackData> OnDamageReaction; // ダメージリアクション時
-    public event Action OnChangePlayerMoney;             // 所持金が変化したとき
-    public event Action OnPlayerDied;                    // 死亡時
-    public event Action OnPlayerRevived;                 // 復活時
-    public event Action<PlayerStatusBoolName, bool> OnBoolStatusChanged; // Boolステータス変化時
-
+    public event Action OnChangePlayerMoney; // 所持金が変化したとき
+    public event Action OnPlayerDied; // 死亡時
+    public event Action OnPlayerRevived; // 復活時
+    public event Action<PlayerStatusBoolName, bool> OnBoolStatusChanged;
     #endregion
 
     #region Unity Lifecycle Methods
@@ -128,6 +130,7 @@ public class PlayerManager : MonoBehaviour
             else
             {
                 heroinMove = playerGameObject.GetComponent<Heroin_move>();
+                shieldController = playerGameObject.GetComponent<PlayerShieldController>();
             }
         }
 
@@ -170,7 +173,8 @@ public class PlayerManager : MonoBehaviour
         if (field != null && field.FieldType == typeof(bool))
         {
             bool oldValue = (bool)field.GetValue(GameManager.instance.savedata.PlayerStatus);
-            if (oldValue == value) return; // 値が変わらなければ何もしない
+            if (oldValue == value)
+                return; // 値が変わらなければ何もしない
 
             field.SetValue(GameManager.instance.savedata.PlayerStatus, value);
             OnBoolStatusChanged?.Invoke(flag, value); // 汎用イベントを発行
@@ -261,7 +265,8 @@ public class PlayerManager : MonoBehaviour
     /// </summary>
     public void SetMaxHP(int newMaxHP)
     {
-        if (playerMaxHP == newMaxHP) return;
+        if (playerMaxHP == newMaxHP)
+            return;
         playerMaxHP = newMaxHP;
         OnChangeMaxHP?.Invoke(playerMaxHP);
     }
@@ -271,7 +276,8 @@ public class PlayerManager : MonoBehaviour
     /// </summary>
     public void SetMaxWP(int newMaxWP)
     {
-        if (playerMaxWP == newMaxWP) return;
+        if (playerMaxWP == newMaxWP)
+            return;
         playerMaxWP = newMaxWP;
         OnChangeMaxWP?.Invoke(playerMaxWP);
     }
@@ -304,7 +310,8 @@ public class PlayerManager : MonoBehaviour
     /// </summary>
     public void DamageHPByMaxHPRatio(float damageRatio, KnockbackData knockbackData = default)
     {
-        if (damageRatio <= 0) return;
+        if (damageRatio <= 0)
+            return;
 
         // 最低でも1ダメージは保証する
         int damageAmount = Mathf.Max(1, Mathf.RoundToInt(playerMaxHP * damageRatio));
@@ -317,7 +324,8 @@ public class PlayerManager : MonoBehaviour
     /// </summary>
     public void DamageHPByCurrentHPRatio(float damageRatio, KnockbackData knockbackData = default)
     {
-        if (damageRatio <= 0) return;
+        if (damageRatio <= 0)
+            return;
 
         int currentHP = GetPlayerIntStatus(PlayerStatusIntName.playerCurrentHP);
         // 最低でも1ダメージは保証する
@@ -339,8 +347,28 @@ public class PlayerManager : MonoBehaviour
             return;
         }
 
+        // シールド展開中のダメージ処理
+        if (
+            shieldController != null
+            && shieldController.isShieldActive
+            && !shieldController.isBroken
+        )
+        {
+            // ダメージの割合を計算 (damage / playerMaxHP)
+            float shieldDamageRatio = (float)damage / playerMaxHP;
+
+            // シールドの耐久値を減らす
+            shieldController.TakeShieldDamage(shieldDamageRatio);
+
+            // シールドでダメージを防いだため、HPの減少処理をここでスキップする
+            // ※必要であれば、ノックバック（OnDamageReaction?.Invoke(knockbackData);）や
+            // シールド被弾用のSEをここで再生することも可能です。
+            return;
+        }
+
         // 既に死亡処理が始まっている場合は、重複して実行しない
-        if (isDying) return;
+        if (isDying)
+            return;
 
         // ダメージが1以上発生する場合、被弾時刻を更新する
         if (damage > 0)
@@ -352,10 +380,11 @@ public class PlayerManager : MonoBehaviour
         int playerCurrentMaxHP = playerMaxHP;
 
         // HPがGutsEffectThresholdの閾値以上あるかどうかの条件を確認（食いしばり効果）
-        bool hasGutsEffect = (float)hpBeforeDamage / playerCurrentMaxHP >= GameConstants.GUTS_EFFECT_THRESHOLD;
+        bool hasGutsEffect =
+            (float)hpBeforeDamage / playerCurrentMaxHP >= GameConstants.GUTS_EFFECT_THRESHOLD;
 
         SEManager.instance?.PlayPlayerActionSE(SE_PlayerAction.Damage1); // ダメージの効果音を鳴らす
-        
+
         int hpAfterDamage = hpBeforeDamage - damage;
         SetPlayerIntStatus(PlayerStatusIntName.playerCurrentHP, hpAfterDamage); // HPを更新
 
@@ -420,7 +449,9 @@ public class PlayerManager : MonoBehaviour
         }
 
         // 3. さらに指定したfadeOutDuration秒数待機
-        yield return new WaitForSecondsRealtime(isSaveEnabled ? fadeOutDuration : fadeOutDuration - 0.5f);
+        yield return new WaitForSecondsRealtime(
+            isSaveEnabled ? fadeOutDuration : fadeOutDuration - 0.5f
+        );
 
         // 4. 時間の停止を解除し、最終処理を実行
         TimeManager.instance?.SetEnemyMovePaused(false); // 敵の動きを再開
@@ -444,20 +475,23 @@ public class PlayerManager : MonoBehaviour
     public void HealHP(int heal)
     {
         // 0以下の回復量は無意味なので終了
-        if (heal <= 0) return;
+        if (heal <= 0)
+            return;
 
         int currentHP = GetPlayerIntStatus(PlayerStatusIntName.playerCurrentHP);
         int maxHP = playerMaxHP;
         bool wasDead = currentHP <= 0; // 回復前に死亡していたかを記録
 
         // すでにHPが満タンで、かつ死んでいない場合は回復不要
-        if (currentHP >= maxHP && !wasDead) return;
+        if (currentHP >= maxHP && !wasDead)
+            return;
 
         // 回復後のHPを計算し、0と最大値の間に収める
         int newHP = Mathf.Clamp(currentHP + heal, 0, maxHP);
 
         // HPに変化がなければイベント不要
-        if (newHP == currentHP) return;
+        if (newHP == currentHP)
+            return;
 
         SetPlayerIntStatus(PlayerStatusIntName.playerCurrentHP, newHP);
 
@@ -497,7 +531,8 @@ public class PlayerManager : MonoBehaviour
         int currentWP = GetPlayerIntStatus(PlayerStatusIntName.playerCurrentWP);
 
         // すでにWPが満タンなら何もしない
-        if (currentWP >= maxWP) return;
+        if (currentWP >= maxWP)
+            return;
 
         int newWP = Mathf.Min(currentWP + heal, maxWP);
         SetPlayerIntStatus(PlayerStatusIntName.playerCurrentWP, newWP);
@@ -514,7 +549,7 @@ public class PlayerManager : MonoBehaviour
 
         int currentWP = GetPlayerIntStatus(PlayerStatusIntName.playerCurrentWP);
         int newWP = Mathf.Max(0, currentWP - damage); // 0未満にならないようにする
-        
+
         GameManager.instance.savedata.PlayerStatus.playerCurrentWP = newWP;
         OnChangeWP?.Invoke(newWP);
     }
@@ -526,7 +561,9 @@ public class PlayerManager : MonoBehaviour
     {
         if (!(GameManager.instance?.savedata?.PlayerStatus?.isChangeWP ?? false))
         {
-            Debug.LogWarning("WPの変更が無効化されています。PlayerStatusDataのisChangeWPを確認してください。");
+            Debug.LogWarning(
+                "WPの変更が無効化されています。PlayerStatusDataのisChangeWPを確認してください。"
+            );
             return;
         }
 
@@ -542,7 +579,9 @@ public class PlayerManager : MonoBehaviour
     /// <param name="addedBufferValue">加算するWP消費のバッファ値（小数対応）</param>
     public void AddWpConsumptionBuffer(float addedBufferValue)
     {
-        float currentWpConsumptionBuffer = GetPlayerFloatStatus(PlayerStatusFloatName.wpConsumptionBuffer);
+        float currentWpConsumptionBuffer = GetPlayerFloatStatus(
+            PlayerStatusFloatName.wpConsumptionBuffer
+        );
         currentWpConsumptionBuffer += addedBufferValue;
 
         // 合計値が1以上であれば、整数部分をWPダメージとして反映
@@ -585,8 +624,10 @@ public class PlayerManager : MonoBehaviour
         HealItemData item = healItemDatabase.GetItemByID(ID); // itemのDataを取得
         if (item != null)
         {
-            if (item.hpHealAmount > 0) HealHP(item.hpHealAmount);
-            if (item.wpHealAmount > 0) HealWP(item.wpHealAmount);
+            if (item.hpHealAmount > 0)
+                HealHP(item.hpHealAmount);
+            if (item.wpHealAmount > 0)
+                HealWP(item.wpHealAmount);
 
             // 特殊効果の適用をPlayerEffectManagerに委任する
             foreach (var effect in item.buffEffects)

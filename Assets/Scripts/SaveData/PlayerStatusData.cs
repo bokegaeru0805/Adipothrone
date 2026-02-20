@@ -18,6 +18,7 @@ public class PlayerStatusData
     public bool isChangeWP; //プレイヤーのWPを変更できるかどうか
     public bool isRobotmove; //Robotが動けるか
     public bool isRobotattack; //Robotが攻撃できるか
+    public bool isCanUseShield; //シールドを使用できるかどうか
     public List<PlayerEffectStates> playerEffectStates; //プレイヤーの効果状態を保存する変数
 
     // 注意：
@@ -44,6 +45,7 @@ public class PlayerStatusData
         isChangeWP = true; // WPの変更を許可(チュートリアルで体形変化するため)
         isRobotmove = false;
         isRobotattack = false;
+        isCanUseShield = false;
         playerEffectStates = new List<PlayerEffectStates>();
     }
 }
@@ -56,7 +58,7 @@ public enum PlayerAttackType
     Magic = 30,
 }
 
-[System.Serializable]
+[Serializable]
 public class PlayerEffectStates
 {
     public int effectTypeNumber;
@@ -83,12 +85,9 @@ public class PlayerEffectStates
 public enum PlayerStatusBoolName
 {
     isRobotmove = 20, //Robotが動けるか
-    isRobotattack =
-        30 //Robotが攻撃できるか
-    ,
-    isChangeAttackType =
-        40 //プレイヤーの攻撃方法を変更できるかどうか
-    ,
+    isRobotattack = 30, //Robotが攻撃できるか
+    isChangeAttackType = 40, //プレイヤーの攻撃方法を変更できるかどうか
+    isCanUseShield = 50, //シールドを使用できるかどうか
 }
 
 public enum PlayerStatusIntName

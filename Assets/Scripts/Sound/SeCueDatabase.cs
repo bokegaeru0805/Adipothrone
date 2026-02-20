@@ -128,7 +128,7 @@ public static class SeCueDatabase
         new Dictionary<SE_SystemEvent, string>
         {
             { SE_SystemEvent.Impact1, "Impact1" },
-            { SE_SystemEvent.Quake, "Quake" },
+            { SE_SystemEvent.Quake, "Quake1" },
             { SE_SystemEvent.Vanish1, "Vanish1" },
             { SE_SystemEvent.Warning1, "Warning1" },
             { SE_SystemEvent.Warp1, "Warp1" },

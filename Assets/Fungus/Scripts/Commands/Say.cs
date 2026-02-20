@@ -77,6 +77,11 @@ namespace Fungus
         protected int executionCount;
 
         #region Public members (他のスクリプトからアクセス可能な公開メンバー)
+        /// <summary>
+        /// Sayコマンドが実行され、話者が決定した際に発行されるイベント。
+        /// 各キャラクターの立ち絵コントローラーがこれを検知して、明暗（フォーカス）を切り替えます。
+        /// </summary>
+        public static event System.Action<Character> OnCharacterSpeak;
 
         /// <summary>
         /// このセリフを話すキャラクターを取得します。
@@ -149,6 +154,9 @@ namespace Fungus
             }
             executionCount++;
 
+            // 話者が決定した時点でイベントを発行し、立ち絵コントローラーに通知する
+            OnCharacterSpeak?.Invoke(character);
+
             // --- 【ステップ2】表示に使用するSayDialog（会話ウィンドウ）を決定 ---
             if (character != null && character.SetSayDialog != null)
             {
@@ -169,17 +177,17 @@ namespace Fungus
             sayDialog.SetCharacter(character);
 
             // --- 【ステップ3】立ち絵の表示処理 ---
-            // 変更: 直接処理せず、イベントを発行するだけにする
-            if (character != null && character.name == "Heroin")
+            // 直接処理せず、イベントを発行するだけにする
+            if (character != null && !string.IsNullOrEmpty(portraitString))
             {
-                // Heroinの場合、Fungus標準の立ち絵は使わない
+                // portraitStringが設定されている場合（Heroinや動的立ち絵を持つNPC）、Fungus標準の立ち絵は使わない
                 sayDialog.SetCharacterImage(null);
                 // 合図（イベント）を送信する
                 FungusCustomSignals.DoRequestDynamicPortrait(portraitString);
             }
             else
             {
-                // Heroin以外のキャラクターの場合は、従来通りFungusの機能で立ち絵を表示
+                // 動的立ち絵を持たないキャラクターの場合は、従来通りFungusの機能で立ち絵を表示
                 sayDialog.SetCharacterImage(portrait);
                 // Heroinの立ち絵は会話が終わるまで消さない
                 // FungusCustomSignals.DoRequestHideDynamicPortrait();
