@@ -5,75 +5,74 @@ using UnityEngine.Events;
 
 /// <summary>
 /// 複数のトーチをグループとして管理し、一斉または連続して状態を変化させるコントローラー。
+/// Unity Eventから確実に呼び出せるように、引数なしの公開メソッドを用意しています。
 /// </summary>
 public class TorchGroupController : MonoBehaviour
 {
+    #region Inspector Settings
+
     [Header("制御対象のトーチ")]
     [Tooltip("このコントローラーが管理するトーチのリスト")]
     [SerializeField]
     private List<TorchController> torchesToControl = new List<TorchController>();
 
-    [Header("連続点灯の設定")]
-    [Tooltip("トーチを一つずつ状態変化させる際の間隔（秒）")]
+    [Header("演出設定")]
+    [Tooltip("トーチを一つずつ状態変化させる（Sequentially）際の間隔（秒）")]
     [SerializeField]
     private float delayBetweenTorches = 0.5f;
+
+    [Tooltip("グループで状態を変化させる際、各トーチの着火・消火SEを鳴らすか")]
+    [SerializeField]
+    private bool playSEOnChange = true;
 
     [Header("イベント")]
     [Tooltip("全てのトーチの状態変化が完了した後に呼び出されるイベント")]
     [SerializeField]
     private List<UnityEvent> onSequenceComplete = new List<UnityEvent>();
 
-    // --- UnityEventから呼び出すための公開メソッド群 ---
+    #endregion
 
-    #region --- 一斉に状態を変化させるメソッド ---
+    #region Unity Event Public Methods (引数なし)
 
-    public void TurnAllOff() => SetStateForAll(TorchController.TorchState.Off);
+    // --- 一斉変化 (All) ---
+    public void TurnAllOff() => ChangeStateAll(TorchController.TorchState.Off);
 
-    public void TurnAllRed() => SetStateForAll(TorchController.TorchState.Red);
+    public void TurnAllRed() => ChangeStateAll(TorchController.TorchState.Red);
 
-    public void TurnAllBlue() => SetStateForAll(TorchController.TorchState.Blue);
+    public void TurnAllBlue() => ChangeStateAll(TorchController.TorchState.Blue);
+
+    // --- 連続変化 (Sequentially) ---
+    public void TurnAllOffSequentially() => ChangeStateSequentially(TorchController.TorchState.Off);
+
+    public void TurnAllRedSequentially() => ChangeStateSequentially(TorchController.TorchState.Red);
+
+    public void TurnAllBlueSequentially() =>
+        ChangeStateSequentially(TorchController.TorchState.Blue);
 
     #endregion
 
-    #region --- 連続して状態を変化させるメソッド ---
-
-    public void TurnAllOffSequentially() => StartSequence(TorchController.TorchState.Off);
-
-    public void TurnAllRedSequentially() => StartSequence(TorchController.TorchState.Red);
-
-    public void TurnAllBlueSequentially() => StartSequence(TorchController.TorchState.Blue);
-
-    #endregion
-
-
-    // --- 内部処理用のプライベートメソッド群 ---
+    #region Internal Logic
 
     /// <summary>
-    /// 全てのトーチの状態を一度に設定します。
+    /// リスト内の全てのトーチを一斉に指定した状態に変更します。
     /// </summary>
-    private void SetStateForAll(TorchController.TorchState newState)
+    private void ChangeStateAll(TorchController.TorchState newState)
     {
-        // 実行中のシーケンスがあれば停止
         StopAllCoroutines();
 
         foreach (var torch in torchesToControl)
         {
-            torch.SetTorchState(newState);
+            torch.SetTorchState(newState, playSEOnChange);
         }
 
-        // 処理完了イベントを発行
-        foreach (var onComplete in onSequenceComplete)
-        {
-            onComplete?.Invoke();
-        }
+        InvokeCompleteEvents();
     }
 
     /// <summary>
-    /// 連続で状態を変化させるコルーチンを開始します。
+    /// リスト内のトーチを、指定した間隔で順番に指定した状態に変更します。
     /// </summary>
-    private void StartSequence(TorchController.TorchState newState)
+    private void ChangeStateSequentially(TorchController.TorchState newState)
     {
-        // 実行中のシーケンスがあれば停止させてから、新しいシーケンスを開始
         StopAllCoroutines();
         StartCoroutine(SequenceCoroutine(newState));
     }
@@ -85,14 +84,23 @@ public class TorchGroupController : MonoBehaviour
     {
         foreach (var torch in torchesToControl)
         {
-            torch.SetTorchState(newState);
+            torch.SetTorchState(newState, playSEOnChange);
             yield return new WaitForSeconds(delayBetweenTorches);
         }
 
-        // 処理完了イベントを発行
+        InvokeCompleteEvents();
+    }
+
+    /// <summary>
+    /// 登録されている完了イベントをすべて発火させます。
+    /// </summary>
+    private void InvokeCompleteEvents()
+    {
         foreach (var onComplete in onSequenceComplete)
         {
             onComplete?.Invoke();
         }
     }
+
+    #endregion
 }

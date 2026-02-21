@@ -47,6 +47,7 @@ public enum KeyID
 /// 5. FungusSetGameBoolFlag.cs の FlagCategory enum と各章のフラグ変数を追加
 /// 6. Timeline/BoolFlagフォルダ内の各スクリプトに新しいEnum型とフラグ変数を追加
 /// 7. GimmickSwitch.cs の boolEnumTypes / intEnumTypes に新しいEnum型を追加
+/// 8. FlagSearchToolWindow.cs のtargetEnumTypesに新しいEnum型を追加
 
 
 /// <summary>
