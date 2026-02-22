@@ -8,6 +8,7 @@ public enum BladeName
     knife_stone = 1003,
     blade_iron = 1004,
     blade_NightBorne = 1005,
+    hammer_StoneGolem = 1006,
     blade_FlareSeraphim = 1010,
     blade_Debug = 1999,
 }

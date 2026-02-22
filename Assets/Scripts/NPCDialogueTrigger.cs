@@ -56,6 +56,10 @@ public class NPCDialogueTrigger : MonoBehaviour
 
     private void OnTriggerStay2D(Collider2D collision)
     {
+        // コンポーネントが無効(false)なら、ここで処理を終了する
+        if (!this.enabled)
+            return;
+
         // ゲームが動作中、他の会話が実行中でなく、プレイヤーがインタラクトした場合に会話を試みる
         if (
             Time.timeScale > 0

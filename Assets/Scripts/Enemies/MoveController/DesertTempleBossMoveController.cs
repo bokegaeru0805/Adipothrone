@@ -211,6 +211,10 @@ public class DesertTempleBossMoveController : MonoBehaviour
     private float groundY = 0.0f;
 
     [Header("ゴーレム召喚攻撃の設定")]
+    [Tooltip("召喚の最大数")]
+    [SerializeField]
+    private int maxGolemCount = 5;
+
     [Tooltip("ゴーレム召喚攻撃後の時間間隔の最小値")]
     [SerializeField]
     private float golemSpawnAttackIntervalMin = 10.0f;
@@ -743,6 +747,12 @@ public class DesertTempleBossMoveController : MonoBehaviour
                     yield return StartCoroutine(PerformNormalAttack());
                     break;
                 case 5: // ゴーレム召喚攻撃
+                    int golemCount = ObjectPooler.SceneInstance.GetActiveCount(GOLEM_POOLTAG);
+                    if (golemCount >= maxGolemCount)
+                    {
+                        // ゴーレム数が最大数に達していたら、別の攻撃を実行
+                        continue;
+                    }
                     minInterval = golemSpawnAttackIntervalMin;
                     maxInterval = golemSpawnAttackIntervalMax;
                     yield return StartCoroutine(PerformGolemSpawnAttack());
@@ -1038,6 +1048,7 @@ public class DesertTempleBossMoveController : MonoBehaviour
             fadeOutSeq.Join(haloSpriteRenderer.DOFade(0f, 0.5f));
         this.tag = GameConstants.UNTAGGED_TAG_NAME; // Outlineを消すためにタグを外す
         auraEffectObject.SetActive(false); // オーラを非表示
+        _shieldController.SetVisualVisibility(false); // シールドを非表示
 
         // TODO: 消失SE再生
         yield return fadeOutSeq.SetEase(Ease.OutQuad).WaitForCompletion();
@@ -1130,6 +1141,7 @@ public class DesertTempleBossMoveController : MonoBehaviour
         // 8. 復帰
         CurrentState = DesertTempleBossState.Idle;
         auraEffectObject.SetActive(true); // オーラを再表示
+        _shieldController.SetVisualVisibility(true); // シールドを再表示
         isHorizontalMoveActive = true;
         StartRightArmAttack();
     }

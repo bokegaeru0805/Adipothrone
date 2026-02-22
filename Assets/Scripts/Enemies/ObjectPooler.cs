@@ -10,6 +10,8 @@ using UnityEngine;
 /// </summary>
 public class ObjectPooler : MonoBehaviour
 {
+    #region Singleton & Inspector Settings
+
     [InfoBox("このスクリプトはDebugSceneでも用います。\nそのため、プレハブしておいてください。")]
     [ReadOnly]
     [SerializeField]
@@ -32,27 +34,34 @@ public class ObjectPooler : MonoBehaviour
     [Tooltip("trueにすると、シーンをまたいで破棄されない永続プールになります。")]
     private bool isPersistent = false;
 
+    [Header("プールするオブジェクトのリスト")]
+    [Tooltip("インスペクターからプールしたいプレハブとその初期数を設定します。")]
+    public List<Pool> pools;
+
+    #endregion
+
+    #region Internal Data Structures
+
+    /// <summary>
+    /// プールするプレハブの設定情報を保持するクラス
+    /// </summary>
     [System.Serializable]
     public class Pool
     {
-        public string tag; // プールを識別するための名前（タグ）
-        public GameObject prefab; // プールするプレハブ
-        public int size; // プールに最初に用意しておくオブジェクトの数
+        [Tooltip("プールを識別するための名前（タグ）")]
+        public string tag;
+
+        [Tooltip("プールするプレハブ")]
+        public GameObject prefab;
+
+        [Tooltip("プールに最初に用意しておくオブジェクトの数")]
+        public int size;
     }
 
-    [Header("プールするオブジェクトのリスト")]
-    public List<Pool> pools;
-
-    // プール本体。タグをキーとして、オブジェクトのキューを管理する
-    private Dictionary<string, Queue<GameObject>> poolDictionary;
-
-    // プールごとの「親Transform」を記憶する辞書を追加
-    private Dictionary<string, Transform> poolParentDictionary;
-
-    //アクティブな（貸し出し中の）オブジェクトを追跡するための辞書
-    private Dictionary<GameObject, string> activeObjects = new Dictionary<GameObject, string>();
-
-    // 初期状態を保存するための構造体
+    /// <summary>
+    /// オブジェクトの初期状態を保存するための構造体。
+    /// オブジェクト再利用時に、前の使用時のスケールやタグが変更されたままになるのを防ぐために使用します。
+    /// </summary>
     private struct InitialObjectSettings
     {
         public Vector3 localScale;
@@ -60,19 +69,40 @@ public class ObjectPooler : MonoBehaviour
         // 今後ここに追加可能（例: public int layer; public Quaternion defaultRotation; 等）
     }
 
+    #endregion
+
+    #region Private Fields
+
+    // --- コアデータ ---
+    // プール本体。タグをキーとして、オブジェクトのキュー(待機列)を管理する
+    private Dictionary<string, Queue<GameObject>> poolDictionary;
+
+    // --- 管理用データ ---
+    // プールごとの「親Transform」を記憶する辞書（ヒエラルキー整理用）
+    private Dictionary<string, Transform> poolParentDictionary;
+
+    // アクティブな（現在貸し出し中の）オブジェクトを追跡するための辞書
+    // <GameObjectそのもの, プールのタグ>
+    private Dictionary<GameObject, string> activeObjects;
+
     // オブジェクトのInstanceIDをキーにして初期設定を保持する辞書
-    // GameObjectそのものではなくInstanceID(int)をキーにすることで、GC発生を抑え軽量化します
-    private Dictionary<int, InitialObjectSettings> initialSettingsMap =
-        new Dictionary<int, InitialObjectSettings>();
+    // GameObjectそのものではなくInstanceID(int)をキーにすることで、GC(ガベージコレクション)発生を抑え軽量化します
+    private Dictionary<int, InitialObjectSettings> initialSettingsMap;
+
+    #endregion
+
+    #region Unity Lifecycle Methods
 
     private void Awake()
     {
+        // シングルトンの初期化処理
         if (isPersistent)
         {
             // 【永続インスタンスの処理】
             if (PersistentInstance == null)
             {
                 PersistentInstance = this;
+                // 注意: DontDestroyOnLoadはプレハブの配置方法やシーン管理の仕組みに応じて外部で呼ばれるか、ここで呼ぶか決まります
                 // DontDestroyOnLoad(gameObject); // シーンが切り替わっても破棄しない
             }
             else
@@ -97,15 +127,36 @@ public class ObjectPooler : MonoBehaviour
             SceneInstance = this;
         }
 
-        // --- 3. プールの初期化処理を Awake に移動 ---
-        // (Startだと、AwakeでSpawnFromPoolを呼んだ時にエラーになるため)
+        // --- プールの初期化処理を Awake で実行 ---
+        // (Startで行うと、他のスクリプトのAwake/StartでSpawnFromPoolを呼んだ時にエラーになるため)
         InitializePools();
     }
 
+    private void OnDestroy()
+    {
+        // オブジェクトが破棄される際、シングルトン参照を解除してメモリリークを防ぐ
+        if (isPersistent && PersistentInstance == this)
+        {
+            PersistentInstance = null;
+        }
+        else if (!isPersistent && SceneInstance == this)
+        {
+            SceneInstance = null;
+        }
+    }
+
+    #endregion
+
+    #region Initialization Methods
+
+    /// <summary>
+    /// インスペクターで設定された pools リストを元に、実際のキューとオブジェクトを生成して初期化します。
+    /// </summary>
     private void InitializePools()
     {
         poolDictionary = new Dictionary<string, Queue<GameObject>>();
         poolParentDictionary = new Dictionary<string, Transform>();
+        activeObjects = new Dictionary<GameObject, string>();
         initialSettingsMap = new Dictionary<int, InitialObjectSettings>();
 
         foreach (Pool pool in pools)
@@ -113,22 +164,23 @@ public class ObjectPooler : MonoBehaviour
             Queue<GameObject> objectQueue = new Queue<GameObject>();
 
             // 生成したオブジェクトを、このプーラーの子オブジェクトにして、
-            // ヒエラルキーを見やすくする
+            // Unityエディタのヒエラルキーを見やすく整理する
             Transform poolParent = new GameObject(pool.tag + " Pool").transform;
             poolParent.SetParent(this.transform, false);
 
-            //親Transformを辞書に登録
+            // 親Transformを辞書に登録
             poolParentDictionary.Add(pool.tag, poolParent);
 
+            // 指定された数だけ事前にオブジェクトを生成してキューに入れる
             for (int i = 0; i < pool.size; i++)
             {
-                // (poolParentの子として生成し、worldPositionStays: false は正しい)
+                // poolParentの子として生成。worldPositionStays: false を指定し、ローカル座標/スケールを維持する
                 GameObject obj = Instantiate(pool.prefab, poolParent, false);
 
-                //初期状態を保存
+                // 初期状態を保存
                 RegisterInitialSettings(obj);
 
-                // PoolableObjectコンポーネントがあれば、プールタグとタイプを設定
+                // PoolableObjectコンポーネントがあれば、プールタグとタイプ（永続かシーンか）を設定
                 var poolable = obj.GetComponent<PoolableObject>();
                 if (poolable != null)
                 {
@@ -136,16 +188,17 @@ public class ObjectPooler : MonoBehaviour
                     poolable.SetPoolType(isPersistent ? PoolType.Persistent : PoolType.Scene);
                 }
 
-                obj.SetActive(false);
+                obj.SetActive(false); // 初期状態は非アクティブ
                 objectQueue.Enqueue(obj);
             }
 
+            // 完成したキューを辞書に追加
             poolDictionary.Add(pool.tag, objectQueue);
         }
     }
 
     /// <summary>
-    /// オブジェクトの初期状態を辞書に登録するメソッド
+    /// オブジェクトの初期状態（スケールやタグなど）を辞書に登録するメソッド。
     /// </summary>
     private void RegisterInitialSettings(GameObject obj)
     {
@@ -156,22 +209,30 @@ public class ObjectPooler : MonoBehaviour
             // 将来拡張時はここに追加: layer = obj.layer, etc...
         };
 
-        // InstanceIDをキーにして保存（高速）
+        // InstanceIDをキーにして保存（ハッシュ計算が高速）
         initialSettingsMap[obj.GetInstanceID()] = settings;
     }
 
+    #endregion
+
+    #region Core Pooling Logic (Spawn & Return)
+
     /// <summary>
-    /// プールからオブジェクトを取り出して有効化する
+    /// プールからオブジェクトを取り出して有効化します。
     /// </summary>
+    /// <param name="tag">取得したいオブジェクトのプールタグ</param>
+    /// <param name="position">出現させるワールド座標</param>
+    /// <param name="rotation">出現させるワールド回転</param>
+    /// <returns>プールから取り出されたGameObject</returns>
     public GameObject SpawnFromPool(string tag, Vector3 position, Quaternion rotation)
     {
+        // 存在しないタグが指定された場合
         if (!poolDictionary.ContainsKey(tag))
         {
             Debug.LogError($"オブジェクトプール '{tag}' が存在しません。");
             return null;
         }
 
-        //プールが空（全てのオブジェクトが使用中）の場合の処理
         GameObject objectToSpawn;
 
         // プールに待機中のオブジェクトがあれば、それを取り出す
@@ -181,7 +242,7 @@ public class ObjectPooler : MonoBehaviour
 
             // プールから取り出す際に親子関係を解除（ルートに移動）
             // worldPositionStays: false を指定して、
-            // 親を解除する際にローカルスケール（プレハブのスケール）を維持する
+            // 親を解除する際にローカルスケール（プレハブ本来のスケール）を維持する
             objectToSpawn.transform.SetParent(null, false);
         }
         // プールが空っぽ（全てのオブジェクトが使用中）だった場合
@@ -189,8 +250,8 @@ public class ObjectPooler : MonoBehaviour
         {
             // プールの初期サイズが不足していることを開発者に知らせる警告
             Debug.LogWarning(
-                $"タグ '{tag}' を持つプールが空でした。プールを拡張します。"
-                    + " インスペクターで初期サイズを増やすことを検討してください。"
+                $"タグ '{tag}' を持つプールが空でした。プールを動的に拡張します。"
+                    + " パフォーマンス低下を防ぐため、インスペクターで初期サイズ(size)を増やすことを検討してください。"
             );
 
             // 元のプレハブ情報を探して、新しいオブジェクトを動的に生成する
@@ -198,8 +259,17 @@ public class ObjectPooler : MonoBehaviour
             if (pool != null)
             {
                 objectToSpawn = Instantiate(pool.prefab);
-                // 動的に生成した場合も初期状態を登録
+
+                // 動的に生成した場合も初期状態を登録しておく
                 RegisterInitialSettings(objectToSpawn);
+
+                // 動的生成時もPoolableObjectの初期化を行う
+                var poolable = objectToSpawn.GetComponent<PoolableObject>();
+                if (poolable != null)
+                {
+                    poolable.SetPoolTag(pool.tag);
+                    poolable.SetPoolType(isPersistent ? PoolType.Persistent : PoolType.Scene);
+                }
             }
             else
             {
@@ -208,8 +278,8 @@ public class ObjectPooler : MonoBehaviour
             }
         }
 
-        // 初期状態（スケールやタグ）をリセット
-        // オブジェクトが前回使われた際にスケール変更等されていた場合に元に戻す
+        // --- 初期状態（スケールやタグ）のリセット ---
+        // オブジェクトが前回使われた際にアニメーション等でスケール変更等されていた場合に元に戻す
         if (
             initialSettingsMap.TryGetValue(
                 objectToSpawn.GetInstanceID(),
@@ -222,31 +292,34 @@ public class ObjectPooler : MonoBehaviour
             // 将来拡張時はここに追加: objectToSpawn.layer = settings.layer;
         }
 
+        // オブジェクトを有効化し、位置と回転を適用
         objectToSpawn.SetActive(true);
         objectToSpawn.transform.position = position;
         objectToSpawn.transform.rotation = rotation;
 
         // 貸し出したオブジェクトを追跡リストに追加
         activeObjects.Add(objectToSpawn, tag);
+
         return objectToSpawn;
     }
 
     /// <summary>
-    /// 使用済みのオブジェクトを非表示にし、プールに返却する
+    /// 使用済みのオブジェクトを非表示にし、プールに返却します。
     /// </summary>
     /// <param name="tag">返却する先のプールのタグ</param>
     /// <param name="objectToReturn">返却するGameObject</param>
     public void ReturnToPool(string tag, GameObject objectToReturn)
     {
+        // 存在しないプールのタグが指定された場合
         if (!poolDictionary.ContainsKey(tag))
         {
-            Debug.LogWarning($"Pool with tag '{tag}' doesn't exist.");
+            Debug.LogWarning($"Pool with tag '{tag}' doesn't exist. Destroying object.");
             // プールがない場合は、オブジェクトを単純に破棄する
             Destroy(objectToReturn);
             return;
         }
 
-        //返却されたオブジェクトを追跡リストから削除
+        // 返却されたオブジェクトを追跡リスト（貸出中リスト）から削除
         if (activeObjects.ContainsKey(objectToReturn))
         {
             activeObjects.Remove(objectToReturn);
@@ -255,15 +328,16 @@ public class ObjectPooler : MonoBehaviour
         // 親を null ではなく、InitializePools で作成した整理用の親 (poolParent) に戻す
         if (poolParentDictionary.TryGetValue(tag, out Transform poolParent))
         {
-            // worldPositionStays: false でローカルスケールの変更を防ぎながら親を設定
+            // worldPositionStays: false でローカルスケールの意図しない変更を防ぎながら親を設定
             objectToReturn.transform.SetParent(poolParent, false);
         }
         else
         {
-            // (フォールバック)
+            // (フォールバック) 整理用親が見つからない場合はルートに置く
             objectToReturn.transform.SetParent(null, false);
         }
 
+        // オブジェクトを無効化
         objectToReturn.SetActive(false);
 
         // 使用済みのオブジェクトをキューの末尾に戻す (Enqueue)
@@ -299,14 +373,19 @@ public class ObjectPooler : MonoBehaviour
         }
     }
 
+    #endregion
+
+    #region Utility Methods
+
     /// <summary>
-    /// 現在アクティブな、プールから生成された全てのオブジェクトをそれぞれのプールに返却します。
-    /// ボスが倒された時やシーンのリセット時に呼び出すことを想定しています。
+    /// 現在アクティブな、プールから生成された全てのオブジェクトをそれぞれのプールに強制的に返却します。
+    /// ボスが倒された時やシーンのリセット時（画面内の弾を一掃するなど）に呼び出すことを想定しています。
     /// </summary>
     public void ReturnAllToPool()
     {
         // activeObjectsをToList()でコピーしてからループする。
-        // ループ中に元のコレクション(activeObjects)が変更されることによるエラーを防ぐため。
+        // ループ中にReturnToPoolが呼ばれると元のコレクション(activeObjects)が変更されるため、
+        // コピーしておかないと InvalidOperationException (コレクションが変更されました) エラーになるのを防ぐため。
         foreach (var pair in activeObjects.ToList())
         {
             ReturnToPool(pair.Value, pair.Key);
@@ -315,26 +394,16 @@ public class ObjectPooler : MonoBehaviour
 
     /// <summary>
     /// 指定したタグのオブジェクトが現在いくつアクティブ（出現中）かを返します。
+    /// 画面内に特定の敵が何体いるか制限したい場合などに使用します。
     /// </summary>
     /// <param name="tag">確認したいプールのタグ</param>
     /// <returns>アクティブなオブジェクトの数</returns>
     public int GetActiveCount(string tag)
     {
-        // activeObjectsには貸し出し中のオブジェクトとタグのペアが登録されています。
-        // Values(タグ)の中から、引数のtagと一致するものの個数を数えて返します。
+        // activeObjectsには <貸し出し中のオブジェクト, タグ> のペアが登録されています。
+        // Values(タグのリスト)の中から、引数のtagと一致するものの個数を数えて返します。
         return activeObjects.Values.Count(t => t == tag);
     }
 
-    private void OnDestroy()
-    {
-        // シングルトン参照を解除
-        if (isPersistent && PersistentInstance == this)
-        {
-            PersistentInstance = null;
-        }
-        else if (!isPersistent && SceneInstance == this)
-        {
-            SceneInstance = null;
-        }
-    }
+    #endregion
 }

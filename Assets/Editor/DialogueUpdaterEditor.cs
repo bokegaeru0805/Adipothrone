@@ -1,7 +1,7 @@
-using UnityEditor;
-using UnityEngine;
 using System.Collections.Generic;
 using System.IO;
+using UnityEditor;
+using UnityEngine;
 
 /// <summary>
 /// DialogueUpdaterコンポーネントのInspectorの表示をカスタマイズするエディタ拡張クラス。
@@ -58,7 +58,7 @@ public class DialogueUpdaterEditor : Editor
         // 1. Flowchartの名前から検索キーワードを抽出
         string flowchartName = updater.targetFlowchart.name;
         int underscoreIndex = flowchartName.IndexOf('_');
-        
+
         string searchKeyword;
         if (underscoreIndex != -1)
         {
@@ -75,7 +75,7 @@ public class DialogueUpdaterEditor : Editor
         string searchPath = "Assets/Text";
         // AssetDatabase.FindAssetsを使って、指定パス内のCSVファイル(.csv)のGUIDを全て取得
         string[] guids = AssetDatabase.FindAssets("t:TextAsset", new[] { searchPath });
-        
+
         if (guids.Length == 0)
         {
             Debug.LogWarning($"'{searchPath}' フォルダ内にCSVファイルが見つかりませんでした。");
@@ -95,7 +95,7 @@ public class DialogueUpdaterEditor : Editor
             if (fileName.Contains(searchKeyword))
             {
                 TextAsset csvAsset = AssetDatabase.LoadAssetAtPath<TextAsset>(path);
-                if(csvAsset != null)
+                if (csvAsset != null)
                 {
                     foundCsvFiles.Add(csvAsset);
                 }
@@ -107,17 +107,50 @@ public class DialogueUpdaterEditor : Editor
         {
             // Undo（元に戻す）操作に対応させるため、変更を記録
             Undo.RecordObject(updater, "Auto-register CSV files");
-            
+
             updater.csvFiles = foundCsvFiles;
-            
+
             // 変更をエディタに通知して、表示を更新
             EditorUtility.SetDirty(updater);
-            
-            Debug.Log($"キーワード '{searchKeyword}' を含む {foundCsvFiles.Count}個のCSVファイルを自動登録しました。");
+
+            Debug.Log(
+                $"キーワード '{searchKeyword}' を含む {foundCsvFiles.Count}個のCSVファイルを自動登録しました。"
+            );
         }
         else
         {
-            Debug.LogWarning($"キーワード '{searchKeyword}' を含むCSVファイルが見つかりませんでした。");
+            Debug.LogWarning(
+                $"キーワード '{searchKeyword}' を含むCSVファイルが見つかりませんでした。"
+            );
         }
+    }
+
+    /// <summary>
+    /// ツールバー（Toolsメニュー）から、現在開いているシーン内のすべてのDialogueUpdaterを実行します。
+    /// </summary>
+    [MenuItem("Tools/CSVからダイアログを更新 (現在のシーン)")]
+    public static void UpdateAllDialoguesFromToolbar()
+    {
+        // シーン内のすべてのDialogueUpdaterコンポーネントを取得
+        DialogueUpdater[] updaters = FindObjectsOfType<DialogueUpdater>();
+
+        if (updaters.Length == 0)
+        {
+            Debug.LogWarning(
+                "現在のシーン内に DialogueUpdater コンポーネントが見つかりませんでした。"
+            );
+            return;
+        }
+
+        // 見つかったすべてのDialogueUpdaterに対して更新処理を実行
+        int count = 0;
+        foreach (DialogueUpdater updater in updaters)
+        {
+            updater.UpdateDialogue();
+            count++;
+        }
+
+        // 結果のログ表示
+        Debug.Log($"シーン内の {count} 個の DialogueUpdater の更新処理を一括実行しました。");
     }
 }

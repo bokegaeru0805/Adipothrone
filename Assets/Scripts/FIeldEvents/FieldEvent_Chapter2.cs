@@ -19,7 +19,7 @@ public class FieldEvent_Chapter2 : BaseFieldEvent
     {
         None = 0, // フィールド名が設定されていない場合の初期値
 
-        // Chapter2StartField = 1, // 第二章開始フィールド
+        Chapter2StartField = 1, // 第二章開始フィールド
         VillageEntranceField = 2, // 村の入り口フィールド
         CoachmanField = 3, // 馬車の御者フィールド
         WaterSourceFrontField = 7, // オアシスの源泉前フィールド
@@ -55,6 +55,14 @@ public class FieldEvent_Chapter2 : BaseFieldEvent
     {
         switch (fieldname)
         {
+            case FieldName.Chapter2StartField:
+                if (!flagManager.GetBoolFlag(Chapter2TriggeredEvent.Chapter2Start))
+                {
+                    flagManager.SetBoolFlag(Chapter2TriggeredEvent.Chapter2Start, true);
+                    isEventTriggered = true; // イベントがトリガーされたことを記録
+                    FungusHelper.ExecuteBlock(targetFlowchart, "Chapter2Start");
+                }
+                break;
             case FieldName.VillageEntranceField:
                 if (!flagManager.GetBoolFlag(Chapter2TriggeredEvent.FirstEnteredVillage))
                 {
