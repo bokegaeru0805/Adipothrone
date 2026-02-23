@@ -173,13 +173,19 @@ public abstract class BasePortraitController : MonoBehaviour
 
         // 初期状態では立ち絵を完全に非表示にしておく
         HidePortrait();
+
+        // デフォルトの向きを適用する
+        ApplyDefaultDirection();
+
+        FungusCustomSignals.OnTalkBlockStart += HandleBlockStart;
     }
 
     protected virtual void Start()
     {
-        FungusCustomSignals.OnTalkBlockStart += HandleBlockStart;
-        Say.OnCharacterSpeak += HandleCharacterSpeak;
-        TalkEndCommand.OnTalkEndExecuted += ResetTransform; // 会話終了時のリセット処理を登録
+        // OnEnableだと、TalkStartコマンドのOnEnterより後に呼ばれてしまい、
+        // イベントを正しく受け取れない可能性があるため、Startでイベント購読を行う。
+        FungusCustomSignals.OnRequestDynamicPortrait += HandleShowRequest;
+        FungusCustomSignals.OnRequestHideDynamicPortrait += HidePortrait;
     }
 
     protected virtual void OnDestroy()
@@ -188,8 +194,11 @@ public abstract class BasePortraitController : MonoBehaviour
         ActiveControllers.Remove(this);
 
         FungusCustomSignals.OnTalkBlockStart -= HandleBlockStart;
-        Say.OnCharacterSpeak -= HandleCharacterSpeak;
-        TalkEndCommand.OnTalkEndExecuted -= ResetTransform;
+        FungusCustomSignals.OnRequestDynamicPortrait -= HandleShowRequest;
+        FungusCustomSignals.OnRequestHideDynamicPortrait -= HidePortrait;
+
+        // Tweenの後始末
+        _activeTweenAnimation?.Kill();
     }
 
     #endregion
@@ -235,11 +244,25 @@ public abstract class BasePortraitController : MonoBehaviour
     /// <summary>
     /// 立ち絵の色（明暗）をTweenで変更する仮想メソッド。派生クラスで追加のImageを制御可能。
     /// </summary>
-    protected virtual void SetPortraitColorTween(Color targetColor, float duration)
+    public virtual void SetPortraitColorTween(Color targetColor, float duration)
     {
         bodyImage.DOColor(targetColor, duration).SetUpdate(true);
         faceImage.DOColor(targetColor, duration).SetUpdate(true);
         expressionImage.DOColor(targetColor, duration).SetUpdate(true);
+    }
+
+    #endregion
+
+    #region Abstract / Virtual Methods
+
+    /// <summary>
+    /// Fungusからの動的立ち絵表示リクエストを処理します。
+    /// 子クラスでオーバーライドし、固有の表示ロジック（前髪の追加、体形の判定など）を実装してください。
+    /// </summary>
+    /// <param name="portraitString">Fungus側で指定されたポートレート指定文字列</param>
+    public virtual void HandleShowRequest(string portraitString)
+    {
+        // 派生クラスでオーバーライドして使用
     }
 
     #endregion

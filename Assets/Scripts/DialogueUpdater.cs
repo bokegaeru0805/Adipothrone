@@ -37,9 +37,6 @@ public class DialogueUpdater : MonoBehaviour
     // 「地の文」として扱うキーワード
     private const string NARRATIVE_TEXT_KEYWORD = "narrative";
 
-    //　「ヒロイン」として扱うキーワード
-    private const string HEROIN_KEYWORD = "Heroin";
-
     /// <summary>
     /// CSVファイルを読み込み、Flowchartの各Block内のSayコマンドを更新します。
     /// </summary>
@@ -151,6 +148,10 @@ public class DialogueUpdater : MonoBehaviour
         int totalUpdatedCount = 0;
         bool hasChanged = false;
 
+        // 動的立ち絵（PortraitString）として処理するキャラクター名のリスト
+        // ※ 必要に応じて "Aks", "Noeli" などを追加してください
+        string[] dynamicPortraitCharacters = { "Heroin", "Fill" };
+
         foreach (Block block in targetFlowchart.GetComponents<Block>())
         {
             if (
@@ -176,7 +177,8 @@ public class DialogueUpdater : MonoBehaviour
                     DialogueLineData csvLine = csvLinesForBlock[i];
                     Character newCharacter = FindCharacter(csvLine.character);
 
-                    if (csvLine.character == HEROIN_KEYWORD)
+                    // リストに含まれるキャラクターの場合は動的立ち絵（文字列）として処理
+                    if (dynamicPortraitCharacters.Contains(csvLine.character))
                     {
                         string newPortraitString = csvLine.expression;
                         if (
@@ -187,12 +189,16 @@ public class DialogueUpdater : MonoBehaviour
                         {
                             sayCommand.SetStandardText(csvLine.dialogue);
                             sayCommand.SetCharacter(newCharacter);
+
+                            // 動的立ち絵の文字列をセットし、静的なSpriteはnullで上書きする
                             sayCommand.SetPortraitString(newPortraitString);
                             sayCommand.SetPortrait(null);
+
                             totalUpdatedCount++;
                             hasChanged = true;
                         }
                     }
+                    // リストに含まれないキャラクターの場合は静的立ち絵（Sprite）として処理
                     else
                     {
                         Sprite newPortrait = FindPortrait(newCharacter, csvLine.expression);
@@ -204,8 +210,11 @@ public class DialogueUpdater : MonoBehaviour
                         {
                             sayCommand.SetStandardText(csvLine.dialogue);
                             sayCommand.SetCharacter(newCharacter);
+
+                            // 静的なSpriteをセットし、動的立ち絵の文字列は空にする
                             sayCommand.SetPortrait(newPortrait);
                             sayCommand.SetPortraitString("");
+
                             totalUpdatedCount++;
                             hasChanged = true;
                         }

@@ -10,28 +10,144 @@
 それが最も確実な手段です。",Fabo,FirstEnteredVillage,
 "あの、すみません。
 王都まで連れて行ってくれる馬車を探しているのですが。",Heroin,FirstMetCoachman,Heroin_flexible_normal
-"おや。こんなに暑い中、旅の方ですか？ 
-王都までなら、僕の馬車でよければお連れしますよ。",???,FirstMetCoachman,
+"おや。こんなに暑い中、旅の方かな？ 
+王都までなら、僕の馬車でよければお連れするよ。",???,FirstMetCoachman,
 本当ですか？ 助かります。ぜひお願いします。,Heroin,FirstMetCoachman,Heroin_flexible_smile
-"ええ、構いませんよ。
-ただ、出発の前に一つだけお手伝いをお願いしてもいいですか？",???,FirstMetCoachman,
-"実は、王都へ納める品が少しばかり高価な代物でして。
-僕は今、この馬たちから目を離すわけにはいかないのです。",???,FirstMetCoachman,
+"ええ、構いわないよ。
+ただ、出発の前に一つだけお手伝いをお願いしてもいいかな？",???,FirstMetCoachman,
+"実は、王都へ納める品が少しばかり高価な代物でね。
+僕は今、この馬たちから目を離すわけにはいかないんだ。",???,FirstMetCoachman,
 ええと……。私に何かできることはありますか？,Heroin,FirstMetCoachman,Heroin_flexible_normal
-"ええ。僕の代わりに、
-オアシスの源泉から水を汲んできてはいただけませんか？",???,FirstMetCoachman,
-"オアシスの源泉の水ですね。分かりました。
+"ええ。オアシスの方へ
+足を運んでくれるかな？ 
+そこで水を汲む。その行いこそが、今の僕には必要なんだ。",???,FirstMetCoachman,
+"オアシスの水ですね。分かりました。
 馬車に乗せていただくお礼に、行ってきます。",Heroin,FirstMetCoachman,Heroin_flexible_normal
-"助かります。
-場所は村から出て、砂漠を道なりに進んだ先にありますよ。
-よろしく頼みますね。",???,FirstMetCoachman,
+"助かるよ。
+場所は村を出て、砂漠を道なりに進んだ先にあるよ。
+少し危うい道ですが、君が辿り着けることを願ってるよ。",???,FirstMetCoachman,
 ええ、分かりました。,Heroin,FirstMetCoachman,Heroin_flexible_normal
-ああ、名乗るのが遅くなってしまいました。,???,FirstMetCoachman,
+ああ、名乗るのが遅くなったね。,???,FirstMetCoachman,
 "僕はアクス。
-これからよろしくお願いしますね、お嬢さん。",Axis,FirstMetCoachman,Axis_normal_normal
+これからよろしくね、お嬢さん。",Axis,FirstMetCoachman,Axis_normal_normal
 そろそろ着きそうかな？,Heroin,FirstEnteredWaterSourceFront,Heroin_flexible_normal
 "ノエリ、停止してください。
 前方より、識別不能な生体反応及び高エネルギーを感知しました。",Fabo,FirstEnteredWaterSourceFront,
 えっ、何か危ない魔物がいるの？,Heroin,FirstEnteredWaterSourceFront,Heroin_flexible_troubled
 "詳細な特定は困難ですが、何か不吉な気配が濃厚です。
 即時戦闘が可能な体制を維持してください。",Fabo,FirstEnteredWaterSourceFront,
+あ、あそこに誰かいる。すみませーん！,Heroin,FirstMetFill,Heroin_flexible_normal
+"砂漠を潤す恵みの雫よ。みんなの渇きを癒してください。
+この泉が、明日も豊かに湧き出でますように。
+みんなの笑顔が、これからもずっと絶えませんように",???,FirstMetFill,
+あの、すみません。お祈りの最中でしたか？,Heroin,FirstMetFill,Heroin_flexible_normal
+"あ、いえ。ちょうど終わったところですので、
+お気になさらないでください。",???,FirstMetFill,
+"驚かせてしまってごめんなさい。
+あの、少しお話を聞いてもいいですか？",Heroin,FirstMetFill,Heroin_flexible_normal
+"ようこそ、私たちのオアシスへ。
+驚いたりなんてしませんよ。
+砂の海を越えてくるのは、本当に大変だったでしょう？",???,FirstMetFill,
+私はフィル。このオアシスで巫女長を任されています。,Fill,FirstMetFill,Fill_normal_smile
+私はノエリです。フィルさん、よろしくお願いします。,Heroin,FirstMetFill,Heroin_flexible_smile
+"実は、村にいる御者さんに頼まれて、
+ここのお水を汲みに来たんです。",Heroin,FirstMetFill,Heroin_flexible_normal
+"ええ、分かりました。
+ちょうど今、汲み上げたばかりの、一番新鮮なものがあるんです。
+さあ、これを受け取ってください。",Fill,FirstMetFill,Fill_normal_smile
+ズズズ。,narrative,FirstMetFill,
+えっ？,Heroin,FirstMetFill,Heroin_flexible_troubled
+空から、何か来ます！,Fill,FirstMetFill,Fill_normal_surprised
+なに、あれ？,Heroin,FirstMetFill,Heroin_flexible_troubled
+な、何でしょうか、あの不気味な姿は！,Fill,FirstMetFill,Fill_normal_troubled
+危ない！ 私の後ろに下がって！,Heroin,FirstMetFill,Heroin_flexible_serious
+きゃっ？,Fill,FirstMetFill,Fill_normal_surprised
+正体は分からないけど、戦うしかないみたい。,Heroin,FirstMetFill,Heroin_flexible_serious
+了解。周囲の安全を確保しつつ、迎撃を開始します。,Fabo,FirstMetFill,
+倒したみたいだね。フィルさん、怪我はありませんか？,Heroin,OasisSpringEnemiesDefeat,Heroin_flexible_normal
+"はい。
+ノエリさんが守ってくださったおかげで、私は無事です。
+本当に、ありがとうございました。",Fill,OasisSpringEnemiesDefeat,Fill_normal_smile
+よかった。本当に不気味な敵でしたね。,Heroin,OasisSpringEnemiesDefeat,Heroin_flexible_normal
+"ええ、私も初めて見ました。
+あ、お水を。さっき渡しそびれてしまったものです。
+どうぞ受け取ってください。",Fill,OasisSpringEnemiesDefeat,Fill_normal_smile
+ありがとうございます。助かります。,Heroin,OasisSpringEnemiesDefeat,Heroin_flexible_smile
+"ふふ、お役に立ててよかったです。
+では、私はこれで失礼しますね。",Fill,OasisSpringEnemiesDefeat,Fill_normal_smile
+……っ、あ！,Fill,OasisSpringEnemiesDefeat,Fill_normal_anxious
+フィルさんは小さく声を漏らし、その場に膝をついて崩れ落ちた。,narrative,OasisSpringEnemiesDefeat,
+フィルさん！ 大丈夫ですか？,Heroin,OasisSpringEnemiesDefeat,Heroin_flexible_surprised
+"すみません、少し立ちくらみがしただけです。
+このくらいの傷、大したことはありません。",Fill,OasisSpringEnemiesDefeat,Fill_normal_anxious
+"そんな、血が出ていますよ！ 
+もしかして、さっきの魔物じゃなくて、ここに来るまでに？",Heroin,OasisSpringEnemiesDefeat,Heroin_flexible_anxious
+"このあたりには最近、魔物が増えていて。
+でも、私が来ないわけにはいかないんです。
+大丈夫です。まだ歩けますから。",Fill,OasisSpringEnemiesDefeat,Fill_normal_normal
+無理です！ 私の肩を貸しますから、一緒に村まで戻りましょう。,Heroin,OasisSpringEnemiesDefeat,Heroin_flexible_serious
+"お見苦しいところをお見せして申し訳ありませんでした。
+ここまで運んでくださって、心から感謝します。",Fill,OasisSpringEnemiesDefeat,Fill_normal_normal
+"そんな、気にしないでください。
+フィルさんが無事で、本当によかったです。
+でも、どうしてこんな危険な道なのに護衛を頼まないんですか？",Heroin,OasisSpringEnemiesDefeat,Heroin_flexible_normal
+"みんなを、私と同じ危険な目に合わせるわけにはいきません。
+魔物が溢れる道を通るのは、私一人の役目で十分なんです。
+これが、姉さまから引き継いだ私の義務ですから。",Fill,OasisSpringEnemiesDefeat,Fill_normal_normal
+でも、フィルさんまで倒れたら……,Heroin,OasisSpringEnemiesDefeat,Heroin_flexible_troubled
+"大丈夫ですよ。
+それではノエリさん、旅の無事を祈っていますね。
+本当にありがとうございました。",Fill,OasisSpringEnemiesDefeat,Fill_normal_smile
+フィルさん……。,Heroin,OasisSpringEnemiesDefeat,Heroin_flexible_troubled
+"彼女の行動は非合理的です。
+ですが、他者を優先するその精神性には気高さを感じます。",Fabo,OasisSpringEnemiesDefeat,
+何か、私にできることがあればいいんだけど。,Heroin,OasisSpringEnemiesDefeat,Heroin_flexible_troubled
+"ノエリ、懸念は理解しますが、今はまず任務を優先しましょう。
+御者への納品が遅れれば、王都への出発に支障をきたします。",Fabo,OasisSpringEnemiesDefeat,
+"……そうだね。納品しに行こう。
+ごめんね、フィルさん。",Heroin,OasisSpringEnemiesDefeat,Heroin_flexible_troubled
+あれ？ アクスさん、いないみたい。馬車はここにあるのに。,Heroin,AttemptedToReportCoachmanQuest,Heroin_flexible_normal
+どうしよう。どこかに行っちゃったのかな？,Heroin,AttemptedToReportCoachmanQuest,Heroin_flexible_troubled
+"馬車と荷物が残されている以上、村を離れた可能性は
+極めて低いと推測されます。",Fabo,AttemptedToReportCoachmanQuest,
+"一度落ち着いて状況を整理しましょう。
+ここで待ち続けるよりも、村の住人に聞き込みを行うのが最も効率的です。",Fabo,AttemptedToReportCoachmanQuest,
+あわせて、巫女フィルの現状についても情報を収集することを提案します。,Fabo,AttemptedToReportCoachmanQuest,
+"そうだね。アクスさんのこともそうだけど、
+さっき別れた時のフィルさんのあの表情……
+あの怪我で、また無理をしてなきゃいいんだけど。",Heroin,AttemptedToReportCoachmanQuest,Heroin_flexible_normal
+"アクスさんの行方と一緒に、フィルさんのことも村の人に
+聞いてみよう。やっぱり、どうしても放っておけないよ。",Heroin,AttemptedToReportCoachmanQuest,Heroin_flexible_normal
+"……ふぅ。何人かの人に聞いてみたけど、
+結局アクスさんの行方は分からずじまいだったね。",Heroin,ReportedCoachmanQuestComplete ,Heroin_flexible_normal
+"肯定します。
+ですが、これ以上の聞き込みは情報の重複を招く可能性が高いでしょう。
+一度馬車の前へ戻ることを推奨——",Fabo,ReportedCoachmanQuestComplete ,
+おーい！ こっちだよ！ 無事に戻ったようだね！,Axis,ReportedCoachmanQuestComplete ,Axis_normal_normal
+"あ、アクスさん！ どこに行ってたんですか？ 
+ずっと探してたんですよ。",Heroin,ReportedCoachmanQuestComplete ,Heroin_flexible_normal
+少しばかり野暮用があってね。待たせてしまったかな？,Axis,ReportedCoachmanQuestComplete ,Axis_normal_normal
+"いえ、それはいいんですけど……。
+馬車、置いていって大丈夫だったんですか？ 高価な代物が
+入ってるって言ってましたよね？",Heroin,ReportedCoachmanQuestComplete ,Heroin_flexible_troubled
+"馬車？ ああ、そんなことも言ったね。
+ええ、大丈夫だよ。ほんの少し離れただけだから。",Axis,ReportedCoachmanQuestComplete ,Axis_normal_normal
+"それよりも、どうだった？ 
+例の場所へは行ってきてくれたかな？",Axis,ReportedCoachmanQuestComplete ,Axis_normal_normal
+"あ, はい。ちゃんと汲んできました。……はい、これです。",Heroin,ReportedCoachmanQuestComplete ,Heroin_flexible_normal
+"確かに受け取ったよ、ありがとう。……これで、
+君が無事にオアシスへ辿り着けたことが証明されたわけだ。
+本当によかったよ。",Axis,ReportedCoachmanQuestComplete ,Axis_normal_normal
+……？ はい。……あ、あの、アクスさん。,Heroin,ReportedCoachmanQuestComplete ,Heroin_flexible_normal
+"おや、どうかしたかい？ ……そういえば、
+この村の巫女さんには出会ったかい？",Axis,ReportedCoachmanQuestComplete ,Axis_normal_normal
+"フィルさんのことですか？ はい、会いました。
+彼女すごく無理をしていて、どうしても心配で。",Heroin,ReportedCoachmanQuestComplete ,Heroin_flexible_normal
+"彼女なら、つい先ほど村の奥にある
+神殿の方へ歩いていくのを見かけたよ。",Axis,ReportedCoachmanQuestComplete ,Axis_normal_normal
+"えっ……アクスさん、出発の前に少しだけ時間をください！
+フィルさんの様子を見てきたいんです。",Heroin,ReportedCoachmanQuestComplete ,Heroin_flexible_surprised
+"ええ、構わないよ。
+幸い、今は君以外に乗客はいないからね。
+時間は気にしなくて大丈夫だよ。ゆっくりしてくるといい。",Axis,ReportedCoachmanQuestComplete ,Axis_normal_normal
+ありがとうございます。助かります。,Heroin,ReportedCoachmanQuestComplete ,Heroin_flexible_normal

@@ -93,7 +93,7 @@ public class CameraMoveMixerBehaviour : PlayableBehaviour
             // 成功した座標を記憶しておく
             lastValidPosition = finalPos;
             hasValidPosition = true;
-            // Debug.Log($"[CameraMoveMixer] SetCameraPosition to {targetPos2D}, Weight:{totalWeight}, Time:{Time.time}");
+            // Debug.Log($"[CameraMoveMixer] SetCameraPosition to {finalPos}, Weight:{totalWeight}, Time:{Time.time}");
         }
         else
         {

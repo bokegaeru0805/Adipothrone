@@ -37,7 +37,7 @@ public class SetPortraitTransformCommandEditor : CommandEditor
     {
         serializedObject.Update();
 
-        // ご要望の Fungus標準 Character 選択ドロップダウン
+        // Fungus標準 Character 選択ドロップダウン
         CommandEditor.ObjectField<Character>(
             targetCharacterProp,
             new GUIContent("Character", "話しているキャラクター"),

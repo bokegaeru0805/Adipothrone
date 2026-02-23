@@ -5,7 +5,8 @@ using UnityEngine;
 /// <summary>
 /// Fungus用のフェードイン・フェードアウトコマンド
 /// </summary>
-[CommandInfo("Custom", "FadeTime", "フェードアウト(正)・イン(負)時間を設定し、指定秒数待機します")]
+// ▼ Fungusのメニュー候補に表示させないため、CommandInfoをコメントアウト
+// [CommandInfo("Custom", "FadeTime", "フェードアウト(正)・イン(負)時間を設定し、指定秒数待機します")]
 [AddComponentMenu("")]
 public class FadeTimeCommand : Command
 {

@@ -8,34 +8,52 @@ using UnityEngine;
 
 public class GameManager : MonoBehaviour
 {
+    #region Singleton & Events
+
     public static GameManager instance { get; private set; } //シングルトン用のインスタンス
-    private ItemDataManager itemDataManager; //アイテムデータベースマネージャーの参照
 
-    [HideInInspector]
-    public SaveData savedata = new SaveData(); //セーブデータを保存する変数
+    public event Action OnAnyItemAddedToInventory; // 任意のアイテムがインベントリに追加されたときのイベント
+    public event Action<Enum> OnAnyItemRemovedFromInventory; // 任意のアイテムがインベントリから削除されたときのイベント
+    public static event Action<bool> OnTalkingStateChanged; // 会話状態が変化したときのイベント
+    #endregion
 
-    [HideInInspector]
-    public Fungus.Flowchart globalFlowchart; //ゲーム全体のflowchartの参照
+    #region Static Flags & States
+
+    public static bool isFirstGameOpen = false; //初めてゲームが起動されたか
+    public static bool isFirstGameSceneOpen = false; //初めてゲームシーンが開かれたか
+    public static bool IsJumpCooldownActive { get; private set; } = false; // 会話終了直後、ジャンプ入力を受け付けないクールダウン中かどうか
+    #endregion
+
+    #region Global References
 
     [Header("ゲーム全体で使用するデータベース")]
     public HealItemDatabase healItemDatabase;
     public KeyItemDatabase keyItemDatabase;
     public TipsInfoDatabase tipsInfoDatabase;
     public GameObject DropItemPrefab;
-    public static bool isFirstGameOpen = false; //初めてゲームが起動されたか
-    public static bool isFirstGameSceneOpen = false; //初めてゲームシーンが開かれたか
-    private bool isTalking = false;
-    public static bool IsJumpCooldownActive { get; private set; } = false; // 会話終了直後、ジャンプ入力を受け付けないクールダウン中かどうか
-    private float jumpCooldownDuration = 0.2f; // ジャンプ入力を受け付けないクールダウン時間（秒）
-    private Dictionary<int, int> tipsSortOrderMap; //Tipsの正しい並び順を高速に検索するための辞書（キャッシュ）
-    public Vector2? crossScenePlayerSpawnPoint = null; //シーン遷移後の次のプレイヤーのスポーン位置
+
+    [HideInInspector]
+    public Fungus.Flowchart globalFlowchart; //ゲーム全体のflowchartの参照
+
+    [HideInInspector]
+    public SaveData savedata = new SaveData(); //セーブデータを保存する変数
+
+    private ItemDataManager itemDataManager; //アイテムデータベースマネージャーの参照
     private Block TreasureBlock; //宝箱開封時の会話のブロック
-    public event Action OnAnyItemAddedToInventory; // 任意のアイテムがインベントリに追加されたときのイベント
-    public event Action<Enum> OnAnyItemRemovedFromInventory; // 任意のアイテムがインベントリから削除されたときのイベント
-    public static event Action<bool> OnTalkingStateChanged; // 会話状態が変化したときのイベント
+    #endregion
+
+    #region Internal States
+
+    private bool isTalking = false;
+    private float jumpCooldownDuration = 0.2f; // ジャンプ入力を受け付けないクールダウン時間（秒）
+    public Vector2? crossScenePlayerSpawnPoint = null; //シーン遷移後の次のプレイヤーのスポーン位置
+    private Dictionary<int, int> tipsSortOrderMap; //Tipsの正しい並び順を高速に検索するための辞書（キャッシュ）
+    #endregion
+
+    #region Unity Lifecycle Methods
 
     /// <summary>
-    /// シングルトン初期化
+    /// シングルトンの初期化および各コンポーネント・データベースの参照設定を行います。
     /// </summary>
     private void Awake()
     {
@@ -90,6 +108,7 @@ public class GameManager : MonoBehaviour
         isFirstGameOpen = false; // 初回ゲームオープンフラグを初期化
         isFirstGameSceneOpen = false; // 初回ゲームシーンオープンフラグを初期化
         EndTalk(); // 会話中フラグをfalseで初期化
+
         //ゲーム開始時に、データベースから正しい並び順を一度だけ生成してキャッシュする
         InitializeTipsSortOrderMap();
     }
@@ -103,6 +122,23 @@ public class GameManager : MonoBehaviour
             return;
         }
     }
+
+    private void Update()
+    {
+        if (Camera.main != null && DOTween.IsTweening(Camera.main, true))
+        {
+            //Cameraが存在して、かつそのTweenが動いているとき
+            if (InputManager.instance.SkipDialogHold())
+            {
+                //スキップボタンが押されているとき
+                Camera.main.DOComplete(); //カメラのTweenを完了させる
+            }
+        }
+    }
+
+    #endregion
+
+    #region Game State & Scene Management
 
     /// <summary>
     /// シーン遷移後にプレイヤーを出現させる座標を一時的に保存します。
@@ -127,18 +163,9 @@ public class GameManager : MonoBehaviour
         }
     }
 
-    private void Update()
-    {
-        if (Camera.main != null && DOTween.IsTweening(Camera.main, true))
-        {
-            //Cameraが存在して、かつそのTweenが動いているとき
-            if (InputManager.instance.SkipDialogHold())
-            {
-                //スキップボタンが押されているとき
-                Camera.main.DOComplete(); //カメラのTweenを完了させる
-            }
-        }
-    }
+    #endregion
+
+    #region Dialog & Action Control
 
     /// <summary>
     /// 会話状態を開始します。
@@ -169,8 +196,6 @@ public class GameManager : MonoBehaviour
 
         // 会話終了後に入力クールダウンを開始する
         TriggerJumpCooldown();
-
-        //Debug.Log("会話状態を終了しました");
     }
 
     /// <summary>
@@ -237,6 +262,10 @@ public class GameManager : MonoBehaviour
         }
     }
 
+    #endregion
+
+    #region Inventory Management
+
     /// <summary>
     /// 指定されたアイテムIDから、アイテム種別に応じた語頭（接頭辞）を取得します。
     /// </summary>
@@ -269,6 +298,8 @@ public class GameManager : MonoBehaviour
     /// <summary>
     /// 指定されたIDに対応するアイテムを取得して、インベントリに保存します。
     /// </summary>
+    /// <param name="ID">取得したいアイテムのID（Enum）</param>
+    /// <param name="amount">取得する数量</param>
     public void AddAllTypeIDToInventory(Enum ID, int amount = 1)
     {
         //Enumから、タイプを判別する数に変更
@@ -316,6 +347,23 @@ public class GameManager : MonoBehaviour
     }
 
     /// <summary>
+    /// アイテムデータ（ScriptableObject）から直接アイテムを追加するオーバーロード
+    /// </summary>
+    /// <param name="itemData">対象のBaseItemData</param>
+    /// <param name="amount">追加する数量</param>
+    public void AddAllTypeIDToInventory(BaseItemData itemData, int amount = 1)
+    {
+        if (itemData == null)
+        {
+            Debug.LogError("AddAllTypeIDToInventory: itemDataがnullです。");
+            return;
+        }
+
+        // 内部で既存のEnum用メソッドを呼び出すだけなので処理の重複はありません
+        AddAllTypeIDToInventory(itemData.GetItemID(), amount);
+    }
+
+    /// <summary>
     /// 指定されたIDに対応するアイテムを取得して、インベントリから削除します。
     /// </summary>
     /// <param name="ID">削除したいアイテムのID（Enum）</param>
@@ -354,6 +402,23 @@ public class GameManager : MonoBehaviour
         {
             OnAnyItemRemovedFromInventory?.Invoke(ID); // 任意のアイテムが削除されたときのイベントを発火
         }
+    }
+
+    /// <summary>
+    /// アイテムデータ（ScriptableObject）から直接アイテムを排除するオーバーロード
+    /// </summary>
+    /// <param name="itemData">対象のBaseItemData</param>
+    /// <param name="amount">削除する数量</param>
+    public void RemoveAllTypeIDFromInventory(BaseItemData itemData, int amount = 1)
+    {
+        if (itemData == null)
+        {
+            Debug.LogError("RemoveAllTypeIDFromInventory: itemDataがnullです。");
+            return;
+        }
+
+        // 内部で既存のEnum用メソッドを呼び出すだけなので処理の重複はありません
+        RemoveAllTypeIDFromInventory(itemData.GetItemID(), amount);
     }
 
     /// <summary>
@@ -410,6 +475,8 @@ public class GameManager : MonoBehaviour
         // 内部で既存のEnum用メソッドを呼び出すだけなので処理の重複はありません
         return GetAllTypeIDToAmount(itemData.GetItemID());
     }
+
+    #endregion
 
     #region Tips Management
 

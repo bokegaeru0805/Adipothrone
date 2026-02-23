@@ -49,7 +49,7 @@ public class StartCameraShakeCommand : Command
         "Trueの場合、時間による揺れ＋フェードアウトが完了するまで次のFungusコマンドに進みません。\n※手動(Command)でのみ停止させる場合は、基本的にFalseにしてください。"
     )]
     [SerializeField]
-    protected bool waitUntilFinished = true;
+    protected bool waitUntilFinished = false;
 
     private Coroutine shakeCoroutine;
 

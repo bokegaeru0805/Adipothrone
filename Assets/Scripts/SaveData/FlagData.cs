@@ -150,7 +150,11 @@ public enum Chapter2TriggeredEvent
     FirstMetCoachman = 2005, // 初めて御者に会った
     FirstEnteredWaterSourceFrontField = 2007, // オアシスの源泉前フィールドに初めて入った
     OasisSpringEnemiesDefeated = 2008, // オアシスの源泉の敵を全て倒した
-    ReportedCoachmanQuestComplete = 2011, // 御者にクエスト完了の報告をした
+    AttemptedToReportCoachmanQuest = 2009, // 御者にクエスト完了の報告をしようとした
+    VillageInquiryComplete1 = 2010, // 村で聞き込みを完了した(1)
+    VillageInquiryComplete2 = 2011, // 村で聞き込みを完了した(2)
+    VillageInquiryComplete3 = 2012, // 村で聞き込みを完了した(3)
+    ReportedCoachmanQuestComplete = 2014, // 御者にクエスト完了の報告をした
     FirstMetDesertTempleBoss = 2015, // 砂漠の神殿のボスと初めて会った
     OasisDriedUpByDesertTempleBoss = 2016, // 砂漠の神殿のボスによってオアシスが干上がった
     FirstEnteredDeepDesert = 2021, // 砂漠の奥地に初めて入った

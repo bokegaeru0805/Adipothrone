@@ -35,7 +35,6 @@ public class StopTimelineCommand : Command
 
     public override Color GetButtonColor()
     {
-        // 停止っぽい色（赤系）
         return new Color32(235, 128, 128, 255);
     }
 }

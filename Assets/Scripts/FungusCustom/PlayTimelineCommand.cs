@@ -86,6 +86,6 @@ public class PlayTimeline : Command
 
     public override Color GetButtonColor()
     {
-        return new Color32(235, 191, 128, 255); // 薄いオレンジ（Timelineっぽい色）
+        return new Color32(230, 210, 170, 255);
     }
 }

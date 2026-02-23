@@ -21,25 +21,10 @@ public class FillPortraitController : BasePortraitController
     private const string FrontHairSpriteName = "Fill_frontHair";
     private const string BackHairSpriteName = "Fill_backHair";
 
-    protected override void Start()
-    {
-        base.Start();
-        // Fungusからの動的立ち絵表示・非表示リクエストを購読
-        FungusCustomSignals.OnRequestDynamicPortrait += HandleShowRequest;
-        FungusCustomSignals.OnRequestHideDynamicPortrait += HidePortrait;
-    }
-
-    protected override void OnDestroy()
-    {
-        base.OnDestroy();
-        FungusCustomSignals.OnRequestDynamicPortrait -= HandleShowRequest;
-        FungusCustomSignals.OnRequestHideDynamicPortrait -= HidePortrait;
-    }
-
     /// <summary>
     /// Fungusからのリクエストを受信し、Fill宛ての命令であればスプライト名を組み立てて表示します。
     /// </summary>
-    private void HandleShowRequest(string portraitString)
+    public override void HandleShowRequest(string portraitString)
     {
         if (currentBlockType != BlockType.Story)
         {
@@ -112,7 +97,7 @@ public class FillPortraitController : BasePortraitController
     /// <summary>
     /// 明暗が切り替わる際のTween処理のオーバーライド。前髪と後ろ髪にも適用します。
     /// </summary>
-    protected override void SetPortraitColorTween(Color targetColor, float duration)
+    public override void SetPortraitColorTween(Color targetColor, float duration)
     {
         base.SetPortraitColorTween(targetColor, duration);
 

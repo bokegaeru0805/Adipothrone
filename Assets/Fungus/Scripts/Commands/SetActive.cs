@@ -46,7 +46,7 @@ namespace Fungus
 
         public override Color GetButtonColor()
         {
-            return new Color32(235, 191, 217, 255);
+            return new Color32(245, 180, 150, 255);
         }
 
         public override bool HasReference(Variable variable)

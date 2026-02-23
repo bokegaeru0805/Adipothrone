@@ -113,7 +113,6 @@ public class SetGameBoolFlagCommand : Command
 
     public override Color GetButtonColor()
     {
-        // 汎用コマンドなので、共通の色（ベージュ/オレンジ系）を設定
         return new Color32(251, 207, 153, 255);
     }
 }

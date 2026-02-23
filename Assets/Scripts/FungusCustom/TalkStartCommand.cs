@@ -2,7 +2,7 @@ using System.Linq;
 using Fungus;
 using UnityEngine;
 
-[CommandInfo("Custom", "TalkStart", "会話が始まる前のコマンド")]
+[CommandInfo("Custom", "Talk Start", "会話が始まる前のコマンド")]
 public class TalkStartCommand : Command
 {
     private Flowchart globalFlowchart = null;
@@ -121,5 +121,10 @@ public class TalkStartCommand : Command
     public override string GetSummary()
     {
         return "会話開始処理（時間停止・状態設定）";
+    }
+
+    public override Color GetButtonColor()
+    {
+        return new Color32(255, 255, 255, 255);
     }
 }

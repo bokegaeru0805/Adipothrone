@@ -53,22 +53,6 @@ public class HeroinPortraitController : BasePortraitController
         base.Awake();
     }
 
-    // OnEnableだと、TalkStartコマンドのOnEnterより後に呼ばれてしまい、
-    // イベントを正しく受け取れない可能性があるため、Startでイベント購読を行う。
-    protected override void Start()
-    {
-        base.Start();
-        FungusCustomSignals.OnRequestDynamicPortrait += HandleShowRequest;
-        FungusCustomSignals.OnRequestHideDynamicPortrait += HidePortrait;
-    }
-
-    protected override void OnDestroy()
-    {
-        base.OnDestroy();
-        FungusCustomSignals.OnRequestDynamicPortrait -= HandleShowRequest;
-        FungusCustomSignals.OnRequestHideDynamicPortrait -= HidePortrait;
-    }
-
     #endregion
 
     #region Event Handlers
@@ -78,7 +62,7 @@ public class HeroinPortraitController : BasePortraitController
     /// 現在のプレイヤーの体形状態を取得し、要求された表情と組み合わせてスプライト名を構築します。
     /// </summary>
     /// <param name="portraitString">Fungus側で指定されたポートレート指定文字列（例: "Heroin_Normal_Smile" など）</param>
-    private void HandleShowRequest(string portraitString)
+    public override void HandleShowRequest(string portraitString)
     {
         // PlayerBodyManagerのインスタンスがない場合は体形が判定できないため処理しない
         if (PlayerBodyManager.instance == null)
@@ -96,7 +80,7 @@ public class HeroinPortraitController : BasePortraitController
         // 指定された文字列を '_' で分割し、キャラクター名と表情名を抽出する
         // 想定フォーマット: [CharacterName]_[何か]_[ExpressionName] (例: "Heroin_A_Smile" -> "Heroin" と "Smile")
         string[] parts = portraitString.Split('_');
-        if (parts.Length >= 3)
+        if (parts.Length >= 3 && parts[0] == character.name) // 最初の部分がこのコントローラーのキャラクター名と一致するか確認
         {
             string charName = parts[0];
             string expressionString = parts.LastOrDefault(); // 配列の最後を表情名とする
@@ -124,8 +108,9 @@ public class HeroinPortraitController : BasePortraitController
             // 基底クラスの表示メソッド（アニメーション処理付き）を呼び出す
             ShowPortrait(bodySpriteName, faceSpriteName, expressionSpriteName);
         }
-        else
+        else if (parts.Length < 3)
         {
+            // フォーマットが正しくない場合のみ警告を出すように変更
             Debug.LogWarning($"portraitStringのフォーマットが正しくありません: {portraitString}");
         }
     }
@@ -133,7 +118,7 @@ public class HeroinPortraitController : BasePortraitController
     /// <summary>
     /// 明暗が切り替わる際のTween処理をオーバーライドし、補助画像にも適用します。
     /// </summary>
-    protected override void SetPortraitColorTween(Color targetColor, float duration)
+    public override void SetPortraitColorTween(Color targetColor, float duration)
     {
         base.SetPortraitColorTween(targetColor, duration);
 

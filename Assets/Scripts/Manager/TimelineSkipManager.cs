@@ -1,5 +1,4 @@
 using System.Collections;
-using Fungus;
 using UnityEngine;
 using UnityEngine.Playables;
 
@@ -15,6 +14,7 @@ public class TimelineSkipManager : MonoBehaviour
     [Tooltip("全スキップ中のタイムスケール倍率")]
     [SerializeField]
     private float skipTimeScale = 50.0f;
+
     [Tooltip("全スキップを開始するために必要な長押し時間（秒）")]
     [SerializeField]
     private float skipHoldDuration = 1.5f;
@@ -27,6 +27,9 @@ public class TimelineSkipManager : MonoBehaviour
     [Tooltip("早送り時のTimeline倍率")]
     [SerializeField]
     private float fastForwardSpeed = 3.0f;
+
+    // 外部から早送り倍率を参照するためのプロパティ
+    public float FastForwardSpeed => fastForwardSpeed;
 
     // 現在スキップ中（Tキー）かどうか
     public bool IsSkipping { get; private set; } = false;
@@ -141,7 +144,8 @@ public class TimelineSkipManager : MonoBehaviour
             return;
         }
 
-       if (InputManager.instance == null) return;
+        if (InputManager.instance == null)
+            return;
 
         // ローカル早送り (Timeline速度変更)
         // ※スキップ中は操作させない
@@ -297,7 +301,7 @@ public class TimelineSkipManager : MonoBehaviour
 
         // --- プレイヤーの物理挙動を復元する ---
         PlayerManager.instance.SetPlayerPhysicsActive(true);
-        
+
         // 敵の動きを再開
         if (TimeManager.instance != null)
         {

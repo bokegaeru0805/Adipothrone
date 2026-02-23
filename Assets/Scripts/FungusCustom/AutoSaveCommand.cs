@@ -7,7 +7,7 @@ using UnityEngine;
 [CommandInfo(
     "Custom", // コマンドのカテゴリ名
     "Auto Save", // コマンド名
-    "現在のゲームの進行状況をオートセーブします。重要な会話の途中などで使用します。" // コマンドの説明
+    "現在のゲームの進行状況をオートセーブします。重要な会話の途中などで使用します。"
 )]
 [AddComponentMenu("")]
 public class AutoSaveCommand : Command
@@ -47,7 +47,6 @@ public class AutoSaveCommand : Command
     /// </summary>
     public override Color GetButtonColor()
     {
-        // セーブの成功やデータ保存のイメージに合う、薄い緑色に設定
-        return new Color32(191, 235, 191, 255);
+        return new Color32(140, 230, 190, 255);
     }
 }

@@ -67,7 +67,7 @@ public class TransformPropertyCommand : Command
     [ShowIf("IsTweening")]
     [Tooltip("待機するかどうか")]
     [SerializeField]
-    protected bool waitUntilFinished = true;
+    protected bool waitUntilFinished = false;
 
     [BoxGroup("Tween Settings")]
     [ShowIf("IsTweening")]
@@ -231,6 +231,6 @@ public class TransformPropertyCommand : Command
 
     public override Color GetButtonColor()
     {
-        return new Color32(235, 191, 217, 255); // 薄いピンク系
+        return new Color32(150, 210, 200, 255);
     }
 }

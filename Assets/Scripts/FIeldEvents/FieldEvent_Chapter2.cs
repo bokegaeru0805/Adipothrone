@@ -15,6 +15,10 @@ public class FieldEvent_Chapter2 : BaseFieldEvent
         || fieldname == FieldName.OrangeOrbDeviceField
         || fieldname == FieldName.PurpleOrbDeviceField;
 
+    [SerializeField]
+    [ShowIf(nameof(fieldname), FieldName.CoachmanField)]
+    private BaseItemData waterOasisSourceItemData;
+
     private enum FieldName
     {
         None = 0, // フィールド名が設定されていない場合の初期値
@@ -86,15 +90,15 @@ public class FieldEvent_Chapter2 : BaseFieldEvent
                 else if (
                     flagManager.GetBoolFlag(Chapter2TriggeredEvent.OasisSpringEnemiesDefeated)
                     && !flagManager.GetBoolFlag(
-                        Chapter2TriggeredEvent.ReportedCoachmanQuestComplete
+                        Chapter2TriggeredEvent.AttemptedToReportCoachmanQuest
                     )
                 )
                 {
                     flagManager.SetBoolFlag(
-                        Chapter2TriggeredEvent.ReportedCoachmanQuestComplete,
+                        Chapter2TriggeredEvent.AttemptedToReportCoachmanQuest,
                         true
                     );
-                    FungusHelper.ExecuteBlock(targetFlowchart, "ReportCoachManQuestComplete");
+                    FungusHelper.ExecuteBlock(targetFlowchart, "AttemptedToReportCoachmanQuest");
                 }
                 break;
             case FieldName.WaterSourceFrontField:
@@ -125,7 +129,8 @@ public class FieldEvent_Chapter2 : BaseFieldEvent
                     && !flagManager.GetBoolFlag(Chapter2TriggeredEvent.FirstMetDesertTempleBoss)
                 )
                 {
-                    flagManager.SetBoolFlag(Chapter2TriggeredEvent.FirstMetDesertTempleBoss, true);
+                    // フラグを立てるのはFlowchart内で行う
+                    // flagManager.SetBoolFlag(Chapter2TriggeredEvent.FirstMetDesertTempleBoss, true);
                     FungusHelper.ExecuteBlock(targetFlowchart, "FirstMetDesertTempleBoss");
                 }
                 else if (
@@ -262,6 +267,35 @@ public class FieldEvent_Chapter2 : BaseFieldEvent
 
             // 全てのオーブがはまったときのイベントを実行
             FungusHelper.ExecuteBlock(targetFlowchart, "AllOrbsPlacedInDevice");
+        }
+    }
+    #endregion
+
+    #region 村聞き込み関連の共通処理
+
+
+    /// <summary>
+    /// 全ての聞き込みが完了したか確認し、完了イベントを実行する
+    /// Fungusから呼び出されることを想定している
+    /// </summary>
+    public void CheckVillageInquiryComplete()
+    {
+        // 既に完了イベントが発火済みなら何もしない
+        if (flagManager.GetBoolFlag(Chapter2TriggeredEvent.ReportedCoachmanQuestComplete))
+            return;
+
+        // 全てのの聞き込みフラグがTrueか確認
+        bool isComplete =
+            flagManager.GetBoolFlag(Chapter2TriggeredEvent.AttemptedToReportCoachmanQuest)
+            && flagManager.GetBoolFlag(Chapter2TriggeredEvent.VillageInquiryComplete1)
+            && flagManager.GetBoolFlag(Chapter2TriggeredEvent.VillageInquiryComplete2)
+            && flagManager.GetBoolFlag(Chapter2TriggeredEvent.VillageInquiryComplete3);
+
+        if (isComplete)
+        {
+            GameManager.instance.RemoveAllTypeIDFromInventory(waterOasisSourceItemData, 1); // アイテムを1つ減らす
+            flagManager.SetBoolFlag(Chapter2TriggeredEvent.ReportedCoachmanQuestComplete, true);
+            FungusHelper.ExecuteBlock(targetFlowchart, "ReportedCoachmanQuestComplete");
         }
     }
     #endregion

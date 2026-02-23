@@ -60,4 +60,9 @@ public class TalkEndCommand : Command
     {
         return $"会話が終わった後に時間を再開します";
     }
+
+    public override Color GetButtonColor()
+    {
+        return new Color32(50, 50, 50, 255);
+    }
 }

@@ -27,4 +27,9 @@ public class PlayBGMCommand : Command
     {
         return $"{BGM}を流す";
     }
+
+    public override Color GetButtonColor()
+    {
+        return new Color32(140, 220, 220, 255);
+    }
 }

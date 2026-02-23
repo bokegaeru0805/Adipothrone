@@ -414,6 +414,7 @@ public class Heroin_move : MonoBehaviour
     public void SetFacingDirection(bool isRight)
     {
         rightFlag = isRight;
+        _spriteRenderer.flipX = isRight;
         robotMoveScript.SetRightFlag(isRight);
     }
 

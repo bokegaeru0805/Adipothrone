@@ -315,6 +315,6 @@ public class SpriteRendererPropertyCommand : Command
 
     public override Color GetButtonColor()
     {
-        return new Color32(184, 210, 235, 255); // 薄い青系
+        return new Color32(160, 180, 250, 255);
     }
 }

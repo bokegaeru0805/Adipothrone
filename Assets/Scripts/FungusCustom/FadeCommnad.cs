@@ -31,9 +31,6 @@ public class FadeCommand : Command
     [SerializeField]
     protected bool waitUntilFinished = true;
 
-    // TimelineSkipManagerで設定されている早送り倍率と同じ値（または参照）にしてください
-    private const float FAST_FORWARD_MULTIPLIER = 3.0f;
-
     public override void OnEnter()
     {
         if (FadeCanvas.instance == null)
@@ -74,12 +71,18 @@ public class FadeCommand : Command
 
             // Zキー早送り中なら、時間を倍速で進める
             // (Tキーの全スキップ時はTime.timeScaleが変わるため、dtが自動的に大きくなり対応不要)
-            if (
-                TimelineSkipManager.instance != null
-                && TimelineSkipManager.instance.IsFastForwarding
-            )
+            if (TimelineSkipManager.instance != null)
             {
-                dt *= FAST_FORWARD_MULTIPLIER;
+                if (TimelineSkipManager.instance.IsSkipping)
+                {
+                    // 全スキップ中は即座に完了させるため、巨大なdtを渡す
+                    dt = duration + 1.0f;
+                }
+                else if (TimelineSkipManager.instance.IsFastForwarding)
+                {
+                    // TimelineSkipManagerから現在の設定値を直接取得する
+                    dt *= TimelineSkipManager.instance.FastForwardSpeed;
+                }
             }
 
             timer += dt;
@@ -138,7 +141,6 @@ public class FadeCommand : Command
 
     public override Color GetButtonColor()
     {
-        // 視認しやすい薄い緑色
-        return new Color32(216, 228, 170, 255);
+        return new Color32(180, 160, 210, 255);
     }
 }

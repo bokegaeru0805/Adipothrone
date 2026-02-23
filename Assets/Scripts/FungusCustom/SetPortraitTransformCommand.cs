@@ -108,6 +108,6 @@ public class SetPortraitTransformCommand : Command
 
     public override Color GetButtonColor()
     {
-        return new Color32(235, 191, 217, 255);
+        return new Color32(240, 160, 190, 255);
     }
 }
