@@ -1,0 +1,3 @@
+セリフ,ChracterName,BlockName,FileName
+装置を全て起動しよう。,narrative,BossGate_Default,
+扉の先に行く前に、フィルさんに話しかけておこう。,narrative,BossGate_CompleteAllOrbsPlacedInDevice,

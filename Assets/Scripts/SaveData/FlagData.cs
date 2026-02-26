@@ -145,6 +145,7 @@ public enum Chapter1CountedEvent
 /// </summary>
 public enum Chapter2TriggeredEvent
 {
+    None = 0, // 何も起こっていない状態を表すフラグ（デフォルト値として使用）
     Chapter2Start = 2001, // 第二章が始まった
     FirstEnteredVillage = 2002, // 初めて村に入った
     FirstMetCoachman = 2005, // 初めて御者に会った
@@ -165,8 +166,11 @@ public enum Chapter2TriggeredEvent
     TempleBossSmokeDefeated = 2035, // 砂漠の神殿のボス（煙）を倒した
     BlueOrbPlacedInDevice = 2036, // 青いオーブを装置に置いた
     GreenOrbPlacedInDevice = 2040, // 緑のオーブを装置に置いた
+    HeardHintAboutGreenOrb = 2041, // 緑のオーブについてのヒントを聞いた
     OrangeOrbPlacedInDevice = 2050, // オレンジのオーブを装置に置いた
+    HeardHintAboutOrangeOrb = 2051, // オレンジのオーブについてのヒントを聞いた
     PurpleOrbPlacedInDevice = 2060, // 紫のオーブを装置に置いた
+    HeardHintAboutPurpleOrb = 2061, // 紫のオーブについてのヒントを聞いた
     AllOrbsPlacedInDevice = 2070, // 全てのオーブを装置に置いた
     TalkedToFillAfterAllOrbsPlaced = 2075, // 全てのオーブを置いた後にFillと話した
 }

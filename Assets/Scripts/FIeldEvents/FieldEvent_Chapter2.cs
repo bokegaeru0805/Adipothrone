@@ -212,22 +212,28 @@ public class FieldEvent_Chapter2 : BaseFieldEvent
 
             case FieldName.GreenOrbDeviceField:
                 HandleOrbDevice(
-                    Chapter2TriggeredEvent.GreenOrbPlacedInDevice,
-                    "GreenOrbPlacedInDevice"
+                    orbFlag: Chapter2TriggeredEvent.GreenOrbPlacedInDevice,
+                    blockName: "GreenOrbPlacedInDevice",
+                    hintFlag: Chapter2TriggeredEvent.HeardHintAboutGreenOrb,
+                    hintBlockName: "GreenOrbHint"
                 );
                 break;
 
             case FieldName.OrangeOrbDeviceField:
                 HandleOrbDevice(
-                    Chapter2TriggeredEvent.OrangeOrbPlacedInDevice,
-                    "OrangeOrbPlacedInDevice"
+                    orbFlag: Chapter2TriggeredEvent.OrangeOrbPlacedInDevice,
+                    blockName: "OrangeOrbPlacedInDevice",
+                    hintFlag: Chapter2TriggeredEvent.HeardHintAboutOrangeOrb,
+                    hintBlockName: "OrangeOrbHint"
                 );
                 break;
 
             case FieldName.PurpleOrbDeviceField:
                 HandleOrbDevice(
-                    Chapter2TriggeredEvent.PurpleOrbPlacedInDevice,
-                    "PurpleOrbPlacedInDevice"
+                    orbFlag: Chapter2TriggeredEvent.PurpleOrbPlacedInDevice,
+                    blockName: "PurpleOrbPlacedInDevice",
+                    hintFlag: Chapter2TriggeredEvent.HeardHintAboutPurpleOrb,
+                    hintBlockName: "PurpleOrbHint"
                 );
                 break;
             case FieldName.TempleRoofField:
@@ -243,7 +249,12 @@ public class FieldEvent_Chapter2 : BaseFieldEvent
     /// </summary>
     /// <param name="orbFlag">この装置に対応する完了フラグ</param>
     /// <param name="blockName">実行するFungusブロック名</param>
-    private void HandleOrbDevice(Chapter2TriggeredEvent orbFlag, string blockName)
+    private void HandleOrbDevice(
+        Chapter2TriggeredEvent orbFlag,
+        string blockName,
+        Chapter2TriggeredEvent hintFlag = Chapter2TriggeredEvent.None,
+        string hintBlockName = null
+    )
     {
         // まずは全てのオーブが配置されたか確認して、完了イベントが発火していないなら発火させる
         CheckAllOrbsPlaced();
@@ -263,6 +274,18 @@ public class FieldEvent_Chapter2 : BaseFieldEvent
             // （BaseFieldEventのExecuteEventBlockを使うと楽ですが、ここでは明示的に書きます）
             isEventTriggered = true;
             FungusHelper.ExecuteBlock(targetFlowchart, blockName);
+        }
+        else if (
+            hintFlag != Chapter2TriggeredEvent.None
+            && !flagManager.GetBoolFlag(hintFlag)
+            && !string.IsNullOrEmpty(hintBlockName)
+        )
+        {
+            // ヒントフラグが設定されていて、まだヒントを聞いていない場合はヒントイベントを発火させる
+
+            // フラグを立てるのはFlowchart内で行う
+            // flagManager.SetBoolFlag(hintFlag, true);
+            FungusHelper.ExecuteBlock(targetFlowchart, hintBlockName);
         }
     }
 

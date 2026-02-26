@@ -10,6 +10,9 @@ public class SaveData
     // ===== ゲームのバージョン =====
     public string GameVersion = "";
 
+    // ===== セーブした日付・時刻 =====
+    public string SaveDateTime = "";
+
     // ===== プレイヤーの状態 =====
     public PlayerStatusData PlayerStatus = new PlayerStatusData();
 

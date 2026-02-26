@@ -13,6 +13,8 @@ using UnityEngine;
 [RequireComponent(typeof(BoxCollider2D))]
 public class NPCDialogueTrigger : MonoBehaviour
 {
+    #region Inspector Settings
+
     [Header("実行するFungusのFlowchart")]
     [SerializeField]
     private Flowchart targetFlowchart;
@@ -32,13 +34,24 @@ public class NPCDialogueTrigger : MonoBehaviour
     [SerializeField]
     private GameObject speechBubbleObject;
 
+    #endregion
+
+    #region Private Fields
+
+    // 外部コンポーネント参照
     private ShopInteractionTrigger shopInteractionTrigger = null;
+
+    // 状態フラグ
     private bool isShopTrigger = false;
-    private bool isTalking = false; // 会話状態を保存するローカル変数
+    private bool isTalking = false; // 現在会話中かどうか
+    private bool isDialogueEnabled = true; // 会話機能自体が有効かどうか
+    #endregion
+
+    #region Unity Lifecycle
 
     private void Awake()
     {
-        // 必須コンポーネントのnullチェック
+        // 必須コンポーネントのチェック
         if (targetFlowchart == null)
         {
             Debug.LogError("ターゲットのFlowchartが設定されていません。", this);
@@ -54,10 +67,22 @@ public class NPCDialogueTrigger : MonoBehaviour
         }
     }
 
+    private void OnEnable()
+    {
+        StartCoroutine(DelayedInitialization());
+    }
+
+    private void OnDisable()
+    {
+        // オブジェクトが非アクティブになったら、購読を解除（メモリリーク防止）
+        GameManager.OnTalkingStateChanged -= HandleTalkingStateChanged;
+        FlagManager.OnBoolFlagChanged -= HandleFlagChanged;
+    }
+
     private void OnTriggerStay2D(Collider2D collision)
     {
-        // コンポーネントが無効(false)なら、ここで処理を終了する
-        if (!this.enabled)
+        // このコンポーネントが無効化されている、会話機能が無効化されている、またはターゲットのFlowchartが設定されていない場合は、何もしない
+        if (!this.enabled || !isDialogueEnabled || targetFlowchart == null)
             return;
 
         // ゲームが動作中、他の会話が実行中でなく、プレイヤーがインタラクトした場合に会話を試みる
@@ -68,60 +93,13 @@ public class NPCDialogueTrigger : MonoBehaviour
             && collision.gameObject.CompareTag(GameConstants.PLAYER_TAG_NAME)
         )
         {
-            // TryExecuteDialogue()は、無効化された後でも呼び出される
             TryExecuteDialogue();
         }
     }
 
-    /// <summary>
-    /// 設定された会話条件を評価し、適切なFungusブロックを実行する。
-    /// </summary>
-    private void TryExecuteDialogue()
-    {
-        if (targetFlowchart == null)
-            return;
+    #endregion
 
-        // 条件リストを上から順に評価
-        foreach (var condition in dialogueConditions)
-        {
-            if (condition.AreAllFlagsMet())
-            {
-                if (
-                    isShopTrigger
-                    && (
-                        condition.blockNameToExecute == "Shop"
-                        || condition.blockNameToExecute == "shop"
-                    )
-                )
-                {
-                    // ShopInteractionTriggerが設定されている場合、ShopTriggerを実行
-                    if (shopInteractionTrigger != null)
-                    {
-                        shopInteractionTrigger.ShopTrigger();
-                    }
-                }
-                else
-                {
-                    // 条件に一致した場合、ブロックを実行し、追加イベントを呼び出す
-                    FungusHelper.ExecuteBlock(targetFlowchart, condition.blockNameToExecute);
-                }
-
-                condition.onDialogueTriggered?.Invoke(); // 追加イベントの呼び出し
-                return; // 一致したものが見つかったので処理終了
-            }
-        }
-
-        // どの条件にも一致しなかった場合、デフォルトのブロックを実行
-        if (!string.IsNullOrEmpty(defaultBlockName))
-        {
-            FungusHelper.ExecuteBlock(targetFlowchart, defaultBlockName);
-        }
-    }
-
-    private void OnEnable()
-    {
-        StartCoroutine(DelayedInitialization());
-    }
+    #region Initialization
 
     /// <summary>
     /// 全てのAwake/Startが完了するのを待ってから、初期化処理を実行するコルーチン
@@ -140,30 +118,94 @@ public class NPCDialogueTrigger : MonoBehaviour
         UpdateBubbleState();
     }
 
-    private void OnDisable()
-    {
-        // オブジェクトが非アクティブになったら、購読を解除（メモリリーク防止）
-        GameManager.OnTalkingStateChanged -= HandleTalkingStateChanged;
-        FlagManager.OnBoolFlagChanged -= HandleFlagChanged;
-    }
+    #endregion
+
+    #region Public API
 
     /// <summary>
-    /// GameManagerから会話状態の変更通知を受け取る
+    /// 外部から会話機能の有効/無効を切り替えます。
+    /// 無効化するとプレイヤーのインタラクト吹き出しも出なくなります。
     /// </summary>
-    private void HandleTalkingStateChanged(bool talkState)
+    /// <param name="isEnabled">有効にする場合はtrue、無効にする場合はfalse</param>
+    public void SetDialogueEnabled(bool isEnabled)
     {
-        isTalking = talkState;
-        // 会話状態が変わったら、即座に吹き出しの表示状態も更新する
-        UpdateBubbleState();
+        isDialogueEnabled = isEnabled;
+
+        if (isEnabled)
+        {
+            // 有効化：タグをInteractableに変更して、PlayerInteractionBubble を表示させる
+            gameObject.tag = GameConstants.INTERACTABLE_OBJECT_TAG_NAME;
+            UpdateBubbleState();
+        }
+        else
+        {
+            // 無効化：タグをUntaggedに変更し、PlayerInteractionBubble を非表示にさせる
+            gameObject.tag = GameConstants.UNTAGGED_TAG_NAME;
+
+            // NPC自身の頭上の吹き出し（クエストアイコン等）も強制的に消す
+            if (speechBubbleObject != null && speechBubbleObject.activeSelf)
+            {
+                speechBubbleObject.SetActive(false);
+            }
+        }
     }
 
+    #endregion
+
+    #region Core Logic
+
     /// <summary>
-    /// フラグ変更時に呼ばれるコールバック
+    /// 設定された会話条件を評価し、適切なFungusブロックを実行する。
     /// </summary>
-    private void HandleFlagChanged(Enum flagName, bool newValue)
+    private void TryExecuteDialogue()
     {
-        UpdateBubbleState();
+        if (targetFlowchart == null)
+            return;
+
+        // 条件リストを上から順に評価
+        foreach (var condition in dialogueConditions)
+        {
+            if (condition.AreAllFlagsMet())
+            {
+                // ショップトリガーとしての処理かどうかを判定
+                bool isShopBlock =
+                    isShopTrigger
+                    && string.Equals(
+                        condition.blockNameToExecute,
+                        "Shop",
+                        StringComparison.OrdinalIgnoreCase
+                    );
+
+                if (isShopBlock)
+                {
+                    // ShopInteractionTriggerが設定されている場合、ShopTriggerを実行
+                    if (shopInteractionTrigger != null)
+                    {
+                        shopInteractionTrigger.ShopTrigger();
+                    }
+                }
+                else
+                {
+                    // 条件に一致した場合、ブロックを実行
+                    FungusHelper.ExecuteBlock(targetFlowchart, condition.blockNameToExecute);
+                }
+
+                // 追加イベントの呼び出し
+                condition.onDialogueTriggered?.Invoke();
+                return; // 一致したものが見つかったので処理終了
+            }
+        }
+
+        // どの条件にも一致しなかった場合、デフォルトのブロックを実行
+        if (!string.IsNullOrEmpty(defaultBlockName))
+        {
+            FungusHelper.ExecuteBlock(targetFlowchart, defaultBlockName);
+        }
     }
+
+    #endregion
+
+    #region Visual & State Updates
 
     /// <summary>
     /// 現在のフラグ状態に基づいて、吹き出しの表示/非表示を更新する。
@@ -173,8 +215,8 @@ public class NPCDialogueTrigger : MonoBehaviour
         if (speechBubbleObject == null)
             return;
 
-        // 会話中は強制的に吹き出しを非表示にする
-        if (isTalking)
+        // 会話中、もしくは会話機能が無効な場合は強制的に吹き出しを非表示にする
+        if (isTalking || !isDialogueEnabled)
         {
             if (speechBubbleObject.activeSelf)
             {
@@ -201,4 +243,28 @@ public class NPCDialogueTrigger : MonoBehaviour
             speechBubbleObject.SetActive(shouldShow);
         }
     }
+
+    #endregion
+
+    #region Event Handlers
+
+    /// <summary>
+    /// GameManagerから会話状態の変更通知を受け取るコールバック
+    /// </summary>
+    private void HandleTalkingStateChanged(bool talkState)
+    {
+        isTalking = talkState;
+        // 会話状態が変わったら、即座に吹き出しの表示状態も更新する
+        UpdateBubbleState();
+    }
+
+    /// <summary>
+    /// フラグ変更時に呼ばれるコールバック
+    /// </summary>
+    private void HandleFlagChanged(Enum flagName, bool newValue)
+    {
+        UpdateBubbleState();
+    }
+
+    #endregion
 }

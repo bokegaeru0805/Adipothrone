@@ -116,8 +116,6 @@ public class FastTravelManager : MonoBehaviour
         // ロード完了後、念のため1フレーム待機して初期化漏れを防ぐ
         yield return null;
 
-        Debug.Log($"ファストトラベル先へ移動完了: {sceneName}");
-
         // ロード完了を確認してからフェードインを開始
         FadeCanvas.instance.FadeIn(1f / 60f);
 

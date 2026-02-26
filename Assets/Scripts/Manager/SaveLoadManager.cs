@@ -721,6 +721,8 @@ public class SaveLoadManager : MonoBehaviour
 
         // ゲームのバージョンをsaveDataに取得
         GameManager.instance.savedata.GameVersion = Application.version;
+        // 現在の日付・時刻をフォーマットして代入（例: "2026/02/26 17:30:00"）
+        GameManager.instance.savedata.SaveDateTime = DateTime.Now.ToString("yyyy/MM/dd HH:mm:ss");
         //セーブデータを取得
         SaveData saveData = GameManager.instance.savedata;
         //セーブデータを保存
@@ -1046,7 +1048,6 @@ public class SaveLoadManager : MonoBehaviour
     /// </summary>
     private void MigrateToV1_2_0(SaveData saveData)
     {
-
         if (saveData.EnemyRecordData != null && saveData.EnemyRecordData.enemyRecords != null)
         {
             // 既存の全エントリに対して遭遇済みフラグを立てる
