@@ -418,8 +418,14 @@ public abstract class BasePortraitController : MonoBehaviour
                 return;
 
             Vector2 targetPosition = _baseOnScreenPosition + _temporaryOffset;
+            // X座標が0以下なら左から、0より大きいなら右側から出現させる
+            float startOffsetX =
+                targetPosition.x <= 0f
+                    ? -_portraitContainerRect.rect.width
+                    : _portraitContainerRect.rect.width;
+
             Vector2 offScreenPosition = new Vector2(
-                targetPosition.x - _portraitContainerRect.rect.width,
+                targetPosition.x + startOffsetX,
                 targetPosition.y
             );
 

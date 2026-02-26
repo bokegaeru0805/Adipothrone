@@ -12,12 +12,17 @@ public enum BGMCategory
     Field_FirstVillage = 215,
     Field_Plains = 220,
     Field_Cave1 = 225,
+    Field_DesertVillage = 226,
+    Field_Desert = 227,
+    Field_DesertTemple = 230,
     Boss_Electric = 400,
     Boss_Chapter = 405,
     Boss_Unique = 406,
+    Boss_Decision = 407,
     Boss_Mid = 410,
     Env_Water_Stream1 = 600,
     Env_Birds = 605,
+    Event_DecisiveBattle_Before = 800,
 
     bgm0 = 1000, // デバッグ用
     bgm1 = 1001, // デバッグ用

@@ -2,10 +2,9 @@
 // MITオープンソースライセンス（https://github.com/snozbot/fungus/blob/master/LICENSE）の下で無料で公開されています。
 
 using UnityEngine;
+using Fungus;
 
-namespace Fungus
-{
-    /// <summary>
+/// <summary>
     /// ダイアログボックスにテキストを表示します。Fungusの最も基本的なコマンドの一つです。
     /// </summary>
     [CommandInfo("Narrative", "Say", "ダイアログボックスにテキストを表示します。")]
@@ -208,19 +207,39 @@ namespace Fungus
             string subbedText = flowchart.SubstituteVariables(displayText);
 
             // --- 【ステップ5】会話ウィンドウに表示を命令 ---
-            sayDialog.Say(
-                subbedText,
-                !extendPrevious,
-                waitForClick,
-                fadeWhenDone,
-                stopVoiceover,
-                waitForVO,
-                voiceOverClip,
-                delegate
+            // Global Skip中かどうかを判定し、スキップ中であれば重い表示処理をバイパスする
+            if (TimelineSkipManager.instance != null && TimelineSkipManager.instance.IsSkipping)
+            {
+                // スキップ解除時（フェードイン後）に最後のセリフが見えるように、テキストだけ直接代入する
+                if (!extendPrevious)
                 {
-                    Continue();
+                    sayDialog.StoryText = subbedText;
                 }
-            );
+                else
+                {
+                    sayDialog.StoryText += subbedText;
+                }
+                
+                // コルーチンや入力待ちを発生させず、即座に次のコマンドへ進む
+                Continue();
+            }
+            else
+            {
+                // 通常時：コルーチンを起動して文字送りと入力待ちを行う
+                sayDialog.Say(
+                    subbedText,
+                    !extendPrevious,
+                    waitForClick,
+                    fadeWhenDone,
+                    stopVoiceover,
+                    waitForVO,
+                    voiceOverClip,
+                    delegate
+                    {
+                        Continue();
+                    }
+                );
+            }
         }
 
         /// <summary>
@@ -328,4 +347,3 @@ namespace Fungus
 
         #endregion
     }
-}

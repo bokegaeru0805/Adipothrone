@@ -102,6 +102,9 @@ public class StatePro
     [AllowNesting, ShowIf("changeActiveState")]
     public bool isActive = true;
 
+    [Tooltip("Trueの場合、次にいずれかのエリアを出るまでアクティブ状態の変更を遅らせます。")]
+    public bool delayActiveStateUntilAreaExit = false;
+
     [Header("スプライト")]
     public bool changeSprite;
 
@@ -110,6 +113,9 @@ public class StatePro
 
     [AllowNesting, ShowIf("changeSprite")]
     public bool flipX = false;
+
+    [Tooltip("Trueの場合、次にいずれかのエリアを出るまでスプライトの変更を遅らせます。")]
+    public bool delaySpriteUntilAreaExit = false;
 
     [Header("位置")]
     public bool changePosition;

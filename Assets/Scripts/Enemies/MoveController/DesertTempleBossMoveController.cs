@@ -711,8 +711,7 @@ public class DesertTempleBossMoveController : MonoBehaviour
         while (true)
         {
             // --- 0〜4の範囲でランダム選択 ---
-            // int attackType = Random.Range(0, 6); // 0:レーザー, 1:分身, 2:囲い込み, 3:降雨, 4:通常攻撃, 5:ゴーレム召喚
-            int attackType = 3; // デバッグ用に固定（降雨攻撃）
+            int attackType = Random.Range(0, 6); // 0:レーザー, 1:分身, 2:囲い込み, 3:降雨, 4:通常攻撃, 5:ゴーレム召喚
 
             // 攻撃種別に応じたインターバル設定用変数
             float minInterval = 0f;

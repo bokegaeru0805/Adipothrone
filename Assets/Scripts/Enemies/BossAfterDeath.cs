@@ -236,7 +236,8 @@ public class BossAfterDeath : MonoBehaviour
                 break;
 
             case BossHealth.BossName.DustDevilBoss:
-                flagManager.SetBoolFlag(Chapter2TriggeredEvent.DustDevilBossDefeated, true);
+                //FlagはFlowchart側で立てるため、ここでは立てない
+                //flagManager.SetBoolFlag(Chapter2TriggeredEvent.DustDevilBossDefeated, true);
                 FungusHelper.ExecuteBlock(flowchart, "DustDevilBossDefeat");
                 break;
             case BossHealth.BossName.DesertTempleBossSmoke:

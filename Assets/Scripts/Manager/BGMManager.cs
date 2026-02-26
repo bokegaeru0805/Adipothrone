@@ -40,12 +40,17 @@ public class BGMManager : MonoBehaviour
         { BGMCategory.Boss_Electric, "ElectricBoss" },
         { BGMCategory.Boss_Chapter, "ChapterBoss" },
         { BGMCategory.Boss_Unique, "UniqueBoss" },
+        { BGMCategory.Boss_Decision, "DecisionBoss" },
         { BGMCategory.Boss_Mid, "MidBoss" },
         { BGMCategory.Field_Plains, "PlainsField1" },
         { BGMCategory.Env_Water_Stream1, "WaterStream1" },
         { BGMCategory.Env_Birds, "PlainsField_Amb1" },
         { BGMCategory.Field_FirstVillage, "FirstVillage" },
         { BGMCategory.Field_Cave1, "CaveField_Amb1" },
+        { BGMCategory.Field_DesertVillage, "DesertVillage" },
+        { BGMCategory.Field_Desert, "Desert" },
+        { BGMCategory.Field_DesertTemple, "DesertTemple" },
+        {BGMCategory.Event_DecisiveBattle_Before, "DecisiveBattle_Before" },
         {
             BGMCategory.None,
             ""

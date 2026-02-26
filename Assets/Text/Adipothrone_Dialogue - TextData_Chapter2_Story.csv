@@ -131,10 +131,11 @@
 馬車、置いていって大丈夫だったんですか？ 高価な代物が
 入ってるって言ってましたよね？",Heroin,ReportedCoachmanQuestComplete ,Heroin_flexible_troubled
 "馬車？ ああ、そんなことも言ったね。
-ええ、大丈夫だよ。ほんの少し離れただけだから。",Axis,ReportedCoachmanQuestComplete ,Axis_normal_normal
+ああ、大丈夫だよ。ほんの少し離れただけだから。
+別に、気にするようなことじゃないよ。",Axis,ReportedCoachmanQuestComplete ,Axis_normal_normal
 "それよりも、どうだった？ 
 例の場所へは行ってきてくれたかな？",Axis,ReportedCoachmanQuestComplete ,Axis_normal_normal
-"あ, はい。ちゃんと汲んできました。……はい、これです。",Heroin,ReportedCoachmanQuestComplete ,Heroin_flexible_normal
+あ、はい。ちゃんと汲んできました。……はい、これです。,Heroin,ReportedCoachmanQuestComplete ,Heroin_flexible_normal
 "確かに受け取ったよ、ありがとう。……これで、
 君が無事にオアシスへ辿り着けたことが証明されたわけだ。
 本当によかったよ。",Axis,ReportedCoachmanQuestComplete ,Axis_normal_normal
@@ -151,3 +152,398 @@
 幸い、今は君以外に乗客はいないからね。
 時間は気にしなくて大丈夫だよ。ゆっくりしてくるといい。",Axis,ReportedCoachmanQuestComplete ,Axis_normal_normal
 ありがとうございます。助かります。,Heroin,ReportedCoachmanQuestComplete ,Heroin_flexible_normal
+村の右端の方へ行けば、すぐに神殿が見えてくるはずだよ。,Axis,ReportedCoachmanQuestComplete ,Axis_normal_normal
+フィルさん！,Heroin, FirstMetDesertTempleBoss,
+"村の人から聞きました……。
+フィルさんがずっと一人で、この村のために無理をしてきたこと。
+私、やっぱり放っておけません。私に、何か手伝わせてください！",Heroin, FirstMetDesertTempleBoss,Heroin_flexible_normal
+"ノエリさん……。お気持ちは嬉しいですが、
+これは私の、巫女としての定めなのです。
+あなたのような旅の方を巻き込むわけには——",Fill, FirstMetDesertTempleBoss,Fill_normal_normal
+約定の刻限だ. 指定された個体を引き渡せ。,Levias_smoke, FirstMetDesertTempleBoss,Levias_smoke_normal_normal
+な、なにあれ……！？,Heroin, FirstMetDesertTempleBoss,Heroin_flexible_surprised
+"そんな……っ！ この声は……. 
+でも、まだ早すぎます！ 
+姉様がが生贄として捧げられたばかりなのに！",Fill, FirstMetDesertTempleBoss,Fill_normal_surprised
+まさか、あれが村の人たちが言っていた……,Heroin, FirstMetDesertTempleBoss,Heroin_flexible_troubled
+"マスターの要求は急務である。
+再計算の結果、今回はさらに数名の個体を追加で回収する。
+速やかに差し出せ。",Levias_smoke, FirstMetDesertTempleBoss,Levias_smoke_normal_normal
+そんな…….村のみんなまで差し出すなんて、そんなこと……！,Fill, FirstMetDesertTempleBoss,Fill_normal_troubled
+交渉は不要だ. 警告は終了した。 ……実力行使を開始する。,Levias_smoke, FirstMetDesertTempleBoss,Levias_smoke_normal_normal
+オアシスの水源が、見る間に干上がっていく。,narrative, FirstMetDesertTempleBoss,
+"選択肢は二つ。 個体を揃えるか、
+この領域の全生命が渇死するか。 選べ。 
+揃えたならば、水は戻すか考えてやろう。",Levias_smoke, FirstMetDesertTempleBoss,Levias_smoke_normal_normal
+"……ああ、なんてことに。 私一人の命で済むなら、
+それでよかったのに。 みんなまで巻き込むなんて……
+どうすれば、 どうすればいいの……っ。",Fill, FirstMetDesertTempleBoss,Fill_normal_troubled
+フィルさん……。,Heroin, FirstMetDesertTempleBoss,Heroin_flexible_troubled
+"私が力不足なばかりに。
+姉様が守ったこの場所を、みんなを……守れないなんて……。",Fill, FirstMetDesertTempleBoss,Fill_normal_troubled
+おや。 随分と大きな音がしたけれど、どうかしたのかい？,Axis, FirstMetDesertTempleBoss,Axis_normal_normal
+アクスさん！？ どうしてここに？,Heroin, FirstMetDesertTempleBoss,Heroin_flexible_surprised
+"少し様子を見に来てみたのさ。それで、一体何が起きたのかい？ 
+二人とも、ひどく取り乱しているようだけど。",Axis, FirstMetDesertTempleBoss,Axis_normal_normal
+実は……,Heroin, FirstMetDesertTempleBoss,Heroin_flexible_serious
+……なるほど。それはまた、随分と強引なことをする奴だね。,Axis, FirstMetDesertTempleBoss,Axis_normal_normal
+アクスさんは顎に手を当て、何事か思案するように目を細めた。,narrative, FirstMetDesertTempleBoss,
+"ねえ、巫女さん。あんな奴の言いなりにならずに、
+いっそのこと倒してしまうのはどうかな？",Axis, FirstMetDesertTempleBoss,Axis_normal_normal
+"……っ！ 無理です、あんなの……！  
+私たちがどうにかできる相手ではありません！",Fill, FirstMetDesertTempleBoss,Fill_normal_angry
+"そうだね、正攻法では勝ち目はない。
+けれど、この土地には古くから、抗えない災厄を退けるための
+『知恵』が残されているはずだよ。",Axis, FirstMetDesertTempleBoss,Axis_normal_normal
+知恵？ ですが、太刀打ちできる手段なんて……,Fill, FirstMetDesertTempleBoss,Fill_normal_troubled
+"例えば、そう……オアシスのさらに奥、
+砂漠の最果てに眠ると言われる『秘宝』。
+あれに頼ってみたらどうだい？",Axis, FirstMetDesertTempleBoss,Axis_normal_normal
+"砂漠の最果ての秘宝……. 伝説には聞いていますが、
+あそこは常に猛烈な砂嵐が吹き荒れている場所です。
+近づくことさえ——",Fill, FirstMetDesertTempleBoss,Fill_normal_closed
+彼女がいれば、 なんとかなるんじゃないかな？,Axis, FirstMetDesertTempleBoss,Axis_normal_normal
+アクスさんはそう言って、隣に立つ私を指さした。,narrative, FirstMetDesertTempleBoss,
+"あいつも、生贄を揃えるまでは少しは待ってくれるだろうしね。
+どうだい、賭けてみる価値はあると思わないかな？",Axis, FirstMetDesertTempleBoss,Axis_normal_normal
+"……最果ての秘宝。
+巫女にのみ伝わるお伽話だと思っていました。他に道がないのなら……",Fill, FirstMetDesertTempleBoss,Fill_normal_normal
+フィルさんの握りしめた拳が、小刻みに震えているのが見えた。,narrative, FirstMetDesertTempleBoss,
+"私を頼りたいという必死な思いと、部外者の私を
+危険に巻き込むことへの申し訳なさが混ざり合ったような、
+そんな複雑な瞳が私をまっすぐに見つめている。",narrative, FirstMetDesertTempleBoss,
+"……ノエリさん、本当にごめんなさい。旅の途中のあなたを、
+こんな恐ろしいことに巻き込み……生きて帰れる保証さえない場所へ
+連れて行くなんて。あってはならないことだと分かっています。",Fill, FirstMetDesertTempleBoss,Fill_normal_troubled
+"でも……もう今の私には、あなたに縋ることしかできないんです。
+お願いです、ノエリさん。どうか……どうかこの村を救うために、
+あなたの力を貸してはいただけませんか？",Fill, FirstMetDesertTempleBoss,Fill_normal_troubled
+"……うん！ フィルさんがそんなに辛そうなのは、
+見ていられないから。
+行きましょう、その秘宝の場所へ！",Heroin, FirstMetDesertTempleBoss,Heroin_flexible_serious
+"……ありがとうございます、ノエリさん。
+心から、感謝いたします。",Fill, FirstMetDesertTempleBoss,Fill_normal_smile
+どうやら話はまとまったようだね。,Axis, FirstMetDesertTempleBoss,Axis_normal_normal
+"アクスさん、あなたにもお礼を言わせてください。
+本当にありがとうございました。",Fill, FirstMetDesertTempleBoss,Fill_normal_normal
+"お礼なんていいよ。
+僕はただ、君たちが進むべき道を示しただけだからね。",Axis, FirstMetDesertTempleBoss,Axis_normal_normal
+"……でも、アクスさん。
+どうして、そんな古い伝承のことを知っているのですか？",Fill, FirstMetDesertTempleBoss,Fill_normal_troubled
+ふふ。御者は物知りだからね。,Axis, FirstMetDesertTempleBoss,Axis_normal_normal
+"さあ、応援しているよ。
+あいつの討伐が上手くいくことを願っているよ。",Axis, FirstMetDesertTempleBoss,Axis_normal_normal
+"ノエリさん、砂漠の奥地へは、
+オアシスへ向かう道の途中にあった門から向かうことができます。",Fill, FirstMetDesertTempleBoss,Fill_normal_normal
+"以前は魔物と砂嵐を封じるために閉ざしていましたが解除します。
+準備ができたら、そこへ来てください。",Fill, FirstMetDesertTempleBoss,Fill_normal_normal
+ノエリさん、砂嵐がずいぶん強くなってきましたね。,Fill,BeforeDustDevilBoss,Fill_normal_normal
+もう少しで、目的地の最奥地に着きます。,Fill,BeforeDustDevilBoss,Fill_normal_normal
+伝承によれば、そこには砂嵐を操る魔物が居座っているそうです。,Fill,BeforeDustDevilBoss,Fill_normal_normal
+どうか、気をつけて進みましょう。,Fill,BeforeDustDevilBoss,Fill_normal_normal
+フィルさん、見て！ あれが秘宝ではないですか！？,Heroin,DustDevilBossAppear,Heroin_flexible_smile
+ええ、きっとあれが……。,Fill,DustDevilBossAppear,Fill_normal_smile
+ですが、気をつけてください。ひどく嫌な予感がします。,Fill,DustDevilBossAppear,Fill_normal_troubled
+きゃっ！？,Fill,DustDevilBossAppear,Fill_normal_surprised
+きゃっ……！,Heroin,DustDevilBossAppear,Heroin_flexible_surprised
+な、なにこれ！？ いきなり竜巻が！？,Heroin,DustDevilBossAppear,Heroin_flexible_surprised
+風が……強すぎます！飛ばされないように気をつけてください！,Fill,DustDevilBossAppear,Fill_normal_anxious
+あれが、砂嵐の原因！ ,Heroin,DustDevilBossAppear,Heroin_flexible_blush
+こいつを倒さないと、秘宝は手に入りそうにないね！,Heroin,DustDevilBossAppear,Heroin_flexible_serious
+"ノエリさん。私はあの魔物に立ち向かう術を持っていません。
+厚かましいお願いだと分かっていますが……
+どうかもう一度だけ、私に力を貸してくれませんか？",Fill,DustDevilBossAppear,Fill_normal_normal
+任せてください！,Heroin,DustDevilBossAppear,Heroin_flexible_serious
+ふぅ……。なんとか倒せたね。,Heroin,DustDevilBossDefeat,Heroin_flexible_normal
+"ノエリさん、本当にありがとうございました。
+また、あなたのおかげで助かりました。",Fill,DustDevilBossDefeat,Fill_normal_smile
+お役に立てて嬉しいです！,Heroin,DustDevilBossDefeat,Heroin_flexible_smile
+フィルさん、この秘宝って、どうやって使うんですか？,Heroin,DustDevilBossDefeat,Heroin_flexible_normal
+"伝承によれば……この秘宝は、体内に取り込むことで
+その力を得ることができると言われています。",Fill,DustDevilBossDefeat,Fill_normal_normal
+えっ！？ 体内にって……食べるんですか！？,Heroin,DustDevilBossDefeat,Heroin_flexible_surprised
+"はい、そのようです。ちょうどここに秘宝が二つありますから、
+ノエリさんもひとつどうぞ。",Fill,DustDevilBossDefeat,Fill_normal_smile
+ほ、本当に食べるんですね……。,Heroin,DustDevilBossDefeat,Heroin_flexible_surprised
+私たちは顔を見合わせ、意を決して光り輝く秘宝を飲み込んだ。,narrative,DustDevilBossDefeat,
+"すごい！
+なんだか、体の奥から力が溢れてくるような感じがします。",Heroin,DustDevilBossDefeat,Heroin_flexible_smile
+ええ……。私も、信じられないくらい澄んだ水の力を感じます。,Fill,DustDevilBossDefeat,Fill_normal_smile
+"ねえ、フィルさん。その水の力があれば、神殿に向かう前に
+オアシスに寄って、枯れた水を戻すことはできないかな？",Heroin,DustDevilBossDefeat,Heroin_flexible_normal
+……！ そうですね、今のこの力なら、可能かもしれません。,Fill,DustDevilBossDefeat,Fill_normal_normal
+"では、最初に会ったオアシスに集合しましょう。
+私は少し準備をしてから向かいますね。",Fill,DustDevilBossDefeat,Fill_normal_normal
+"ねえ、ファボ。秘宝を置く台座はこんなにたくさんあるのに、
+どうして二つしか残っていなかったのかな？
+他のはどこに行っちゃったんだろう？",Heroin,DustDevilBossDefeat,Heroin_flexible_normal
+"台座の痕跡から、以前は確かに複数の秘宝が存在していたと
+推測されます。しかし、現在それらがどこへ持ち去られたのかは、
+データ不足のため不明です。",Fabo,DustDevilBossDefeat,
+そっか……。,Heroin,DustDevilBossDefeat,Heroin_flexible_normal
+フィルさん、お待たせしました。,Heroin,OasisPartiallyRestored,Heroin_flexible_normal
+いえ、私も先ほど着いたばかりです。,Fill,OasisPartiallyRestored,Fill_normal_smile
+やはり……水がすっかり干上がってしまって、見る影もありません。,Fill,OasisPartiallyRestored,Fill_normal_troubled
+"でも、今の私には……あの秘宝の力があります。
+体中を満たすこの澄んだ水の力なら、きっと……！",Fill,OasisPartiallyRestored,Fill_normal_normal
+フィルさんなら絶対に大丈夫です！,Heroin,OasisPartiallyRestored,Heroin_flexible_smile
+ふふ、ありがとうございます、ノエリさん。,Fill,OasisPartiallyRestored,Fill_normal_smile
+"砂漠を潤す恵みの雫よ。みんなの渇きを癒してください。
+この泉が、豊かに湧き出でますように。
+みんなの笑顔が、これからもずっと絶えませんように……！",Fill,OasisPartiallyRestored,Fill_normal_closed
+……ふぅ。ノエリさん、オアシスはどうでしょうか？,Fill,OasisPartiallyRestored,Fill_armed1_normal
+えっと……ちょっと待ってくださいね。,Heroin,OasisPartiallyRestored,Heroin_flexible_normal
+"恐る恐る枯れた泉の底を覗き込むと、
+そこには枯れ果てていた底を覆うように澄んだ水が湛えられていた。
+しかし、その深さは底を浅く満たす程度に留まっていた。",narrative,OasisPartiallyRestored,
+あっ、水が出てます！ ……でも、元の量には遠く及ばないですね……。,Heroin,OasisPartiallyRestored,Heroin_flexible_troubled
+そんな……。たったこれだけなんて……。,Fill,OasisPartiallyRestored,Fill_armed1_troubled
+"落ち込まないでください、フィルさん！
+完全にカラカラだったのに、ゼロから水が湧いたんですよ？ 
+少しでも力を得た証拠です！",Heroin,OasisPartiallyRestored,Heroin_flexible_serious
+"ノエリさん……。でも、
+これでは村の皆を救うには到底足りません……。",Fill,OasisPartiallyRestored,Fill_armed1_troubled
+"必死にフィルさんを励まそうとしていた私は、
+ふと、ある違和感に気がついた。",narrative,OasisPartiallyRestored,
+（あれ……？ フィルさん、なんだか少し……体つきが……？）,Heroin,OasisPartiallyRestored,Heroin_flexible_troubled
+"あ、あの、フィルさん……。
+気のせいかもしれないんですけど……
+なんだか少し、ふっくらしました……？",Heroin,OasisPartiallyRestored,Heroin_flexible_normal
+え……？ ふっくら……？,Fill,OasisPartiallyRestored,Fill_armed1_troubled
+"フィルさんは不思議そうに自分の体をまじまじと見下ろし、
+そっとお腹のあたりに触れた。",narrative,OasisPartiallyRestored,
+きゃああっ！？,Fill,OasisPartiallyRestored,Fill_armed1_surprised
+わわっ、ご、ごめんなさい！,Heroin,OasisPartiallyRestored,Heroin_flexible_surprised
+嘘……本当にお腹周りが、少し……っ！,Fill,OasisPartiallyRestored,Fill_armed1_troubled
+"そんな……！ あの秘宝の力は、オアシスではなく、
+私の体をふくよかにしてしまっただけだなんて……！",Fill,OasisPartiallyRestored,Fill_armed1_troubled
+"い、いや、ただ太っただけじゃないと思いますよ！？ 
+さっき水も少し出ましたし！",Heroin,OasisPartiallyRestored,Heroin_flexible_normal
+"やっぱり、私のような無力な巫女では駄目だったんです。
+あの恐ろしい魔物を倒して村を救うなんて、
+最初から不可能だったんですよ……。",Fill,OasisPartiallyRestored,Fill_armed1_troubled
+"フィルさん、そんなことないですよ！
+ここまで一緒に頑張ってきたじゃないですか！",Heroin,OasisPartiallyRestored,Heroin_flexible_serious
+"……いいえ。私は今までずっと、ノエリさんに頼ってばかりでした。
+大切な場所を守りたいと言いながら、自分では何もできなくて……
+そんな自分が、本当に不甲斐ないです。",Fill,OasisPartiallyRestored,Fill_armed1_troubled
+"それでも……！ だからこそ、私が神殿に行かなければ！ 
+これ以上、ノエリさんを危険な目に遭わせるわけにはいきません！",Fill,OasisPartiallyRestored,Fill_armed1_angry
+あっ、待ってください！ フィルさん！,Heroin,OasisPartiallyRestored,Heroin_flexible_troubled
+"フィルさん……！ あんなに思い詰めた顔をして……。
+一人で全部背負い込もうとするなんて、絶対に駄目だよ。",Heroin,OasisPartiallyRestored,Heroin_flexible_serious
+"フィルさんを、一人で犠牲になんてさせません……！
+どんなに危険でも、私が絶対に助けますからね！",Heroin,OasisPartiallyRestored,Heroin_flexible_serious
+"待っていてください、フィルさん。
+一人で犠牲になんて、絶対にさせません。",Heroin,BeforeEnteringDesertTemple,Heroin_flexible_serious
+"ノエリ、神殿の入り口に到着しました。
+扉は開放されているようです。",Fabo,BeforeEnteringDesertTemple,
+"以前の魔物が急に攻撃を仕掛けてくる可能性があるので、
+注意してください。",Fabo,BeforeEnteringDesertTemple,
+（フィルさん！ よかった、まだ間に立った……！）,Heroin,TempleBossSmokeAppear,Heroin_flexible_normal
+……姿を現しなさい！ 私は約束通り、ここに来ました！,Fill,TempleBossSmokeAppear,Fill_armed1_angry
+……生贄の用意はできたか？,Levias_smoke,TempleBossSmokeAppear,Levias_smoke_normal_normal
+"ええ。私を連れて行きなさい。でも、どうかお願いです！ 
+私一人の犠牲で済ませてください。これ以上、
+村の皆には手を出さないでください……！",Fill,TempleBossSmokeAppear,Fill_armed1_angry
+"拒否する。前回通達したはずだ。
+今回はさらなる個体を回収する、とな",Levias_smoke,TempleBossSmokeAppear,Levias_smoke_normal_normal
+そんな……。,Fill,TempleBossSmokeAppear,Fill_armed1_troubled
+"巨躯の魔物は無機質な青い光を放つ目で、
+絶望に立ち尽くすフィルさんを冷徹に見下ろしている。",Fabo,TempleBossSmokeAppear,
+……ほう。,Levias_smoke,TempleBossSmokeAppear,Levias_smoke_normal_normal
+"個体データに著しい変化が確認できる。
+その体内に満ちる強大な魔力……あれを使用したか。
+それに伴う、その特異な身体性変化……",Levias_smoke,TempleBossSmokeAppear,Levias_smoke_normal_normal
+"フィルさんは自身のふくよかになってしまった体を庇うように、
+咄嗟に両手で抱きしめた。",narrative,TempleBossSmokeAppear,
+"……なるほど。計算結果を修正する。
+今回は『二人』だけ回収しよう。力を取り込んだお前と……",Levias_smoke,TempleBossSmokeAppear,Levias_smoke_normal_normal
+その後ろにいる、もう一人の個体だ。,Levias_smoke,TempleBossSmokeAppear,Levias_smoke_normal_normal
+えっ……わ、私……のことですか！？,Heroin,TempleBossSmokeAppear,Heroin_flexible_troubled
+えっ……？ ノ、ノエリさん！？ どうして……っ,Fill,TempleBossSmokeAppear,Fill_armed1_troubled
+ごめんなさい、フィルさん。どうしても放っておけなくて……！,Heroin,TempleBossSmokeAppear,Heroin_flexible_troubled
+"ただし、その力で暴れられては、生贄として不都合が生じる。
+……回収の前に、行動不能にさせてもらう。",Levias_smoke,TempleBossSmokeAppear,Levias_smoke_normal_normal
+あれは……何！？,Heroin,TempleBossSmokeAppear,Heroin_flexible_surprised
+"警告します。あの培養槽の中にある巨大な有機質量……
+あの魔物に莫大な魔力を供給している核のようです。",Fabo,TempleBossSmokeAppear,
+魔力の塊……ってこと！？,Heroin,TempleBossSmokeAppear,Heroin_flexible_surprised
+"しかし、私の驚きをよそに、その中身を食い入るように
+見つめていたフィルさんが、信じられないものを見たように
+震えだした。",narrative,TempleBossSmokeAppear,
+そんな……嘘……。あの姿は……,Fill,TempleBossSmokeAppear,Fill_armed1_troubled
+フィルさん？ どうしたんですか！？,Heroin,TempleBossSmokeAppear,Heroin_flexible_surprised
+"姉様……！ あの中にいるのは私の姉様です！ 
+あんな、変わり果てて姿にされて……",Fill,TempleBossSmokeAppear,Fill_armed1_troubled
+"ちょうどいい。
+この新たに調整を終えた供給源の試運転も兼ねるとしよう。",Levias_smoke,TempleBossSmokeAppear,Levias_smoke_normal_normal
+"その言葉を聞いた瞬間、
+フィルさんの目に今まで見たこともないような怒りの炎が宿った。",narrative,TempleBossSmokeAppear,
+"ノエリさん。 私、姉様を助けたいです。
+あの魔物を、ここから追い払います！",Fill,TempleBossSmokeAppear,Fill_armed1_angry
+いつもは控えめなフィルさんが、声を荒げていた。,narrative,TempleBossSmokeAppear,
+"ノエリさん、どうか私に力を貸してください。
+私も……私も一緒に戦います！",Fill,TempleBossSmokeAppear,Fill_armed1_angry
+"もちろんです、フィルさん！
+二人で力を合わせて、あの魔物をやっつけましょう！",Heroin,TempleBossSmokeAppear,Heroin_flexible_serious
+"その程度の抵抗、計算の範疇にも入らぬ。まとめて無力化し、
+速やかに回収フェーズへ移行する。",Levias_smoke,TempleBossSmokeAppear,Levias_smoke_normal_normal
+……ほう。想定以上の出力だ。実に興味深い魔力効率をしているな。,Levias_smoke,TempleBossSmokeDefeat,Levias_smoke_normal_normal
+"一旦は退くとしよう。お前たちの力は、
+さらなるデータ収集の価値がある。
+……頂上で待っているぞ。",Levias_smoke,TempleBossSmokeDefeat,Levias_smoke_normal_normal
+姉様、しっかりしてください！,Fill,TempleBossSmokeDefeat,Fill_armed1_anxious
+"……ふぃ……ふぃるぅ……？ 無事だったのねぇ……。
+随分とぉ……ふふ、ふくよかに、なっちゃってぇ……",Fill_Sister,TempleBossSmokeDefeat,
+私なんていいんです！ どうして、姉様がこんなお姿に……っ！,Fill,TempleBossSmokeDefeat,Fill_armed1_closed
+泣かないでぇ……。不覚をとったわぁ……。情けないわねぇ……,Fill_Sister,TempleBossSmokeDefeat,
+お姉様……無理はしないでください！,Fill,TempleBossSmokeDefeat,Fill_armed1_troubled
+"それよりも……あいつをぉ……止めてぇ……！ 
+奴はぁ、頂上へ向かったわぁ……！",Fill_Sister,TempleBossSmokeDefeat,
+扉を、開けるにはぁ……これを持ってぇ……。この『珠』をぉ……,Fill_Sister,TempleBossSmokeDefeat,
+"珠を集めてぇ……装置をぉ、動かすのよぉ……。
+そうすればぁ……道は、開くわぁ……",Fill_Sister,TempleBossSmokeDefeat,
+頼んだわよぉ……ふぉぉ……,Fill_Sister,TempleBossSmokeDefeat,
+姉様！？ 嫌っ、死なないで！,Fill,TempleBossSmokeDefeat,Fill_armed1_surprised
+"あっ、フィルさん、大丈夫です！
+ 寝息が聞こえます、眠ってしまったみたいです。",Heroin,TempleBossSmokeDefeat,Heroin_flexible_normal
+疲れ果ててしまったんですね。よかった。,Fill,TempleBossSmokeDefeat,Fill_armed1_normal
+"ノエリさん。私、ここで姉様を見守っていたいです。
+もう一人にするなんてできません。",Fill,TempleBossSmokeDefeat,Fill_armed1_normal
+"身勝手なお願いですが……私の代わりに、
+神殿の装置を起動してきてはいただけないでしょうか？",Fill,TempleBossSmokeDefeat,Fill_armed1_normal
+"もちろんです、フィルさん。
+珠を集めて、装置を動かせばいいんですね。",Heroin,TempleBossSmokeDefeat,Heroin_flexible_normal
+"フィルさんはここで、
+お姉様をしっかり見守っていてあげてくださいね。",Heroin,TempleBossSmokeDefeat,Heroin_flexible_smile
+ふぅ……これで、全部の装置を起動できたかな？,Heroin,AllOrbsPlacedInDevice,Heroin_flexible_normal
+"肯定します。神殿内に存在する全装置の起動完了を確認しました。
+頂上へ続く扉のロックが解除された模様です。
+一度、神殿の入り口に戻ることを推奨します。",Fabo,AllOrbsPlacedInDevice,
+それじゃあ、入り口に戻ろうか。,Heroin,AllOrbsPlacedInDevice,Heroin_flexible_normal
+"はい。また、頂上への扉に入る前に、
+フィルに状況を報告し、声をかけておくべきだと提案します。",Fabo,AllOrbsPlacedInDevice,
+フィルさん！ 装置を全部起動してきました！,Heroin,TalkToFillAfterAllOrbsPlaced,Heroin_flexible_normal
+ノエリさん……ありがとうございます。無事に戻ってきてくれてよかった。,Fill,TalkToFillAfterAllOrbsPlaced,Fill_armed2_smile
+"（あれ……？ フィルさん、さっき神殿に入ってきた時よりも、
+さらに……体が大きくなってる……？ ）",Heroin,TalkToFillAfterAllOrbsPlaced,Heroin_flexible_troubled
+(でも、さっきも気にしてたし、今は言わない方がいいよね……),Heroin,TalkToFillAfterAllOrbsPlaced,Heroin_flexible_troubled
+"……ごめんなさい、ノエリさん。
+私、さっきの戦いでも、あまり、何もできませんでした……。",Fill,TalkToFillAfterAllOrbsPlaced,Fill_armed2_troubled
+"そんなことないですよ！ 
+フィルさんの力が魔物を退かせたんです！",Heroin,TalkToFillAfterAllOrbsPlaced,Heroin_flexible_smile
+"いいえ……私はただ、
+自分の中に溢れる力に振り回されていただけで……。っ……！？",Fill,TalkToFillAfterAllOrbsPlaced,Fill_armed2_troubled
+"ふと自分の体を見下ろしたフィルさんは、
+ハッとして顔を真っ青にさせた。",narrative,TalkToFillAfterAllOrbsPlaced,
+"うそ……また……。腕もこんなに太くなって……
+お腹も、巫女服がはち切れそうなくらいに丸く膨らんでる……！",Fill,TalkToFillAfterAllOrbsPlaced,Fill_armed2_troubled
+あっ、フィルさん……,Heroin,TalkToFillAfterAllOrbsPlaced,Heroin_flexible_troubled
+"どうして……！ 何も食べていないのに、
+勝手に体が……っ！ このままじゃ……このままじゃ、私も……！",Fill,TalkToFillAfterAllOrbsPlaced,Fill_armed2_troubled
+"突如、隣で横たわっていたフィルさんのお姉さんが
+苦しそうに唸り声を上げ、巨体を震わせた。",narrative,TalkToFillAfterAllOrbsPlaced,
+姉様！？ ,Fill,TalkToFillAfterAllOrbsPlaced,Fill_armed2_surprised
+"はぁ……はぁ……ふぃるぅ……？ 
+なんだかぁ……騒がしいわねぇ……どうなったのぉ……？",Fill_Sister,TalkToFillAfterAllOrbsPlaced,
+"姉様、大丈夫ですか！？ 
+ノエリさんが装置を起動してくれて、頂上への扉が開いたんです！",Fill,TalkToFillAfterAllOrbsPlaced,Fill_armed2_surprised
+でも、私……私……！,Fill,TalkToFillAfterAllOrbsPlaced,Fill_armed2_anxious
+……ふぃるぅ。なにをぉ……そんなに、怯えてるのぉ……？,Fill_Sister,TalkToFillAfterAllOrbsPlaced,
+"だって……！ 私は無力で、そのくせ体だけが
+どんどん大きくなっていって……！ 
+このままじゃ、私も姉様みたいな姿に……っ！",Fill,TalkToFillAfterAllOrbsPlaced,Fill_armed2_anxious
+……ばかねぇ……ふぃるはぁ……,Fill_Sister,TalkToFillAfterAllOrbsPlaced,
+"お姉さんは重たい丸太のような腕をゆっくりと持ち上げ、
+震えるフィルの頭を優しく撫でた。",narrative,TalkToFillAfterAllOrbsPlaced,
+"あなたはぁ……よく、やってるわぁ……。
+こんなにぃ……恐ろしい状況でぇ……
+逃げ出さずにぃ、ここまで来たじゃないのぉ……",Fill_Sister,TalkToFillAfterAllOrbsPlaced,
+姉様……,Fill,TalkToFillAfterAllOrbsPlaced,Fill_armed2_troubled
+"このままじゃあ……村の他の皆もぉ、私みたいに……
+ひどい姿にされてぇ……永遠に、生贄として搾取され続けるわぁ……",Fill_Sister,TalkToFillAfterAllOrbsPlaced,
+"だからぁ……ふぃるぅ。
+自分の体をぉ……嘆いてる暇はぁ、ないのよぉ……",Fill_Sister,TalkToFillAfterAllOrbsPlaced,
+"あなたがぁ……その身に宿した力でぇ……
+あいつを、倒しなさい……！ ",Fill_Sister,TalkToFillAfterAllOrbsPlaced,
+"これ以上、私たちみたいな犠牲者を出させないでぇ……！ 
+この悲劇をぉ……あなたでぇ、断ち切るのよぉ……！",Fill_Sister,TalkToFillAfterAllOrbsPlaced,
+"優しくてぇ……強い妹の、あなたにならぁ……できるわぁ……。
+私みたいにぃ、無様に負けちゃ……だめよぉ……！",Fill_Sister,TalkToFillAfterAllOrbsPlaced,
+私は……強くなんて、ありません。いつも怖がってばっかで……,Fill,TalkToFillAfterAllOrbsPlaced,Fill_armed2_closed
+"フィルさんはギュッと巫女服の胸元を握りしめ、言葉を詰まらせた。
+けれど、その震える手は、やがて力強く握り直された",narrative,TalkToFillAfterAllOrbsPlaced,
+"でも……姉様が信じてくれるなら。
+こんな私でも、できるって言ってくれるなら……！",Fill,TalkToFillAfterAllOrbsPlaced,Fill_armed2_closed
+"姉様……っ！私、やります……！ 
+自分の体がどうなろうと構わない……
+村の皆も、姉様も、必ず私が救ってみせます！",Fill,TalkToFillAfterAllOrbsPlaced,Fill_armed2_normal
+ふふ……いい顔、になったわぁ……。,Fill_Sister,TalkToFillAfterAllOrbsPlaced,
+……そこのぉ、ノエリ……だっけぇ……？,Fill_Sister,TalkToFillAfterAllOrbsPlaced,
+はい！ ノエリです！,Heroin,TalkToFillAfterAllOrbsPlaced,Heroin_flexible_normal
+"ふぃるのことぉ……どうかぁ、頼んだわよぉ……。
+この子はぁ……一人で抱え込んじゃうからぁ……
+あなたが、隣で支えてやってぇ……",Fill_Sister,TalkToFillAfterAllOrbsPlaced,
+任せてください！二人で必ずあの魔物を倒してきます！,Heroin,TalkToFillAfterAllOrbsPlaced,Heroin_flexible_serious
+ありがとうぉ……。頼もしいわねぇ……。さぁ、行きなさい……！,Fill_Sister,TalkToFillAfterAllOrbsPlaced,
+"行ってきます、姉様！ ノエリさん、行きましょう！ 
+全ての決着をつけるために！",Fill,TalkToFillAfterAllOrbsPlaced,Fill_armed2_normal
+はい！ 行きましょう、フィルさん！,Heroin,TalkToFillAfterAllOrbsPlaced,Heroin_flexible_normal
+……ついにここまで来たか。,Levias_smoke,TempleBossAppear,Levias_smoke_normal_normal
+"……もう逃げません。ここであなたを倒し、姉様を、
+そして村をあなたの呪縛から解放します。",Fill,TempleBossAppear,Fill_armed2_angry
+くだらん。貴様らごときが私を倒すなどあり得ない。,Levias_smoke,TempleBossAppear,Levias_smoke_normal_normal
+……現実を見せてやろう。,Levias_smoke,TempleBossAppear,Levias_smoke_normal_normal
+なにこれ…… フィルさんのお姉さんと同じものがこんなに……！,Heroin,TempleBossAppear,Heroin_flexible_surprised
+そんな……中に入っているのは……まさか……！,Fill,TempleBossAppear,Fill_armed2_surprised
+"そうだ。これらは全て、過去にこの村で
+『巫女』と呼ばれていた者たちの成れの果てだ。
+長きに渡り、良質な魔力を保持し続けている部品たちだ。",Levias_smoke,TempleBossAppear,Levias_smoke_normal_normal
+"歴代の……巫女様たち……。
+皆、あんな姿にされて……ずっとここに囚われていたなんて……！",Fill,TempleBossAppear,Fill_armed2_troubled
+"そして、貴様らが『砂漠の秘宝』と呼んでいたもの。
+あれは我が管理していた遺物に過ぎん。
+供給源を作成するための素材としてのな。",Levias_smoke,TempleBossAppear,Levias_smoke_normal_normal
+まさか、あのオアシスの魔物も……！,Fill,TempleBossAppear,Fill_armed2_surprised
+"そうだ。オアシスで貴様を襲撃したのは、
+その特異な能力に目をつけ、手早く拘束し、
+残るすべての遺物を投与して『特注の供給源』を造り上げるためだ。",Levias_smoke,TempleBossAppear,Levias_smoke_normal_normal
+"もっとも、貴様らが自ら最果てへ向かい、
+進んで遺物を体内に取り込んで戻ってくるとは、
+我にとっても想定外であったがな。",Levias_smoke,TempleBossAppear,Levias_smoke_normal_normal
+"……罠……部品……？ 
+私たちの祈りも、村の皆の願いも……
+歴代の巫女様たちの献身も……！",Fill,TempleBossAppear,Fill_armed2_troubled
+"全ては、あなたたちが私達を搾取するための……
+ただの餌だったと言うのですか！",Fill,TempleBossAppear,Fill_armed2_angry
+"いかにも。我らが『主』は膨大な魔力を貯蔵する生贄を
+大量に求めておられる。",Levias_smoke,TempleBossAppear,Levias_smoke_normal_normal
+まずは貴様ら二人を極上の供給源に加工する。そしてその後は……,Levias_smoke,TempleBossAppear,Levias_smoke_normal_normal
+"麓の村にいる、残りの家畜どもだ。
+一人残らず回収し、この魔力槽に詰め込んでやる。",Levias_smoke,TempleBossAppear,Levias_smoke_normal_normal
+……許さない。,Fill,TempleBossAppear,Fill_armed2_closed
+なに？,Levias_smoke,TempleBossAppear,Levias_smoke_normal_normal
+絶対に……許しません！！,Fill,TempleBossAppear,Fill_armed2_determination
+フィルさん……！,Heroin,TempleBossAppear,Heroin_flexible_angry
+"村の皆の命も、尊厳も！
+ 歴代の巫女様たちが守り抜いてきた想いも！ 
+あなた達のような心を持たない化け物に、好き勝手にはさせない！",Fill,TempleBossAppear,Fill_armed2_angry
+"無意味な抵抗だ。
+過剰な魔力で膨れ上がったその体で、
+満足に動ける気でいるのか？",Levias_smoke,TempleBossAppear,Levias_smoke_normal_normal
+"動いてみせます！ 
+",Fill,TempleBossAppear,Fill_armed2_angry
+"この身に満ちた力が、あなた達の思惑通りのものだとしても……
+私はこれを、皆を守るために使います！",Fill,TempleBossAppear,Fill_armed2_angry
+"どんなに姿を変えられようと、どんなに苦しくとも！ 
+私の中にある、皆を想う心までは奪わせない！！",Fill,TempleBossAppear,Fill_armed2_angry
+"これ以上、あなたたちの好きにはさせません！ 
+",Fill,TempleBossAppear,Fill_armed2_angry
+ここで必ず打ち砕いてみせます！,Fill,TempleBossAppear,Fill_armed2_determination
+"私もいます！ フィルさんは一人じゃない！ 
+あなたの思い通りになんて、絶対にさせないんだから！",Heroin,TempleBossAppear,Heroin_flexible_serious
+……愚かな。これ以上の対話は無駄と判断する。,Levias_smoke,TempleBossAppear,Levias_smoke_normal_normal
+その愚かな幻想ごと、力ずくで叩き潰してくれよう。,Levias_smoke,TempleBossAppear,Levias_smoke_normal_normal
+我が名は『蒼儡機 レヴィアス』。,Levias,TempleBossAppear,Levias_normal_normal
+主の命により、全対象を排除する。,Levias,TempleBossAppear,Levias_normal_normal

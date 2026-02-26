@@ -5,15 +5,15 @@
  *  ACB  Ver.        : Ver.1.44.1
  *  File Path        : C:/Users/nakae/Desktop/Adipothrone/Assets/SoundData/Public
  *  File Name        : BGMSheet.h
- *  File Size        : 57553088 bytes
- *  Date Time        : 2026/01/23 19:39:33
+ *  File Size        : 64057664 bytes
+ *  Date Time        : 2026/02/25 22:48:34
  *  Target           : Public
- *  Cues             : 17
+ *  Cues             : 18
  *  CueSheet Comment : 
  *  Stream Awb Path  : C:/Users/nakae/Desktop/Adipothrone/Assets/SoundData/Public/BGMSheet.awb
  *===========================================================================*/
 
-#define CRI_BGMSHEET_CUENUM (17)
+#define CRI_BGMSHEET_CUENUM (18)
 
 /* AISAC Control List (AISAC Control ID) */
 #define CRI_BGMSHEET_AISACCONTROL_DUCKINGCONTROL       ( 0) /*  */
@@ -35,7 +35,8 @@
 #define CRI_BGMSHEET_WATERSTREAM1         ( 8) /* 積算ラウドネス:-34.89 */
 #define CRI_BGMSHEET_DESERTVILLAGE        (15) /*  */
 #define CRI_BGMSHEET_DESERTTEMPLE         (16) /*  */
-#define CRI_BGMSHEET_TODECISIVEBATTLE     (17) /*  */
+#define CRI_BGMSHEET_DECISIVEBATTLE_BEFORE (17) /*  */
+#define CRI_BGMSHEET_DECISIONBOSS         (18) /*  */
 
 /* Block List (Block Index) */
 

@@ -40,6 +40,11 @@ public class FlagDrivenStatePro : MonoBehaviour
     // --- 状態変数 ---
     private bool isPositionChangePending = false;
     private Vector3 pendingPosition;
+    private bool isActiveStateChangePending = false;
+    private bool pendingActiveState;
+    private bool isSpriteChangePending = false;
+    private Sprite pendingSprite;
+    private bool pendingFlipX;
     private bool isInitialStateApplied = false; // 初回状態適用が完了したかどうかのフラグ
 
     // --- Unityライフサイクル ---
@@ -117,6 +122,27 @@ public class FlagDrivenStatePro : MonoBehaviour
     // CameraMoveAreaから退出したときに呼び出されるメソッド
     private void HandlePlayerExitedCameraArea(CameraMoveArea _exitedArea)
     {
+        // アクティブ状態変更が保留されている場合
+        if (isActiveStateChangePending)
+        {
+            if (targetObject.activeSelf != pendingActiveState)
+            {
+                targetObject.SetActive(pendingActiveState);
+            }
+            isActiveStateChangePending = false; // 保留状態を解除
+        }
+
+        // スプライト変更が保留されている場合
+        if (isSpriteChangePending && targetSpriteRenderer != null)
+        {
+            if (pendingSprite != null)
+            {
+                targetSpriteRenderer.sprite = pendingSprite;
+            }
+            targetSpriteRenderer.flipX = pendingFlipX;
+            isSpriteChangePending = false; // 保留状態を解除
+        }
+
         // 位置変更が保留されている場合のみ実行
         if (isPositionChangePending && targetObject != null)
         {
@@ -158,24 +184,45 @@ public class FlagDrivenStatePro : MonoBehaviour
             return;
 
         // 【アクティブ状態の変更】
-        if (state.changeActiveState && targetObject.activeSelf != state.isActive)
+        if (state.changeActiveState)
         {
-            targetObject.SetActive(state.isActive);
+            // 遅延条件：delayフラグがtrue かつ 初回実行が完了している場合
+            if (state.delayActiveStateUntilAreaExit && isInitialStateApplied)
+            {
+                pendingActiveState = state.isActive;
+                isActiveStateChangePending = true;
+            }
+            else
+            {
+                // 即時実行
+                if (targetObject.activeSelf != state.isActive)
+                {
+                    targetObject.SetActive(state.isActive);
+                }
+                isActiveStateChangePending = false; // 保留キャンセル
+            }
         }
 
         // 【スプライトの変更】
         if (state.changeSprite && targetSpriteRenderer != null)
         {
-            if (state.sprite != null)
+            // 遅延条件
+            if (state.delaySpriteUntilAreaExit && isInitialStateApplied)
             {
-                targetSpriteRenderer.sprite = state.sprite;
+                pendingSprite = state.sprite;
+                pendingFlipX = state.flipX;
+                isSpriteChangePending = true;
             }
-
-            targetSpriteRenderer.flipX = state.flipX;
-            // Debug.Log(
-            //     $"[FlagDrivenStatePro] Changed sprite of '{targetObject.name}' to '{state.sprite.name}'.",
-            //     targetObject
-            // );
+            else
+            {
+                // 即時実行
+                if (state.sprite != null)
+                {
+                    targetSpriteRenderer.sprite = state.sprite;
+                }
+                targetSpriteRenderer.flipX = state.flipX;
+                isSpriteChangePending = false; // 保留キャンセル
+            }
         }
 
         // 【位置の変更】ロジック
