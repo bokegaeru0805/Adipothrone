@@ -38,6 +38,7 @@ public class FieldEvent_Chapter2 : BaseFieldEvent
         GreenOrbDeviceField = 22, // 緑のオーブの装置フィールド
         OrangeOrbDeviceField = 23, // オレンジのオーブの装置フィールド
         PurpleOrbDeviceField = 24, // 紫のオーブの装置フィールド
+        LotterManagerField = 27, // くじ屋の店主フィールド
         TempleRoofField = 30, // 砂漠の神殿の屋上フィールド
     }
 
@@ -235,6 +236,16 @@ public class FieldEvent_Chapter2 : BaseFieldEvent
                     hintFlag: Chapter2TriggeredEvent.HeardHintAboutPurpleOrb,
                     hintBlockName: "PurpleOrbHint"
                 );
+                break;
+            case FieldName.LotterManagerField:
+                if (
+                    flagManager.GetBoolFlag(Chapter2TriggeredEvent.TempleBossSmokeDefeated)
+                    && !flagManager.GetBoolFlag(Chapter2TriggeredEvent.FirstMetLotterManager)
+                )
+                {
+                    flagManager.SetBoolFlag(Chapter2TriggeredEvent.FirstMetLotterManager, true);
+                    FungusHelper.ExecuteBlock(targetFlowchart, "FirstMetLotterManager");
+                }
                 break;
             case FieldName.TempleRoofField:
                 FungusHelper.ExecuteBlock(targetFlowchart, "TempleBossAppear");

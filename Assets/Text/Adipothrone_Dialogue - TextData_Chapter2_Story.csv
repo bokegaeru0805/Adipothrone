@@ -153,90 +153,90 @@
 時間は気にしなくて大丈夫だよ。ゆっくりしてくるといい。",Axis,ReportedCoachmanQuestComplete ,Axis_normal_normal
 ありがとうございます。助かります。,Heroin,ReportedCoachmanQuestComplete ,Heroin_flexible_normal
 村の右端の方へ行けば、すぐに神殿が見えてくるはずだよ。,Axis,ReportedCoachmanQuestComplete ,Axis_normal_normal
-フィルさん！,Heroin, FirstMetDesertTempleBoss,
+フィルさん！,Heroin,FirstMetDesertTempleBoss,
 "村の人から聞きました……。
-フィルさんがずっと一人で、この村のために無理をしてきたこと。
-私、やっぱり放っておけません。私に、何か手伝わせてください！",Heroin, FirstMetDesertTempleBoss,Heroin_flexible_normal
+フィルさんが一人で、この村のために無理をしてきたこと。
+私、やっぱり放っておけません。私に、何か手伝わせてください！",Heroin,FirstMetDesertTempleBoss,Heroin_flexible_normal
 "ノエリさん……。お気持ちは嬉しいですが、
 これは私の、巫女としての定めなのです。
-あなたのような旅の方を巻き込むわけには——",Fill, FirstMetDesertTempleBoss,Fill_normal_normal
-約定の刻限だ. 指定された個体を引き渡せ。,Levias_smoke, FirstMetDesertTempleBoss,Levias_smoke_normal_normal
-な、なにあれ……！？,Heroin, FirstMetDesertTempleBoss,Heroin_flexible_surprised
+あなたのような旅の方を巻き込むわけには——",Fill,FirstMetDesertTempleBoss,Fill_normal_normal
+約定の刻限だ. 指定された個体を引き渡せ。,Levias_smoke,FirstMetDesertTempleBoss,Levias_smoke_normal_normal
+な、なにあれ……！？,Heroin,FirstMetDesertTempleBoss,Heroin_flexible_surprised
 "そんな……っ！ この声は……. 
 でも、まだ早すぎます！ 
-姉様がが生贄として捧げられたばかりなのに！",Fill, FirstMetDesertTempleBoss,Fill_normal_surprised
-まさか、あれが村の人たちが言っていた……,Heroin, FirstMetDesertTempleBoss,Heroin_flexible_troubled
-"マスターの要求は急務である。
+姉様がが生贄として捧げられたばかりなのに！",Fill,FirstMetDesertTempleBoss,Fill_normal_surprised
+まさか、あれが村の人たちが言っていた……,Heroin,FirstMetDesertTempleBoss,Heroin_flexible_troubled
+"主の要求は急務である。
 再計算の結果、今回はさらに数名の個体を追加で回収する。
-速やかに差し出せ。",Levias_smoke, FirstMetDesertTempleBoss,Levias_smoke_normal_normal
-そんな…….村のみんなまで差し出すなんて、そんなこと……！,Fill, FirstMetDesertTempleBoss,Fill_normal_troubled
-交渉は不要だ. 警告は終了した。 ……実力行使を開始する。,Levias_smoke, FirstMetDesertTempleBoss,Levias_smoke_normal_normal
-オアシスの水源が、見る間に干上がっていく。,narrative, FirstMetDesertTempleBoss,
+速やかに差し出せ。",Levias_smoke,FirstMetDesertTempleBoss,Levias_smoke_normal_normal
+そんな…….村のみんなまで差し出すなんて、そんなこと……！,Fill,FirstMetDesertTempleBoss,Fill_normal_troubled
+交渉は不要だ. 警告は終了した。 ……実力行使を開始する。,Levias_smoke,FirstMetDesertTempleBoss,Levias_smoke_normal_normal
+オアシスの水源が、見る間に干上がっていく。,narrative,FirstMetDesertTempleBoss,
 "選択肢は二つ。 個体を揃えるか、
 この領域の全生命が渇死するか。 選べ。 
-揃えたならば、水は戻すか考えてやろう。",Levias_smoke, FirstMetDesertTempleBoss,Levias_smoke_normal_normal
+揃えたならば、水は戻すか考えてやろう。",Levias_smoke,FirstMetDesertTempleBoss,Levias_smoke_normal_normal
 "……ああ、なんてことに。 私一人の命で済むなら、
 それでよかったのに。 みんなまで巻き込むなんて……
-どうすれば、 どうすればいいの……っ。",Fill, FirstMetDesertTempleBoss,Fill_normal_troubled
-フィルさん……。,Heroin, FirstMetDesertTempleBoss,Heroin_flexible_troubled
+どうすれば、 どうすればいいの……っ。",Fill,FirstMetDesertTempleBoss,Fill_normal_troubled
+フィルさん……。,Heroin,FirstMetDesertTempleBoss,Heroin_flexible_troubled
 "私が力不足なばかりに。
-姉様が守ったこの場所を、みんなを……守れないなんて……。",Fill, FirstMetDesertTempleBoss,Fill_normal_troubled
-おや。 随分と大きな音がしたけれど、どうかしたのかい？,Axis, FirstMetDesertTempleBoss,Axis_normal_normal
-アクスさん！？ どうしてここに？,Heroin, FirstMetDesertTempleBoss,Heroin_flexible_surprised
+姉様が守ったこの場所を、みんなを……守れないなんて……。",Fill,FirstMetDesertTempleBoss,Fill_normal_troubled
+おや。 随分と大きな音がしたけれど、どうかしたのかい？,Axis,FirstMetDesertTempleBoss,Axis_normal_normal
+アクスさん！？ どうしてここに？,Heroin,FirstMetDesertTempleBoss,Heroin_flexible_surprised
 "少し様子を見に来てみたのさ。それで、一体何が起きたのかい？ 
-二人とも、ひどく取り乱しているようだけど。",Axis, FirstMetDesertTempleBoss,Axis_normal_normal
-実は……,Heroin, FirstMetDesertTempleBoss,Heroin_flexible_serious
-……なるほど。それはまた、随分と強引なことをする奴だね。,Axis, FirstMetDesertTempleBoss,Axis_normal_normal
-アクスさんは顎に手を当て、何事か思案するように目を細めた。,narrative, FirstMetDesertTempleBoss,
+二人とも、ひどく取り乱しているようだけど。",Axis,FirstMetDesertTempleBoss,Axis_normal_normal
+実は……,Heroin,FirstMetDesertTempleBoss,Heroin_flexible_serious
+……なるほど。それはまた、随分と強引なことをする奴だね。,Axis,FirstMetDesertTempleBoss,Axis_normal_normal
+アクスさんは顎に手を当て、何事か思案するように目を細めた。,narrative,FirstMetDesertTempleBoss,
 "ねえ、巫女さん。あんな奴の言いなりにならずに、
-いっそのこと倒してしまうのはどうかな？",Axis, FirstMetDesertTempleBoss,Axis_normal_normal
+いっそのこと倒してしまうのはどうかな？",Axis,FirstMetDesertTempleBoss,Axis_normal_normal
 "……っ！ 無理です、あんなの……！  
-私たちがどうにかできる相手ではありません！",Fill, FirstMetDesertTempleBoss,Fill_normal_angry
+私たちがどうにかできる相手ではありません！",Fill,FirstMetDesertTempleBoss,Fill_normal_angry
 "そうだね、正攻法では勝ち目はない。
 けれど、この土地には古くから、抗えない災厄を退けるための
-『知恵』が残されているはずだよ。",Axis, FirstMetDesertTempleBoss,Axis_normal_normal
-知恵？ ですが、太刀打ちできる手段なんて……,Fill, FirstMetDesertTempleBoss,Fill_normal_troubled
+『知恵』が残されているはずだよ。",Axis,FirstMetDesertTempleBoss,Axis_normal_normal
+知恵？ ですが、太刀打ちできる手段なんて……,Fill,FirstMetDesertTempleBoss,Fill_normal_troubled
 "例えば、そう……オアシスのさらに奥、
 砂漠の最果てに眠ると言われる『秘宝』。
-あれに頼ってみたらどうだい？",Axis, FirstMetDesertTempleBoss,Axis_normal_normal
+あれに頼ってみたらどうだい？",Axis,FirstMetDesertTempleBoss,Axis_normal_normal
 "砂漠の最果ての秘宝……. 伝説には聞いていますが、
 あそこは常に猛烈な砂嵐が吹き荒れている場所です。
-近づくことさえ——",Fill, FirstMetDesertTempleBoss,Fill_normal_closed
-彼女がいれば、 なんとかなるんじゃないかな？,Axis, FirstMetDesertTempleBoss,Axis_normal_normal
-アクスさんはそう言って、隣に立つ私を指さした。,narrative, FirstMetDesertTempleBoss,
+近づくことさえ——",Fill,FirstMetDesertTempleBoss,Fill_normal_closed
+彼女がいれば、 なんとかなるんじゃないかな？,Axis,FirstMetDesertTempleBoss,Axis_normal_normal
+アクスさんはそう言って、隣に立つ私を指さした。,narrative,FirstMetDesertTempleBoss,
 "あいつも、生贄を揃えるまでは少しは待ってくれるだろうしね。
-どうだい、賭けてみる価値はあると思わないかな？",Axis, FirstMetDesertTempleBoss,Axis_normal_normal
+どうだい、賭けてみる価値はあると思わないかな？",Axis,FirstMetDesertTempleBoss,Axis_normal_normal
 "……最果ての秘宝。
-巫女にのみ伝わるお伽話だと思っていました。他に道がないのなら……",Fill, FirstMetDesertTempleBoss,Fill_normal_normal
-フィルさんの握りしめた拳が、小刻みに震えているのが見えた。,narrative, FirstMetDesertTempleBoss,
+巫女にのみ伝わるお伽話だと思っていました。他に道がないのなら……",Fill,FirstMetDesertTempleBoss,Fill_normal_normal
+フィルさんの握りしめた拳が、小刻みに震えているのが見えた。,narrative,FirstMetDesertTempleBoss,
 "私を頼りたいという必死な思いと、部外者の私を
 危険に巻き込むことへの申し訳なさが混ざり合ったような、
-そんな複雑な瞳が私をまっすぐに見つめている。",narrative, FirstMetDesertTempleBoss,
+そんな複雑な瞳が私をまっすぐに見つめている。",narrative,FirstMetDesertTempleBoss,
 "……ノエリさん、本当にごめんなさい。旅の途中のあなたを、
 こんな恐ろしいことに巻き込み……生きて帰れる保証さえない場所へ
-連れて行くなんて。あってはならないことだと分かっています。",Fill, FirstMetDesertTempleBoss,Fill_normal_troubled
+連れて行くなんて。あってはならないことだと分かっています。",Fill,FirstMetDesertTempleBoss,Fill_normal_troubled
 "でも……もう今の私には、あなたに縋ることしかできないんです。
 お願いです、ノエリさん。どうか……どうかこの村を救うために、
-あなたの力を貸してはいただけませんか？",Fill, FirstMetDesertTempleBoss,Fill_normal_troubled
+あなたの力を貸してはいただけませんか？",Fill,FirstMetDesertTempleBoss,Fill_normal_troubled
 "……うん！ フィルさんがそんなに辛そうなのは、
 見ていられないから。
-行きましょう、その秘宝の場所へ！",Heroin, FirstMetDesertTempleBoss,Heroin_flexible_serious
+行きましょう、その秘宝の場所へ！",Heroin,FirstMetDesertTempleBoss,Heroin_flexible_serious
 "……ありがとうございます、ノエリさん。
-心から、感謝いたします。",Fill, FirstMetDesertTempleBoss,Fill_normal_smile
-どうやら話はまとまったようだね。,Axis, FirstMetDesertTempleBoss,Axis_normal_normal
+心から、感謝いたします。",Fill,FirstMetDesertTempleBoss,Fill_normal_smile
+どうやら話はまとまったようだね。,Axis,FirstMetDesertTempleBoss,Axis_normal_normal
 "アクスさん、あなたにもお礼を言わせてください。
-本当にありがとうございました。",Fill, FirstMetDesertTempleBoss,Fill_normal_normal
+本当にありがとうございました。",Fill,FirstMetDesertTempleBoss,Fill_normal_normal
 "お礼なんていいよ。
-僕はただ、君たちが進むべき道を示しただけだからね。",Axis, FirstMetDesertTempleBoss,Axis_normal_normal
+僕はただ、君たちが進むべき道を示しただけだからね。",Axis,FirstMetDesertTempleBoss,Axis_normal_normal
 "……でも、アクスさん。
-どうして、そんな古い伝承のことを知っているのですか？",Fill, FirstMetDesertTempleBoss,Fill_normal_troubled
-ふふ。御者は物知りだからね。,Axis, FirstMetDesertTempleBoss,Axis_normal_normal
+どうして、そんな古い伝承のことを知っているのですか？",Fill,FirstMetDesertTempleBoss,Fill_normal_troubled
+ふふ。御者は物知りだからね。,Axis,FirstMetDesertTempleBoss,Axis_normal_normal
 "さあ、応援しているよ。
-あいつの討伐が上手くいくことを願っているよ。",Axis, FirstMetDesertTempleBoss,Axis_normal_normal
+あいつの討伐が上手くいくことを願っているよ。",Axis,FirstMetDesertTempleBoss,Axis_normal_normal
 "ノエリさん、砂漠の奥地へは、
-オアシスへ向かう道の途中にあった門から向かうことができます。",Fill, FirstMetDesertTempleBoss,Fill_normal_normal
+オアシスへ向かう道の途中にあった門から向かうことができます。",Fill,FirstMetDesertTempleBoss,Fill_normal_normal
 "以前は魔物と砂嵐を封じるために閉ざしていましたが解除します。
-準備ができたら、そこへ来てください。",Fill, FirstMetDesertTempleBoss,Fill_normal_normal
+準備ができたら、そこへ来てください。",Fill,FirstMetDesertTempleBoss,Fill_normal_normal
 ノエリさん、砂嵐がずいぶん強くなってきましたね。,Fill,BeforeDustDevilBoss,Fill_normal_normal
 もう少しで、目的地の最奥地に着きます。,Fill,BeforeDustDevilBoss,Fill_normal_normal
 伝承によれば、そこには砂嵐を操る魔物が居座っているそうです。,Fill,BeforeDustDevilBoss,Fill_normal_normal
@@ -417,6 +417,40 @@
 珠を集めて、装置を動かせばいいんですね。",Heroin,TempleBossSmokeDefeat,Heroin_flexible_normal
 "フィルさんはここで、
 お姉様をしっかり見守っていてあげてくださいね。",Heroin,TempleBossSmokeDefeat,Heroin_flexible_smile
+ここが珠を置く場所だね。でも、肝心の珠はどこにあるんだろう？,Heroin,GreenOrbHint,Heroin_flexible_normal
+"推測します。先ほどから神殿内部で感知されている、
+風をまとう敵性個体が、珠を自身の風の中に巻き込んで
+保持している可能性が高いと思われます。",Fabo,GreenOrbHint,
+"置く場所は見つけたけど……
+これにはめる珠、いったいどこにあるのかなぁ。",Heroin,OrangeOrbHint,Heroin_flexible_normal
+"周辺の環境データから推測します。
+無造作に置かれているとは考えにくいため、
+未発見の宝箱の中に厳重に保管されている確率が高いです。",Fabo,OrangeOrbHint,
+"やっと装置に着いた！
+……あれ、そういえば例の珠って、どこにあるか心当たりある？",Heroin,PurpleOrbHint,Heroin_flexible_normal
+"現在のデータだけでは、珠の正確な位置を特定できません。
+ここは一度、フィルに相談し、
+何か知っていることがないか確認することを推奨します。",Fabo,PurpleOrbHint,
+"あの、フィルさん。実は『紫色の珠』を探しているんですが、
+何かご存知ないですか？",Heroin,ReceivedPurpleOrbInfoFromFill,Heroin_flexible_normal
+"紫色の珠ですか。ごめんなさい、
+この村ではそういった珍しいものは
+見かけたことがありませんね。",Fill,ReceivedPurpleOrbInfoFromFill,Fill_armed1_troubled
+"ただ、時折この砂漠を訪れる、
+少し怪しげな旅の男性が似たようなものを持っていた
+という噂なら聞いたことがあります。",Fill,ReceivedPurpleOrbInfoFromFill,Fill_armed1_normal
+その方は、時々砂漠にある洞窟に滞在しているらしいんですよ。,Fill,ReceivedPurpleOrbInfoFromFill,Fill_armed1_normal
+"もしよろしければ、その洞窟へ向かって
+彼を探してみてはいかがでしょうか。
+何か手がかりが掴めるかもしれませんよ。",Fill,ReceivedPurpleOrbInfoFromFill,Fill_armed1_smile
+……あぁ、客か。,LotteryManager_Desert,FirstMetLotteryManager,LotteryManager_Desert_normal_normal
+俺はここの店主。名前なんて……別にいいだろ。,LotteryManager_Desert,FirstMetLotteryManager,LotteryManager_Desert_normal_normal
+……ここはくじ屋だ。,LotteryManager_Desert,FirstMetLotteryManager,LotteryManager_Desert_normal_normal
+"あんたが金を払って、並んでる宝箱から好きなのを一つ選ぶ。
+中に入ってたものはあんたの物……ただそれだけだ。",LotteryManager_Desert,FirstMetLotteryManager,LotteryManager_Desert_normal_normal
+"……そういえば今は、昔この砂漠で拾った『紫色の珠』ってのを、
+どれかの箱に入れてある。
+……欲しけりゃ、適当に運試ししていくんだな。",LotteryManager_Desert,FirstMetLotteryManager,LotteryManager_Desert_normal_normal
 ふぅ……これで、全部の装置を起動できたかな？,Heroin,AllOrbsPlacedInDevice,Heroin_flexible_normal
 "肯定します。神殿内に存在する全装置の起動完了を確認しました。
 頂上へ続く扉のロックが解除された模様です。
