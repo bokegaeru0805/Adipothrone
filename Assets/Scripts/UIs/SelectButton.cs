@@ -9,6 +9,9 @@ public class SelectButton : MonoBehaviour
     [SerializeField]
     private int panelStage;
 
+    [SerializeField, Tooltip("クリック時に親パネルにこのボタンを最後の選択として記録するかどうか")]
+    private bool recordAsLastSelected = true;
+
     private void Start()
     {
         GetComponent<Button>().onClick.AddListener(ActivePanel);
@@ -38,10 +41,13 @@ public class SelectButton : MonoBehaviour
             }
 
             // 最後に押されたボタンを親パネルに記録させる
-            var parentPanelManager = transform.parent.GetComponentInParent<PanelActive>();
-            if (parentPanelManager != null)
+            if (recordAsLastSelected)
             {
-                parentPanelManager.SetLastSelectedButton(this.gameObject);
+                var parentPanelManager = transform.parent.GetComponentInParent<PanelActive>();
+                if (parentPanelManager != null)
+                {
+                    parentPanelManager.SetLastSelectedButton(this.gameObject);
+                }
             }
         }
         else
