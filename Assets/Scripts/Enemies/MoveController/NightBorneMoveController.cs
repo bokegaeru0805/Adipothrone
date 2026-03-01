@@ -73,11 +73,8 @@ public class NightBorneMoveController : MonoBehaviour, IEnemyResettable
     [SerializeField, Tooltip("遠距離攻撃のダメージ量")]
     private int funnelAttackDamage = 0; // 遠距離攻撃のダメージ量
 
-    [SerializeField, Tooltip("HPが半分以上の時のターゲット攻撃のダメージ量")]
-    private int funnelTargetAttackDamageAboveHalf = 0; // HPが半分以上の時のターゲット攻撃のダメージ量
-
-    [SerializeField, Tooltip("HPが半分以下の時のターゲット攻撃のダメージ量")]
-    private int funnelTargetAttackDamageBelowHalf = 0; // HPが半分以下の時のターゲット攻撃のダメージ量
+    [SerializeField, Tooltip("ターゲット攻撃のダメージ量")]
+    private int funnelTargetAttackDamage = 0; // ターゲット攻撃のダメージ量
 
     [Header("間合い・移動パラメータ")]
     [SerializeField, Tooltip("プレイヤーがこの距離に入るまで待機します")]
@@ -293,7 +290,7 @@ public class NightBorneMoveController : MonoBehaviour, IEnemyResettable
     private void Awake()
     {
         sePlayer = this.GetComponent<CriWare.Assets.CriAtomSePlayer>();
-        
+
         spriteRenderer = this.GetComponent<SpriteRenderer>();
         if (spriteRenderer != null)
         {
@@ -1024,11 +1021,7 @@ public class NightBorneMoveController : MonoBehaviour, IEnemyResettable
                 var damageController = funnelDamageControllers[i];
                 if (damageController != null)
                 {
-                    damageController.SetNormalDamage(
-                        isHPbelowHalf
-                            ? funnelTargetAttackDamageBelowHalf
-                            : funnelTargetAttackDamageAboveHalf
-                    ); // 攻撃ダメージを設定
+                    damageController.SetNormalDamage(funnelTargetAttackDamage); // 攻撃ダメージを設定
                 }
 
                 // 個別状態を「攻撃中」に設定

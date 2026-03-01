@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using CriWare;
 using DG.Tweening;
 using MyGame.CameraControl;
+using NaughtyAttributes;
 using UnityEngine;
 
 [RequireComponent(typeof(CriWare.Assets.CriAtomSePlayer))]
@@ -36,6 +37,23 @@ public class DesertTempleBossSmokeMoveController : MonoBehaviour
     [Tooltip("ノイズの振動の速さ (基本周期の何倍速で揺れるか)")]
     [SerializeField]
     private float noiseFrequency = 12.0f; // 整数にすると端の座標がズレません
+    #region 攻撃力の設定
+    [Header("攻撃力の設定")]
+    [Tooltip("右腕の弾の攻撃力")]
+    [SerializeField]
+    private int rightArmAttackDamage = 0;
+
+    [InfoBox(
+        "左腕の攻撃力は、ObjectPoolerのEnemyWaterBallShootオブジェクトのDamageコンポーネントで設定してください"
+    )]
+    [DisableIf("true")] // 常に無効化して編集できないようにする
+    [SerializeField]
+    private int leftArmAttackDamage = 0;
+
+    [Tooltip("両腕の弾の攻撃力")]
+    [SerializeField]
+    private int bothArmsAttackDamage = 0;
+    #endregion
     #region 右腕の攻撃の設定
 
     [Header("右腕の攻撃の設定")]
@@ -231,11 +249,6 @@ public class DesertTempleBossSmokeMoveController : MonoBehaviour
         leftArmDefaultY = leftArmObject.transform.localPosition.y;
         rightArmDefaultY = rightArmObject.transform.localPosition.y;
     }
-
-    // private void Start()
-    // {
-    //     ResetState();
-    // }
 
     public void ResetState()
     {
@@ -572,6 +585,14 @@ public class DesertTempleBossSmokeMoveController : MonoBehaviour
                 Debug.LogWarning("弾にRigidbody2Dがついていません");
             }
 
+            // 攻撃力の設定
+            ContactDamageController damageController =
+                bullet.GetComponent<ContactDamageController>();
+            if (damageController != null)
+            {
+                damageController.SetNormalDamage(rightArmAttackDamage);
+            }
+
             // SE再生
             _sePlayer.Play(SE_EnemyAction.Shoot_Water1);
             CameraManager.instance?.PlayCustomShake(1.0f, 2.0f, 0.3f); //カメラ揺れ
@@ -602,6 +623,13 @@ public class DesertTempleBossSmokeMoveController : MonoBehaviour
 
         if (bullet == null)
             yield break;
+        // 攻撃力の設定
+        ContactDamageController damageController = bullet.GetComponent<ContactDamageController>();
+        if (damageController != null)
+        {
+            damageController.SetNormalDamage(0);
+        }
+
         Rigidbody2D rb = bullet.GetComponent<Rigidbody2D>();
         if (rb != null)
         {
@@ -784,6 +812,13 @@ public class DesertTempleBossSmokeMoveController : MonoBehaviour
 
                 rb.velocity = direction * bothArmsAttackSpeed;
                 rb.tag = GameConstants.DAMAGEABLE_ENEMY_TAG_NAME; // 通常の敵弾タグに戻す
+            }
+
+            // 攻撃力の設定
+            ContactDamageController damageController = b.GetComponent<ContactDamageController>();
+            if (damageController != null)
+            {
+                damageController.SetNormalDamage(bothArmsAttackDamage);
             }
 
             // 弾ごとのSE再生

@@ -8,10 +8,6 @@ public class DustDevilMoveController : MonoBehaviour, IEnemyResettable
 {
     private const string WIND_POOLTAG = "DustDevilWind";
 
-    [Header("敵のタイプ")]
-    [SerializeField]
-    private EnemyVariant variantType = EnemyVariant.None;
-
     [Header("設定項目")]
     [SerializeField]
     private Transform playerTransform = null;
@@ -20,6 +16,9 @@ public class DustDevilMoveController : MonoBehaviour, IEnemyResettable
     private EnemyActivator activator = null; // 親のEnemyActivatorコンポーネント
 
     [Header("攻撃の設定")]
+    [SerializeField, Tooltip("この敵がプレイヤーに与えるダメージ")]
+    private int damage = 0;
+
     [SerializeField]
     private float attackRange = 1.5f;
 
@@ -55,15 +54,7 @@ public class DustDevilMoveController : MonoBehaviour, IEnemyResettable
     [SerializeField]
     private bool isUseManualInitialPosition = false;
 
-    // 敵の種類を定義
-    private enum EnemyVariant
-    {
-        None = 0,
-        Desert = 1,
-    }
-
     private float maxCheckDistance = 20.0f; //地面を探す最大距離
-    private int damage = 0; // 攻撃力
     private Vector2 myPos = Vector2.zero; // 自身の位置
     private LayerMask groundLayer;
     private Animator animator;
@@ -82,17 +73,6 @@ public class DustDevilMoveController : MonoBehaviour, IEnemyResettable
     private void Awake()
     {
         groundLayer = LayerMask.GetMask(GameConstants.PHYSICS_LAYER_NAME_GROUND); // Groundレイヤーを取得
-
-        switch (variantType)
-        {
-            case EnemyVariant.Desert:
-                //TODO:攻撃力を設定
-                // damage = 23;
-                break;
-            default:
-                Debug.LogError($"{this.name}のEnemyVariantが設定されていません。");
-                break;
-        }
 
         if (activator == null)
         {

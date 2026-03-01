@@ -28,8 +28,8 @@ public class DesertTempleGolemMoveController : MonoBehaviour, IEnemyResettable
     [SerializeField]
     private float attackRange = 1.5f;
 
-    [SerializeField]
-    private int damage = 0; // 攻撃力
+    [SerializeField, Tooltip("この敵がプレイヤーに与えるダメージ")]
+    private int damage = 0;
 
     [SerializeField]
     private float shootSpeed = 5.0f;

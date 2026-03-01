@@ -11,13 +11,13 @@ public class DustDevilActiveMoveController : MonoBehaviour, IEnemyResettable
 {
     private const float MAX_GROUND_HEIGHT = 12f; // 移動が許可される地面からの最大高度
 
-    [Header("敵のタイプ")]
-    [SerializeField]
-    private EnemyVariant variantType = EnemyVariant.None;
-
     [Header("設定項目")]
     [SerializeField]
     private EnemyActivator activator = null; // 親のEnemyActivatorコンポーネント
+
+    [Header("攻撃設定")]
+    [SerializeField, Tooltip("この敵がプレイヤーに与えるダメージ")]
+    private int damage = 0;
 
     [Header("移動設定")]
     [Tooltip("1回の移動距離")]
@@ -57,15 +57,7 @@ public class DustDevilActiveMoveController : MonoBehaviour, IEnemyResettable
     [SerializeField, ShowIf(nameof(isUseManualBounds))]
     private float rightBound;
 
-    // 敵の種類を定義
-    private enum EnemyVariant
-    {
-        None = 0,
-        Desert = 1,
-    }
-
     private float stateChangeTimer = 0f; // 状態遷移用のタイマー
-    private int damage = 0; // 攻撃力
     private LayerMask groundLayer;
     private Animator animator;
     private EnemyHealth enemyHP;
@@ -104,17 +96,6 @@ public class DustDevilActiveMoveController : MonoBehaviour, IEnemyResettable
     private void Awake()
     {
         groundLayer = LayerMask.GetMask(GameConstants.PHYSICS_LAYER_NAME_GROUND); // Groundレイヤーを取得
-
-        switch (variantType)
-        {
-            case EnemyVariant.Desert:
-                //TODO:攻撃力を設定
-                // damage = 23;
-                break;
-            default:
-                Debug.LogError($"{this.name}のEnemyVariantが設定されていません。");
-                break;
-        }
 
         if (activator == null)
         {

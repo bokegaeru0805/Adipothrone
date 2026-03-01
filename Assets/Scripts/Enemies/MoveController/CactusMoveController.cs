@@ -7,10 +7,6 @@ using UnityEngine;
 [RequireComponent(typeof(CriWare.Assets.CriAtomSePlayer))]
 public class CactusMoveController : MonoBehaviour, IEnemyResettable
 {
-    [Header("敵のタイプ")]
-    [SerializeField]
-    private EnemyVariant variantType = EnemyVariant.None;
-
     [Header("基本コンポーネント")]
     [SerializeField]
     private GameObject rightArmObject = null;
@@ -39,7 +35,11 @@ public class CactusMoveController : MonoBehaviour, IEnemyResettable
     private bool isFlowerEnabled = false;
 
     [Header("攻撃の設定")]
-    [SerializeField, Range(0f, 1f)]
+    [SerializeField, Tooltip("この敵がプレイヤーに与えるダメージ")]
+    private int damage = 0;
+
+    [SerializeField, Tooltip("攻撃を行う確率（0.0～1.0）")]
+    [Range(0f, 1f)]
     private float attack_probability = 0.5f;
 
     [SerializeField]
@@ -73,15 +73,6 @@ public class CactusMoveController : MonoBehaviour, IEnemyResettable
 
     [SerializeField]
     private float overlapCheckRadius = 0.5f; // チェック用円の半径
-
-    // 敵の種類を定義
-    private enum EnemyVariant
-    {
-        None = 0,
-        Desert = 1,
-    }
-
-    private int damage = 0; // 攻撃力
     private float verticalAdjustSpeed = 100f; // 地面から抜け出す速度
 
     private LayerMask groundLayer;
@@ -119,17 +110,6 @@ public class CactusMoveController : MonoBehaviour, IEnemyResettable
         {
             Debug.LogError($"{this.name}の基本コンポーネントが設定されていません。");
             return;
-        }
-
-        switch (variantType)
-        {
-            case EnemyVariant.Desert:
-                //TODO:攻撃力を設定
-                // damage = 23;
-                break;
-            default:
-                Debug.LogError($"{this.name}のEnemyVariantが設定されていません。");
-                break;
         }
 
         if (overlapCheckPoint == null)

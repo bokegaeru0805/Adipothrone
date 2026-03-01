@@ -244,6 +244,10 @@ public class FieldEvent_Chapter2 : BaseFieldEvent
                 )
                 {
                     flagManager.SetBoolFlag(Chapter2TriggeredEvent.FirstMetLotterManager, true);
+                    flagManager.SetBoolFlag(
+                        Chapter2TriggeredEvent.ReceivedInfoAboutPurpleOrbFromFill,
+                        true
+                    ); // 紫のオーブについてFillから情報を得たことも同時にフラグを立てる
                     FungusHelper.ExecuteBlock(targetFlowchart, "FirstMetLotterManager");
                 }
                 break;
@@ -260,6 +264,8 @@ public class FieldEvent_Chapter2 : BaseFieldEvent
     /// </summary>
     /// <param name="orbFlag">この装置に対応する完了フラグ</param>
     /// <param name="blockName">実行するFungusブロック名</param>
+    /// <param name="hintFlag">（任意）ヒントを聞いたかのフラグ。ヒントがない場合はNoneを指定</param>
+    /// <param name="hintBlockName">（任意）ヒントを聞いていない場合に実行するFungusブロック名。ヒントがない場合や、hintFlagがNoneの場合はnullを指定</param>
     private void HandleOrbDevice(
         Chapter2TriggeredEvent orbFlag,
         string blockName,
