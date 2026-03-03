@@ -141,6 +141,7 @@ public class SlimeNormalMoveController : MonoBehaviour, IEnemyResettable
         spriteRenderer = this.GetComponent<SpriteRenderer>();
         rbody = GetComponent<Rigidbody2D>();
         sePlayer = GetComponent<CriWare.Assets.CriAtomSePlayer>();
+        contactDamageController = GetComponent<ContactDamageController>();
 
         animator = GetComponent<Animator>();
         if (animator == null)
@@ -167,9 +168,6 @@ public class SlimeNormalMoveController : MonoBehaviour, IEnemyResettable
     {
         IdleHash = Animator.StringToHash("Blue Idle - Animation");
 
-        contactDamageController = GetComponent<ContactDamageController>();
-        contactDamageController?.SetNormalDamage(damage);
-
         ResetState();
     }
 
@@ -195,6 +193,9 @@ public class SlimeNormalMoveController : MonoBehaviour, IEnemyResettable
         {
             Debug.LogWarning($"{this.gameObject.name}にenemy_HPコンポーネントがありません。");
         }
+
+        // ContactDamageControllerのダメージ設定をリセット
+        contactDamageController?.SetNormalDamage(damage);
 
         vx = (Random.value < 0.5f ? -1 : 1) * speedX;
         rightFlag = vx > 0;

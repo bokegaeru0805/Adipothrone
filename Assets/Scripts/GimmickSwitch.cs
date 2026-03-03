@@ -112,6 +112,11 @@ public class GimmickSwitch : MonoBehaviour
     [SerializeField]
     private bool isOneWay = true;
 
+    [Header("判定設定")]
+    [Tooltip("壁越し（GroundLayer）の攻撃ヒットを無効にするか")]
+    [SerializeField]
+    private bool preventWallPenetration = false;
+
     [Header("移動連携 (WaypointMover)")]
     [Tooltip("連携する移動コンポーネント（空欄なら自身から検索）")]
     [SerializeField]
@@ -137,6 +142,8 @@ public class GimmickSwitch : MonoBehaviour
     private bool isPushed = false;
     private Sprite offSprite;
     private SpriteRenderer spriteRenderer;
+    private Collider2D switchCollider;
+    private LayerMask groundLayer;
 
     #endregion
 
@@ -144,7 +151,9 @@ public class GimmickSwitch : MonoBehaviour
 
     private void Awake()
     {
+        groundLayer = LayerMask.GetMask(GameConstants.PHYSICS_LAYER_NAME_GROUND);
         spriteRenderer = GetComponent<SpriteRenderer>();
+        switchCollider = GetComponent<Collider2D>();
         offSprite = spriteRenderer.sprite;
 
         // Moverがアタッチされていなくて、自動検索設定なら取得
@@ -178,14 +187,36 @@ public class GimmickSwitch : MonoBehaviour
 
     private void OnTriggerEnter2D(Collider2D other)
     {
-        // プレイヤーの攻撃、またはプレイヤー自身との接触など、ゲーム仕様に合わせてタグ判定
-        // ここでは「PlayerAttack」または「Player」と仮定
-        bool isValidTrigger =
-            other.CompareTag(GameConstants.PLAYER_ATTACK_TAG_NAME)
-            || other.CompareTag(GameConstants.PLAYER_TAG_NAME);
+        // プレイヤーの攻撃タグであればスイッチを作動させる
+        bool isValidTrigger = other.CompareTag(GameConstants.PLAYER_ATTACK_TAG_NAME);
 
         if (isValidTrigger && !isPushed)
         {
+            // 壁抜け防止チェック
+            if (preventWallPenetration)
+            {
+                // PlayerManagerからプレイヤーの現在位置を取得
+                if (PlayerManager.instance != null)
+                {
+                    // 始点: プレイヤーの足元ではなく、中心（高さの半分）にする
+                    Vector2 playerCenter =
+                        PlayerManager.instance.GetPlayerPosition()
+                        + new Vector2(0, GameConstants.PLAYER_BASE_HEIGHT / 2.0f);
+
+                    // 終点: スイッチのPivotがBottomでも地面に引っかからないよう、コライダーの中心にする
+                    Vector2 switchCenter = switchCollider.bounds.center;
+
+                    // プレイヤーの中心からスイッチのコライダーの中心へLinecastを飛ばす
+                    RaycastHit2D hit = Physics2D.Linecast(playerCenter, switchCenter, groundLayer);
+
+                    // もし何かに当たった（＝間に壁がある）場合は、起動せずに処理を抜ける
+                    if (hit.collider != null)
+                    {
+                        return;
+                    }
+                }
+            }
+
             ActivateSwitch();
         }
     }
@@ -263,7 +294,8 @@ public class GimmickSwitch : MonoBehaviour
     /// </summary>
     private void PlaySwitchSE()
     {
-        if (SEManager.instance == null) return;
+        if (SEManager.instance == null)
+            return;
 
         switch (buttonType)
         {
@@ -275,8 +307,8 @@ public class GimmickSwitch : MonoBehaviour
             case ButtonType.DesertTemple:
                 // 例: 砂漠や遺跡向けの重い音 (定義されている場合)
                 // 定義がない場合は標準と同じにするか、別の適切なSEを指定してください
-                // SEManager.instance.PlayFieldSE(SE_Field.SwitchOn_Stone); 
-                SEManager.instance.PlayFieldSE(SE_Field.SwitchOn); 
+                // SEManager.instance.PlayFieldSE(SE_Field.SwitchOn_Stone);
+                SEManager.instance.PlayFieldSE(SE_Field.SwitchOn);
                 break;
 
             default:

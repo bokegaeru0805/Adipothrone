@@ -72,7 +72,10 @@ public class DustDevilMoveController : MonoBehaviour, IEnemyResettable
 
     private void Awake()
     {
-        groundLayer = LayerMask.GetMask(GameConstants.PHYSICS_LAYER_NAME_GROUND); // Groundレイヤーを取得
+        groundLayer = LayerMask.GetMask(
+            GameConstants.PHYSICS_LAYER_NAME_GROUND,
+            GameConstants.PHYSICS_LAYER_NAME_OBJECT_GROUND
+        );
 
         if (activator == null)
         {
@@ -94,11 +97,6 @@ public class DustDevilMoveController : MonoBehaviour, IEnemyResettable
             Debug.LogError($"{this.gameObject.name}にEnemyHealthコンポーネントがありません。");
             return;
         }
-    }
-
-    private void Start()
-    {
-        ResetState();
     }
 
     public void ResetState()
@@ -178,7 +176,7 @@ public class DustDevilMoveController : MonoBehaviour, IEnemyResettable
         // transform.position += Vector3.up * Random.Range(0f, floatAmount);
 
         floatingTween = transform
-            .DOLocalMoveY(transform.position.y + floatAmount, floatDuration) // 基準位置 + 幅 まで移動
+            .DOLocalMoveY(transform.localPosition.y + floatAmount, floatDuration) // 基準位置 + 幅 まで移動
             .SetEase(Ease.InOutSine) // つむじ風らしい、柔らかい動き
             .SetLoops(-1, LoopType.Yoyo); // 無限に往復する
     }

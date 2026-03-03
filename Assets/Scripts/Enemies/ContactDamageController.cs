@@ -163,7 +163,23 @@ public class ContactDamageController : MonoBehaviour
 
     #endregion
 
+    // プレイヤーが重なり続けている状態で敵のタグ（無敵→攻撃可能など）が変わった場合にも
+    // 正しくダメージ判定を行うため、EnterとStayの両方で判定処理を呼び出します。
     private void OnTriggerEnter2D(Collider2D other)
+    {
+        HandleContact(other);
+    }
+
+    // 接触し続けている間も判定を行う（タグ変更時のダメージ抜け防止）
+    private void OnTriggerStay2D(Collider2D other)
+    {
+        HandleContact(other);
+    }
+
+    /// <summary>
+    /// 実際の接触・ダメージ判定ロジック
+    /// </summary>
+    private void HandleContact(Collider2D other)
     {
         // 自分のタグが "DamageableEnemy" でなければ何もしない
         if (this.tag != GameConstants.DAMAGEABLE_ENEMY_TAG_NAME)

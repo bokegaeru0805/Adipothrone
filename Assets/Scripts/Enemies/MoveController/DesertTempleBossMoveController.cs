@@ -7,8 +7,6 @@ using UnityEngine;
 [RequireComponent(typeof(CriWare.Assets.CriAtomSePlayer))]
 public class DesertTempleBossMoveController : MonoBehaviour
 {
-    //TODO: 攻撃力の設定
-    //TODO: 攻撃毎の弾のスプライト・オブジェクトの変更
     private const string RIGHT_ARM_BULLET_POOLTAG = "DesertTempleGolemShoot";
     public const string RIGHT_ARM_BULLET_SPAWN_EFFECT_POOLTAG = "DesertTempleBossShootSpawnEffect"; //61D2FF
     private const string GOLEM_POOLTAG = "DesertTempleGolem";
@@ -35,6 +33,31 @@ public class DesertTempleBossMoveController : MonoBehaviour
 
     [SerializeField]
     private float rightBound = 0;
+
+    [Header("攻撃力の設定")]
+    [Tooltip("右腕の弾の攻撃力")]
+    [SerializeField]
+    private int rightArmAttackDamage = 0;
+
+    [Tooltip("通常攻撃(左腕)の弾の攻撃力")]
+    [SerializeField]
+    private int normalAttackDamage = 0;
+
+    [Tooltip("レーザー攻撃の攻撃力")]
+    [SerializeField]
+    private int laserAttackDamage = 0;
+
+    [Tooltip("分身攻撃(本体)の弾の攻撃力")]
+    [SerializeField]
+    private int cloneAttackDamage = 0;
+
+    [Tooltip("囲い込み攻撃の弾の攻撃力")]
+    [SerializeField]
+    private int encirclementAttackDamage = 0;
+
+    [Tooltip("降雨攻撃の弾の攻撃力")]
+    [SerializeField]
+    private int rainAttackDamage = 0;
 
     [Header("右腕の攻撃の設定")]
     [Tooltip("攻撃前の溜め時間")]
@@ -674,6 +697,13 @@ public class DesertTempleBossMoveController : MonoBehaviour
                 rb.velocity = direction * rightArmAttackBulletSpeed;
             }
 
+            // 攻撃力の設定
+            var damageController = bullet.GetComponent<ContactDamageController>();
+            if (damageController != null)
+            {
+                damageController.SetNormalDamage(rightArmAttackDamage);
+            }
+
             // エフェクトの生成
             GameObject spawnEffect = ObjectPooler.SceneInstance.SpawnFromPool(
                 RIGHT_ARM_BULLET_SPAWN_EFFECT_POOLTAG,
@@ -903,6 +933,13 @@ public class DesertTempleBossMoveController : MonoBehaviour
                 rb.velocity = direction * leftArmAttackBulletSpeed;
             }
 
+            // 攻撃力の設定
+            var damageController = bullet.GetComponent<ContactDamageController>();
+            if (damageController != null)
+            {
+                damageController.SetNormalDamage(normalAttackDamage);
+            }
+
             // エフェクト生成 (プールがあれば)
             ObjectPooler.SceneInstance.SpawnFromPool(
                 RIGHT_ARM_BULLET_SPAWN_EFFECT_POOLTAG,
@@ -979,6 +1016,13 @@ public class DesertTempleBossMoveController : MonoBehaviour
 
             // 終了角度設定: 方向に応じて ±360度
             float endAngle = startAngle + (isClockwise ? -360f : 360f);
+
+            // 攻撃力の設定
+            var damageController = laserObject.GetComponent<ContactDamageController>();
+            if (damageController != null)
+            {
+                damageController.SetNormalDamage(laserAttackDamage);
+            }
 
             // 回転アニメーション (遅 -> 早 -> 遅)
             // Transformを直接回すと最短距離を通ってしまうことがあるため、値をTweenして適用する
@@ -1107,7 +1151,8 @@ public class DesertTempleBossMoveController : MonoBehaviour
                     _attackChargeTime: cloneAttackChargeTime,
                     _bulletSpeed: cloneAttackBulletSpeed,
                     _bulletOffset: leftArmAttackBulletOffset,
-                    _groundY: groundY
+                    _groundY: groundY,
+                    _cloneAttackDamage: cloneAttackDamage
                 );
 
                 // 出現演出 (Setupでscale=0にされている前提)
@@ -1255,22 +1300,29 @@ public class DesertTempleBossMoveController : MonoBehaviour
                 // 3. 速度を適用
                 rb.velocity = direction * cloneAttackBulletSpeed;
 
+                // 攻撃力の設定
+                var damageController = bullet.GetComponent<ContactDamageController>();
+                if (damageController != null)
+                {
+                    damageController.SetNormalDamage(cloneAttackDamage);
+                }
+
                 // 4. エフェクト生成
                 ObjectPooler.SceneInstance.SpawnFromPool(
                     RIGHT_ARM_BULLET_SPAWN_EFFECT_POOLTAG,
                     spawnPos,
                     Quaternion.identity
                 );
-                //TODO: SE再生
+
+                // 5. SE再生
+                var se = GetComponent<CriWare.Assets.CriAtomSePlayer>();
+                if (se)
+                    se.Play(SE_EnemyAction.Shoot_Water1);
 
                 // (オプション) 弾の画像の向きも進行方向に合わせたい場合は以下を追加
                 // float angle = Mathf.Atan2(direction.y, direction.x) * Mathf.Rad2Deg;
                 // bullet.transform.rotation = Quaternion.AngleAxis(angle, Vector3.forward);
             }
-
-            var se = GetComponent<CriWare.Assets.CriAtomSePlayer>();
-            if (se)
-                se.Play(SE_EnemyAction.Shoot_Water1);
         }
     }
 
@@ -1509,12 +1561,19 @@ public class DesertTempleBossMoveController : MonoBehaviour
 
             b.tag = GameConstants.DAMAGEABLE_ENEMY_TAG_NAME; // タグを戻す
 
-            Rigidbody2D rb = b.GetComponent<Rigidbody2D>();
+            var rb = b.GetComponent<Rigidbody2D>();
             if (rb != null)
             {
                 // ロックした中心位置に向かって発射
                 Vector2 direction = (lockedCenter - (Vector2)b.transform.position).normalized;
                 rb.velocity = direction * encirclementBulletSpeed;
+            }
+
+            // 攻撃力の設定
+            var damageController = b.GetComponent<ContactDamageController>();
+            if (damageController != null)
+            {
+                damageController.SetNormalDamage(encirclementAttackDamage);
             }
         }
 
@@ -1590,6 +1649,13 @@ public class DesertTempleBossMoveController : MonoBehaviour
             if (rb != null)
             {
                 rb.velocity = direction * rainAttackBulletSpeed;
+            }
+
+            // 攻撃力の設定
+            var damageController = bullet.GetComponent<ContactDamageController>();
+            if (damageController != null)
+            {
+                damageController.SetNormalDamage(rainAttackDamage);
             }
 
             // 必要であればSE再生

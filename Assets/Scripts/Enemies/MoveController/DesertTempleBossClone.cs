@@ -50,6 +50,7 @@ public class DesertTempleBossClone : MonoBehaviour
     private Vector2 bulletOffset;
     private float bulletHeight;
     private float groundY;
+    private int cloneAttackDamage;
 
     // --- 内部変数 ---
     private bool isFacingLocked = false; // 向きの更新をロックするフラグ
@@ -65,7 +66,8 @@ public class DesertTempleBossClone : MonoBehaviour
         float _attackChargeTime,
         float _bulletSpeed,
         Vector2 _bulletOffset,
-        float _groundY
+        float _groundY,
+        int _cloneAttackDamage
     )
     {
         // 状態リセット
@@ -82,6 +84,7 @@ public class DesertTempleBossClone : MonoBehaviour
         this.bulletSpeed = _bulletSpeed;
         this.bulletOffset = _bulletOffset;
         this.groundY = _groundY;
+        this.cloneAttackDamage = _cloneAttackDamage;
 
         // 浮遊開始
         StartFloating();
@@ -259,6 +262,13 @@ public class DesertTempleBossClone : MonoBehaviour
             if (rb != null)
             {
                 rb.velocity = direction * bulletSpeed;
+            }
+
+            // 攻撃力の設定
+            var damageController = bullet.GetComponent<ContactDamageController>();
+            if (damageController != null)
+            {
+                damageController.SetNormalDamage(cloneAttackDamage);
             }
 
             // 4. エフェクト生成

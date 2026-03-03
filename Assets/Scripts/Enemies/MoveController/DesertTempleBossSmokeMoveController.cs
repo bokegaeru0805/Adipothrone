@@ -586,7 +586,7 @@ public class DesertTempleBossSmokeMoveController : MonoBehaviour
             }
 
             // 攻撃力の設定
-            ContactDamageController damageController =
+            var damageController =
                 bullet.GetComponent<ContactDamageController>();
             if (damageController != null)
             {
@@ -624,7 +624,7 @@ public class DesertTempleBossSmokeMoveController : MonoBehaviour
         if (bullet == null)
             yield break;
         // 攻撃力の設定
-        ContactDamageController damageController = bullet.GetComponent<ContactDamageController>();
+        var damageController = bullet.GetComponent<ContactDamageController>();
         if (damageController != null)
         {
             damageController.SetNormalDamage(0);
@@ -815,7 +815,7 @@ public class DesertTempleBossSmokeMoveController : MonoBehaviour
             }
 
             // 攻撃力の設定
-            ContactDamageController damageController = b.GetComponent<ContactDamageController>();
+            var damageController = b.GetComponent<ContactDamageController>();
             if (damageController != null)
             {
                 damageController.SetNormalDamage(bothArmsAttackDamage);

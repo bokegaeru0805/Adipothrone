@@ -73,7 +73,7 @@ public class CactusMoveController : MonoBehaviour, IEnemyResettable
 
     [SerializeField]
     private float overlapCheckRadius = 0.5f; // チェック用円の半径
-    private float verticalAdjustSpeed = 100f; // 地面から抜け出す速度
+    private float verticalAdjustSpeed = 10f; // 地面から抜け出す速度
 
     private LayerMask groundLayer;
 

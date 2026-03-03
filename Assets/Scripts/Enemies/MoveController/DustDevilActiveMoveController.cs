@@ -95,7 +95,10 @@ public class DustDevilActiveMoveController : MonoBehaviour, IEnemyResettable
 
     private void Awake()
     {
-        groundLayer = LayerMask.GetMask(GameConstants.PHYSICS_LAYER_NAME_GROUND); // Groundレイヤーを取得
+        groundLayer = LayerMask.GetMask(
+            GameConstants.PHYSICS_LAYER_NAME_GROUND,
+            GameConstants.PHYSICS_LAYER_NAME_OBJECT_GROUND
+        );
 
         if (activator == null)
         {
@@ -183,7 +186,7 @@ public class DustDevilActiveMoveController : MonoBehaviour, IEnemyResettable
         {
             // 現在位置から少し上へ移動するTweenを作成
             floatingTween = transform
-                .DOLocalMoveY(this.transform.position.y + floatAmount, floatDuration)
+                .DOLocalMoveY(this.transform.localPosition.y + floatAmount, floatDuration)
                 .SetEase(Ease.InOutSine) // ふわっとした動き
                 .SetLoops(-1, LoopType.Yoyo) // 行って戻ってを無限ループ
                 .SetLink(gameObject); // 安全対策
@@ -192,7 +195,7 @@ public class DustDevilActiveMoveController : MonoBehaviour, IEnemyResettable
         {
             // 浮遊を停止する際は、パッと止めるのではなく、少し時間をかけて元の位置へ戻す
             // これによりアニメーションの切り替わりが滑らかになる
-            transform.DOMoveY(this.transform.position.y, 0.2f).SetEase(Ease.OutSine);
+            transform.DOLocalMoveY(this.transform.localPosition.y, 0.2f).SetEase(Ease.OutSine);
         }
     }
 

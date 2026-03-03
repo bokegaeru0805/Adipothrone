@@ -69,20 +69,21 @@ public class BabyDrakeMoveController : MonoBehaviour, IEnemyResettable
 
     [SerializeField]
     private float overlapCheckRadius = 0.5f; // チェック用円の半径
+
     // --- 内部変数 ---
-    private float verticalAdjustSpeed = 100f; // 地面から抜け出す速度
+    private float verticalAdjustSpeed = 10f; // 地面から抜け出す速度
     private float vx = 0;
     private float groundIgnoreAfterJumpTime = 0.1f;
     private float jumpStartTime;
     private float timeToReverseWhenStuck = 2.0f; //動けないと判断してから反転するまでの時間（秒）
     private float stuckDistanceThreshold = 0.1f; //動いていると判断する最低限の移動距離
     private float currentAttackCooldown = 0f; // 次に攻撃が可能になる時刻
-    private LayerMask GroundLayer;
+    private LayerMask groundLayer;
     private CriAtomExPlayback moveSePlayback; //移動音制御用のPlaybackハンドル
 
     //埋まり判定用のbool
     private bool isOverlappingGround =>
-        Physics2D.OverlapCircle(overlapCheckPoint.position, overlapCheckRadius, GroundLayer);
+        Physics2D.OverlapCircle(overlapCheckPoint.position, overlapCheckRadius, groundLayer);
 
     // --- 内部コンポーネント ---
     private SpriteRenderer spriteRenderer;
@@ -118,7 +119,10 @@ public class BabyDrakeMoveController : MonoBehaviour, IEnemyResettable
 
     private void Awake()
     {
-        GroundLayer = LayerMask.GetMask(GameConstants.PHYSICS_LAYER_NAME_GROUND); // Groundレイヤーを取得
+        groundLayer = LayerMask.GetMask(
+            GameConstants.PHYSICS_LAYER_NAME_GROUND,
+            GameConstants.PHYSICS_LAYER_NAME_OBJECT_GROUND
+        );
 
         if (overlapCheckPoint == null)
         {
@@ -140,6 +144,7 @@ public class BabyDrakeMoveController : MonoBehaviour, IEnemyResettable
         rbody = GetComponent<Rigidbody2D>();
         sePlayer = GetComponent<CriWare.Assets.CriAtomSePlayer>();
         animator = GetComponent<Animator>();
+        contactDamageController = GetComponent<ContactDamageController>();
 
         enemyHP = this.GetComponent<EnemyHealth>();
         {
@@ -153,18 +158,6 @@ public class BabyDrakeMoveController : MonoBehaviour, IEnemyResettable
 
     private void Start()
     {
-        contactDamageController = GetComponent<ContactDamageController>();
-        if (contactDamageController != null)
-        {
-            contactDamageController?.SetNormalDamage(damage);
-        }
-        else
-        {
-            Debug.LogWarning(
-                $"{this.gameObject.name}にContactDamageControllerコンポーネントがありません。"
-            );
-        }
-
         ResetState();
     }
 
@@ -191,6 +184,9 @@ public class BabyDrakeMoveController : MonoBehaviour, IEnemyResettable
         {
             Debug.LogWarning($"{this.gameObject.name}にenemy_HPコンポーネントがありません。");
         }
+
+        // ContactDamageControllerのダメージ設定をリセット
+        contactDamageController?.SetNormalDamage(damage);
 
         currentAttackCooldown = 0f; // クールダウンタイマーをリセット（即座に攻撃可能にする）
         vx = (Random.value < 0.5f ? -1 : 1) * speedX;
@@ -398,7 +394,7 @@ public class BabyDrakeMoveController : MonoBehaviour, IEnemyResettable
     private void OnCollisionEnter2D(Collision2D collision)
     {
         // 衝突した相手がGroundLayerに含まれているか確認
-        if (((1 << collision.gameObject.layer) & GroundLayer) != 0)
+        if (((1 << collision.gameObject.layer) & groundLayer) != 0)
         {
             // 衝突点の法線ベクトルをチェックして、横方向からの衝突を判定
             // (法線ベクトルのy成分がほぼ0であれば横方向の衝突とみなす)
@@ -510,9 +506,6 @@ public class BabyDrakeMoveController : MonoBehaviour, IEnemyResettable
             //効果音を再生
             sePlayer.Play(SE_EnemyAction.SandEmerge);
 
-            //TODO:効果音の差し替えが必要
-            //sePlayer.Play(SE_EnemyAction.Attack_slime1); // ジャンプ攻撃の効果音を鳴らす
-
             if (playerTransform != null)
             {
                 rightFlag = playerTransform.position.x >= transform.position.x;
@@ -532,13 +525,12 @@ public class BabyDrakeMoveController : MonoBehaviour, IEnemyResettable
         // Recovering（着地）状態になるまで待機
         yield return new WaitUntil(() => currentState == DrakeState.Recovering);
 
-        tag = GameConstants.IMMUNE_ENEMY_TAG_NAME;
-
         float idleWaitTime = Random.Range(minIdleTime, maxIdleTime);
         yield return new WaitForSeconds(idleWaitTime);
 
         // DiveTriggerを実行
         animator.SetTrigger("DiveTrigger");
+        tag = GameConstants.IMMUNE_ENEMY_TAG_NAME;
         // 効果音を再生
         sePlayer.Play(SE_EnemyAction.SandSubmerge);
         currentState = DrakeState.Diving;
