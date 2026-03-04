@@ -215,7 +215,7 @@ public class BossAfterDeath : MonoBehaviour
                 BGMManager.instance.Play(BGMCategory.Field_Quiet);
                 GameManager.instance.savedata.ProgressLogData.RegisterProgressData(
                     ProgressLogName.DefeatFirstBoss
-                ); // 初ボス撃破のログを登録
+                ); // 進行ログを登録
                 break;
 
             case BossHealth.BossName.SlimeBoss:
@@ -224,7 +224,7 @@ public class BossAfterDeath : MonoBehaviour
                 BGMManager.instance.Play(BGMCategory.Env_Water_Stream1);
                 GameManager.instance.savedata.ProgressLogData.RegisterProgressData(
                     ProgressLogName.DefeatRiverBoss
-                ); // 川のボス撃破のログを登録
+                ); // 進行ログを登録
                 break;
 
             case BossHealth.BossName.StoneGolemBoss:
@@ -232,18 +232,24 @@ public class BossAfterDeath : MonoBehaviour
                 FungusHelper.ExecuteBlock(flowchart, "CaveBossDefeat");
                 GameManager.instance.savedata.ProgressLogData.RegisterProgressData(
                     ProgressLogName.DefeatHouseCaveBoss
-                ); // 家の洞窟のボス撃破のログを登録
+                ); // 進行ログを登録
                 break;
 
             case BossHealth.BossName.DustDevilBoss:
                 //FlagはFlowchart側で立てるため、ここでは立てない
                 //flagManager.SetBoolFlag(Chapter2TriggeredEvent.DustDevilBossDefeated, true);
+                GameManager.instance.savedata.ProgressLogData.RegisterProgressData(
+                    ProgressLogName.DustDevilBossDefeat
+                ); // 進行ログを登録
                 FungusHelper.ExecuteBlock(flowchart, "DustDevilBossDefeat");
                 break;
             case BossHealth.BossName.DesertTempleBossSmoke:
                 BGMManager.instance?.FadeOut(3.0f); // BGMをフェードアウトする
                 // フラグはFlowchart側で立てるため、ここでは立てない
                 // flagManager.SetBoolFlag(Chapter2TriggeredEvent.TempleBossSmokeDefeated, true);
+                GameManager.instance.savedata.ProgressLogData.RegisterProgressData(
+                    ProgressLogName.TempleBossSmokeDefeat
+                ); // 進行ログを登録
                 FungusHelper.ExecuteBlock(flowchart, "TempleBossSmokeDefeat");
                 break;
 

@@ -2,6 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using DG.Tweening;
 using NaughtyAttributes;
+using Shapes2D;
 using UnityEngine;
 
 [RequireComponent(typeof(Rigidbody2D))]
@@ -9,7 +10,6 @@ using UnityEngine;
 [RequireComponent(typeof(CriWare.Assets.CriAtomSePlayer))]
 public class DesertTempleGolemMoveController : MonoBehaviour, IEnemyResettable
 {
-    private const float MOVE_RANGE = 10.0f; // ランダムに設定する場合の移動幅
     private const string SHOOT_POOLTAG = "DesertTempleGolemShoot"; // 弾のプールタグ名
     private const string ATTACK_ANIMATION_CLIP_NAME = "DesertTempleGolem_attack"; // 攻撃アニメーションのクリップ名
 
@@ -24,13 +24,24 @@ public class DesertTempleGolemMoveController : MonoBehaviour, IEnemyResettable
     [SerializeField]
     private float speedX = 2.0f;
 
-    [Header("攻撃の設定")]
+    [Tooltip("ランダムに設定する場合の基準となる移動幅")]
     [SerializeField]
-    private float attackRange = 1.5f;
+    private float moveRange = 10.0f;
 
-    [SerializeField, Tooltip("この敵がプレイヤーに与えるダメージ")]
+    [Header("攻撃の設定")]
+    [Tooltip("プレイヤーがこのX距離以内にいると攻撃する")]
+    [SerializeField]
+    private float attackRangeX = 10.0f;
+
+    [Tooltip("プレイヤーがこのY距離以内にいると攻撃する")]
+    [SerializeField]
+    private float attackRangeY = 5.0f;
+
+    [Tooltip("この敵がプレイヤーに与えるダメージ")]
+    [SerializeField]
     private int damage = 0;
 
+    [Tooltip("弾の速度")]
     [SerializeField]
     private float shootSpeed = 5.0f;
 
@@ -74,6 +85,12 @@ public class DesertTempleGolemMoveController : MonoBehaviour, IEnemyResettable
     [SerializeField, ShowIf(nameof(isUseManualBounds))]
     private float rightBound;
 
+    [SerializeField, ShowIf(nameof(isUseManualBounds))]
+    private float topBound;
+
+    [SerializeField, ShowIf(nameof(isUseManualBounds))]
+    private float bottomBound;
+
     [Header("浮遊の設定")]
     [Tooltip("地面から維持したい高さ")]
     [SerializeField]
@@ -86,6 +103,19 @@ public class DesertTempleGolemMoveController : MonoBehaviour, IEnemyResettable
     [Tooltip("高さ調整の追従速度（高いほど素早く高さを合わせる）")]
     [SerializeField]
     private float heightAdjustSpeed = 5.0f;
+
+    [Header("浮遊移動(サイン波)の設定")]
+    [Tooltip("サイン波(波打ち)軌道方式を使用するかどうか")]
+    [SerializeField]
+    private bool useSineWaveMovement = false;
+
+    [Tooltip("サイン波の上下の揺れ幅(振幅)")]
+    [SerializeField, ShowIf(nameof(useSineWaveMovement))]
+    private float sineWaveAmplitude = 1.0f;
+
+    [Tooltip("サイン波の揺れる速さ(周波数)")]
+    [SerializeField, ShowIf(nameof(useSineWaveMovement))]
+    private float sineWaveFrequency = 2.0f;
 
     [Header("その他の設定")]
     [Tooltip(
@@ -113,6 +143,7 @@ public class DesertTempleGolemMoveController : MonoBehaviour, IEnemyResettable
     private float rayLength = 20.0f; //地面を探すレイの長さ
     private float attackAnimationTime = 0.5f; // 攻撃アニメーションの時間(秒)、デフォルト値。Awakeでアニメーションクリップから取得して上書きされる
     private bool rightFlag = false;
+    private float baseY = 0f; // サイン波移動の基準となるY座標
     private SpriteRenderer spriteRenderer;
     private Rigidbody2D rbody;
     private Animator animator;
@@ -229,32 +260,38 @@ public class DesertTempleGolemMoveController : MonoBehaviour, IEnemyResettable
                 var activatorCollider = activator.GetComponent<Collider2D>();
                 if (activatorCollider != null)
                 {
-                    // Colliderのワールド空間での左端と右端を取得
+                    // Colliderのワールド空間での左端と右端、および上下の境界を取得
                     float activatorLeftBound = activatorCollider.bounds.min.x;
                     float activatorRightBound = activatorCollider.bounds.max.x;
+                    float activatorBottomBound = activatorCollider.bounds.min.y;
+                    float activatorTopBound = activatorCollider.bounds.max.y;
 
                     // アクティベーターの検出範囲内でランダムな中心位置を決定
                     float randomCenter = Random.Range(activatorLeftBound, activatorRightBound);
 
-                    // 中心から移動幅(MOVE_RANGE)を基に境界を計算
-                    leftBound = randomCenter - MOVE_RANGE / 2f;
-                    rightBound = randomCenter + MOVE_RANGE / 2f;
+                    // 中心から移動幅(moveRange)を基に境界を計算
+                    leftBound = randomCenter - moveRange / 2f;
+                    rightBound = randomCenter + moveRange / 2f;
 
                     // 計算された境界がアクティベーターの範囲を超えないようにクランプ
                     leftBound = Mathf.Max(leftBound, activatorLeftBound);
                     rightBound = Mathf.Min(rightBound, activatorRightBound);
 
+                    // 上下のBoundを設定
+                    bottomBound = activatorBottomBound;
+                    topBound = activatorTopBound;
+
                     // 範囲が狭すぎる場合は調整
-                    if (rightBound - leftBound < MOVE_RANGE)
+                    if (rightBound - leftBound < moveRange)
                     {
                         // 範囲が狭い場合は、片方の境界を再調整して最低限の幅を確保
                         if (leftBound == activatorLeftBound)
                         {
-                            rightBound = Mathf.Min(activatorRightBound, leftBound + MOVE_RANGE);
+                            rightBound = Mathf.Min(activatorRightBound, leftBound + moveRange);
                         }
                         else
                         {
-                            leftBound = Mathf.Max(activatorLeftBound, rightBound - MOVE_RANGE);
+                            leftBound = Mathf.Max(activatorLeftBound, rightBound - moveRange);
                         }
                     }
                 }
@@ -275,7 +312,18 @@ public class DesertTempleGolemMoveController : MonoBehaviour, IEnemyResettable
 
         // 初期位置を移動範囲内のランダムな位置に設定
         Vector3 startPos = transform.position;
-        transform.position = new Vector2(Random.Range(leftBound, rightBound), startPos.y);
+        if (useSineWaveMovement)
+        {
+            // サイン波移動が有効な場合、Y座標も範囲内でランダムに決定
+            float randomY = Random.Range(bottomBound, topBound);
+            transform.position = new Vector2(Random.Range(leftBound, rightBound), randomY);
+            baseY = randomY; // 基準Y座標を記録
+        }
+        else
+        {
+            // Y座標はそのままにして、X座標のみランダムに設定
+            transform.position = new Vector2(Random.Range(leftBound, rightBound), startPos.y);
+        }
 
         //移動方向をランダムに決定
         rightFlag = (Random.value > 0.5f);
@@ -362,24 +410,31 @@ public class DesertTempleGolemMoveController : MonoBehaviour, IEnemyResettable
 
         while (timer < beforeAttackTime)
         {
-            // 地面の位置を再取得（移動床などに対応するため）
-            RaycastHit2D hit = Physics2D.Raycast(
-                transform.position,
-                Vector2.down,
-                rayLength,
-                groundLayer
-            );
-            if (hit.collider != null)
+            if (!useSineWaveMovement)
             {
-                // 目標のY座標
-                float targetY = hit.point.y + attackHeightFromGround;
+                // 地面の位置を再取得（移動床などに対応するため）
+                RaycastHit2D hit = Physics2D.Raycast(
+                    transform.position,
+                    Vector2.down,
+                    rayLength,
+                    groundLayer
+                );
+                if (hit.collider != null)
+                {
+                    // 目標のY座標
+                    float targetY = hit.point.y + attackHeightFromGround;
 
-                // 現在のYを滑らかに更新
-                // Time.deltaTime を使って beforeAttackTime かけて目標へ遷移させる
-                float newY = Mathf.Lerp(startY, targetY, timer / beforeAttackTime);
+                    // 現在のYを滑らかに更新
+                    // Time.deltaTime を使って beforeAttackTime かけて目標へ遷移させる
+                    float newY = Mathf.Lerp(startY, targetY, timer / beforeAttackTime);
 
-                // Rigidbodyで位置を更新（Xは維持）
-                transform.position = new Vector3(transform.position.x, newY, transform.position.z);
+                    // Rigidbodyで位置を更新（Xは維持）
+                    transform.position = new Vector3(
+                        transform.position.x,
+                        newY,
+                        transform.position.z
+                    );
+                }
             }
 
             timer += Time.deltaTime;
@@ -419,6 +474,7 @@ public class DesertTempleGolemMoveController : MonoBehaviour, IEnemyResettable
             if (shoots[i] != null)
             {
                 spawnedObjects.Add(shoots[i]); // 生成した弾を管理リストに追加
+                shoots[i].tag = GameConstants.IMMUNE_ENEMY_TAG_NAME; // タグを設定して敵の攻撃を無効化
 
                 startPositions[i] = shoots[i].transform.position;
 
@@ -532,6 +588,9 @@ public class DesertTempleGolemMoveController : MonoBehaviour, IEnemyResettable
                     // 発射
                     shootRb.velocity = shootDir * shootSpeed;
 
+                    // タグを変更
+                    shoots[i].tag = GameConstants.DAMAGEABLE_ENEMY_TAG_NAME;
+
                     // 効果音を再生
                     sePlayer.Play(SE_EnemyAction.Shoot_Water1);
 
@@ -590,27 +649,44 @@ public class DesertTempleGolemMoveController : MonoBehaviour, IEnemyResettable
             }
         }
 
-        // --- 2. 高さ調整の速度（レイキャスト） ---
-        // 足元へ向けてレイを飛ばす
-        RaycastHit2D hit = Physics2D.Raycast(currentPos, Vector2.down, rayLength, groundLayer);
-
-        if (hit.collider != null)
+        // --- 2. 高さ調整の速度（レイキャストまたはサイン波） ---
+        if (useSineWaveMovement)
         {
-            // 目標の高さ（地面のY + 指定高さ）
-            float targetY = hit.point.y + targetHeightFromGround;
+            // 提案B: サイン波（波打ち）軌道方式
+            // 基準となるY座標(baseY)からサイン波で目標Y座標を計算
+            float targetY = baseY + Mathf.Sin(Time.time * sineWaveFrequency) * sineWaveAmplitude;
 
-            // 現在の高さとの差分を計算
+            // 振幅が上下のBoundを越えないようにクランプ（安全対策）
+            targetY = Mathf.Clamp(targetY, bottomBound, topBound);
+
+            // 現在の高さとの差分を計算し、P制御的に追従させる
             float diffY = targetY - currentPos.y;
-
-            // 差分に係数を掛けて、目標に向かう速度とする（P制御的なアプローチ）
-            // これにより、遠いと速く、近づくとゆっくりになり、滑らかに追従します
             velocityY = diffY * heightAdjustSpeed;
         }
         else
         {
-            // 地面が見つからない場合は、今のY速度を維持する（またはゆっくり下降させるなど）
-            // ここでは維持を採用
-            velocityY = rbody.velocity.y;
+            // 従来のレイキャスト方式
+            // 足元へ向けてレイを飛ばす
+            RaycastHit2D hit = Physics2D.Raycast(currentPos, Vector2.down, rayLength, groundLayer);
+
+            if (hit.collider != null)
+            {
+                // 目標の高さ（地面のY + 指定高さ）
+                float targetY = hit.point.y + targetHeightFromGround;
+
+                // 現在の高さとの差分を計算
+                float diffY = targetY - currentPos.y;
+
+                // 差分に係数を掛けて、目標に向かう速度とする（P制御的なアプローチ）
+                // これにより、遠いと速く、近づくとゆっくりになり、滑らかに追従します
+                velocityY = diffY * heightAdjustSpeed;
+            }
+            else
+            {
+                // 地面が見つからない場合は、今のY速度を維持する（またはゆっくり下降させるなど）
+                // ここでは維持を採用
+                velocityY = rbody.velocity.y;
+            }
         }
 
         return new Vector2(velocityX, velocityY);
@@ -634,9 +710,9 @@ public class DesertTempleGolemMoveController : MonoBehaviour, IEnemyResettable
     private bool IsPlayerInAttackRange()
     {
         Vector2 dir = GetVectorToPlayer();
-        return dir.x * (rightFlag ? 1 : -1) <= attackRange // プレイヤーがattackRange内の前方にいるか
+        return dir.x * (rightFlag ? 1 : -1) <= attackRangeX // プレイヤーがattackRange内の前方にいるか
             && dir.x * (rightFlag ? 1 : -1) >= 0 // プレイヤーが後方にいないか
-            && dir.y < 0; // プレイヤーが上にいないか
+            && Mathf.Abs(dir.y) < attackRangeY; // プレイヤーが上下の範囲内にいるか
     }
 
     private void OnDisable()
@@ -677,22 +753,37 @@ public class DesertTempleGolemMoveController : MonoBehaviour, IEnemyResettable
     {
         // 移動範囲を示すGizmosを描画（半透明の赤い四角形）
         Gizmos.color = new Color(1f, 0f, 0f, 0.15f);
-        Vector3 center = new Vector3(
-            (leftBound + rightBound) / 2,
-            transform.position.y,
-            transform.position.z
-        );
-        Vector3 size = new Vector3(Mathf.Abs(rightBound - leftBound), 3f, 0.1f);
+        Vector3 center = Vector3.zero;
+        Vector3 size = Vector3.zero;
+        if (isUseManualBounds)
+        {
+            center = new Vector3(
+                (leftBound + rightBound) / 2,
+                (topBound + bottomBound) / 2,
+                transform.position.z
+            );
+            size = new Vector3(
+                Mathf.Abs(rightBound - leftBound),
+                Mathf.Abs(topBound - bottomBound),
+                0.1f
+            );
+        }
+        else
+        {
+            center = transform.position;
+            size = new Vector3(moveRange, 2.3f, 0.1f); // moveRangeを幅として使用
+        }
+        ;
         Gizmos.DrawCube(center, size);
 
         //攻撃感知範囲を示すGizmosを描画(青い線)
         Gizmos.color = new Color(0f, 0f, 1f, 0.3f);
         Vector3 attackCenter = new Vector3(
-            transform.position.x + (rightFlag ? 1 : -1) * attackRange / 2,
+            transform.position.x + (rightFlag ? 1 : -1) * attackRangeX / 2,
             transform.position.y,
             transform.position.z
         );
-        Vector3 attackSize = new Vector3(attackRange, 3f, 0.1f);
+        Vector3 attackSize = new Vector3(attackRangeX, attackRangeY * 2, 0.1f);
         Gizmos.DrawCube(attackCenter, attackSize);
     }
 }

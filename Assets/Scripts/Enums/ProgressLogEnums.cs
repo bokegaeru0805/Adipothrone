@@ -18,7 +18,7 @@ public enum ProgressLogName
     AfterMysteriousWomanEvent = 16008, // 謎の女性イベント後(FieldEvent_Prologue.csで登録)
 
     // =================================================================
-    // 第1章　14種類(2025/07/30現在)
+    // 第1章　15種類(2026/03/04現在)
     // =================================================================
 
     Chapter1Start = 16009, // 第一章開始(FieldEvent_Chapter1.csで登録)
@@ -41,9 +41,32 @@ public enum ProgressLogName
     StartShopGirlSearch = 16020, // 村の店の少女の探索を開始(FieldEvent_Chapter1.csで登録)
     HouseCaveBossAppear = 16021, // 家の洞窟のボス出現(FieldEvent_Chapter1.csで登録)
     DefeatHouseCaveBoss = 16022, // 家の洞窟のボス撃破(BossAfterDeath.csで登録)
+    ToDesert = 16023, // 砂漠へ向かう
 
     // =================================================================
     // 第2章
     // =================================================================
-    // (ここに新しいログを追加)
+
+    // --- 砂漠の村・序盤 ---
+    Chapter2Start = 16024, // 第二章開始
+    FirstEnteredDesertVillage = 16025, // 砂漠の村へ初めて到着
+    FirstMetCoachman = 16026, // アクスとの初対面
+
+    // --- オアシスの源泉クエスト ---
+    OasisSpringEnemiesAppear = 16027, // オアシスの源泉の敵が出現
+    OasisSpringEnemiesDefeat = 16028, // オアシスの源泉の敵を撃破(Flowchartで登録)
+    AttemptedToReportCoachmanQuest = 16029, // アクスへ納品報告をしようとした
+    ReportedCoachmanQuestComplete = 16030, // アクスへ納品報告を完了(Flowchartで登録)
+
+    // --- 砂漠の秘宝を探す ---
+    FirstMetDesertTempleBoss = 16031, // 神殿入口でレヴィアスと初邂逅
+    DustDevilBossAppear = 16032, // 砂漠の秘宝を守るボス出現
+    DustDevilBossDefeat = 16033, // 砂漠の秘宝を守るボス撃破
+    OasisPartiallyRestoredByFill = 16034, // フィルによるオアシスの部分的な回復
+
+    // --- 砂漠の神殿・内部探索 ---
+    TempleBossSmokeDefeat = 16035, // レヴィアス(1回目)撃破
+    AllOrbsPlacedInDesertTemple = 16036, // 砂漠の神殿の装置を全て起動
+    TalkToFillAfterAllOrbsPlaced = 16037, // 神殿の決戦前のフィルとの会話
+    TempleBossAppear = 16038, // レヴィアス(2回目)出現
 }

@@ -31,7 +31,9 @@ public class LotteryGameManager : MonoBehaviour
     private int defaultHintCost;
 
     [Header("Conditional Profiles")]
-    [Tooltip("条件に応じて切り替わる設定のリスト。上から順に評価され、最初に条件を満たしたものが適用されます。")]
+    [Tooltip(
+        "条件に応じて切り替わる設定のリスト。上から順に評価され、最初に条件を満たしたものが適用されます。"
+    )]
     [SerializeField]
     private List<LotteryProfile> lotteryProfiles;
 
@@ -47,6 +49,9 @@ public class LotteryGameManager : MonoBehaviour
 
     [SerializeField]
     private string invalidConditionBlockName = "Lottery_InvalidCondition"; // 条件不一致（開催不可）用ブロック名
+
+    [SerializeField]
+    private string noConditionBlockName = "Lottery_NoCondition"; // 条件が一つも当てはまらなかった場合のブロック名
 
     [SerializeField]
     private string waitFirstSelectBlockName = "Lottery_WaitFirstSelect"; // 最初の選択待ち用ブロック名
@@ -75,7 +80,6 @@ public class LotteryGameManager : MonoBehaviour
 
     [SerializeField]
     private string variableNameHintCost = "HintCost"; // 現在のヒント代
-
     #endregion
 
     #region Internal State
@@ -83,11 +87,12 @@ public class LotteryGameManager : MonoBehaviour
     // 内部ステート
     private enum GameState
     {
-        Idle,               // 待機中（初期化前など）
-        WaitingForEntry,    // 受付中（プレイヤーからのインタラクト待ち）
+        Idle, // 待機中（初期化前など）
+        WaitingForEntry, // 受付中（プレイヤーからのインタラクト待ち）
         WaitingFirstSelect, // 最初の選択待ち
-        WaitingOffer,       // 変更するかどうかの会話中
-        WaitingFinalSelect  // 最終選択待ち
+        WaitingOffer, // 変更するかどうかの会話中
+        WaitingFinalSelect // 最終選択待ち
+        ,
     }
 
     private GameState currentState = GameState.Idle;
@@ -187,7 +192,7 @@ public class LotteryGameManager : MonoBehaviour
                 currentLotteryItems = profile.lotteryItems;
                 currentEntryFee = profile.entryFee;
                 currentHintCost = profile.hintCost;
-                
+
                 // アイテムリストが空でないか確認
                 return currentLotteryItems != null && currentLotteryItems.Count > 0;
             }
@@ -268,7 +273,7 @@ public class LotteryGameManager : MonoBehaviour
             // ランダムに1つ選んで開ける（空であることを示す）
             int revealIndex = openableIndices[UnityEngine.Random.Range(0, openableIndices.Count)];
             chests[revealIndex].OpenVisual();
-            Debug.Log($"[Lottery] ヒント: 宝箱 {revealIndex} は空です");
+            // Debug.Log($"[Lottery] ヒント: 宝箱 {revealIndex} は空です");
         }
 
         // 最終選択フェーズへ移行
@@ -365,7 +370,9 @@ public class LotteryGameManager : MonoBehaviour
         // プロファイルが無い、またはデフォルト設定も空の場合はfalseが返る
         if (!UpdateActiveProfile())
         {
-            Debug.Log("[Lottery] 条件に合うプロファイルがなく、デフォルト設定も無効なためキャンセルします。");
+            // Debug.Log(
+            //     "[Lottery] 条件に合うプロファイルがなく、デフォルト設定も無効なためキャンセルします。"
+            // );
             lotteryFlowchart.ExecuteBlock(invalidConditionBlockName);
             return;
         }
@@ -397,7 +404,8 @@ public class LotteryGameManager : MonoBehaviour
     private void ResolveGame(int selectedIndex)
     {
         // インデックス安全チェック
-        if (selectedIndex < 0 || selectedIndex >= chests.Count) return;
+        if (selectedIndex < 0 || selectedIndex >= chests.Count)
+            return;
 
         bool isWin = (selectedIndex == winningChestIndex);
 
@@ -407,7 +415,8 @@ public class LotteryGameManager : MonoBehaviour
         // 演出として、選ばれなかった他の宝箱も全て開けてネタ晴らしする
         foreach (var chest in chests)
         {
-            if (chest != null) chest.OpenVisual();
+            if (chest != null)
+                chest.OpenVisual();
         }
 
         if (isWin)
@@ -507,7 +516,8 @@ public class LotteryGameManager : MonoBehaviour
         bool isTalkFinished = false;
         Action<bool> onTalkingChanged = (isTalking) =>
         {
-            if (!isTalking) isTalkFinished = true;
+            if (!isTalking)
+                isTalkFinished = true;
         };
 
         GameManager.OnTalkingStateChanged += onTalkingChanged;
@@ -547,7 +557,8 @@ public class ItemCondition
     /// </summary>
     public bool IsMet()
     {
-        if (targetItem == null) return true; // 設定なしは常にTrue扱い
+        if (targetItem == null)
+            return true; // 設定なしは常にTrue扱い
 
         // GameManager経由で所持数を取得
         int currentAmount = GameManager.instance.GetAllTypeIDToAmount(targetItem);
@@ -588,13 +599,19 @@ public class LotteryProfile
         // フラグチェック
         foreach (var flag in flagConditions)
         {
-            if (!flag.IsMet()) return false;
+            if (!flag.IsMet())
+            {
+                return false;
+            }
         }
 
         // アイテムチェック
         foreach (var item in itemConditions)
         {
-            if (!item.IsMet()) return false;
+            if (!item.IsMet())
+            {
+                return false;
+            }
         }
 
         return true;

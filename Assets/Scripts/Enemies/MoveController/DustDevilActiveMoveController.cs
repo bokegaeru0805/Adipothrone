@@ -9,8 +9,35 @@ using UnityEngine;
 [RequireComponent(typeof(ContactDamageController))]
 public class DustDevilActiveMoveController : MonoBehaviour, IEnemyResettable
 {
+    #region Constants & Enums
     private const float MAX_GROUND_HEIGHT = 12f; // 移動が許可される地面からの最大高度
 
+    private enum DustDevilActiveState
+    {
+        Idle,
+        PreparingToAttack,
+        Attacking,
+    }
+
+    // 8方向のベクトル定義
+    private readonly Vector2[] directions = new Vector2[]
+    {
+        Vector2.up,
+        Vector2.down,
+        Vector2.left,
+        Vector2.right,
+        new Vector2(1, 1).normalized, // 右上
+        new Vector2(1, -1).normalized, // 右下
+        new Vector2(-1, 1).normalized, // 左上
+        new Vector2(
+            -1,
+            -1
+        ).normalized // 左下
+        ,
+    };
+    #endregion
+
+    #region Inspector Settings
     [Header("設定項目")]
     [SerializeField]
     private EnemyActivator activator = null; // 親のEnemyActivatorコンポーネント
@@ -23,6 +50,11 @@ public class DustDevilActiveMoveController : MonoBehaviour, IEnemyResettable
     [Tooltip("1回の移動距離")]
     [SerializeField]
     private float moveDistance = 8.0f;
+
+    [Header("高度制限設定")]
+    [Tooltip("上下のバウンドを高度制限に使用するかどうか")]
+    [SerializeField]
+    private bool useVerticalBoundsLimit = true;
 
     [Header("待機・移動時間の設定")]
     [Tooltip("移動にかかる時間")]
@@ -57,7 +89,17 @@ public class DustDevilActiveMoveController : MonoBehaviour, IEnemyResettable
     [SerializeField, ShowIf(nameof(isUseManualBounds))]
     private float rightBound;
 
+    [SerializeField, ShowIf(nameof(isUseManualBounds))]
+    private float topBound;
+
+    [SerializeField, ShowIf(nameof(isUseManualBounds))]
+    private float bottomBound;
+    #endregion
+
+    #region Private Variables
+    private DustDevilActiveState currentState = DustDevilActiveState.Idle;
     private float stateChangeTimer = 0f; // 状態遷移用のタイマー
+
     private LayerMask groundLayer;
     private Animator animator;
     private EnemyHealth enemyHP;
@@ -66,33 +108,9 @@ public class DustDevilActiveMoveController : MonoBehaviour, IEnemyResettable
 
     private Tween floatingTween = null;
     private Tween moveTween = null;
+    #endregion
 
-    private enum DustDevilActiveState
-    {
-        Idle,
-        PreparingToAttack,
-        Attacking,
-    }
-
-    private DustDevilActiveState currentState = DustDevilActiveState.Idle;
-
-    // 8方向のベクトル定義
-    private readonly Vector2[] directions = new Vector2[]
-    {
-        Vector2.up,
-        Vector2.down,
-        Vector2.left,
-        Vector2.right,
-        new Vector2(1, 1).normalized, // 右上
-        new Vector2(1, -1).normalized, // 右下
-        new Vector2(-1, 1).normalized, // 左上
-        new Vector2(
-            -1,
-            -1
-        ).normalized // 左下
-        ,
-    };
-
+    #region Unity Lifecycle
     private void Awake()
     {
         groundLayer = LayerMask.GetMask(
@@ -121,105 +139,6 @@ public class DustDevilActiveMoveController : MonoBehaviour, IEnemyResettable
     {
         sePlayer.player.AttachFader();
         ResetState();
-    }
-
-    public void ResetState()
-    {
-        enemyHP.ResetState(); // 自分のHPをリセット
-        contactDamageController?.SetNormalDamage(damage); // 攻撃力をリセット
-        stateChangeTimer = 0f; // タイマーをリセット
-        tag = GameConstants.IMMUNE_ENEMY_TAG_NAME; // タグをリセット
-        currentState = DustDevilActiveState.Idle; // 初期状態をIdleに設定
-
-        animator.SetTrigger("IdleTrigger"); // アニメーションをIdleに設定
-        sePlayer.Play(SE_Field.WindGust_weak); //弱い風の音を再生
-
-        if (!isUseManualBounds) // 自動設定モードの場合
-        {
-            if (activator == null)
-            {
-                Debug.LogError(
-                    $"{this.name}の親にEnemyActivatorが見つかりませんでした。移動範囲の自動設定は行えません。"
-                );
-                return;
-            }
-
-            // activatorが持つCollider2Dの境界を取得する
-            var activatorCollider = activator.GetComponent<Collider2D>();
-            if (activatorCollider != null)
-            {
-                // Colliderのワールド空間での左端と右端を取得
-                float activatorLeftBound = activatorCollider.bounds.min.x;
-                float activatorRightBound = activatorCollider.bounds.max.x;
-
-                // 移動範囲を設定
-                leftBound = activatorLeftBound;
-                rightBound = activatorRightBound;
-            }
-        }
-
-        // 初期位置を移動範囲内のランダムな位置に設定
-        Vector2 startPos = transform.position;
-        transform.position = new Vector2(
-            Random.Range(leftBound, rightBound),
-            startPos.y + (moveDistance - GetDistanceToGround())
-        );
-
-        // 浮遊アニメーションを開始
-        SetFloating(true);
-    }
-
-    /// <summary>
-    /// 待機中の「ふわふわ浮く」アニメーションを制御します。
-    /// </summary>
-    /// <param name="isFloating">true: 浮遊開始, false: 浮遊停止（元の高さに戻す）</param>
-    private void SetFloating(bool isFloating)
-    {
-        // 重複実行を防ぐため、既に動いている浮遊Tweenがあれば破棄する
-        if (floatingTween != null)
-        {
-            floatingTween.Kill();
-            floatingTween = null;
-        }
-
-        if (isFloating)
-        {
-            // 現在位置から少し上へ移動するTweenを作成
-            floatingTween = transform
-                .DOLocalMoveY(this.transform.localPosition.y + floatAmount, floatDuration)
-                .SetEase(Ease.InOutSine) // ふわっとした動き
-                .SetLoops(-1, LoopType.Yoyo) // 行って戻ってを無限ループ
-                .SetLink(gameObject); // 安全対策
-        }
-        else
-        {
-            // 浮遊を停止する際は、パッと止めるのではなく、少し時間をかけて元の位置へ戻す
-            // これによりアニメーションの切り替わりが滑らかになる
-            transform.DOLocalMoveY(this.transform.localPosition.y, 0.2f).SetEase(Ease.OutSine);
-        }
-    }
-
-    /// <summary>
-    /// 現在位置から真下に向かってRayを飛ばし、地面までの距離を計測します。
-    /// </summary>
-    /// <returns>地面までの距離 (検出できない場合は探索最大距離)</returns>
-    private float GetDistanceToGround()
-    {
-        Vector2 origin = transform.position;
-
-        // moveDistanceの2倍の長さまで下方向を探索
-        RaycastHit2D hit = Physics2D.Raycast(origin, Vector2.down, moveDistance * 2, groundLayer);
-
-        if (hit.collider != null)
-        {
-            // 現在位置Y - 地面位置Y = 地面までの距離
-            return origin.y - hit.point.y;
-        }
-        else
-        {
-            // 地面が見つからない＝空中にいると判断し、最大値を返す
-            return moveDistance * 2;
-        }
     }
 
     private void FixedUpdate()
@@ -268,6 +187,112 @@ public class DustDevilActiveMoveController : MonoBehaviour, IEnemyResettable
         }
     }
 
+    private void OnDisable()
+    {
+        // オブジェクトが非アクティブ化されたらTweenを止める
+        if (floatingTween != null)
+        {
+            floatingTween.Kill();
+            floatingTween = null;
+        }
+
+        if (moveTween != null)
+        {
+            moveTween.Kill();
+            moveTween = null;
+        }
+
+        sePlayer.Stop();
+    }
+
+    private void OnDrawGizmos()
+    {
+        // 一回の移動範囲を球で描画
+        Gizmos.color = Color.cyan;
+        Vector3 center = this.transform.position;
+        Gizmos.DrawWireSphere(center, moveDistance);
+
+        // 移動限界範囲のGizmosを表示
+        Gizmos.color = new Color(1f, 0f, 0f, 0.15f); // 半透明の赤色
+        // 横の移動限界範囲のGizmosを表示
+        if (useVerticalBoundsLimit)
+        {
+            // // 上下のBoundを使用する場合の描画
+            // center = new Vector3(
+            //     (leftBound + rightBound) / 2f,
+            //     (topBound + bottomBound) / 2f,
+            //     transform.position.z
+            // );
+            // Vector3 size = new Vector3(rightBound - leftBound, topBound - bottomBound, 0.1f);
+            // Gizmos.DrawCube(center, size);
+        }
+        else
+        {
+            // 従来の横範囲のみの描画
+            center = new Vector3(
+                (leftBound + rightBound) / 2f,
+                transform.position.y,
+                transform.position.z
+            );
+            Vector3 size = new Vector3(rightBound - leftBound, 4f, 0.1f);
+            Gizmos.DrawCube(center, size);
+        }
+    }
+    #endregion
+
+    #region Public Methods
+    public void ResetState()
+    {
+        enemyHP.ResetState(); // 自分のHPをリセット
+        contactDamageController?.SetNormalDamage(damage); // 攻撃力をリセット
+        stateChangeTimer = 0f; // タイマーをリセット
+        tag = GameConstants.IMMUNE_ENEMY_TAG_NAME; // タグをリセット
+        currentState = DustDevilActiveState.Idle; // 初期状態をIdleに設定
+
+        animator.SetTrigger("IdleTrigger"); // アニメーションをIdleに設定
+        sePlayer.Play(SE_Field.WindGust_weak); //弱い風の音を再生
+
+        if (!isUseManualBounds) // 自動設定モードの場合
+        {
+            if (activator == null)
+            {
+                Debug.LogError(
+                    $"{this.name}の親にEnemyActivatorが見つかりませんでした。移動範囲の自動設定は行えません。"
+                );
+                return;
+            }
+
+            // activatorが持つCollider2Dの境界を取得する
+            var activatorCollider = activator.GetComponent<Collider2D>();
+            if (activatorCollider != null)
+            {
+                // Colliderのワールド空間での左端と右端、上端と下端を取得
+                float activatorLeftBound = activatorCollider.bounds.min.x;
+                float activatorRightBound = activatorCollider.bounds.max.x;
+                float activatorTopBound = activatorCollider.bounds.max.y;
+                float activatorBottomBound = activatorCollider.bounds.min.y;
+
+                // 移動範囲を設定
+                leftBound = activatorLeftBound;
+                rightBound = activatorRightBound;
+                topBound = activatorTopBound;
+                bottomBound = activatorBottomBound;
+            }
+        }
+
+        // 初期位置を移動範囲内のランダムな位置に設定
+        Vector2 startPos = transform.position;
+        transform.position = new Vector2(
+            Random.Range(leftBound, rightBound),
+            startPos.y + (moveDistance - GetDistanceToGround())
+        );
+
+        // 浮遊アニメーションを開始
+        SetFloating(true);
+    }
+    #endregion
+
+    #region Core Movement & State Logic
     /// <summary>
     /// 次の移動先を決定し、回転・待機・移動の一連の動作（Sequence）を作成して実行します。
     /// </summary>
@@ -279,20 +304,49 @@ public class DustDevilActiveMoveController : MonoBehaviour, IEnemyResettable
 
         float height = GetDistanceToGround();
 
-        // 高度が高すぎる場合は、強制的に「下」へ降りる動きのみを候補にする
-        if (height >= moveDistance * 2 || height >= MAX_GROUND_HEIGHT)
+        if (useVerticalBoundsLimit)
         {
-            validTargets.Add(currentPos + (Vector2.down * moveDistance));
+            // 上下のBoundに基づいて制限
+            // 次の移動で上端を超える場合は下へ、下端を下回る場合は上へ強制的に移動する
+            if (currentPos.y > topBound)
+            {
+                validTargets.Add(currentPos + (Vector2.down * moveDistance));
+            }
+            else if (currentPos.y < bottomBound)
+            {
+                validTargets.Add(currentPos + (Vector2.up * moveDistance));
+            }
+            else
+            {
+                // 通常時：8方向すべてについて、移動先が範囲内かチェック
+                foreach (Vector2 dir in directions)
+                {
+                    Vector2 targetPos = currentPos + (dir * moveDistance);
+                    if (IsWithinBounds(targetPos))
+                    {
+                        validTargets.Add(targetPos);
+                    }
+                }
+            }
         }
         else
         {
-            // 通常時：8方向すべてについて、移動先が範囲内かチェック
-            foreach (Vector2 dir in directions)
+            // 高度が高すぎる場合は、強制的に「下」へ降りる動きのみを候補にする
+            // 条件: 高さ ≧ 移動距離 × 2 または 高さ ≧ 最大地上高
+            if (height >= moveDistance * 2 || height >= MAX_GROUND_HEIGHT)
             {
-                Vector2 targetPos = currentPos + (dir * moveDistance);
-                if (IsWithinBounds(targetPos))
+                validTargets.Add(currentPos + (Vector2.down * moveDistance));
+            }
+            else
+            {
+                // 通常時：8方向すべてについて、移動先が範囲内かチェック
+                foreach (Vector2 dir in directions)
                 {
-                    validTargets.Add(targetPos);
+                    Vector2 targetPos = currentPos + (dir * moveDistance);
+                    if (IsWithinBounds(targetPos))
+                    {
+                        validTargets.Add(targetPos);
+                    }
                 }
             }
         }
@@ -364,50 +418,82 @@ public class DustDevilActiveMoveController : MonoBehaviour, IEnemyResettable
     }
 
     /// <summary>
-    /// 指定した位置が移動可能範囲内かどうかを判定します。
+    /// 待機中の「ふわふわ浮く」アニメーションを制御します。
     /// </summary>
-    /// <param name="pos">判定する位置</param>
-    /// <returns>true: 範囲内, false: 範囲外</returns>
-    private bool IsWithinBounds(Vector2 pos)
+    /// <param name="isFloating">true: 浮遊開始, false: 浮遊停止（元の高さに戻す）</param>
+    private void SetFloating(bool isFloating)
     {
-        float minY = this.transform.position.y - GetDistanceToGround();
-        float maxY = minY + MAX_GROUND_HEIGHT;
-        return pos.x >= leftBound && pos.x <= rightBound && pos.y >= minY && pos.y <= maxY;
-    }
-
-    private void OnDisable()
-    {
-        // オブジェクトが非アクティブ化されたらTweenを止める
+        // 重複実行を防ぐため、既に動いている浮遊Tweenがあれば破棄する
         if (floatingTween != null)
         {
             floatingTween.Kill();
             floatingTween = null;
         }
 
-        if (moveTween != null)
+        if (isFloating)
         {
-            moveTween.Kill();
-            moveTween = null;
+            // 現在位置から少し上へ移動するTweenを作成
+            floatingTween = transform
+                .DOLocalMoveY(this.transform.localPosition.y + floatAmount, floatDuration)
+                .SetEase(Ease.InOutSine) // ふわっとした動き
+                .SetLoops(-1, LoopType.Yoyo) // 行って戻ってを無限ループ
+                .SetLink(gameObject); // 安全対策
         }
-
-        sePlayer.Stop();
+        else
+        {
+            // 浮遊を停止する際は、パッと止めるのではなく、少し時間をかけて元の位置へ戻す
+            // これによりアニメーションの切り替わりが滑らかになる
+            transform.DOLocalMoveY(this.transform.localPosition.y, 0.2f).SetEase(Ease.OutSine);
+        }
     }
+    #endregion
 
-    private void OnDrawGizmos()
+    #region Utility Methods
+    /// <summary>
+    /// 現在位置から真下に向かってRayを飛ばし、地面までの距離を計測します。
+    /// </summary>
+    /// <returns>地面までの距離 (検出できない場合は探索最大距離)</returns>
+    private float GetDistanceToGround()
     {
-        // 一回の移動範囲を球で描画
-        Gizmos.color = Color.cyan;
-        Vector3 center = this.transform.position;
-        Gizmos.DrawWireSphere(center, moveDistance);
+        Vector2 origin = transform.position;
 
-        // 横の移動限界範囲のGizmosを表示
-        Gizmos.color = new Color(1f, 0f, 0f, 0.15f); // 半透明の赤色
-        center = new Vector3(
-            (leftBound + rightBound) / 2f,
-            transform.position.y,
-            transform.position.z
-        );
-        Vector3 size = new Vector3(rightBound - leftBound, 4f, 0.1f);
-        Gizmos.DrawCube(center, size);
+        // moveDistanceの2倍の長さまで下方向を探索
+        RaycastHit2D hit = Physics2D.Raycast(origin, Vector2.down, moveDistance * 2, groundLayer);
+
+        if (hit.collider != null)
+        {
+            // 現在位置Y - 地面位置Y = 地面までの距離
+            return origin.y - hit.point.y;
+        }
+        else
+        {
+            // 地面が見つからない＝空中にいると判断し、最大値を返す
+            return moveDistance * 2;
+        }
     }
+
+    /// <summary>
+    /// 指定した位置が移動可能範囲内かどうかを判定します。
+    /// </summary>
+    /// <param name="pos">判定する位置</param>
+    /// <returns>true: 範囲内, false: 範囲外</returns>
+    private bool IsWithinBounds(Vector2 pos)
+    {
+        if (useVerticalBoundsLimit)
+        {
+            // 上下のBoundを使用する場合
+            return pos.x >= leftBound
+                && pos.x <= rightBound
+                && pos.y >= bottomBound
+                && pos.y <= topBound;
+        }
+        else
+        {
+            // 高度制限を使用する場合
+            float minY = this.transform.position.y - GetDistanceToGround();
+            float maxY = minY + MAX_GROUND_HEIGHT;
+            return pos.x >= leftBound && pos.x <= rightBound && pos.y >= minY && pos.y <= maxY;
+        }
+    }
+    #endregion
 }

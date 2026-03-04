@@ -8,11 +8,8 @@ using UnityEngine;
 public class DesertTempleGolemWalkMoveController : MonoBehaviour, IEnemyResettable
 {
     #region Constants
-
-    private const float MOVE_RANGE = 10.0f; // ランダムに設定する場合の移動幅
     private const string ATTACK_ANIMATION_CLIP_NAME = "DesertTempleGolem_Walk_Attack"; // 攻撃アニメーションのクリップ名
     private const float STUCK_CHECK_INTERVAL = 0.5f; // スタック検知の間隔（秒）
-
     #endregion
 
     #region Inspector Settings
@@ -27,6 +24,10 @@ public class DesertTempleGolemWalkMoveController : MonoBehaviour, IEnemyResettab
     [Header("横移動の設定")]
     [SerializeField]
     private float speedX = 2.0f;
+
+    [Tooltip("ランダムに設定する場合の基準となる移動幅")]
+    [SerializeField]
+    private float moveRange = 10.0f;
 
     [Header("攻撃の設定")]
     [SerializeField, Tooltip("この敵がプレイヤーを攻撃する範囲のX距離")]
@@ -51,8 +52,8 @@ public class DesertTempleGolemWalkMoveController : MonoBehaviour, IEnemyResettab
     private float attackCooldownTime = 2.0f;
 
     [Header("移動範囲の設定")]
-    [SerializeField]
     [Tooltip("手動で移動範囲を設定するかどうか")]
+    [SerializeField]
     private bool isUseManualBounds = false;
 
     [SerializeField, ShowIf(nameof(isUseManualBounds))]
@@ -60,6 +61,19 @@ public class DesertTempleGolemWalkMoveController : MonoBehaviour, IEnemyResettab
 
     [SerializeField, ShowIf(nameof(isUseManualBounds))]
     private float rightBound;
+
+    [Tooltip("初期配置をランダムにせず、シーンに配置した座標をそのまま使用するかどうか")]
+    [SerializeField]
+    private bool keepInitialPosition = false;
+
+    [Header("剣オブジェクトの設定")]
+    [Tooltip("攻撃に使用する剣のオブジェクト（子オブジェクト）")]
+    [SerializeField]
+    private GameObject swordObject;
+
+    [Tooltip("剣のスプライト設定に使用するデータ")]
+    [SerializeField]
+    private BladeWeaponData swordWeaponData; // スプライト用の剣のなどのデータ
 
     [Header("地面・壁判定用の設定")]
     [Tooltip("地面に埋まっていないかチェックする中心点")]
@@ -82,11 +96,11 @@ public class DesertTempleGolemWalkMoveController : MonoBehaviour, IEnemyResettab
     #region Private Fields
 
     // --- コンポーネントキャッシュ ---
+    private SpriteRenderer swordSpriteRenderer;
     private Animator _animator;
     private Rigidbody2D rbody;
-    private SpriteRenderer spriteRenderer;
     private EnemyHealth enemyHP;
-    private ContactDamageController contactDamageController;
+    private ContactDamageController swordContactDamageController;
     private CriWare.Assets.CriAtomSePlayer sePlayer;
     private LayerMask groundLayer;
 
@@ -100,6 +114,7 @@ public class DesertTempleGolemWalkMoveController : MonoBehaviour, IEnemyResettab
         AfterAttackDelay,
         AdjustingPosition,
     }
+
     private GolemState currentState = GolemState.None;
 
     // --- 攻撃・移動パラメータ ---
@@ -141,21 +156,35 @@ public class DesertTempleGolemWalkMoveController : MonoBehaviour, IEnemyResettab
             activator = GetComponentInParent<EnemyActivator>();
         }
 
-        spriteRenderer = GetComponent<SpriteRenderer>();
+        if (swordObject == null)
+        {
+            Debug.LogError(
+                $"{this.gameObject.name}のswordObjectが設定されていません。攻撃判定が機能しない可能性があります。",
+                this
+            );
+        }
+        else
+        {
+            swordSpriteRenderer = swordObject.GetComponent<SpriteRenderer>();
+            swordContactDamageController = swordObject.GetComponent<ContactDamageController>();
+        }
+
+        if (swordWeaponData == null)
+        {
+            Debug.LogError(
+                $"{this.gameObject.name}のswordWeaponDataが設定されていません。剣の見た目が変更できません。",
+                this
+            );
+        }
+
         rbody = GetComponent<Rigidbody2D>();
         sePlayer = GetComponent<CriWare.Assets.CriAtomSePlayer>();
-        contactDamageController = GetComponent<ContactDamageController>();
         _animator = GetComponent<Animator>();
         enemyHP = GetComponent<EnemyHealth>();
 
         // エラーチェックと初期設定
         ValidateComponents();
         CalculateAttackAnimationTime();
-    }
-
-    private void Start()
-    {
-        ResetState();
     }
 
     private void FixedUpdate()
@@ -273,7 +302,8 @@ public class DesertTempleGolemWalkMoveController : MonoBehaviour, IEnemyResettab
         {
             enemyHP.ResetState();
         }
-        contactDamageController?.SetNormalDamage(damage);
+        swordContactDamageController?.SetNormalDamage(damage); // ダメージをリセット
+        swordSpriteRenderer.sprite = swordWeaponData != null ? swordWeaponData.itemSprite : null; // スプライトをデータから設定
 
         if (rbody != null)
         {
@@ -281,16 +311,25 @@ public class DesertTempleGolemWalkMoveController : MonoBehaviour, IEnemyResettab
             rbody.constraints = RigidbodyConstraints2D.FreezeRotation;
         }
 
-        tag = GameConstants.IMMUNE_ENEMY_TAG_NAME;
+        tag = GameConstants.IMMUNE_ENEMY_TAG_NAME; // ダメージを受けない状態に設定
+        // 攻撃用の剣オブジェクトも同様にタグを設定
+        if (swordObject != null)
+        {
+            swordObject.tag = GameConstants.IMMUNE_ENEMY_TAG_NAME;
+        }
         StopAllCoroutines(); // 実行中の攻撃やスタック検知をリセット
 
         // 移動範囲の設定
         SetupMovementBounds();
 
-        // 初期位置をランダムに設定
+        // 初期位置の設定
         Vector3 startPos = transform.position;
-        float randomX = Random.Range(leftBound, rightBound);
-        transform.position = new Vector2(randomX, startPos.y);
+        if (!keepInitialPosition)
+        {
+            // ランダム配置が有効な場合（デフォルト）
+            float randomX = Random.Range(leftBound, rightBound);
+            transform.position = new Vector2(randomX, startPos.y);
+        }
 
         // 初期向きの設定
         rightFlag = (Random.value > 0.5f);
@@ -336,23 +375,23 @@ public class DesertTempleGolemWalkMoveController : MonoBehaviour, IEnemyResettab
                 float activatorRightBound = activatorCollider.bounds.max.x;
                 float randomCenter = Random.Range(activatorLeftBound, activatorRightBound);
 
-                leftBound = randomCenter - MOVE_RANGE / 2f;
-                rightBound = randomCenter + MOVE_RANGE / 2f;
+                leftBound = randomCenter - moveRange / 2f;
+                rightBound = randomCenter + moveRange / 2f;
 
                 // アクティベーターの範囲を超えないようにクランプ
                 leftBound = Mathf.Max(leftBound, activatorLeftBound);
                 rightBound = Mathf.Min(rightBound, activatorRightBound);
 
                 // 範囲が狭すぎる場合は調整して最低限の幅を確保
-                if (rightBound - leftBound < MOVE_RANGE)
+                if (rightBound - leftBound < moveRange)
                 {
                     if (leftBound == activatorLeftBound)
                     {
-                        rightBound = Mathf.Min(activatorRightBound, leftBound + MOVE_RANGE);
+                        rightBound = Mathf.Min(activatorRightBound, leftBound + moveRange);
                     }
                     else
                     {
-                        leftBound = Mathf.Max(activatorLeftBound, rightBound - MOVE_RANGE);
+                        leftBound = Mathf.Max(activatorLeftBound, rightBound - moveRange);
                     }
                 }
             }
@@ -401,13 +440,18 @@ public class DesertTempleGolemWalkMoveController : MonoBehaviour, IEnemyResettab
         Vector2 currentPos = transform.position;
 
         // 1. 移動範囲の端に到達したかチェック
-        bool hasReachedBound = (currentPos.x <= leftBound && vx < 0) || 
-                               (rightBound <= currentPos.x && vx > 0);
+        bool hasReachedBound =
+            (currentPos.x <= leftBound && vx < 0) || (rightBound <= currentPos.x && vx > 0);
 
         // 2. 崖っぷち（前方の足元に地面がない）かチェック
         float checkOffsetX = rightFlag ? cliffCheckOffsetX : -cliffCheckOffsetX;
         Vector2 cliffCheckOrigin = new Vector2(currentPos.x + checkOffsetX, currentPos.y);
-        bool isCliff = !Physics2D.Raycast(cliffCheckOrigin, Vector2.down, cliffCheckRayLength, groundLayer);
+        bool isCliff = !Physics2D.Raycast(
+            cliffCheckOrigin,
+            Vector2.down,
+            cliffCheckRayLength,
+            groundLayer
+        );
 
         // 境界到達または崖なら反転
         if (hasReachedBound || isCliff)
@@ -494,13 +538,15 @@ public class DesertTempleGolemWalkMoveController : MonoBehaviour, IEnemyResettab
         rbody.velocity = new Vector2(0, rbody.velocity.y); // 移動停止
         _animator.SetBool("Walk", false); // アイドルアニメーションへ
 
-        tag = GameConstants.DAMAGEABLE_ENEMY_TAG_NAME; // 攻撃中はダメージが通るようにする
-
         yield return new WaitForSeconds(beforeAttackTime);
 
         // --- 2. 攻撃アクション ---
         currentState = GolemState.Attacking;
         _animator.SetTrigger("AttackTrigger");
+        if (swordObject != null)
+        {
+            swordObject.tag = GameConstants.DAMAGEABLE_ENEMY_TAG_NAME;
+        }
 
         // TODO: 攻撃のタイミングに合わせてSEを鳴らす場合はここで再生
         // if (sePlayer != null) sePlayer.Play(SE_EnemyAction.Attack_Golem);
@@ -510,10 +556,13 @@ public class DesertTempleGolemWalkMoveController : MonoBehaviour, IEnemyResettab
 
         // --- 3. 攻撃後待機 ---
         currentState = GolemState.AfterAttackDelay;
+        if (swordObject != null)
+        {
+            swordObject.tag = GameConstants.IMMUNE_ENEMY_TAG_NAME;
+        }
         yield return new WaitForSeconds(afterAttackTime);
 
         // --- 4. 復帰と歩行再開 ---
-        tag = GameConstants.IMMUNE_ENEMY_TAG_NAME; // 無敵状態に戻す
         nextAttackPossibleTime = Time.time + attackCooldownTime; // クールダウン設定
 
         currentState = GolemState.Moving;
@@ -575,12 +624,27 @@ public class DesertTempleGolemWalkMoveController : MonoBehaviour, IEnemyResettab
     {
         // 1. 移動範囲の描画
         Gizmos.color = new Color(1f, 0f, 0f, 0.15f);
-        Vector3 center = new Vector3(
-            (leftBound + rightBound) / 2f,
-            transform.position.y + 2.0f, // ゴーレムの中心が地面からどれくらいの高さにあるかに応じて調整
-            transform.position.z
-        );
-        Vector3 size = new Vector3(Mathf.Abs(rightBound - leftBound), 4.5f, 0.1f);
+        Vector3 center = Vector3.zero;
+        Vector3 size = Vector3.zero;
+        if (isUseManualBounds)
+        {
+            center = new Vector3(
+                (leftBound + rightBound) / 2f,
+                transform.position.y + 2.0f, // ゴーレムの中心が地面からどれくらいの高さにあるかに応じて調整
+                transform.position.z
+            );
+            size = new Vector3(Mathf.Abs(rightBound - leftBound), 4.5f, 0.1f);
+        }
+        else
+        {
+            center = new Vector3(
+                transform.position.x,
+                transform.position.y + 2.0f, // ゴーレムの中心が地面からどれくらいの高さにあるかに応じて調整
+                transform.position.z
+            );
+            size = new Vector3(moveRange, 4.5f, 0.1f); // moveRangeを幅として使用
+        }
+        ;
         Gizmos.DrawCube(center, size);
 
         // 2. 攻撃範囲の描画

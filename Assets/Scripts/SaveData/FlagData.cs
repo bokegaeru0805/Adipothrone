@@ -172,7 +172,7 @@ public enum Chapter2TriggeredEvent
     PurpleOrbPlacedInDevice = 2060, // 紫のオーブを装置に置いた
     HeardHintAboutPurpleOrb = 2061, // 紫のオーブについてのヒントを聞いた
     ReceivedInfoAboutPurpleOrbFromFill = 2062, // Fillから紫のオーブについての情報を得た
-    FirstMetLotterManager = 2065, // くじ屋の店主と初めて会った
+    FirstMetLotteryManager = 2065, // くじ屋の店主と初めて会った
     AllOrbsPlacedInDevice = 2070, // 全てのオーブを装置に置いた
     TalkedToFillAfterAllOrbsPlaced = 2075, // 全てのオーブを置いた後にFillと話した
 }

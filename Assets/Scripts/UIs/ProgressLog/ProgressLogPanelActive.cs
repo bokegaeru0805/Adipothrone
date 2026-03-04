@@ -1,3 +1,4 @@
+using System.Text;
 using TMPro;
 using UnityEngine;
 
@@ -34,6 +35,9 @@ public class ProgressLogPanelActive : MonoBehaviour, IPanelActive
         UpdateProgressLogText(); // 進行度のテキストを更新
     }
 
+    /// <summary>
+    /// ゲームの進行度に応じたテキストをProgressLogDatabaseから取得し、UIに反映するメソッド
+    /// </summary>
     private void UpdateProgressLogText()
     {
         var progressData = GameManager.instance.savedata.ProgressLogData;
@@ -52,10 +56,46 @@ public class ProgressLogPanelActive : MonoBehaviour, IPanelActive
             }
             // ProgressLogDatabaseから進行度の情報を取得
             ProgressLogInfoData progressLogInfo = progressLogDatabase.Get(progressID);
-            progressLogText.text =
-                progressLogInfo != null
-                    ? progressLogInfo.logText
-                    : "ゲーム進行度に関する情報を表示できません。";
+
+            if (progressLogInfo != null)
+            {
+                // StringBuilderを使って文字列を効率的に結合
+                StringBuilder sb = new StringBuilder();
+
+                // まずはベースの文章を追加
+                sb.Append(progressLogInfo.logText);
+
+                // 各追記項目（セクション）ごとに判定
+                if (progressLogInfo.logSections != null)
+                {
+                    foreach (var section in progressLogInfo.logSections)
+                    {
+                        if (section.conditionalLogs != null)
+                        {
+                            // リストを「後ろから（進行度が後のものから）」逆順に評価するようにする
+                            // これにより、インスペクターやスプレッドシート上で「時系列順（早いものが上、遅いものが下）」に並べられます
+                            for (int i = section.conditionalLogs.Count - 1; i >= 0; i--)
+                            {
+                                var conditionalLog = section.conditionalLogs[i];
+                                if (conditionalLog.AreConditionsMet())
+                                {
+                                    // 最初に条件を満たした（＝一番進行度が高い）テキストを追記して、このセクションの判定を終了（break）する
+                                    sb.AppendLine();
+                                    sb.Append(conditionalLog.additionalText);
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // 最終的な文字列をテキストUIに反映
+                progressLogText.text = sb.ToString();
+            }
+            else
+            {
+                progressLogText.text = "ゲーム進行度に関する情報を表示できません。";
+            }
         }
     }
 }
