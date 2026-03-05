@@ -121,6 +121,9 @@ namespace Fungus.EditorUtils
             // 最新の状態でプロパティを更新
             serializedObject.Update();
 
+            // キャラクターの変更を検知するためのチェックを開始
+            EditorGUI.BeginChangeCheck();
+
             // --- キャラクター選択 ---
             CommandEditor.ObjectField<Character>(
                 characterProp,
@@ -138,6 +141,13 @@ namespace Fungus.EditorUtils
                     true
                 );
             EditorGUILayout.EndHorizontal();
+
+            // キャラクターが変更された場合、設定されていた立ち絵の参照をクリアする
+            if (EditorGUI.EndChangeCheck())
+            {
+                portraitProp.objectReferenceValue = null;
+                portraitStringProp.stringValue = ""; // 紐づいていた動的立ち絵の文字列も一緒にリセットする
+            }
 
             // --- 立ち絵（ポートレート）設定 ---
             // 動的立ち絵用の文字列入力フィールドを常に表示

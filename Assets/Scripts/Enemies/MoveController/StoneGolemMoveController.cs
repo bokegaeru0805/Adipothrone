@@ -634,8 +634,7 @@ public class StoneGolemMoveController : MonoBehaviour
         }
 
         crawlingRock.tag = GameConstants.DAMAGEABLE_ENEMY_TAG_NAME; //這う岩のタグを設定
-        ContactDamageController stateController =
-            crawlingRock.GetComponent<ContactDamageController>();
+        var stateController = crawlingRock.GetComponent<ContactDamageController>();
         if (stateController == null)
         {
             Debug.LogError($"{crawlingRock.name}にEnemyStateControllerが見つかりません。");
@@ -1058,9 +1057,11 @@ public class StoneGolemMoveController : MonoBehaviour
         float elapsedTime = crawlingRockDustEffectInterval; //最初にすぐエフェクトを出すために初期化
         while (true)
         {
-            if (crawlingRock == null)
+            // 岩が消滅した、またはプールに返却されて非アクティブになったら音を止める
+            if (crawlingRock == null || !crawlingRock.activeInHierarchy)
             {
-                rockSePlayback.Stop(); // 岩が消滅していたら音も止める（念のため）
+                rockSePlayback.Stop();
+                Debug.Log("這う岩が消滅したため、SEを停止しました。");
                 yield break;
             }
 
@@ -1107,6 +1108,7 @@ public class StoneGolemMoveController : MonoBehaviour
 
                 if (isOutOfBounds)
                 {
+                    rockSePlayback.Stop(); // プールに返す前に必ず音を止める
                     ObjectPooler.SceneInstance.ReturnToPool(crawlingRockPoolTag, crawlingRock);
                     yield break;
                 }

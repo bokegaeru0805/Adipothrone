@@ -51,6 +51,9 @@ public class ProgressLogPanelActive : MonoBehaviour, IPanelActive
             int progressID = progressData.progressRecords[0].progressID;
             if (progressID == 0)
             {
+                Debug.LogWarning(
+                    "ProgressLogPanelActive: 進行度IDが0のため、情報を表示できません。"
+                );
                 progressLogText.text = "ゲーム進行度に関する情報を表示できません。";
                 return;
             }
@@ -94,6 +97,9 @@ public class ProgressLogPanelActive : MonoBehaviour, IPanelActive
             }
             else
             {
+                Debug.LogWarning(
+                    $"ProgressLogPanelActive: 進行度ID {progressID} に対応する情報がProgressLogDatabaseに見つかりません。"
+                );
                 progressLogText.text = "ゲーム進行度に関する情報を表示できません。";
             }
         }

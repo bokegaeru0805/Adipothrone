@@ -241,6 +241,10 @@ public class BossAfterDeath : MonoBehaviour
                 GameManager.instance.savedata.ProgressLogData.RegisterProgressData(
                     ProgressLogName.DustDevilBossDefeat
                 ); // 進行ログを登録
+                PlayerManager.instance.SetPlayerBoolStatus(
+                    PlayerStatusBoolName.isCanUseShield,
+                    true
+                ); // シールド機能を解放する
                 FungusHelper.ExecuteBlock(flowchart, "DustDevilBossDefeat");
                 break;
             case BossHealth.BossName.DesertTempleBossSmoke:

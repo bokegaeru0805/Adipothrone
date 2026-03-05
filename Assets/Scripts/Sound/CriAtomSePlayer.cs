@@ -25,6 +25,13 @@ namespace CriWare.Assets
         [Tooltip("再生したいSEのキュー名をここに入力します。")]
         private string _cueName;
 
+        [Header("動作設定")]
+        [SerializeField]
+        [Tooltip(
+            "オブジェクトが非アクティブ（非表示）になった時、または破棄された時に再生中の音を停止するかどうか"
+        )]
+        private bool stopOnDisable = true;
+
         /// <summary>
         /// 再生するキュー名を取得または設定します。
         /// </summary>
@@ -280,5 +287,47 @@ namespace CriWare.Assets
 
             player.UpdateAll();
         }
+
+        /// <summary>
+        /// オブジェクトが非アクティブ（SetActive(false)）になったときに呼ばれます。
+        /// ObjectPoolerによってプールに回収されたタイミングでもここが実行されます。
+        /// </summary>
+        protected override void OnDisable()
+        {
+            base.OnDisable();
+
+            if (stopOnDisable && IsPlaying())
+            {
+                this.Stop();
+            }
+        }
+
+        /// <summary>
+        /// オブジェクトが完全に破棄されたときに呼ばれます。
+        /// </summary>
+        protected virtual void OnDestroy()
+        {
+            if (stopOnDisable && IsPlaying())
+            {
+                this.Stop();
+            }
+        }
+
+#if UNITY_EDITOR
+        /// <summary>
+        /// CRI Atom Craftでビルドした最新データを反映させるための手動リロード機能です。
+        /// メニューの「Tools > CRIWAREデータの手動リロード」をクリックするか、
+        /// ショートカットキー (Ctrl + Shift + R / Cmd + Shift + R) で実行できます。
+        /// </summary>
+        [UnityEditor.MenuItem("Tools/CRIWAREデータの手動リロード (強制リセット) %#r")]
+        public static void ForceDomainReload()
+        {
+            // スクリプトコンパイル時と同じ「ドメインリロード」を強制的に要求し、CRI内部のキャッシュを破棄します。
+            UnityEditor.EditorUtility.RequestScriptReload();
+            Debug.Log(
+                "[CRIWARE] 音声データ更新のための強制リセット（ドメインリロード）を実行しました。"
+            );
+        }
+#endif
     }
 }

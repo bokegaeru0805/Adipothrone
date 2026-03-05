@@ -618,8 +618,9 @@ public class BabyDrakeMoveController : MonoBehaviour, IEnemyResettable
     /// </summary>
     private void PlayMoveSe()
     {
-        // 既に再生中なら何もしない（二重再生防止）
-        if (moveSePlayback.GetStatus() == CriAtomExPlayback.Status.Playing)
+        // 既に再生中または準備中なら何もしない（二重再生・連続再生の防止）
+        var status = moveSePlayback.GetStatus();
+        if (status == CriAtomExPlayback.Status.Playing || status == CriAtomExPlayback.Status.Prep)
             return;
 
         // 再生してハンドルを保存

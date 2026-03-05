@@ -204,5 +204,48 @@ public class ItemDetailPanel : MonoBehaviour
                 Debug.LogError("PlayerEffectUIManagerが見つかりませんでした");
             }
         }
+        else if (itemData is KeyItemData keyItem)
+        {
+            //アイテムの画像を設定
+            if (ItemDetailPanel_image != null)
+            {
+                // アイテムのアイコン画像を設定
+                UIUtility.SetSpriteFitToSquare(ItemDetailPanel_image, keyItem.itemSprite, baseSize);
+            }
+            //アイテムの名前を設定(金色)
+            ItemDetailPanel_txt.text = $"<color=#FFD700>{keyItem.itemName}</color>";
+
+            // 各種テキストをクリアする
+            if (playerHPText != null)
+                playerHPText.text = "";
+            if (playerWPText != null)
+                playerWPText.text = "";
+            if (buff1NameText != null)
+                buff1NameText.text = "";
+            if (buff1ValueText != null)
+                buff1ValueText.text = "";
+            if (buff2NameText != null)
+                buff2NameText.text = "";
+            if (buff2ValueText != null)
+                buff2ValueText.text = "";
+
+            // HPとWPのバーのオブジェクトを非表示にする
+            if (playerHPBar != null)
+                playerHPBar.SetActive(false);
+            if (playerWPBar != null)
+                playerWPBar.SetActive(false);
+
+            // バフ関連のアイコンとバーのオブジェクトを非表示にする
+            if (buffUIs != null)
+            {
+                foreach (var buffUI in buffUIs)
+                {
+                    if (buffUI.Key != null)
+                        buffUI.Key.SetActive(false); // バフのアイコン
+                    if (buffUI.Value.Item1 != null)
+                        buffUI.Value.Item1.SetActive(false); // バフのバー
+                }
+            }
+        }
     }
 }

@@ -7,9 +7,9 @@ using UnityEngine.UI;
 
 public class KeyItemPanelActive : MonoBehaviour, IPanelActive, IPageNavigable
 {
-    [Header("アイテム詳細情報のパネルのGameObject")]
+    [Header("アイテム詳細情報のパネル")]
     [SerializeField]
-    private GameObject ItemDetailPanel = null; //アイテム効果パネルのオブジェクト
+    private ItemDetailPanel itemDetailPanel = null; //アイテム効果パネルのオブジェクト
 
     [Header("選択ボタンコンポーネント")]
     [SerializeField]
@@ -23,7 +23,7 @@ public class KeyItemPanelActive : MonoBehaviour, IPanelActive, IPageNavigable
 
     public List<Button> LeftSideButtons => leftSideButtonList;
     public List<Button> RightSideButtons => rightSideButtonList;
-    
+
     public int Page
     {
         get => page;
@@ -32,7 +32,7 @@ public class KeyItemPanelActive : MonoBehaviour, IPanelActive, IPageNavigable
 
     private int rowCount = 0; // UIの行数
     private int page = 0; // 現在のページ番号
-    
+
     private Enum selectedButtonItemID = null;
     private Enum preselectedButtonItemID = null;
 
@@ -45,22 +45,27 @@ public class KeyItemPanelActive : MonoBehaviour, IPanelActive, IPageNavigable
 
     private void Awake()
     {
-        if (ItemDetailPanel == null)
+        if (itemDetailPanel == null)
         {
             Debug.LogWarning("アイテム効果パネルが設定されていません");
             return;
         }
 
-        if (buttonList == null || buttonList.Count == 0 ||
-            rightSideButtonList == null || rightSideButtonList.Count == 0 ||
-            leftSideButtonList == null || leftSideButtonList.Count == 0)
+        if (
+            buttonList == null
+            || buttonList.Count == 0
+            || rightSideButtonList == null
+            || rightSideButtonList.Count == 0
+            || leftSideButtonList == null
+            || leftSideButtonList.Count == 0
+        )
         {
             Debug.LogWarning("アイテム選択ボタンが設定されていません");
             return;
         }
 
         // アイテムの効果表示パネルを非表示化
-        ItemDetailPanel.SetActive(false);
+        itemDetailPanel.gameObject.SetActive(false);
         rowCount = rightSideButtonList.Count; // UIの行数を設定
     }
 
@@ -105,8 +110,9 @@ public class KeyItemPanelActive : MonoBehaviour, IPanelActive, IPageNavigable
         if (itemList.Count == 0)
         {
             // アイテムがない場合は全て非表示にして終了
-            foreach (var button in buttonList) button.gameObject.SetActive(false);
-            ItemDetailPanel.SetActive(false);
+            foreach (var button in buttonList)
+                button.gameObject.SetActive(false);
+            itemDetailPanel.gameObject.SetActive(false);
             EventSystem.current.SetSelectedGameObject(null);
             return;
         }
@@ -127,7 +133,7 @@ public class KeyItemPanelActive : MonoBehaviour, IPanelActive, IPageNavigable
                 // 「前回のページ × 1ページあたりの数 + 前回のボタン位置」でグローバルなインデックスを計算
                 // これにより、勝手にページ0に戻るのを防ぐ
                 int estimatedIndex = (this.page * buttonList.Count) + lastSelectedIndex;
-                
+
                 // 範囲内に収める（アイテムが減ってページが消滅した場合などに対応）
                 targetItemIndex = Mathf.Clamp(estimatedIndex, 0, itemList.Count - 1);
             }
@@ -164,7 +170,8 @@ public class KeyItemPanelActive : MonoBehaviour, IPanelActive, IPageNavigable
             {
                 // 万が一非表示の場合は、表示されている最初のボタンを選択
                 var firstActive = buttonList.FirstOrDefault(b => b.gameObject.activeInHierarchy);
-                if (firstActive != null) EventSystem.current.SetSelectedGameObject(firstActive.gameObject);
+                if (firstActive != null)
+                    EventSystem.current.SetSelectedGameObject(firstActive.gameObject);
             }
         }
     }
@@ -193,7 +200,8 @@ public class KeyItemPanelActive : MonoBehaviour, IPanelActive, IPageNavigable
         // アイテム詳細パネルの表示切り替え
         if (itemList.Count == 0)
         {
-            if (ItemDetailPanel.activeSelf) ItemDetailPanel.SetActive(false);
+            if (itemDetailPanel.gameObject.activeSelf)
+                itemDetailPanel.gameObject.SetActive(false);
         }
         else
         {
@@ -211,16 +219,18 @@ public class KeyItemPanelActive : MonoBehaviour, IPanelActive, IPageNavigable
     {
         if (itemList.Count == 0)
         {
-            if (ItemDetailPanel.activeSelf) ItemDetailPanel.SetActive(false);
+            if (itemDetailPanel.gameObject.activeSelf)
+                itemDetailPanel.gameObject.SetActive(false);
             return;
         }
 
         GameObject selectedObj = EventSystem.current.currentSelectedGameObject;
-        if (selectedObj == null) return;
+        if (selectedObj == null)
+            return;
 
         // 現在選択しているボタンがリスト内のものか判定
         var selectedBtn = buttonList.FirstOrDefault(b => b.gameObject == selectedObj);
-        
+
         if (selectedBtn != null)
         {
             IItemAssignable info = selectedBtn.GetComponent<IItemAssignable>();
@@ -237,23 +247,21 @@ public class KeyItemPanelActive : MonoBehaviour, IPanelActive, IPageNavigable
         else
         {
             // アイテムボタン以外（サイドボタン等）を選択中の場合は更新しない
-            return; 
+            return;
         }
 
         // 効果説明パネルの更新
         if (preselectedButtonItemID != selectedButtonItemID && selectedButtonItemID != null)
         {
-            if (!ItemDetailPanel.activeSelf) ItemDetailPanel.SetActive(true);
+            if (!itemDetailPanel.gameObject.activeSelf)
+                itemDetailPanel.gameObject.SetActive(true);
 
-            var script = ItemDetailPanel.GetComponent<ItemDetailPanel>();
-            if (script != null)
-            {
-                script.DisplayItemDetails(selectedButtonItemID);
-            }
+            // アイテムIDに基づいて、効果説明パネルの内容を更新する
+            itemDetailPanel.DisplayItemDetails(selectedButtonItemID);
         }
 
         preselectedButtonItemID = selectedButtonItemID;
-        
+
         // 有効なアイテムを選択している場合のみ履歴を保存
         if (selectedButtonItemID != null)
         {
@@ -269,7 +277,7 @@ public class KeyItemPanelActive : MonoBehaviour, IPanelActive, IPageNavigable
         if (currentSelected != null)
         {
             lastSelectedIndex = buttonList.FindIndex(b => b.gameObject == currentSelected);
-            
+
             // ボタンが特定できた場合のみID保存（GetSelectedButtonItemIDで保存しているので念のため）
             if (lastSelectedIndex != -1)
             {
@@ -286,6 +294,6 @@ public class KeyItemPanelActive : MonoBehaviour, IPanelActive, IPageNavigable
             lastSelectedIndex = -1;
         }
 
-        ItemDetailPanel.SetActive(false);
+        itemDetailPanel.gameObject.SetActive(false);
     }
 }

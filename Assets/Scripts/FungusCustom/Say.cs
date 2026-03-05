@@ -28,7 +28,7 @@ using Fungus;
         [SerializeField]
         protected Sprite portrait;
 
-        [Tooltip("【Heroin専用】表情ファイル名を文字列で指定します。")]
+        [Tooltip("表情ファイル名を文字列で指定します。")]
         [SerializeField]
         protected string portraitString = "";
 

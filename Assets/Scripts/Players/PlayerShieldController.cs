@@ -63,6 +63,8 @@ public class PlayerShieldController : MonoBehaviour
     private Color baseColor; // パーティクルの基準色
     private bool canUseShield = true; // システム的にシールドが使用可能かどうかのフラグ
     private float shieldActivationTime = -1f; // シールドが展開された時間を記録する変数（ジャストガード判定用）
+    private bool isTalking = false; // 会話状態
+    private bool isDead = false; // 死亡状態
     #endregion
 
     #region Unity Lifecycle Methods
@@ -94,7 +96,11 @@ public class PlayerShieldController : MonoBehaviour
         {
             canUseShield = playerManager.GetPlayerBoolStatus(PlayerStatusBoolName.isCanUseShield);
             playerManager.OnBoolStatusChanged += OnAnyBoolStatusChanged;
+            playerManager.OnPlayerDied += HandlePlayerDeath;
+            playerManager.OnPlayerRevived += ResetToLiveState;
         }
+
+        GameManager.OnTalkingStateChanged += HandleTalkingStateChanged;
     }
 
     /// <summary>
@@ -102,6 +108,15 @@ public class PlayerShieldController : MonoBehaviour
     /// </summary>
     private void Update()
     {
+        // ポーズ中、会話中、死亡中はシールドを強制解除し、入力や回復処理をストップする
+        if (Time.timeScale <= 0f || isTalking || isDead)
+        {
+            if (isShieldActive)
+            {
+                DeactivateShield();
+            }
+            return;
+        }
         HandleInput();
         HandleRecovery();
         HandleDepletion();
@@ -116,7 +131,11 @@ public class PlayerShieldController : MonoBehaviour
         if (playerManager != null)
         {
             playerManager.OnBoolStatusChanged -= OnAnyBoolStatusChanged;
+            playerManager.OnPlayerDied -= HandlePlayerDeath;
+            playerManager.OnPlayerRevived -= ResetToLiveState;
         }
+
+        GameManager.OnTalkingStateChanged -= HandleTalkingStateChanged;
     }
 
     #endregion
@@ -182,6 +201,30 @@ public class PlayerShieldController : MonoBehaviour
                 Debug.Log("シールドの使用が制限されたため、展開を強制解除しました。");
             }
         }
+    }
+
+    /// <summary>
+    /// 会話状態の変更を受け取る
+    /// </summary>
+    private void HandleTalkingStateChanged(bool talkState)
+    {
+        isTalking = talkState;
+    }
+
+    /// <summary>
+    /// プレイヤーの死亡を受け取る
+    /// </summary>
+    private void HandlePlayerDeath()
+    {
+        isDead = true;
+    }
+
+    /// <summary>
+    /// プレイヤーの復活を受け取る
+    /// </summary>
+    private void ResetToLiveState()
+    {
+        isDead = false;
     }
 
     #endregion

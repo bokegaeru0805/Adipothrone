@@ -190,6 +190,10 @@ public class DialogueUpdater : MonoBehaviour
                             sayCommand.SetStandardText(csvLine.dialogue);
                             sayCommand.SetCharacter(newCharacter);
 
+                            // 元の立ち絵設定を一度クリアする
+                            sayCommand.SetPortrait(null);
+                            sayCommand.SetPortraitString("");
+
                             // 動的立ち絵の文字列をセットし、静的なSpriteはnullで上書きする
                             sayCommand.SetPortraitString(newPortraitString);
                             sayCommand.SetPortrait(null);
@@ -210,6 +214,10 @@ public class DialogueUpdater : MonoBehaviour
                         {
                             sayCommand.SetStandardText(csvLine.dialogue);
                             sayCommand.SetCharacter(newCharacter);
+
+                            // 元の立ち絵設定を一度クリアする
+                            sayCommand.SetPortrait(null);
+                            sayCommand.SetPortraitString("");
 
                             // 静的なSpriteをセットし、動的立ち絵の文字列は空にする
                             sayCommand.SetPortrait(newPortrait);

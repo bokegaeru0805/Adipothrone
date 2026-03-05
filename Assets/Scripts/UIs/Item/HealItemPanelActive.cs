@@ -11,9 +11,9 @@ public class HealItemPanelActive : MonoBehaviour, IPanelActive, IPageNavigable
     [SerializeField]
     private Vector2 offset = Vector2.zero;
 
-    [Header("アイテム詳細情報のパネルのGameObject")]
+    [Header("アイテム詳細情報のパネル")]
     [SerializeField]
-    private GameObject ItemDetailPanel = null; //アイテム効果パネルのオブジェクト
+    private ItemDetailPanel itemDetailPanel = null; //アイテム効果パネルのオブジェクト
 
     [Header("選択ボタンコンポーネント")]
     [SerializeField]
@@ -60,7 +60,7 @@ public class HealItemPanelActive : MonoBehaviour, IPanelActive, IPageNavigable
 
     private void Awake()
     {
-        if (ItemDetailPanel == null)
+        if (itemDetailPanel == null)
         {
             Debug.LogWarning("アイテム効果パネルが設定されていません");
             return;
@@ -90,7 +90,7 @@ public class HealItemPanelActive : MonoBehaviour, IPanelActive, IPageNavigable
         //アイテム選択ボタンの初期化
         ItemUsePromptPanel.SetActive(false);
         //アイテムの効果表示パネルを非表示化
-        ItemDetailPanel.SetActive(false);
+        itemDetailPanel.gameObject.SetActive(false);
         rowCount = rightSideButtonList.Count; //UIの行数を設定
     }
 
@@ -130,7 +130,7 @@ public class HealItemPanelActive : MonoBehaviour, IPanelActive, IPageNavigable
             }
 
             // アイテム詳細パネルも非表示にする
-            ItemDetailPanel.SetActive(false);
+            itemDetailPanel.gameObject.SetActive(false);
 
             // 何も選択しない状態にする（カーソルを消す）
             EventSystem.current.SetSelectedGameObject(null);
@@ -219,13 +219,13 @@ public class HealItemPanelActive : MonoBehaviour, IPanelActive, IPageNavigable
     /// </summary>
     private void UpdateDisplayedButtons()
     {
-        if (itemList.Count == 0 && ItemDetailPanel.activeSelf)
+        if (itemList.Count == 0 && itemDetailPanel.gameObject.activeSelf)
         {
-            ItemDetailPanel.SetActive(false);
+            itemDetailPanel.gameObject.SetActive(false);
         }
-        else if (itemList.Count > 0 && !ItemDetailPanel.activeSelf)
+        else if (itemList.Count > 0 && !itemDetailPanel.gameObject.activeSelf)
         {
-            ItemDetailPanel.SetActive(true);
+            itemDetailPanel.gameObject.SetActive(true);
         }
 
         TryAssignItemsToPage(this.page, 0, false);
@@ -239,7 +239,7 @@ public class HealItemPanelActive : MonoBehaviour, IPanelActive, IPageNavigable
     public void SetPromptPanel(Enum itemID, Button selectedButton)
     {
         // パネルが非アクティブ状態なら、処理を中断
-        if(this.gameObject.activeSelf == false)
+        if (this.gameObject.activeSelf == false)
         {
             return;
         }
@@ -302,9 +302,9 @@ public class HealItemPanelActive : MonoBehaviour, IPanelActive, IPageNavigable
     private void GetSelectedButtonItemID()
     {
         //所持しているアイテムが0個で、かつエフェクト表示パネルが表示されているとき
-        if (itemList.Count == 0 && ItemDetailPanel.activeSelf)
+        if (itemList.Count == 0 && itemDetailPanel.gameObject.activeSelf)
         {
-            ItemDetailPanel.SetActive(false);
+            itemDetailPanel.gameObject.SetActive(false);
             return;
         }
 
@@ -337,21 +337,14 @@ public class HealItemPanelActive : MonoBehaviour, IPanelActive, IPageNavigable
         //効果説明パネルの文章を変更する
         if (preselectedButtonItemID != selectedButtonItemID)
         {
-            if (!ItemDetailPanel.activeSelf)
+            if (!itemDetailPanel.gameObject.activeSelf)
             {
                 //アイテム効果パネルを表示する
-                ItemDetailPanel.SetActive(true);
+                itemDetailPanel.gameObject.SetActive(true);
             }
 
-            var script = ItemDetailPanel.GetComponent<ItemDetailPanel>();
-            if (script != null)
-            {
-                script.DisplayItemDetails(selectedButtonItemID); //アイテムの詳細を表示する
-            }
-            else
-            {
-                Debug.LogWarning("アイテム効果パネルに適切なスクリプトが設定されていません");
-            }
+            // アイテムIDに基づいて、効果説明パネルの内容を更新する
+            itemDetailPanel.DisplayItemDetails(selectedButtonItemID);
         }
 
         preselectedButtonItemID = selectedButtonItemID; //前フレームのアイテムIDを設定する
@@ -400,6 +393,6 @@ public class HealItemPanelActive : MonoBehaviour, IPanelActive, IPageNavigable
             lastSelectedIndex = -1;
         }
 
-        ItemDetailPanel.SetActive(false);
+        itemDetailPanel.gameObject.SetActive(false);
     }
 }

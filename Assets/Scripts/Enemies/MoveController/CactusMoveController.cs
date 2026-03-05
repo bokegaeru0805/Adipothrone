@@ -42,8 +42,11 @@ public class CactusMoveController : MonoBehaviour, IEnemyResettable
     [Range(0f, 1f)]
     private float attack_probability = 0.5f;
 
-    [SerializeField]
-    private float attackRange = 1.5f;
+    [SerializeField, Tooltip("この敵がプレイヤーを攻撃する範囲のX距離")]
+    private float attackRangeX = 8.0f;
+
+    [SerializeField, Tooltip("この敵がプレイヤーを攻撃する範囲のY距離")]
+    private float attackRangeY = 3.0f;
 
     [SerializeField]
     private float ballSpeed = 5.0f;
@@ -85,7 +88,7 @@ public class CactusMoveController : MonoBehaviour, IEnemyResettable
     private Rigidbody2D rbody;
     private Animator rightArmAnimator;
     private EnemyHealth enemyHP;
-    private CriWare.Assets.CriAtomSePlayer sePlayer;
+    private CriWare.Assets.CriAtomSePlayer _sePlayer;
 
     private enum CactusState
     {
@@ -149,7 +152,7 @@ public class CactusMoveController : MonoBehaviour, IEnemyResettable
         RegisterPart(flowerObject);
 
         rbody = GetComponent<Rigidbody2D>();
-        sePlayer = GetComponent<CriWare.Assets.CriAtomSePlayer>();
+        _sePlayer = GetComponent<CriWare.Assets.CriAtomSePlayer>();
         rightArmAnimator = rightArmObject.GetComponent<Animator>();
         if (rightArmAnimator == null)
         {
@@ -354,7 +357,6 @@ public class CactusMoveController : MonoBehaviour, IEnemyResettable
 
         float timer = 0f;
         rightArmAnimator.SetTrigger("BallAttackTrigger");
-        sePlayer.Play(SE_EnemyAction.Attack_throw1); // 攻撃音再生
         while (timer < BALL_ATTACK_ANIMATION_TIME)
         {
             yield return null; // 1フレーム待機
@@ -382,7 +384,7 @@ public class CactusMoveController : MonoBehaviour, IEnemyResettable
             yield break;
         }
 
-        ContactDamageController stateController = ball.GetComponent<ContactDamageController>();
+        var stateController = ball.GetComponent<ContactDamageController>();
         if (stateController == null)
         {
             Debug.LogError($"{ball.name}にEnemyStateControllerが見つかりません。");
@@ -392,7 +394,7 @@ public class CactusMoveController : MonoBehaviour, IEnemyResettable
             stateController.SetNormalDamage(damage); // ボールのダメージ量を設定
         }
 
-        Rigidbody2D ballRb = ball.GetComponent<Rigidbody2D>();
+        var ballRb = ball.GetComponent<Rigidbody2D>();
         if (ballRb != null)
         {
             Vector3 targetPos =
@@ -428,6 +430,8 @@ public class CactusMoveController : MonoBehaviour, IEnemyResettable
                 Vector3 launchDir = (dir.normalized + Vector3.up).normalized;
                 ballRb.velocity = launchDir * ballSpeed;
             }
+            
+            _sePlayer.Play(SE_EnemyAction.Attack_throw1); // 攻撃音再生
         }
 
         //ballの発射後の管理はLimitedContactObjectスクリプトに委ねる
@@ -571,8 +575,12 @@ public class CactusMoveController : MonoBehaviour, IEnemyResettable
     /// </summary>
     private bool IsPlayerInAttackRange()
     {
-        Vector2 dir = GetVectorToPlayer();
-        return dir.x * (rightFlag ? 1 : -1) <= attackRange && dir.x * (rightFlag ? 1 : -1) >= 0;
+        Vector2 directionToPlayer = GetVectorToPlayer();
+        // プレイヤーが前方の攻撃範囲内にいるか、かつ高さが大きく違わないか
+        float horizontalDistance = directionToPlayer.x * (rightFlag ? 1 : -1);
+        bool isInRangeX = horizontalDistance <= attackRangeX && horizontalDistance >= 0;
+        bool isInRangeY = Mathf.Abs(directionToPlayer.y) < attackRangeY;
+        return isInRangeX && isInRangeY;
     }
 
     /// <summary>
@@ -635,24 +643,15 @@ public class CactusMoveController : MonoBehaviour, IEnemyResettable
 
     private void OnDrawGizmos()
     {
-        // 攻撃範囲の中心位置を計算
-        // rightFlagがtrue(右向き)なら、自身の位置から右へ attackRange/2 ずらした場所が中心
-        // rightFlagがfalse(左向き)なら、自身の位置から左へ attackRange/2 ずらした場所が中心
-        // ※ IsPlayerInAttackRange の判定は「向いている方向へ 0 ～ attackRange の距離」であるため
-
-        float direction = rightFlag ? 1f : -1f;
-
-        // 判定エリアの中心座標
-        Vector3 center = transform.position + new Vector3(attackRange / 2f * direction, 0f, 0f);
-
-        // 判定エリアのサイズ
-        // 幅は attackRange、高さは適当（ここでは2f）、奥行きは0.1f
-        Vector3 size = new Vector3(attackRange, 2f, 0.1f);
-
-        Gizmos.color = new Color(1f, 0f, 0f, 0.3f); // 赤色半透明
-        Gizmos.DrawCube(center, size);
-
-        Gizmos.color = Color.red; // 外枠
-        Gizmos.DrawWireCube(center, size);
+        // 攻撃範囲の描画
+        Gizmos.color = new Color(0f, 0f, 1f, 0.3f);
+        float attackCenterX = transform.position.x + (rightFlag ? 1 : -1) * (attackRangeX / 2);
+        Vector3 attackCenter = new Vector3(
+            attackCenterX,
+            transform.position.y,
+            transform.position.z
+        );
+        Vector3 attackSize = new Vector3(attackRangeX, attackRangeY * 2, 0.1f);
+        Gizmos.DrawCube(attackCenter, attackSize);
     }
 }

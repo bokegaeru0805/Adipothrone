@@ -39,7 +39,7 @@ public class SeClip : PlayableAsset, ITimelineClipAsset
 
     public ClipCaps clipCaps => ClipCaps.None;
 
-    // Enum取得ロジック（変更なし）
+    // Enum取得ロジック
     public System.Enum SelectedCue
     {
         get

@@ -9,7 +9,7 @@ ScriptedImporter:
   assetBundleVariant: 
   script: {fileID: 11500000, guid: d286586ba24ad438aac133d47a3e12b0, type: 3}
   implementation:
-    rid: 1000
+    rid: 5769755563004788736
   awb: {instanceID: 0}
   assetInfo:
     awb: {instanceID: 0}
@@ -17,6 +17,6 @@ ScriptedImporter:
   references:
     version: 2
     RefIds:
-    - rid: 1000
+    - rid: 5769755563004788736
       type: {class: CriSerializedBytesAssetImplCreator, ns: CriWare.Assets, asm: CriMw.CriWare.Assets.Editor}
       data: 

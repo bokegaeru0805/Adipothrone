@@ -5,7 +5,8 @@ public class GlobalSeMixerBehaviour : PlayableBehaviour
 {
     public override void ProcessFrame(Playable playable, FrameData info, object playerData)
     {
-        if (SEManager.instance == null) return;
+        if (SEManager.instance == null)
+            return;
 
         int inputCount = playable.GetInputCount();
 

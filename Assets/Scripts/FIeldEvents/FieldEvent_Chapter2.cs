@@ -26,12 +26,13 @@ public class FieldEvent_Chapter2 : BaseFieldEvent
         Chapter2StartField = 1, // 第二章開始フィールド
         VillageEntranceField = 2, // 村の入り口フィールド
         CoachmanField = 3, // 馬車の御者フィールド
-        WaterSourceFrontField = 7, // オアシスの源泉前フィールド
-        WaterSourceField = 4, // オアシスの源泉フィールド
+        WaterSourceFrontField = 7, // オアシスの源泉前フィールド1
+        WaterSourceField1 = 4, // オアシスの源泉フィールド
         TempleBuildingField = 5, // 砂漠の神殿建物フィールド
         BeforeDeepDesertField = 6, // 砂漠の奥地手前フィールド
         DeepDesertField = 8, // 砂漠の奥地フィールド
         DustWindBossField = 9, // 砂嵐のボスフィールド
+        WaterSourceField2 = 11, // オアシスの源泉フィールド2
         TempleEntranceField1 = 15, // 砂漠の神殿入り口フィールド1
         TempleEntranceField2 = 16, // 砂漠の神殿入り口フィールド2
         BlueOrbDeviceField = 21, // 青いオーブの装置フィールド
@@ -131,15 +132,18 @@ public class FieldEvent_Chapter2 : BaseFieldEvent
                     isEventTriggered = true; // イベントがトリガーされたことを記録
                 }
                 break;
-            case FieldName.WaterSourceField:
+            case FieldName.WaterSourceField1:
                 if (!flagManager.GetBoolFlag(Chapter2TriggeredEvent.OasisSpringEnemiesDefeated))
                 {
                     GameManager.instance.savedata.ProgressLogData.RegisterProgressData(
                         ProgressLogName.OasisSpringEnemiesAppear
                     ); //進行ログを登録
                     FungusHelper.ExecuteBlock(targetFlowchart, "FirstMetFill");
+                    isEventTriggered = true; // イベントがトリガーされたことを記録
                 }
-                else if (
+                break;
+            case FieldName.WaterSourceField2:
+                if (
                     flagManager.GetBoolFlag(Chapter2TriggeredEvent.DustDevilBossDefeated)
                     && !flagManager.GetBoolFlag(Chapter2TriggeredEvent.OasisPartiallyRestoredByFill)
                 )

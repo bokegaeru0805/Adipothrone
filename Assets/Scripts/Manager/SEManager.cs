@@ -41,6 +41,9 @@ public class SEManager : MonoBehaviour
     {
         sePlayer = new CriAtomExPlayer();
 
+        // Atom Craft側が3Dポジショニング設定でも、このプレイヤーでは常に通常のパン（Pan3d＝2D的な定位）として強制再生し、リスナー未設定エラーを防ぐ
+        sePlayer.SetPanType(CriAtomEx.PanType.Pan3d);
+
         // SEの音量を設定
         if (SaveLoadManager.instance != null)
         {
@@ -60,11 +63,19 @@ public class SEManager : MonoBehaviour
     {
         // ミュート中は何もせず戻る
         if (IsTimelineMuted)
+        {
+            // Debug.Log($"SEManager: Timelineがミュート中のため、SE '{cue}' の再生をスキップ。");
             return;
+        }
 
         string cueName = SeCueDatabase.GetCueName(cue);
         if (cueName == null)
+        {
+            Debug.LogWarning(
+                $"SEManager: 指定されたSE enum '{cue}' に対応するキュー名が見つかりません。"
+            );
             return;
+        }
 
         // 1. パラメータ設定
         // 指定がある場合だけセットし、なければデフォルト(Vol=1.0, Pitch=0)に戻すなどの運用が安全ですが、
@@ -79,6 +90,10 @@ public class SEManager : MonoBehaviour
         // 2. 再生
         sePlayer.SetCue(seAcbAsset.Handle, cueName);
         sePlayer.Start();
+
+        Debug.Log(
+            $"Played SE: {cue}, Volume: {(useVolume ? volume.ToString() : "Default")} (Player Volume Multiplier), Pitch: {(usePitch ? pitch.ToString() : "Default")} (Cents)"
+        );
 
         // 3. 次回の再生に影響が出ないよう、パラメータをリセットしておく（安全策）
         // ※ただしStart直後のResetは反映タイミングに注意が必要ですが、ADX2はStart時点のパラメータが使われるため基本OK
@@ -130,7 +145,8 @@ public class SEManager : MonoBehaviour
     public void Play(Enum cue)
     {
         // ミュート中は何もせず戻る
-        if (IsTimelineMuted) return;
+        if (IsTimelineMuted)
+            return;
 
         // 辞書からキュー名（string）を取得
         string cueName = SeCueDatabase.GetCueName(cue);
@@ -276,6 +292,9 @@ public class SEManager : MonoBehaviour
         {
             sePlayer.Dispose();
             sePlayer = new CriAtomExPlayer();
+
+            // プレイヤーを再生成した際も、常に通常のパン（Pan3d）として強制再生する
+            sePlayer.SetPanType(CriAtomEx.PanType.Pan3d);
         }
     }
 

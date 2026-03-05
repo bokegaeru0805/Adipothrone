@@ -73,6 +73,9 @@ public class ContactDamageController : MonoBehaviour
     private KnockbackType currentKnockbackType = KnockbackType.HorizontalFromSource;
     private Vector2 currentFixedDirection = Vector2.right;
 
+    // GCアロケーション（メモリ確保）回避用にインスタンスをキャッシュしておく
+    private KnockbackData cachedKnockbackData = new KnockbackData();
+
     #endregion
 
     [Header("判定設定")]
@@ -200,28 +203,34 @@ public class ContactDamageController : MonoBehaviour
                 return;
             }
 
-            // 現在の設定値(current~)を使ってノックバックデータを作成
-            KnockbackData data = new KnockbackData
-            {
-                type = currentKnockbackType,
-                sourcePosition = this.transform.position, // 衝突時の自分の位置を使用
-                fixedDirection = currentFixedDirection,
-                force = currentKnockbackForce,
-            };
+            // 毎フレーム new するとGCが発生するため、キャッシュしたインスタンスの値を書き換えて使い回す
+            cachedKnockbackData.type = currentKnockbackType;
+            cachedKnockbackData.sourcePosition = this.transform.position; // 衝突時の自分の位置を使用
+            cachedKnockbackData.fixedDirection = currentFixedDirection;
+            cachedKnockbackData.force = currentKnockbackForce;
 
             // 現在の設定値(current~)を使ってダメージ処理を実行
             switch (currentDamageType)
             {
                 case DamageType.Normal:
-                    PlayerManager.instance.TakeNormalDamage((int)currentDamageValue, data);
+                    PlayerManager.instance.TakeNormalDamage(
+                        (int)currentDamageValue,
+                        cachedKnockbackData
+                    );
                     break;
 
                 case DamageType.MaxHPRatio:
-                    PlayerManager.instance.DamageHPByMaxHPRatio(currentDamageValue, data);
+                    PlayerManager.instance.DamageHPByMaxHPRatio(
+                        currentDamageValue,
+                        cachedKnockbackData
+                    );
                     break;
 
                 case DamageType.CurrentHPRatio:
-                    PlayerManager.instance.DamageHPByCurrentHPRatio(currentDamageValue, data);
+                    PlayerManager.instance.DamageHPByCurrentHPRatio(
+                        currentDamageValue,
+                        cachedKnockbackData
+                    );
                     break;
             }
         }
