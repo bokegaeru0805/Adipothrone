@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
+using AIE2D;
 using CriWare;
 using DG.Tweening;
 using MyGame.CameraControl;
@@ -586,8 +587,7 @@ public class DesertTempleBossSmokeMoveController : MonoBehaviour
             }
 
             // 攻撃力の設定
-            var damageController =
-                bullet.GetComponent<ContactDamageController>();
+            var damageController = bullet.GetComponent<ContactDamageController>();
             if (damageController != null)
             {
                 damageController.SetNormalDamage(rightArmAttackDamage);
@@ -896,6 +896,7 @@ public class DesertTempleBossSmokeMoveController : MonoBehaviour
 
     private void OnDestroy()
     {
+        ObjectPooler.SceneInstance?.ReturnAllToPool();
         leftArmTween?.Kill();
         rightArmTween?.Kill();
         StopGearSound();

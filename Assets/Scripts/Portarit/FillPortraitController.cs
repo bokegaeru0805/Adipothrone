@@ -127,4 +127,20 @@ public class FillPortraitController : BasePortraitController
             backHairImage.enabled = false;
         }
     }
+
+    /// <summary>
+    /// Awake時に保存した基本状態にリセットするメソッドのオーバーライド。
+    /// 基底クラスの処理（胴体・顔などの非表示）に加え、前髪と後ろ髪も非表示にします。
+    /// </summary>
+    public override void ResetToInitialState()
+    {
+        // まず基底クラス（BasePortraitController）のリセット処理を実行する
+        base.ResetToInitialState();
+
+        // 続いて、Fill専用の髪の毛パーツを非表示にする
+        if (frontHairImage != null)
+            frontHairImage.enabled = false;
+        if (backHairImage != null)
+            backHairImage.enabled = false;
+    }
 }

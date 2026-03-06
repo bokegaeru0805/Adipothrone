@@ -530,6 +530,11 @@ public class DesertTempleBossMoveController : MonoBehaviour
         StartRightArmAttack(); // 右腕攻撃を開始
         StartBodyAttackLoop(); // 本体の攻撃ループを開始
 
+        if (_characterHpScript is BossHealth boss)
+        {
+            boss.InitializeBossSpecifics(); // BossHealthの初期化処理を呼び出す
+        }
+
         // 登場演出の分岐
         if (useIntroMovement)
         {
@@ -1960,6 +1965,8 @@ public class DesertTempleBossMoveController : MonoBehaviour
 
     private void OnDestroy()
     {
+        ObjectPooler.SceneInstance?.ReturnAllToPool();
+
         // 安全のためTweenを破棄
         if (floatTween != null)
         {

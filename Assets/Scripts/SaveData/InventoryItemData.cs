@@ -93,6 +93,22 @@ public class InventoryItemData
     }
 
     /// <summary>
+    /// アイテムを使用（BaseItemData版）
+    /// </summary>
+    /// <param name="itemData">使用したいアイテムのデータ</param>
+    /// <param name="amount">使用する数量</param>
+    /// <returns>使用に成功したかどうか</returns>
+    public bool UseItem(BaseItemData itemData, int amount = 1)
+    {
+        if (itemData == null)
+        {
+            Debug.LogWarning("UseItem: itemDataがnullです。");
+            return false;
+        }
+        return UseItem(itemData.GetItemID(), amount);
+    }
+
+    /// <summary>
     /// 指定されたアイテムの所持数を取得します。
     /// </summary>
     /// <param name="itemID"> 取得したいアイテムのID（Enum）</param>

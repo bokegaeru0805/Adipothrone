@@ -308,6 +308,9 @@ public class FieldEvent_Chapter2 : BaseFieldEvent
         string hintBlockName = null
     )
     {
+        Debug.Log(
+            $"HandleOrbDevice called with orbFlag={orbFlag}, blockName={blockName}, hintFlag={hintFlag}, hintBlockName={hintBlockName}"
+        );
         // まずは全てのオーブが配置されたか確認して、完了イベントが発火していないなら発火させる
         CheckAllOrbsPlaced();
 
@@ -318,13 +321,13 @@ public class FieldEvent_Chapter2 : BaseFieldEvent
         // アイテムを持っているか確認
         if (GameManager.instance.savedata.ItemInventoryData.GetItemAmount(orbItemData) > 0)
         {
-            // 1. フラグを即座に立てる（これにより、直後の全数チェックでカウントされる）
-            flagManager.SetBoolFlag(orbFlag, true);
+            // フラグを立てるのはFlowchart内で行う
+            // // 1. フラグを即座に立てる（これにより、直後の全数チェックでカウントされる）
+            // flagManager.SetBoolFlag(orbFlag, true);
 
             // 2. この装置のイベント(オーブをはめる演出)を実行
-            // ※isEventTriggeredはこの装置単体の再起動防止用
             // （BaseFieldEventのExecuteEventBlockを使うと楽ですが、ここでは明示的に書きます）
-            isEventTriggered = true;
+            GameManager.instance.savedata.ItemInventoryData.UseItem(orbItemData); // アイテムを1つ減らす
             FungusHelper.ExecuteBlock(targetFlowchart, blockName);
         }
         else if (
@@ -346,6 +349,8 @@ public class FieldEvent_Chapter2 : BaseFieldEvent
     /// </summary>
     private void CheckAllOrbsPlaced()
     {
+        Debug.Log("CheckAllOrbsPlacedが呼び出されました");
+
         // 既に完了イベントが発火済みなら何もしない
         if (flagManager.GetBoolFlag(Chapter2TriggeredEvent.AllOrbsPlacedInDevice))
             return;

@@ -1,3 +1,4 @@
+using System;
 using System.Linq;
 using Fungus;
 using UnityEngine;
@@ -5,11 +6,15 @@ using UnityEngine;
 [CommandInfo("Custom", "Talk Start", "会話が始まる前のコマンド")]
 public class TalkStartCommand : Command
 {
+    public static event Action OnTalkStartExecuted; // このコマンドが実行されたことを通知するイベント
     private Flowchart globalFlowchart = null;
     private BlockType parentBlockType;
 
     public override void OnEnter()
     {
+        // 会話開始イベントを発行し、購読しているクラスに通知する
+        OnTalkStartExecuted?.Invoke();
+
         if (globalFlowchart == null)
         {
             globalFlowchart = GameObject.Find("GlobalFlowchart").GetComponent<Flowchart>();
@@ -29,7 +34,6 @@ public class TalkStartCommand : Command
             || globalFlowchart == null
         )
         {
-            // 何がnullなのかを具体的に示すと、デバッグが容易になる
             if (GameManager.instance == null)
                 Debug.LogError("GameManagerのインスタンスが存在しません");
             if (TimeManager.instance == null)
@@ -80,7 +84,7 @@ public class TalkStartCommand : Command
         if (conditionalCommandCount > 0)
         {
             // 4. 0から「合計数 - 1」までの範囲でランダムな整数を生成
-            int randomState = Random.Range(0, conditionalCommandCount);
+            int randomState = UnityEngine.Random.Range(0, conditionalCommandCount);
 
             // 5. GlobalFlowchart内の "DialogueSeed" 変数を探す
             IntegerVariable dialogueSeedVariable = globalFlowchart.GetVariable<IntegerVariable>(

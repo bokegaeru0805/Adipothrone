@@ -104,7 +104,7 @@ public class DustDevilActiveMoveController : MonoBehaviour, IEnemyResettable
     private Animator animator;
     private EnemyHealth enemyHP;
     private ContactDamageController contactDamageController;
-    private CriWare.Assets.CriAtomSePlayer sePlayer;
+    private CriWare.Assets.CriAtomSePlayer _sePlayer;
 
     private Tween floatingTween = null;
     private Tween moveTween = null;
@@ -129,7 +129,7 @@ public class DustDevilActiveMoveController : MonoBehaviour, IEnemyResettable
             }
         }
 
-        sePlayer = GetComponent<CriWare.Assets.CriAtomSePlayer>();
+        _sePlayer = GetComponent<CriWare.Assets.CriAtomSePlayer>();
         animator = GetComponent<Animator>();
         enemyHP = this.GetComponent<EnemyHealth>();
         contactDamageController = GetComponent<ContactDamageController>();
@@ -137,7 +137,7 @@ public class DustDevilActiveMoveController : MonoBehaviour, IEnemyResettable
 
     private void Start()
     {
-        sePlayer.player.AttachFader();
+        _sePlayer.player.AttachFader();
         ResetState();
     }
 
@@ -202,7 +202,7 @@ public class DustDevilActiveMoveController : MonoBehaviour, IEnemyResettable
             moveTween = null;
         }
 
-        sePlayer.Stop();
+        _sePlayer.Stop();
     }
 
     private void OnDrawGizmos()
@@ -250,7 +250,7 @@ public class DustDevilActiveMoveController : MonoBehaviour, IEnemyResettable
         currentState = DustDevilActiveState.Idle; // 初期状態をIdleに設定
 
         animator.SetTrigger("IdleTrigger"); // アニメーションをIdleに設定
-        sePlayer.Play(SE_Field.WindGust_weak); //弱い風の音を再生
+        _sePlayer.Play(SE_Field.WindGust_weak); //弱い風の音を再生
 
         if (!isUseManualBounds) // 自動設定モードの場合
         {
@@ -384,8 +384,8 @@ public class DustDevilActiveMoveController : MonoBehaviour, IEnemyResettable
                 this.tag = GameConstants.DAMAGEABLE_ENEMY_TAG_NAME; // 攻撃を受けるタグに変更
                 animator.SetTrigger("AttackTrigger"); // 突進アニメ再生
                 currentState = DustDevilActiveState.Attacking; // ステート変更
-                sePlayer.player.SetFadeOutTime((int)(moveDuration * 1000)); // ミリ秒単位でフェードアウト時間を設定
-                sePlayer.Play(SE_Field.WindGust_strong); // 強い風の音を再生
+                _sePlayer.player.SetFadeOutTime((int)(moveDuration * 1000)); // ミリ秒単位でフェードアウト時間を設定
+                _sePlayer.Play(SE_Field.WindGust_strong); // 強い風の音を再生
             });
 
             // 実際の移動
@@ -397,9 +397,9 @@ public class DustDevilActiveMoveController : MonoBehaviour, IEnemyResettable
                 this.tag = GameConstants.IMMUNE_ENEMY_TAG_NAME; // 無敵タグに戻す
                 animator.SetTrigger("IdleTrigger"); // 待機アニメへ
                 currentState = DustDevilActiveState.Idle; // ステートをIdleへ
-                sePlayer.player.ResetFaderParameters(); // フェーダーパラメータをリセット
-                sePlayer.player.SetFadeInTime(100); //ミリ秒単位でフェードイン時間を設定
-                sePlayer.Play(SE_Field.WindGust_weak); // 弱い風の音を再生
+                _sePlayer.player.ResetFaderParameters(); // フェーダーパラメータをリセット
+                _sePlayer.player.SetFadeInTime(100); //ミリ秒単位でフェードイン時間を設定
+                _sePlayer.Play(SE_Field.WindGust_weak); // 弱い風の音を再生
                 SetFloating(true); // ふわふわ浮遊を再開
             });
 

@@ -117,6 +117,11 @@ public abstract class BasePortraitController : MonoBehaviour
     protected Canvas _portraitCanvas;
     protected int _defaultSortOrder;
 
+    // 初期状態を完全に復元するためのバックアップ変数
+    protected Vector2 _initialPosition;
+    protected Vector3 _initialScale;
+    protected float _initialAlpha;
+
     [Header("Focus Settings (明暗制御)")]
     [Tooltip("他のキャラが話している時の暗さ (1=通常, 0.5=半分の暗さ)")]
     [SerializeField]
@@ -168,6 +173,11 @@ public abstract class BasePortraitController : MonoBehaviour
         _portraitContainerRect = GetComponent<RectTransform>();
         _portraitCanvasGroup = GetComponent<CanvasGroup>();
 
+        // インスペクター上で設定されている初期状態を記憶
+        _initialPosition = _portraitContainerRect.anchoredPosition;
+        _initialScale = _portraitContainerRect.localScale;
+        _initialAlpha = _portraitCanvasGroup.alpha;
+
         // インスペクター上で設定されている初期位置（表示時の本来の位置）を記憶
         _baseOnScreenPosition = _portraitContainerRect.anchoredPosition;
 
@@ -206,11 +216,13 @@ public abstract class BasePortraitController : MonoBehaviour
     #region Event Handlers
 
     /// <summary>
-    /// 会話のBlockが開始されたときに呼ばれるイベントハンドラ。
-    /// 現在のブロックタイプを記録し、対象外のブロックなら立ち絵を消去します。
+    /// TalkStartコマンドから「会話ブロックが始まった」通知を受け取るハンドラ。
+    /// ブロックの種別に応じて、立ち絵の表示ルールを切り替えます。
     /// </summary>
     protected virtual void HandleBlockStart(BlockType blockType)
     {
+        ResetToInitialState(); // ブロック開始時に状態を初期値にリセット
+
         currentBlockType = blockType;
 
         if (currentBlockType != BlockType.Story)
@@ -353,27 +365,47 @@ public abstract class BasePortraitController : MonoBehaviour
     }
 
     /// <summary>
-    /// 会話終了時（TalkEndCommand実行時）に呼ばれ、向き、配置、描画順を初期値にリセットします。
-    /// </summary>
-    public void ResetTransform()
-    {
-        ApplyDefaultDirection(); // デフォルトの向き（初期値）に戻す
-        _temporaryOffset = Vector2.zero; // オフセットを0に戻す
-
-        if (_portraitCanvas != null)
-        {
-            _portraitCanvas.sortingOrder = _defaultSortOrder; // 描画順を初期値に戻す
-        }
-
-        UpdateScreenPosition();
-    }
-
-    /// <summary>
     /// 現在の本来の位置とオフセットを考慮して実際のRectTransformの位置を更新します。
     /// </summary>
     protected void UpdateScreenPosition()
     {
         _portraitContainerRect.anchoredPosition = _baseOnScreenPosition + _temporaryOffset;
+    }
+
+    /// <summary>
+    /// Awake時に保存した基本状態にリセットします。
+    /// </summary>
+    public virtual void ResetToInitialState()
+    {
+        // 実行中のアニメーションがあれば停止
+        _activeTweenAnimation?.Kill();
+        _activeTweenAnimation = null;
+
+        // 座標とオフセットの復元
+        _portraitContainerRect.anchoredPosition = _initialPosition;
+        _temporaryOffset = Vector2.zero;
+
+        // スケール（向き）の復元
+        _portraitContainerRect.localScale = _initialScale;
+
+        ApplyDefaultDirection(); // デフォルトの向き（初期値）に戻す
+
+        // 透明度の復元
+        _portraitCanvasGroup.alpha = _initialAlpha;
+
+        // 描画順の復元
+        if (_portraitCanvas != null)
+        {
+            _portraitCanvas.sortingOrder = _defaultSortOrder;
+        }
+
+        // 色（明暗）の復元
+        SetPortraitColorTween(Color.white, 0f);
+
+        // 各Imageの有効状態を初期化（HidePortraitのロジックに準拠）
+        bodyImage.enabled = false;
+        faceImage.enabled = false;
+        expressionImage.enabled = false;
     }
 
     #endregion

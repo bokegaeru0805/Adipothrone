@@ -319,7 +319,7 @@ namespace CriWare.Assets
         /// メニューの「Tools > CRIWAREデータの手動リロード」をクリックするか、
         /// ショートカットキー (Ctrl + Shift + R / Cmd + Shift + R) で実行できます。
         /// </summary>
-        [UnityEditor.MenuItem("Tools/CRIWAREデータの手動リロード (強制リセット) %#r")]
+        [UnityEditor.MenuItem("Tools/CRIWAREデータの手動リロード (強制リセット) %&r")]
         public static void ForceDomainReload()
         {
             // スクリプトコンパイル時と同じ「ドメインリロード」を強制的に要求し、CRI内部のキャッシュを破棄します。

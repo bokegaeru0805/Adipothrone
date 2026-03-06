@@ -58,6 +58,7 @@ public class PlayerManager : MonoBehaviour
     // 演出用パラメータ
     private float fadeOutDuration = 2f; // フェードアウトにかかる時間
     private bool isDying = false; // 死亡演出が進行中かどうかのフラグ
+    private bool isTalking = false; // 会話中かどうかのフラグ
 
     // インベントリソート用辞書（アイテムID -> 並び順インデックス）
     private Dictionary<int, int> itemSortOrderMap;
@@ -147,6 +148,14 @@ public class PlayerManager : MonoBehaviour
             StartCoroutine(PlayerMove(GameManager.instance.crossScenePlayerSpawnPoint.Value));
             GameManager.instance.crossScenePlayerSpawnPoint = null; // 一度使用したらリセット
         }
+
+        // 会話状態の変更イベントを購読
+        GameManager.OnTalkingStateChanged += HandleTalkingStateChanged;
+    }
+
+    private void OnDestroy()
+    {
+        GameManager.OnTalkingStateChanged -= HandleTalkingStateChanged;
     }
 
     #endregion
@@ -344,6 +353,12 @@ public class PlayerManager : MonoBehaviour
         if (heroinMove != null && heroinMove.IsImmune)
         {
             // プレイヤーが無敵状態なら、ダメージ処理を一切行わずに終了
+            return;
+        }
+
+        // 会話中はダメージを受けないようにする
+        if (isTalking)
+        {
             return;
         }
 
@@ -851,5 +866,14 @@ public class PlayerManager : MonoBehaviour
         }
     }
 
+    #endregion
+    #region Event Handlers
+    /// <summary>
+    /// 会話状態の変更を受け取る
+    /// </summary>
+    private void HandleTalkingStateChanged(bool talkState)
+    {
+        isTalking = talkState;
+    }
     #endregion
 }

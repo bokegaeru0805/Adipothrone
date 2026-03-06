@@ -85,12 +85,12 @@ public abstract class CharacterHealth : PoolableObject, IDamageable, IDroppable,
     [SerializeField, ShowIf(nameof(enableShield))]
     protected ShieldController myShieldController;
 
-    [Tooltip("【発信側】死亡時にシールド破壊を通知するか（雑魚敵などが設定）")]
-    [SerializeField]
+    // [Tooltip("【発信側】死亡時にシールド破壊を通知するか（雑魚敵などが設定）")]
+    // [SerializeField]
     protected bool linkToShieldController = false;
 
-    [Tooltip("【発信側】破壊通知を送る対象のシールドコントローラー")]
-    [SerializeField, ShowIf(nameof(linkToShieldController))]
+    // [Tooltip("【発信側】破壊通知を送る対象のシールドコントローラー")]
+    // [SerializeField, ShowIf(nameof(linkToShieldController))]
     protected ShieldController targetShieldController;
 
     // --- Inspector設定（継承先クラスで利用） ---
@@ -120,7 +120,6 @@ public abstract class CharacterHealth : PoolableObject, IDamageable, IDroppable,
     private float reducedFlashAmount = 0.25f; //大きいスプライト用の、抑えめのフラッシュの明るさ
 
     private bool isLargeSprite = false; // Awakeでサイズを判定して設定するフラグ
-
     #endregion
 
     #region Unity Lifecycle Methods
@@ -170,6 +169,19 @@ public abstract class CharacterHealth : PoolableObject, IDamageable, IDroppable,
         EncounterStartTime = Time.time; // 有効化された時間を記録
     }
 
+    #endregion
+    #region Public Methods
+    /// <summary>
+    /// 外部（ShieldControllerなど）からシールドを自動で紐づけるためのメソッド。
+    /// これを呼ぶことで、インスペクターでの手動設定が不要になります。
+    /// </summary>
+    /// <param name="shieldController">紐づけるShieldController</param>
+    public void SetShieldController(ShieldController shieldController)
+    {
+        targetShieldController = shieldController;
+        // シールドが設定されたら、自動的にフラグもオンにする
+        linkToShieldController = (shieldController != null);
+    }
     #endregion
 
     #region Damage & Death Logic

@@ -118,6 +118,28 @@ public class ShieldController : MonoBehaviour
             baseParticleColor = shieldParticle.main.startColor.color;
         }
 
+        // シールドがリンクしているオブジェクトに自分自身をセットする
+        foreach (var layer in shieldLayers)
+        {
+            if (layer.linkedObject != null)
+            {
+                // リンクされたオブジェクトから CharacterHealth (EnemyHealthなど) を取得
+                var health = layer.linkedObject.GetComponent<CharacterHealth>();
+                if (health != null)
+                {
+                    // 取得できたら、自分自身(ShieldController)をセットする
+                    health.SetShieldController(this);
+                }
+            }
+            else
+            {
+                Debug.LogWarning(
+                    $"[ShieldController] シールドにリンクされたオブジェクトが設定されていません。シールドの番号: {shieldLayers.IndexOf(layer)}",
+                    this
+                );
+            }
+        }
+
         // 開始時の枚数を最大値として記録（0の場合は1にして除算エラー回避）
         maxShieldCount = Mathf.Max(1, shieldLayers.Count);
 
@@ -254,6 +276,9 @@ public class ShieldController : MonoBehaviour
     /// </summary>
     private void UpdateVisuals()
     {
+        Debug.Log(
+            $"[ShieldController] UpdateVisuals called. CurrentCount={shieldLayers.Count}, ShowVisuals={showVisuals}"
+        );
         if (shieldParticle == null)
             return;
 
@@ -264,6 +289,7 @@ public class ShieldController : MonoBehaviour
         {
             shieldParticle.Stop();
             shieldParticle.gameObject.SetActive(false); // 完全に消す場合
+            Debug.Log("シールドエフェクトを非表示にしました。", shieldParticle.gameObject);
             return;
         }
 
