@@ -308,9 +308,6 @@ public class FieldEvent_Chapter2 : BaseFieldEvent
         string hintBlockName = null
     )
     {
-        Debug.Log(
-            $"HandleOrbDevice called with orbFlag={orbFlag}, blockName={blockName}, hintFlag={hintFlag}, hintBlockName={hintBlockName}"
-        );
         // まずは全てのオーブが配置されたか確認して、完了イベントが発火していないなら発火させる
         CheckAllOrbsPlaced();
 
@@ -349,7 +346,6 @@ public class FieldEvent_Chapter2 : BaseFieldEvent
     /// </summary>
     private void CheckAllOrbsPlaced()
     {
-        Debug.Log("CheckAllOrbsPlacedが呼び出されました");
 
         // 既に完了イベントが発火済みなら何もしない
         if (flagManager.GetBoolFlag(Chapter2TriggeredEvent.AllOrbsPlacedInDevice))

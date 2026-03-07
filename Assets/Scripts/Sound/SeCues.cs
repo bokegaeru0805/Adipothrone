@@ -49,6 +49,7 @@ public enum SE_PlayerAction
     Buff1 = 3085,
     AttackMiss1 = 3090,
     Death1 = 3095,
+    FallDown1 = 3100,
 }
 
 /// <summary>
@@ -81,7 +82,8 @@ public enum SE_EnemyAction
     SandEmerge = 4100,
     SandSubmerge = 4101,
     Drop_Metal = 4102,
-    GearTurn = 4003,
+    GearTurn = 4103,
+    LaserAttack1 = 4105,
 }
 
 /// <summary>
@@ -133,4 +135,5 @@ public enum SE_SystemEvent
     Effect_Buff = 6040,
     CashRegister = 6045,
     LevelUp = 6050,
+    Flash1 = 6055,
 }

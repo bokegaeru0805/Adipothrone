@@ -140,7 +140,7 @@ public class GhostwolfMoveController : MonoBehaviour
     private Animator animator;
     private BossHealth hpscript;
     private SpriteRenderer spriteRenderer;
-    private CriWare.Assets.CriAtomSePlayer sePlayer;
+    private CriWare.Assets.CriAtomSePlayer _sePlayer;
 
     private void Awake()
     {
@@ -166,7 +166,7 @@ public class GhostwolfMoveController : MonoBehaviour
 
         spriteRenderer = this.GetComponent<SpriteRenderer>();
         animator = this.GetComponent<Animator>();
-        sePlayer = this.GetComponent<CriWare.Assets.CriAtomSePlayer>();
+        _sePlayer = this.GetComponent<CriWare.Assets.CriAtomSePlayer>();
     }
 
     private void Start()
@@ -303,7 +303,7 @@ public class GhostwolfMoveController : MonoBehaviour
             / (2 * (newPos.y - ExistBottom));
         float vy = Mathf.Sqrt(2 * gravity * maxHeightoffset);
         newrbody.AddForce(new Vector2(vx, vy), ForceMode2D.Impulse); //弾の速度を設定
-        sePlayer.Play(SE_EnemyAction.Shoot2_Enemy); //攻撃の効果音を鳴らす
+        _sePlayer.Play(SE_EnemyAction.Shoot2_Enemy); //攻撃の効果音を鳴らす
         CameraManager.instance?.PlayCustomShake(1.0f, 3.0f, 0.3f); // カメラシェイクを再生
 
         StartCoroutine(DestroyShoot(newGameObject));
@@ -356,7 +356,7 @@ public class GhostwolfMoveController : MonoBehaviour
                 ) / (2 * (newPos.y - ExistBottom));
             float vy = Mathf.Sqrt(2 * gravity * maxHeightoffset);
             newrbody.AddForce(new Vector2(vx, vy), ForceMode2D.Impulse); //弾の速度を設定
-            sePlayer.Play(SE_EnemyAction.Shoot2_Enemy); //攻撃の効果音を鳴らす
+            _sePlayer.Play(SE_EnemyAction.Shoot2_Enemy); //攻撃の効果音を鳴らす
             CameraManager.instance?.PlayCustomShake(1.0f, 3.0f, 0.3f); // カメラシェイクを再生
             StartCoroutine(DestroyShoot(newGameObject));
             yield return new WaitForSeconds(Random.Range(0.5f, 1)); //次の攻撃までの時間を設定
@@ -402,7 +402,7 @@ public class GhostwolfMoveController : MonoBehaviour
             Rigidbody2D newrbody = newGameObject.GetComponent<Rigidbody2D>(); //弾のRigidbody2Dを取得
             newrbody.gravityScale = 0; //弾の重力を消去
             newrbody.AddForce(new Vector2(0, -drop_speed), ForceMode2D.Impulse); //弾の落下速度を設定
-            sePlayer.Play(SE_Field.WaterDrip1); //攻撃の効果音を鳴らす
+            _sePlayer.Play(SE_Field.WaterDrip1); //攻撃の効果音を鳴らす
             StartCoroutine(DestroyShoot(newGameObject));
             yield return new WaitForSeconds(Random.Range(0.5f, 0.75f)); //次の降雨までの時間を設定
         }
@@ -450,7 +450,7 @@ public class GhostwolfMoveController : MonoBehaviour
                 new Vector2(flatshoot_offsetX - shoot_offsetX, targetHeight - newPos.y).normalized
                 * flatShootSpeed; //弾の速度を計算
             newrbody.AddForce(new Vector2(flatvelocity.x, flatvelocity.y), ForceMode2D.Impulse); //弾の速度を設定
-            sePlayer.Play(SE_EnemyAction.Shoot1_Enemy); //攻撃の効果音を鳴らす
+            _sePlayer.Play(SE_EnemyAction.Shoot1_Enemy); //攻撃の効果音を鳴らす
             CameraManager.instance?.PlayCustomShake(1.5f, 2.0f, 0.3f); // カメラシェイクを再生
             StartCoroutine(DestroyFlatShoot(newGameObject, targetHeight));
             yield return new WaitForSeconds(
@@ -480,14 +480,14 @@ public class GhostwolfMoveController : MonoBehaviour
             yield return null; //少し待つ
         }
 
-        sePlayer.Stop(); //チャージの効果音を止める
+        _sePlayer.Stop(); //チャージの効果音を止める
         Vector3 newPos = this.transform.position; //自分の座標を保存
         newPos.x += shoot_offsetX; //弾のx座標を調整
         newPos.y += shoot_offsetX; //弾のy座標を調整
 
         playerPos = PlayerObject.transform.position; //プレイヤーの座標を取得
         CameraManager.instance?.PlayCustomShake(2.0f, 2.0f, 3f); // カメラシェイクを再生
-        sePlayer.Play(SE_EnemyAction.Roar1); //咆哮の効果音を鳴らす
+        _sePlayer.Play(SE_EnemyAction.Roar1); //咆哮の効果音を鳴らす
         GameUIManager.instance?.ShowSkillNameUI("咆哮"); //スキル名UIを表示
 
         if (burstEffect != null)

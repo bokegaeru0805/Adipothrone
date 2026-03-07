@@ -23,6 +23,16 @@ public enum BGMCategory
     Env_Water_Stream1 = 600,
     Env_Birds = 605,
     Event_DecisiveBattle_Before = 800,
+    Event_Confrontation = 805,
+    Event_Crisis = 806,
+    Event_Threat = 807,
+    Event_Peaceful = 808,
+    Event_Farewell = 809,
+    Event_Labyrinth = 810,
+    Event_Encounter = 811,
+    Event_Anxiety = 812,
+    Theme_Fill = 1000,
+
 
     bgm0 = 1000, // デバッグ用
     bgm1 = 1001, // デバッグ用

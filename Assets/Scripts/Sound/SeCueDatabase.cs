@@ -49,6 +49,7 @@ public static class SeCueDatabase
             { SE_PlayerAction.Buff1, "Buff1" },
             { SE_PlayerAction.AttackMiss1, "AttackMiss1" },
             { SE_PlayerAction.Death1, "Death1" },
+            { SE_PlayerAction.FallDown1, "FallDown1" },
         };
 
     /// <summary>
@@ -83,6 +84,7 @@ public static class SeCueDatabase
             { SE_EnemyAction.SandSubmerge, "SandSubmerge" },
             { SE_EnemyAction.Drop_Metal, "Drop_Metal" },
             { SE_EnemyAction.GearTurn, "GearTurn" },
+            { SE_EnemyAction.LaserAttack1, "LaserExpand2" },
         };
 
     /// <summary>
@@ -138,6 +140,7 @@ public static class SeCueDatabase
             { SE_SystemEvent.Effect_Buff, "Effect_Buff" },
             { SE_SystemEvent.CashRegister, "CashRegister" },
             { SE_SystemEvent.LevelUp, "LevelUp" },
+            { SE_SystemEvent.Flash1, "Flash1" },
         };
 
     // --- 辞書管理機能（ここからがロジック本体） ---

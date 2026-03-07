@@ -19,7 +19,7 @@ public class StopBGMCommand : Command
 
     [Tooltip("フェードアウトが完了するまで次のコマンドに進まないか")]
     [SerializeField]
-    protected bool waitUntilFinished = true;
+    protected bool waitUntilFinished = false;
 
     #endregion
 

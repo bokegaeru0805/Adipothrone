@@ -8,9 +8,10 @@ namespace Fungus
     /// <summary>
     /// Stops the currently playing game music.
     /// </summary>
-    [CommandInfo("Audio", 
-                 "Stop Music", 
-                 "Stops the currently playing game music.")]
+    // ▼ Fungusのメニュー候補に表示させないため、CommandInfoをコメントアウト
+    // [CommandInfo("Audio", 
+    //              "Stop Music", 
+    //              "Stops the currently playing game music.")]
     [AddComponentMenu("")]
     public class StopMusic : Command
     {

@@ -8,9 +8,10 @@ namespace Fungus
     /// <summary>
     /// Plays looping game music. If any game music is already playing, it is stopped. Game music will continue playing across scene loads.
     /// </summary>
-    [CommandInfo("Audio",
-                 "Play Music",
-                 "Plays looping game music. If any game music is already playing, it is stopped. Game music will continue playing across scene loads.")]
+    // ▼ Fungusのメニュー候補に表示させないため、CommandInfoをコメントアウト
+    // [CommandInfo("Audio",
+    //              "Play Music",
+    //              "Plays looping game music. If any game music is already playing, it is stopped. Game music will continue playing across scene loads.")]
     [AddComponentMenu("")]
     public class PlayMusic : Command
     {

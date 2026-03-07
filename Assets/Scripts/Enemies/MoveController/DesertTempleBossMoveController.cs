@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
+using CriWare;
 using DG.Tweening;
 using NaughtyAttributes;
 using UnityEngine;
@@ -358,6 +359,7 @@ public class DesertTempleBossMoveController : MonoBehaviour
     private Animator rightArmAnimator;
     private Animator leftArmAnimator;
     private Animator sparkEffectAnimator;
+    private CriWare.Assets.CriAtomSePlayer _sePlayer;
 
     private void Awake()
     {
@@ -402,6 +404,7 @@ public class DesertTempleBossMoveController : MonoBehaviour
         bodySpriteRenderer = GetComponent<SpriteRenderer>();
         _characterHpScript = GetComponent<CharacterHealth>();
         _shieldController = GetComponent<ShieldController>();
+        _sePlayer = GetComponent<CriWare.Assets.CriAtomSePlayer>();
     }
 
     private void Start()
@@ -717,11 +720,7 @@ public class DesertTempleBossMoveController : MonoBehaviour
             );
 
             // SE再生
-            var sePlayer = GetComponent<CriWare.Assets.CriAtomSePlayer>();
-            if (sePlayer != null)
-            {
-                sePlayer.Play(SE_EnemyAction.Shoot_Water1);
-            }
+            _sePlayer.Play(SE_EnemyAction.Shoot_Water1);
         }
     }
     #endregion
@@ -953,12 +952,7 @@ public class DesertTempleBossMoveController : MonoBehaviour
             );
 
             // SE再生
-            var sePlayer = GetComponent<CriWare.Assets.CriAtomSePlayer>();
-            if (sePlayer != null)
-            {
-                // 左腕攻撃用のSEがあれば変更してください
-                sePlayer.Play(SE_EnemyAction.Shoot_Water1);
-            }
+            _sePlayer.Play(SE_EnemyAction.Shoot_Water1);
         }
     }
     #endregion
@@ -982,7 +976,8 @@ public class DesertTempleBossMoveController : MonoBehaviour
         // 光輪の回転向きをセット
         isHaloRotatingClockwise = isClockwise;
 
-        // TODO: チャージSE再生
+        // チャージSE再生
+        CriAtomExPlayback chargePlayback = _sePlayer.Play(SE_EnemyAction.ChargePower1);
 
         // 回転速度を Initial -> 0 へ減衰させる
         // DOVirtual.Floatを使って haloRotationSpeed を操作
@@ -1005,11 +1000,12 @@ public class DesertTempleBossMoveController : MonoBehaviour
         if (chargeTween != null && chargeTween.IsActive())
             chargeTween.Kill();
         haloRotationSpeed = 0f;
+        chargePlayback.Stop(); // チャージSE停止
 
         // 攻撃フェーズ: レーザー発射
         isFacingLocked = true; // 向きを固定
         CurrentState = DesertTempleBossState.LaserAttacking;
-        //TODO: 攻撃SE再生
+        CriAtomExPlayback laserPlayback = _sePlayer.Play(SE_EnemyAction.LaserAttack1); // SE再生
 
         if (laserObject != null)
         {
@@ -1049,6 +1045,8 @@ public class DesertTempleBossMoveController : MonoBehaviour
             if (laserTween != null && laserTween.IsActive())
                 laserTween.Kill();
             laserObject.SetActive(false);
+
+            laserPlayback.Stop(); // SE停止
         }
         sparkEffectAnimator.SetTrigger("EndTrigger"); // スパークエフェクト終了アニメーション再生
 
@@ -1320,9 +1318,7 @@ public class DesertTempleBossMoveController : MonoBehaviour
                 );
 
                 // 5. SE再生
-                var se = GetComponent<CriWare.Assets.CriAtomSePlayer>();
-                if (se)
-                    se.Play(SE_EnemyAction.Shoot_Water1);
+                _sePlayer.Play(SE_EnemyAction.Shoot_Water1);
 
                 // (オプション) 弾の画像の向きも進行方向に合わせたい場合は以下を追加
                 // float angle = Mathf.Atan2(direction.y, direction.x) * Mathf.Rad2Deg;

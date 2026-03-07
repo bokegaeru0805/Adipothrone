@@ -303,12 +303,6 @@ public class DesertTempleGolemMoveController : MonoBehaviour, IEnemyResettable
                 }
             }
         }
-        else // activaterが見つからない場合
-        {
-            Debug.LogWarning(
-                $"{this.name}の親にEnemyActivatorが見つかりませんでした。移動範囲の自動設定は行いません。"
-            );
-        }
 
         // 初期位置を移動範囲内のランダムな位置に設定
         Vector3 startPos = transform.position;

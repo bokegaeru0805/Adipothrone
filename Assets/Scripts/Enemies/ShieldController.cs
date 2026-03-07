@@ -276,9 +276,6 @@ public class ShieldController : MonoBehaviour
     /// </summary>
     private void UpdateVisuals()
     {
-        Debug.Log(
-            $"[ShieldController] UpdateVisuals called. CurrentCount={shieldLayers.Count}, ShowVisuals={showVisuals}"
-        );
         if (shieldParticle == null)
             return;
 
@@ -289,7 +286,6 @@ public class ShieldController : MonoBehaviour
         {
             shieldParticle.Stop();
             shieldParticle.gameObject.SetActive(false); // 完全に消す場合
-            Debug.Log("シールドエフェクトを非表示にしました。", shieldParticle.gameObject);
             return;
         }
 

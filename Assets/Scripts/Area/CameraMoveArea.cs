@@ -53,12 +53,19 @@ public class CameraMoveArea : MonoBehaviour
     }
 
     /// <summary>
+    /// エリア進入時の自動BGM再生をロックするかどうかのフラグ。
+    /// イベント中などに別のBGMで上書きされるのを防ぐために使用します。
+    /// </summary>
+    private static bool isAreaBgmLocked = false;
+
+    /// <summary>
     /// ドメインリロードが無効な場合や、シーン遷移時に静的変数が残るのを防ぐためのリセット処理
     /// </summary>
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
     private static void ResetStatics()
     {
         activeArea = null;
+        isAreaBgmLocked = false;
     }
 
     /// <summary>
@@ -252,8 +259,11 @@ public class CameraMoveArea : MonoBehaviour
             CameraManager.instance.TriggerTemporaryDampingReset(yDampingResetDuration);
         }
 
-        // BGM再生
-        PlayBgmBasedOnFlags();
+        // BGMロックがかかっていなければBGMを再生する
+        if (!isAreaBgmLocked)
+        {
+            PlayBgmBasedOnFlags();
+        }
 
         // Light有効化
         if (areaLight != null)
@@ -378,6 +388,24 @@ public class CameraMoveArea : MonoBehaviour
                 // 1つのエリアに入ったら終了（エリアが重なっていない前提）
                 return;
             }
+        }
+    }
+
+    /// <summary>
+    /// エリア進入時の自動BGM切り替えをロック/解除します。
+    /// イベント中などでBGMを固定したい場合に true に設定します。
+    /// false に設定してロックを解除した際、自動的に現在のエリアのBGMを再生し直します。
+    /// </summary>
+    /// <param name="isLocked">trueでロック、falseで解除</param>
+    /// <param name="fadeDuration">ロック解除時にBGMを再生し直す際のフェード時間</param>
+    public static void SetAreaBgmLocked(bool isLocked, float fadeDuration = 1.0f)
+    {
+        isAreaBgmLocked = isLocked;
+
+        // ロックが解除されたら、現在のエリアの正しいBGMを流し直す
+        if (!isLocked && activeArea != null)
+        {
+            PlayCurrentAreaBgm(fadeDuration);
         }
     }
 
