@@ -102,6 +102,26 @@ public class SEManager : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// オブジェクト破棄時（エディタの再生停止時やシーン遷移時）に呼ばれる処理
+    /// </summary>
+    private void OnDestroy()
+    {
+        // エディタのプレイモード終了時に、ループ設定されたSEが際限なく鳴り続けるのを防ぐため、
+        // プレイヤーを強制停止・破棄して確実にお掃除（メモリ解放）をする
+        if (sePlayer != null)
+        {
+            sePlayer.StopWithoutReleaseTime(); // フェードアウト（リリース）を無視して即座に強制停止
+            sePlayer.Dispose(); // プレイヤーを破棄
+            sePlayer = null;
+        }
+
+        if (activePlaybacks != null)
+        {
+            activePlaybacks.Clear();
+        }
+    }
+
     #endregion
 
 

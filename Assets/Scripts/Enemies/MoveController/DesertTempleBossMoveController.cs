@@ -1721,7 +1721,12 @@ public class DesertTempleBossMoveController : MonoBehaviour
                 Quaternion.identity
             );
 
-            // TODO: 召喚SE再生
+            // ゴーレム召喚SE再生
+            var golemSEPlayer = golem.GetComponent<CriWare.Assets.CriAtomSePlayer>();
+            if (golemSEPlayer != null)
+            {
+                golemSEPlayer.Play(SE_EnemyAction.Spawn1);
+            }
         }
 
         // 4. 復帰

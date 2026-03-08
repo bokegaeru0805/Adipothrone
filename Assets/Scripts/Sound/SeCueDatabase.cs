@@ -74,6 +74,7 @@ public static class SeCueDatabase
             { SE_EnemyAction.MagicWave1, "MagicWave1" },
             { SE_EnemyAction.SwordSlash1, "SwordSlash1" },
             { SE_EnemyAction.SwordSlash2, "SwordSlash2" },
+            { SE_EnemyAction.SwordSlash3, "SwordSlash3" },
             { SE_EnemyAction.SwordThrow1, "SwordThrow1" },
             { SE_EnemyAction.RareEnemyAppear, "RareEnemyAppear" },
             { SE_EnemyAction.Death1, "Death1_Enemy" },
@@ -85,6 +86,7 @@ public static class SeCueDatabase
             { SE_EnemyAction.Drop_Metal, "Drop_Metal" },
             { SE_EnemyAction.GearTurn, "GearTurn" },
             { SE_EnemyAction.LaserAttack1, "LaserExpand2" },
+            { SE_EnemyAction.Spawn1, "Spawn1" },
         };
 
     /// <summary>
@@ -121,6 +123,9 @@ public static class SeCueDatabase
         { SE_Field.LaserShoot, "LaserShoot" },
         { SE_Field.LaserExpand, "LaserExpand" },
         { SE_Field.SawBlade, "SawBlade" },
+        { SE_Field.HorseWalk, "Walk_Horse" },
+        { SE_Field.HorseCarriage, "HorseCarriage" },
+        { SE_Field.InsertDevice1, "InsertDevice1" },
     };
 
     /// <summary>

@@ -101,7 +101,7 @@ public class DesertTempleGolemWalkMoveController : MonoBehaviour, IEnemyResettab
     private Rigidbody2D rbody;
     private EnemyHealth enemyHP;
     private ContactDamageController swordContactDamageController;
-    private CriWare.Assets.CriAtomSePlayer sePlayer;
+    private CriWare.Assets.CriAtomSePlayer _sePlayer;
     private LayerMask groundLayer;
 
     // --- 状態管理 ---
@@ -178,7 +178,7 @@ public class DesertTempleGolemWalkMoveController : MonoBehaviour, IEnemyResettab
         }
 
         rbody = GetComponent<Rigidbody2D>();
-        sePlayer = GetComponent<CriWare.Assets.CriAtomSePlayer>();
+        _sePlayer = GetComponent<CriWare.Assets.CriAtomSePlayer>();
         _animator = GetComponent<Animator>();
         enemyHP = GetComponent<EnemyHealth>();
 
@@ -548,8 +548,7 @@ public class DesertTempleGolemWalkMoveController : MonoBehaviour, IEnemyResettab
             swordObject.tag = GameConstants.DAMAGEABLE_ENEMY_TAG_NAME;
         }
 
-        // TODO: 攻撃のタイミングに合わせてSEを鳴らす場合はここで再生
-        // if (sePlayer != null) sePlayer.Play(SE_EnemyAction.Attack_Golem);
+        _sePlayer.Play(SE_EnemyAction.SwordSlash3); // 攻撃SEを再生
 
         // アニメーションの長さ分待機
         yield return new WaitForSeconds(attackAnimationTime);

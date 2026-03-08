@@ -73,6 +73,7 @@ public enum SE_EnemyAction
     MagicWave1 = 4060,
     SwordSlash1 = 4065,
     SwordSlash2 = 4066,
+    SwordSlash3 = 4067,
     SwordThrow1 = 4070,
     RareEnemyAppear = 4075,
     Death1 = 4080,
@@ -84,6 +85,7 @@ public enum SE_EnemyAction
     Drop_Metal = 4102,
     GearTurn = 4103,
     LaserAttack1 = 4105,
+    Spawn1 = 4110,
 }
 
 /// <summary>
@@ -117,6 +119,9 @@ public enum SE_Field
     LaserShoot = 5100,
     LaserExpand = 5101,
     SawBlade = 5105,
+    HorseWalk = 5106,
+    HorseCarriage = 5107,
+    InsertDevice1 = 5110,
 }
 
 /// <summary>
