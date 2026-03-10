@@ -32,6 +32,7 @@ public class ObjectHealth : CharacterHealth, IEnemyResettable
     [SerializeField, ShowIf(nameof(enableDestroyEffect))]
     private float destroyEffectScale = 1.0f;
 
+    [Header("破壊時のSE設定")]
     [Tooltip("破壊時にSEを再生するかどうか")]
     [SerializeField]
     private bool enableDestroySE = false;

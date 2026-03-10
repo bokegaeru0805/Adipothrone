@@ -11,9 +11,10 @@ public class TimelineSkipManager : MonoBehaviour
     public static TimelineSkipManager instance { get; private set; }
 
     [Header("Global Skip Settings (T Key)")]
-    [Tooltip("全スキップ中のタイムスケール倍率")]
+    [Tooltip("全スキップ中のタイムスケール倍率（エディタの制限により最大100）")]
+    [Range(1f, 100f)]
     [SerializeField]
-    private float skipTimeScale = 50.0f;
+    private float skipTimeScale = 100.0f;
 
     [Tooltip("全スキップを開始するために必要な長押し時間（秒）")]
     [SerializeField]
@@ -170,7 +171,7 @@ public class TimelineSkipManager : MonoBehaviour
                 {
                     StartGlobalSkip();
                     currentSkipHoldTimer = 0f; // 発動したらタイマーリセット
-                    Debug.Log("Global Skip Started");
+                    // Debug.Log("Global Skip Started");
                 }
             }
         }

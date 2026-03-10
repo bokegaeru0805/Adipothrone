@@ -621,18 +621,48 @@ public class CameraMoveArea : MonoBehaviour
 
             if (area.areaLight != null)
             {
+                // 更新前の頂点データを保存
+                Vector3[] oldPath = area.areaLight.shapePath;
+
                 // Undo（Ctrl+Z）で戻せるように記録
                 Undo.RecordObject(area.areaLight, "Update Light Shape");
 
                 // 既存の更新メソッドを呼び出し
                 area.UpdateLightShapeToCollider();
 
-                // 変更があったことをエディタに通知（保存対象にする）
-                EditorUtility.SetDirty(area.areaLight);
-                count++;
+                // 更新後の頂点データを取得
+                Vector3[] newPath = area.areaLight.shapePath;
+
+                // 頂点データに変化があったかを判定
+                bool isChanged = false;
+                if (oldPath == null || newPath == null || oldPath.Length != newPath.Length)
+                {
+                    isChanged = true; // 頂点の数が違う、またはnullになった場合
+                }
+                else
+                {
+                    // 頂点の座標を1つずつ比較
+                    for (int i = 0; i < oldPath.Length; i++)
+                    {
+                        if (oldPath[i] != newPath[i])
+                        {
+                            isChanged = true;
+                            break;
+                        }
+                    }
+                }
+
+                // 実際に変更があった場合のみカウントし、保存対象(Dirty)にする
+                if (isChanged)
+                {
+                    EditorUtility.SetDirty(area.areaLight);
+                    count++;
+                }
             }
         }
-        Debug.Log($"シーン内の {count} 個のCameraMoveArea (Light2D) の形状を更新しました。");
+        Debug.Log(
+            $"シーン内のCameraMoveAreaをチェックし、{count} 個のLight2Dの形状を実際に更新しました。"
+        );
     }
 #endif
 

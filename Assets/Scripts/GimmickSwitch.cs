@@ -300,15 +300,11 @@ public class GimmickSwitch : MonoBehaviour
         switch (buttonType)
         {
             case ButtonType.TutorialStage:
-                // 標準的な電子音やクリック音
                 SEManager.instance.PlayFieldSE(SE_Field.SwitchOn);
                 break;
 
             case ButtonType.DesertTemple:
-                // 例: 砂漠や遺跡向けの重い音 (定義されている場合)
-                // 定義がない場合は標準と同じにするか、別の適切なSEを指定してください
-                // SEManager.instance.PlayFieldSE(SE_Field.SwitchOn_Stone);
-                SEManager.instance.PlayFieldSE(SE_Field.SwitchOn);
+                SEManager.instance.PlayFieldSE(SE_Field.LeverPull1);
                 break;
 
             default:

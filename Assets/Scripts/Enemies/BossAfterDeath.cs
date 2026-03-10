@@ -1,4 +1,5 @@
 using System.Collections;
+using System.Collections.Generic;
 using MyGame.CameraControl;
 using NaughtyAttributes;
 using UnityEngine;
@@ -40,6 +41,19 @@ public class BossAfterDeath : MonoBehaviour
 
     [SerializeField, ShowIf(nameof(bossName), BossHealth.BossName.DustDevilBoss)]
     private GameObject sandSmokeEffect; // 砂嵐のエフェクト(砂嵐のボス用)
+
+    [Header("ボスの複数スプライト設定")]
+    [SerializeField]
+    [Tooltip("複数のSpriteRendererを同時に演出対象にするかどうか")]
+    private bool useMultipleSprites = false;
+
+    [SerializeField, ShowIf(nameof(useMultipleSprites))]
+    [Tooltip("子オブジェクトに含まれるSpriteRendererを自動的に追加するかどうか")]
+    private bool autoRegisterChildSprites = false;
+
+    [SerializeField, ShowIf(nameof(useMultipleSprites))]
+    [Tooltip("自動追加以外に、手動で追加したいSpriteRendererがあれば登録します")]
+    private List<SpriteRenderer> targetSpriteRenderers = new List<SpriteRenderer>();
     #endregion
 
     #region Private Fields
@@ -47,7 +61,8 @@ public class BossAfterDeath : MonoBehaviour
     private FlagManager flagManager;
     private SpriteRenderer spriteRenderer;
     ParticleSystem[] psList = null;
-
+    private List<SpriteRenderer> allSpriteRenderers = new List<SpriteRenderer>(); // 演出対象となる全てのスプライト
+    // --- ここまで追加 --
     #endregion
 
     #region Unity Lifecycle Methods
@@ -60,11 +75,44 @@ public class BossAfterDeath : MonoBehaviour
         }
 
         spriteRenderer = GetComponent<SpriteRenderer>();
-        if (spriteRenderer == null)
+        if (spriteRenderer != null)
+        {
+            allSpriteRenderers.Add(spriteRenderer); // 自身をリストに追加
+        }
+        else
         {
             Debug.LogError(
                 "SpriteRendererが見つかりません。ボス撃破後のスプライトが正しく設定されていない可能性があります。"
             );
+        }
+
+        // 複数スプライト対応の初期化処理
+        if (useMultipleSprites)
+        {
+            // 1. 子オブジェクトからの自動取得
+            if (autoRegisterChildSprites)
+            {
+                SpriteRenderer[] childRenderers = GetComponentsInChildren<SpriteRenderer>();
+                foreach (var sr in childRenderers)
+                {
+                    if (sr != null && !allSpriteRenderers.Contains(sr))
+                    {
+                        allSpriteRenderers.Add(sr);
+                    }
+                }
+            }
+
+            // 2. 手動登録分の追加
+            if (targetSpriteRenderers != null)
+            {
+                foreach (var sr in targetSpriteRenderers)
+                {
+                    if (sr != null && !allSpriteRenderers.Contains(sr))
+                    {
+                        allSpriteRenderers.Add(sr);
+                    }
+                }
+            }
         }
     }
 
@@ -94,6 +142,9 @@ public class BossAfterDeath : MonoBehaviour
             case BossHealth.BossName.DesertTempleBossSmoke:
                 shouldHideAfterDefeat = false;
                 break;
+            case BossHealth.BossName.DesertTempleBoss:
+                shouldHideAfterDefeat = false;
+                break;
         }
         StartCoroutine(DefeatBoss());
     }
@@ -119,13 +170,26 @@ public class BossAfterDeath : MonoBehaviour
     {
         // --- 初期設定とフラッシュ演出 ---
 
-        Color bossCol = spriteRenderer.color; // 自分の色を取得
-        Color.RGBToHSV(bossCol, out float H, out float S, out float V);
-        float boss_hue = H;
-        float boss_saturation = S;
-        float boss_value = V;
+        // 各SpriteRendererの初期色とHSV値を保存しておく辞書を作成
+        Dictionary<SpriteRenderer, Color> initialColors = new Dictionary<SpriteRenderer, Color>();
+        Dictionary<SpriteRenderer, Vector3> initialHSVs = new Dictionary<SpriteRenderer, Vector3>();
+
+        foreach (var sr in allSpriteRenderers)
+        {
+            Color col = sr.color;
+            initialColors[sr] = col;
+            Color.RGBToHSV(col, out float h, out float s, out float v);
+            initialHSVs[sr] = new Vector3(h, s, v); // X = Hue, Y = Saturation, Z = Value
+        }
 
         FlashPanel.SetActive(true); // FlashPanelを表示する
+
+        // 仮
+        if (bossName == BossHealth.BossName.DesertTempleBoss)
+        {
+            FadeCanvas.instance?.FadeOut(3.0f); // フェードアウトする
+            BGMManager.instance?.FadeOut(3.0f); // BGMをフェードアウトする
+        }
 
         for (int i = 0; i < DEFEAT_FLASH_COUNT; i++)
         {
@@ -133,11 +197,13 @@ public class BossAfterDeath : MonoBehaviour
 
             for (int j = 0; j < 10; j++)
             {
-                spriteRenderer.color = Color.HSVToRGB(
-                    boss_hue,
-                    boss_saturation,
-                    (j + 1) * (boss_value / 10)
-                );
+                // 全てのSpriteRendererの色を更新
+                foreach (var sr in allSpriteRenderers)
+                {
+                    Vector3 hsv = initialHSVs[sr];
+                    sr.color = Color.HSVToRGB(hsv.x, hsv.y, (j + 1) * (hsv.z / 10f));
+                }
+
                 FlashPanel.GetComponent<Image>().color = new Color(
                     1,
                     1,
@@ -154,8 +220,12 @@ public class BossAfterDeath : MonoBehaviour
             // --- パーティクル生成 ---
 
             // SpriteRendererのboundsからワールド空間での実際の横幅を取得
-            Bounds bossBounds = spriteRenderer.bounds;
-            float bossWidth = bossBounds.size.x;
+            float bossWidth = 1f;
+            if (spriteRenderer != null)
+            {
+                Bounds bossBounds = spriteRenderer.bounds;
+                bossWidth = bossBounds.size.x;
+            }
 
             Vector3 newPos = this.transform.position; // 自分の座標を取得
             GameObject newGameObject = Instantiate(BossDefeatParticle); // Particleを出現させる
@@ -181,8 +251,12 @@ public class BossAfterDeath : MonoBehaviour
             {
                 float ratio = 1f - (i + 1) / 10f; // 現在の不透明度を計算
 
-                // Bossの透明度を徐々に下げていく
-                spriteRenderer.color = new Color(bossCol.r, bossCol.g, bossCol.b, ratio);
+                // 全てのBossの透明度を徐々に下げていく
+                foreach (var sr in allSpriteRenderers)
+                {
+                    Color origCol = initialColors[sr];
+                    sr.color = new Color(origCol.r, origCol.g, origCol.b, ratio);
+                }
 
                 switch (bossName)
                 {
@@ -255,6 +329,9 @@ public class BossAfterDeath : MonoBehaviour
                     ProgressLogName.TempleBossSmokeDefeat
                 ); // 進行ログを登録
                 FungusHelper.ExecuteBlock(flowchart, "TempleBossSmokeDefeat");
+                break;
+            case BossHealth.BossName.DesertTempleBoss:
+                FungusHelper.ExecuteBlock(flowchart, "TempleBossDefeat");
                 break;
 
             case BossHealth.BossName.None:

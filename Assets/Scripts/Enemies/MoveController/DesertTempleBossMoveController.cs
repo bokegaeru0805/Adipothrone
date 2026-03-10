@@ -744,8 +744,66 @@ public class DesertTempleBossMoveController : MonoBehaviour
     {
         while (true)
         {
-            // --- 0〜4の範囲でランダム選択 ---
-            int attackType = Random.Range(0, 6); // 0:レーザー, 1:分身, 2:囲い込み, 3:降雨, 4:通常攻撃, 5:ゴーレム召喚
+            // --- 攻撃種別の決定（HPとシールドの状況によるフェーズ移行） ---
+            int attackType = 4; // 0:レーザー, 1:分身, 2:囲い込み, 3:降雨, 4:通常攻撃, 5:ゴーレム召喚
+
+            // HP割合とシールド枚数を安全に取得
+            float hpRatio = _characterHpScript != null ? _characterHpScript.NormalizedHP : 1.0f;
+            int shieldCount = _shieldController != null ? _shieldController.CurrentShieldCount : 0;
+
+            // 条件に応じて攻撃パターンを決定
+            if (hpRatio > 0.9f || shieldCount >= 1)
+            {
+                // HPが90％より大きい、もしくはシールドが1枚以上残っている場合
+                // - 5/7で通常攻撃(4)、2/7でゴーレム召喚(5)
+                int rand = Random.Range(0, 7);
+                if (rand < 5)
+                    attackType = 4;
+                else
+                    attackType = 5;
+            }
+            else if (hpRatio <= 0.5f)
+            {
+                // HPが50％以下の場合（優先して判定）
+                // - 2/17でレーザー(0)、5/17で分身(1)、3/17で囲い込み(2)、6/17で降雨(3)、1/17でゴーレム召喚(5)
+                int rand = Random.Range(0, 17);
+                if (rand < 2)
+                    attackType = 0; // 0〜1 (2)
+                else if (rand < 7)
+                    attackType = 1; // 2〜6 (5)
+                else if (rand < 10)
+                    attackType = 2; // 7〜9 (3)
+                else if (rand < 16)
+                    attackType = 3; // 10〜15 (6)
+                else
+                    attackType = 5; // 16 (1)
+            }
+            else if (hpRatio <= 0.7f)
+            {
+                // HPが70％以下の場合（50%〜70%の間）
+                // - 1/6で分身(1)、2/6で囲い込み(2)、2/6で降雨(3)、1/6で通常攻撃(4)
+                int rand = Random.Range(0, 6);
+                if (rand < 1)
+                    attackType = 1; // 0 (1)
+                else if (rand < 3)
+                    attackType = 2; // 1〜2 (2)
+                else if (rand < 5)
+                    attackType = 3; // 3〜4 (2)
+                else
+                    attackType = 4; // 5 (1)
+            }
+            else if (hpRatio <= 0.9f)
+            {
+                // HPが90％以下の場合（70%〜90%の間）
+                // - 1/5で囲い込み(2)、2/5で降雨(3)、2/5で通常攻撃(4)
+                int rand = Random.Range(0, 5);
+                if (rand < 1)
+                    attackType = 2; // 0 (1)
+                else if (rand < 3)
+                    attackType = 3; // 1〜2 (2)
+                else
+                    attackType = 4; // 3〜4 (2)
+            }
 
             // 攻撃種別に応じたインターバル設定用変数
             float minInterval = 0f;
@@ -1984,6 +2042,9 @@ public class DesertTempleBossMoveController : MonoBehaviour
         {
             _shieldController.OnAllShieldsBroken -= HandleAllShieldsBroken;
         }
+
+        //クローンを全て退場させる
+        CleanupClones();
     }
 
     private void OnDrawGizmosSelected()

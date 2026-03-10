@@ -4,6 +4,7 @@ using UnityEngine;
 /// <summary>
 /// プレイヤーのシールド耐久値、状態、エフェクト（パーティクル）、およびジャストガードを総合的に管理するクラス。
 /// </summary>
+[RequireComponent(typeof(CriWare.Assets.CriAtomSePlayer))]
 public class PlayerShieldController : MonoBehaviour
 {
     #region Inspector Settings
@@ -57,6 +58,7 @@ public class PlayerShieldController : MonoBehaviour
     // --- 内部参照 ---
     private InputManager inputManager;
     private PlayerManager playerManager;
+    private SEManager seManager;
     private ParticleSystem.MainModule particleMain;
 
     // --- 状態管理用 ---
@@ -68,7 +70,6 @@ public class PlayerShieldController : MonoBehaviour
     #endregion
 
     #region Unity Lifecycle Methods
-
     /// <summary>
     /// 必要なコンポーネントの取得、変数の初期化、およびイベントの購読を行います。
     /// </summary>
@@ -76,6 +77,7 @@ public class PlayerShieldController : MonoBehaviour
     {
         inputManager = InputManager.instance;
         playerManager = PlayerManager.instance;
+        seManager = SEManager.instance;
 
         // エフェクトの初期設定
         if (shieldParticle != null)
@@ -160,6 +162,7 @@ public class PlayerShieldController : MonoBehaviour
                 isShieldActive = true;
                 shieldActivationTime = Time.time; // ジャストガード用に展開した時間を記録
                 shieldParticle.gameObject.SetActive(true); // エフェクトを有効化
+                seManager?.Play(SE_PlayerAction.ShieldDeploy1); // シールド展開SEを再生
                 shieldParticle?.Play();
                 OnShieldActiveChanged?.Invoke(true); // UIへ展開開始を通知
             }
@@ -251,6 +254,8 @@ public class PlayerShieldController : MonoBehaviour
         // 2. 耐久値の減少処理
         CurrentDurability -= damageRatio;
 
+       seManager?.Play(SE_PlayerAction.Reflection1); // ダメージを受けたときのSE（反射音など）を再生
+
         // 3. 破壊判定
         // 0を下回った場合は破壊状態へ強制移行する
         if (CurrentDurability <= 0f)
@@ -260,6 +265,7 @@ public class PlayerShieldController : MonoBehaviour
             isShieldActive = false;
             shieldParticle?.Stop();
             shieldParticle.gameObject.SetActive(false);
+           seManager?.Play(SE_PlayerAction.ShieldBreak1); // シールドが破壊されたときのSEを再生
 
             // UIへ破壊および非展開を通知
             OnShieldActiveChanged?.Invoke(false);
@@ -282,14 +288,15 @@ public class PlayerShieldController : MonoBehaviour
 
         CurrentDurability -= depletionRate * Time.deltaTime;
 
-        // 展開し続けた結果、耐久値が0を下回った場合は破壊状態へ移行
-        if (CurrentDurability <= 0f)
+        // 耐久値が尽きた場合で、かつ、まだ破壊処理を行っていない場合のみ実行（連続再生・多重処理の防止）
+        if (CurrentDurability <= 0.0f && !isBroken)
         {
             CurrentDurability = 0f;
             isBroken = true;
             isShieldActive = false;
             shieldParticle?.Stop();
             shieldParticle.gameObject.SetActive(false);
+           seManager?.Play(SE_PlayerAction.ShieldBreak1); // シールドが自然破壊されたときのSEを再生
 
             // UIへ破壊および非展開を通知
             OnShieldActiveChanged?.Invoke(false);

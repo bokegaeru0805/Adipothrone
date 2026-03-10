@@ -2,7 +2,7 @@ using System.Collections;
 using DG.Tweening;
 using UnityEngine;
 
-[RequireComponent(typeof(CriWare.Assets.CriAtomSePlayer))] // SEが必要なら
+[RequireComponent(typeof(CriWare.Assets.CriAtomSePlayer))]
 public class DesertTempleBossClone : MonoBehaviour
 {
     //TODO: 消滅エフェクトの攻撃力
@@ -56,6 +56,12 @@ public class DesertTempleBossClone : MonoBehaviour
     private bool isFacingLocked = false; // 向きの更新をロックするフラグ
     private Transform playerTransform;
     private Tweener floatTween;
+    private CriWare.Assets.CriAtomSePlayer _sePlayer;
+
+    private void Awake()
+    {
+        _sePlayer = GetComponent<CriWare.Assets.CriAtomSePlayer>();
+    }
 
     /// <summary>
     /// 初期化（生成時に本体から呼ばれる）
@@ -277,7 +283,9 @@ public class DesertTempleBossClone : MonoBehaviour
                 spawnPos,
                 Quaternion.identity
             );
-            //TODO: SE再生
+
+            // SE再生
+            _sePlayer.Play(SE_EnemyAction.Shoot_Water1);
         }
     }
 

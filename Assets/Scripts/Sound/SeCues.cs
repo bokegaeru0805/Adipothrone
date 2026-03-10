@@ -50,6 +50,10 @@ public enum SE_PlayerAction
     AttackMiss1 = 3090,
     Death1 = 3095,
     FallDown1 = 3100,
+    Shoot_Fill = 3105,
+    ShieldDeploy1 = 3110,
+    Reflection1 = 3115,
+    ShieldBreak1 = 3120,
 }
 
 /// <summary>
@@ -86,6 +90,8 @@ public enum SE_EnemyAction
     GearTurn = 4103,
     LaserAttack1 = 4105,
     Spawn1 = 4110,
+    ShieldCrack1 = 4115,
+    SheldBreak1 = 4120,
 }
 
 /// <summary>
@@ -121,7 +127,10 @@ public enum SE_Field
     SawBlade = 5105,
     HorseWalk = 5106,
     HorseCarriage = 5107,
+    BreakCultivationTank = 5108,
     InsertDevice1 = 5110,
+    LeverPull1 = 5115,
+    LightOn1 = 5120,
 }
 
 /// <summary>

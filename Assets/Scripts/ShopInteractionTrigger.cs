@@ -10,7 +10,10 @@ public class ShopInteractionTrigger : MonoBehaviour
     {
         if (shopName == ShopName.None)
         {
-            Debug.LogError("ShopNameが設定されていません。" + "オブジェクト名: " + gameObject.name);
+            Debug.LogError(
+                "ShopNameがNoneに設定されています。適切なShopNameを設定してください。",
+                this
+            );
             return;
         }
     }
@@ -22,6 +25,9 @@ public class ShopInteractionTrigger : MonoBehaviour
             switch (shopName)
             {
                 case ShopName.VillageGirl_Shop:
+                    ShopUIManager.instance.SetShopID(shopName);
+                    break;
+                case ShopName.Desert_Shop:
                     ShopUIManager.instance.SetShopID(shopName);
                     break;
             }

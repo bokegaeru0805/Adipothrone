@@ -9,10 +9,12 @@ using UnityEngine.SceneManagement;
 /// </summary>
 public class TimeManager : MonoBehaviour
 {
+#pragma warning disable 0414 // 使われていない変数の警告（CS0414）を一時的に無効化
     [InfoBox("このスクリプトはDebugSceneでも用います。\nそのため、プレハブしておいてください。")]
     [ReadOnly]
     [SerializeField]
     private string _instruction = "設定不要";
+#pragma warning restore 0414 // 警告の無効化を解除（これ以降のコードでは通常通り警告を出す）
 
     // --- シングルトン実装 ---
     public static TimeManager instance { get; private set; }
@@ -115,7 +117,9 @@ public class TimeManager : MonoBehaviour
             if (Input.GetKeyDown(KeyCode.P))
             {
                 SetEnemyMovePaused(!isEnemyMovePaused);
-                Debug.Log($"<color=yellow>TimeManager:</color> Enemy Move Paused set to {isEnemyMovePaused}");
+                Debug.Log(
+                    $"<color=yellow>TimeManager:</color> Enemy Move Paused set to {isEnemyMovePaused}"
+                );
             }
         }
     }

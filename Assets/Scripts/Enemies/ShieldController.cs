@@ -19,6 +19,7 @@ public class ShieldData
 /// <summary>
 /// シールドによるダメージ軽減、破壊ロジック、および視覚効果（パーティクル）を管理するクラス。
 /// </summary>
+[RequireComponent(typeof(CriWare.Assets.CriAtomSePlayer))]
 public class ShieldController : MonoBehaviour
 {
     #region Settings
@@ -57,12 +58,9 @@ public class ShieldController : MonoBehaviour
     #endregion
 
     #region Internal Variables
-
-    // 開始時の枚数（比率計算用）
-    private float maxShieldCount;
-
-    // パーティクルの初期色
-    private Color baseParticleColor;
+    private float maxShieldCount; // 開始時の枚数（比率計算用）
+    private Color baseParticleColor; // パーティクルの初期色
+    private CriWare.Assets.CriAtomSePlayer _sePlayer;
 
     #endregion
 
@@ -109,6 +107,11 @@ public class ShieldController : MonoBehaviour
     #endregion
 
     #region Unity Lifecycle Methods
+
+    private void Awake()
+    {
+        _sePlayer = GetComponent<CriWare.Assets.CriAtomSePlayer>();
+    }
 
     private void Start()
     {
@@ -209,7 +212,12 @@ public class ShieldController : MonoBehaviour
 
             if (shieldLayers.Count == 0)
             {
+                _sePlayer.Play(SE_EnemyAction.SheldBreak1); // シールドが完全に破壊されたときのSE
                 OnAllShieldsBroken?.Invoke();
+            }
+            else
+            {
+                _sePlayer.Play(SE_EnemyAction.ShieldCrack1); // シールドが1枚破壊されたときのSE
             }
 
             UpdateVisuals();
@@ -248,7 +256,12 @@ public class ShieldController : MonoBehaviour
 
             if (shieldLayers.Count == 0)
             {
+                _sePlayer.Play(SE_EnemyAction.SheldBreak1); // シールドが完全に破壊されたときのSE
                 OnAllShieldsBroken?.Invoke();
+            }
+            else
+            {
+                _sePlayer.Play(SE_EnemyAction.ShieldCrack1); // シールドが1枚破壊されたときのSE
             }
 
             UpdateVisuals();

@@ -10,14 +10,17 @@ using UnityEngine;
 [RequireComponent(typeof(Collider2D))]
 public class GroundImpactSpawner : MonoBehaviour
 {
+#pragma warning disable 0414 // 使われていない変数の警告（CS0414）を一時的に無効化
     [InfoBox(
         "地面に接触した際、指定されたオブジェクト群を指定された速度で生成・放出するスクリプト。\n"
             + "このスクリプトに自動でプールに返却する機能は含まれていません。\n"
-            + "必要に応じて別途PoolableObjectLifecycleなどを併用してください",EInfoBoxType.Warning
+            + "必要に応じて別途PoolableObjectLifecycleなどを併用してください",
+        EInfoBoxType.Warning
     )]
     [ReadOnly]
     [SerializeField]
     private string _instruction = "設定不要";
+#pragma warning restore 0414 // 警告の無効化を解除（これ以降のコードでは通常通り警告を出す）
 
     [System.Serializable]
     public class SpawnItem

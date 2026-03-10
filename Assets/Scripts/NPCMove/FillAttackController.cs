@@ -6,6 +6,7 @@ using UnityEngine;
 /// NPC "Fill" の攻撃を制御するクラス
 /// ターゲットの移動を予測した偏差射撃や、特定のボス行動に対する迎撃を行います。
 /// </summary>
+[RequireComponent(typeof(CriWare.Assets.CriAtomSePlayer))]
 public class FillAttackController : MonoBehaviour
 {
     #region 定義 (Definitions)
@@ -119,6 +120,7 @@ public class FillAttackController : MonoBehaviour
     private FillFormType currentForm = FillFormType.Normal;
     private GameObject targetObj;
     private Animator animator;
+    private CriWare.Assets.CriAtomSePlayer _sePlayer;
 
     // コルーチン管理用
     private Coroutine attackCoroutine;
@@ -147,6 +149,8 @@ public class FillAttackController : MonoBehaviour
                 this
             );
         }
+
+        _sePlayer = GetComponent<CriWare.Assets.CriAtomSePlayer>();
     }
 
     private void Update()
@@ -412,6 +416,9 @@ public class FillAttackController : MonoBehaviour
             {
                 rb.velocity = direction * bulletSpeed;
             }
+
+            // 発射のSEを再生
+            _sePlayer.Play(SE_PlayerAction.Shoot_Fill);
         }
     }
     #endregion
@@ -616,6 +623,9 @@ public class FillAttackController : MonoBehaviour
             {
                 rb.velocity = requiredVelocity;
             }
+
+            // 発射のSEを再生
+            _sePlayer.Play(SE_PlayerAction.Shoot_Fill);
         }
     }
     #endregion

@@ -50,6 +50,10 @@ public static class SeCueDatabase
             { SE_PlayerAction.AttackMiss1, "AttackMiss1" },
             { SE_PlayerAction.Death1, "Death1" },
             { SE_PlayerAction.FallDown1, "FallDown1" },
+            { SE_PlayerAction.Shoot_Fill, "Attack_Fill" },
+            { SE_PlayerAction.ShieldDeploy1, "ShieldDeploy1" },
+            { SE_PlayerAction.Reflection1, "Reflection1" },
+            { SE_PlayerAction.ShieldBreak1, "ShieldBreak1" },
         };
 
     /// <summary>
@@ -87,6 +91,8 @@ public static class SeCueDatabase
             { SE_EnemyAction.GearTurn, "GearTurn" },
             { SE_EnemyAction.LaserAttack1, "LaserExpand2" },
             { SE_EnemyAction.Spawn1, "Spawn1" },
+            { SE_EnemyAction.ShieldCrack1, "ShieldCrack1" },
+            { SE_EnemyAction.SheldBreak1, "ShieldBreak_Enemy1" },
         };
 
     /// <summary>
@@ -125,7 +131,10 @@ public static class SeCueDatabase
         { SE_Field.SawBlade, "SawBlade" },
         { SE_Field.HorseWalk, "Walk_Horse" },
         { SE_Field.HorseCarriage, "HorseCarriage" },
+        { SE_Field.BreakCultivationTank, "BreakCultivationTank" },
         { SE_Field.InsertDevice1, "InsertDevice1" },
+        { SE_Field.LeverPull1, "LeverPull1" },
+        { SE_Field.LightOn1, "LightOn1" },
     };
 
     /// <summary>
