@@ -67,29 +67,38 @@ SpriteAtlas:
     - 96259aa7da2d9b84fa11796214e34a9f: -1197484545
     - 90428b98cd0c8a048937eb4baead7343: 21300000
     - f1e8c5cc28637724a97b8505f4b31c4b: 21300000
+    - 0303cecc493ad884a9093109e0a03d9e: 21300000
     - 1e8eef1f3a56fe1479b534abf7d6208a: 1143998925
     - 1e8eef1f3a56fe1479b534abf7d6208a: -1306512704
     - 1e8eef1f3a56fe1479b534abf7d6208a: 387697142
     - 1e8eef1f3a56fe1479b534abf7d6208a: 3265239
+    - bbd0605f2512d1f46b371cb2144de5ca: 21300000
+    - bc666b9fecf7ea84eb34b1df26f2ba3c: 21300000
   m_MasterAtlas: {fileID: 0}
   m_PackedSprites:
   - {fileID: 1267147520, guid: 652bc943fab9ceb4ca60239bae772b79, type: 3}
   - {fileID: -1197484545, guid: 96259aa7da2d9b84fa11796214e34a9f, type: 3}
   - {fileID: 21300000, guid: 90428b98cd0c8a048937eb4baead7343, type: 3}
   - {fileID: 21300000, guid: f1e8c5cc28637724a97b8505f4b31c4b, type: 3}
+  - {fileID: 21300000, guid: 0303cecc493ad884a9093109e0a03d9e, type: 3}
   - {fileID: 1143998925, guid: 1e8eef1f3a56fe1479b534abf7d6208a, type: 3}
   - {fileID: -1306512704, guid: 1e8eef1f3a56fe1479b534abf7d6208a, type: 3}
   - {fileID: 387697142, guid: 1e8eef1f3a56fe1479b534abf7d6208a, type: 3}
   - {fileID: 3265239, guid: 1e8eef1f3a56fe1479b534abf7d6208a, type: 3}
+  - {fileID: 21300000, guid: bbd0605f2512d1f46b371cb2144de5ca, type: 3}
+  - {fileID: 21300000, guid: bc666b9fecf7ea84eb34b1df26f2ba3c, type: 3}
   m_PackedSpriteNamesToIndex:
   - Herb
   - Berry
   - donut_choco
   - SeleYam
+  - Teal-Jasper-Elixir
   - StarHerb
   - FlameHerb
   - StoneHerb
   - WindHerb
+  - Honey-Glazed Dates
+  - Coconut
   m_RenderDataMap: {}
   m_Tag: HealItemSpriteAtlas
   m_IsVariant: 0

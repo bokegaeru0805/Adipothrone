@@ -10,11 +10,6 @@ using UnityEngine;
 [RequireComponent(typeof(Rigidbody2D))]
 public class ObjectHealth : CharacterHealth, IEnemyResettable
 {
-    [Header("EnemyDataがない場合のフォールバック設定")]
-    [Tooltip("EnemyDataが未設定の場合、この値が最大HPになります")]
-    [SerializeField]
-    private int objectMaxHP = 0;
-
     [Header("オブジェクト固有設定")]
     [Tooltip("破壊時のフェードアウト時間")]
     [SerializeField]
@@ -155,16 +150,21 @@ public class ObjectHealth : CharacterHealth, IEnemyResettable
         if (isInitialized)
             return;
 
-        if (objectMaxHP > 0)
+        if (enemyData != null)
         {
-            MaxHP = objectMaxHP;
+            // 既存のEnemyDataを使った初期化処理など
+        }
+        else if (useManualHP)
+        {
+            // EnemyDataが未設定で、かつ手動HP設定が有効な場合
+            MaxHP = manualMaxHP;
+            CurrentHP = MaxHP;
         }
         else
         {
             Debug.LogWarning(
-                $"{this.gameObject.name}はEnemyDataまたはobjectMaxHPが設定されていません。HPを1として扱います。"
+                $"[{gameObject.name}] EnemyDataが設定されておらず、手動HP設定(useManualHP)も無効です。"
             );
-            MaxHP = 1;
         }
 
         ResetState();

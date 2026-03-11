@@ -113,6 +113,12 @@ public class Robot_shoot_move : MonoBehaviour
         currentPenetrationCount = 0; //貫通数を初期化
         Destroy(this.gameObject, vanishTime); //指定した時間後に弾を消す
 
+        // 重力の初期化（山なり軌道以外は重力を0にして真っ直ぐ飛ばす）
+        if (moveType != ShootWeaponData.ShootMoveType.Parabola)
+        {
+            newrbody.gravityScale = 0f;
+        }
+
         // 自身がメイン弾であり、タイプがParallel3Wayの場合のみ複製処理を行う
         if (!isSubBullet && moveType == ShootWeaponData.ShootMoveType.Parallel3Way)
         {
@@ -133,6 +139,28 @@ public class Robot_shoot_move : MonoBehaviour
                 new Vector2((isMoveRight ? 1 : -1) * shootSpeed, 0),
                 ForceMode2D.Impulse
             ); //弾の速度を設定
+            isStarted = true; //生成が完了した
+        }
+        else if (moveType == ShootWeaponData.ShootMoveType.Parabola)
+        {
+            // 1. 重力を有効にする（ShootWeaponDataで設定した値を使用）
+            newrbody.gravityScale = currentShootData.gravityScale;
+
+            // 2. 角度の計算
+            // 右向きなら設定された角度そのまま、左向きなら180度から引くことで左斜め上にする
+            float angle = isMoveRight
+                ? currentShootData.upwardAngle
+                : 180f - currentShootData.upwardAngle;
+
+            // 角度から進行方向のベクトルを作成
+            Vector2 launchDirection = new Vector2(
+                Mathf.Cos(angle * Mathf.Deg2Rad),
+                Mathf.Sin(angle * Mathf.Deg2Rad)
+            ).normalized;
+
+            // 3. 斜め上方向に向かって初速を与える
+            newrbody.AddForce(launchDirection * shootSpeed, ForceMode2D.Impulse);
+
             isStarted = true; //生成が完了した
         }
         else

@@ -114,6 +114,23 @@ public class FillAttackController : MonoBehaviour
     [Tooltip("迎撃する高さのランダムな揺れ幅（±この値だけ迎撃ラインが上下にブレます）")]
     [SerializeField]
     private float interceptYSpread = 1.0f;
+
+    [Header("通常攻撃（出掛かり潰し）迎撃の設定")]
+    [Tooltip("ボスが予備動作を開始してから、実際に最初の弾が出るまでの予測時間（秒）")]
+    [SerializeField]
+    private float bossNormalAttackChargeTime = 1.18f;
+
+    [Tooltip("ボスの発射口への狙いオフセット（Xの符号は自動調整されます）")]
+    [SerializeField]
+    private Vector2 interceptNormalAttackOffset = new Vector2(3.8f, -5.5f);
+
+    [Tooltip("迎撃弾の連射数（ボスの3連射に合わせて3などを指定）")]
+    [SerializeField]
+    private int interceptNormalAttackCount = 3;
+
+    [Tooltip("迎撃弾の連射間隔（秒）")]
+    [SerializeField]
+    private float interceptNormalAttackInterval = 0.3f;
     #endregion
 
     #region 内部変数 (Internal Variables)
@@ -125,6 +142,7 @@ public class FillAttackController : MonoBehaviour
     // コルーチン管理用
     private Coroutine attackCoroutine;
     private Coroutine antiRainCoroutine;
+    private Coroutine antiNormalCoroutine; // 通常攻撃迎撃のコルーチン管理用
 
     // 偏差射撃のためのターゲット速度計算用
     private Vector3 targetPreviousPosition;
@@ -229,6 +247,12 @@ public class FillAttackController : MonoBehaviour
         {
             StopCoroutine(antiRainCoroutine);
             antiRainCoroutine = null;
+        }
+
+        if (antiNormalCoroutine != null)
+        {
+            StopCoroutine(antiNormalCoroutine);
+            antiNormalCoroutine = null;
         }
 
         // アニメーションを通常状態に戻す
@@ -473,17 +497,46 @@ public class FillAttackController : MonoBehaviour
             }
         }
         // 降雨攻撃が終わり、別の状態に移行した場合
+        else if (state == DesertTempleBossMoveController.DesertTempleBossState.NormalAttacking)
+        {
+            // // 「頼れる相棒」感を出すため、高確率（例: 50%）で迎撃を行う
+            // bool shouldIntercept = (Random.Range(0, 2) == 0);
+            bool shouldIntercept = true; // 仮
+
+            if (shouldIntercept)
+            {
+                if (attackCoroutine != null)
+                    StopCoroutine(attackCoroutine);
+                if (antiRainCoroutine != null)
+                    StopCoroutine(antiRainCoroutine);
+                if (antiNormalCoroutine != null)
+                    StopCoroutine(antiNormalCoroutine);
+
+                antiNormalCoroutine = StartCoroutine(AntiNormalAttackSequence());
+            }
+        }
+        // 攻撃が終わり、別の状態に移行した場合
         else
         {
-            // 迎撃モード中だった場合のみ、終了して通常攻撃に戻す
+            bool wasIntercepting = false;
+
             if (antiRainCoroutine != null)
             {
-                // 迎撃モードを終了し、キューに残った弾情報をリセット
                 StopCoroutine(antiRainCoroutine);
                 antiRainCoroutine = null;
                 rainBulletsQueue.Clear();
+                wasIntercepting = true;
+            }
 
-                // アニメーションを戻し、ボス本体への通常攻撃を再開する
+            if (antiNormalCoroutine != null)
+            {
+                StopCoroutine(antiNormalCoroutine);
+                antiNormalCoroutine = null;
+                wasIntercepting = true;
+            }
+
+            if (wasIntercepting)
+            {
                 if (animator != null)
                     animator.SetBool(isPrayingParam, false);
 
@@ -543,6 +596,72 @@ public class FillAttackController : MonoBehaviour
         // ボスが降雨攻撃を終え、ループを抜けたらモーションを解除
         if (animator != null)
             animator.SetBool(isPrayingParam, false);
+    }
+
+    /// <summary>
+    /// ボスの通常攻撃に対し、発射口へ先読みで弾を撃ち込んで出掛かりを潰すシーケンス
+    /// </summary>
+    private IEnumerator AntiNormalAttackSequence()
+    {
+        if (animator != null)
+            animator.SetBool(isPrayingParam, true);
+
+        FormAttackSettings settings = GetCurrentSettings();
+
+        // 1. 偏差計算：ボスの発射口の位置と、弾の到達時間を予測
+        Vector3 bossPos = targetObj.transform.position;
+        // Fillから見てボスがどちらにいるかでオフセットのX方向を決定
+        float offsetX =
+            (transform.position.x > bossPos.x)
+                ? interceptNormalAttackOffset.x
+                : -interceptNormalAttackOffset.x;
+        Vector3 targetPos = bossPos + new Vector3(offsetX, interceptNormalAttackOffset.y, 0f);
+        Vector3 spawnPos = transform.position + spawnOffset;
+
+        float distance = Vector3.Distance(spawnPos, targetPos);
+        float timeToHit = distance / settings.bulletSpeed;
+
+        // ボスが撃ってくるタイミングにちょうど弾が届くように待機（間に合わない場合は即撃ち）
+        float waitTime = Mathf.Max(0f, bossNormalAttackChargeTime - timeToHit);
+        yield return new WaitForSeconds(waitTime);
+
+        // 2. ボスの連射に合わせて、発射口へ向けて弾を撃ち込む
+        for (int i = 0; i < interceptNormalAttackCount; i++)
+        {
+            // 途中でボスの状態が変わっていたら（倒された等）中断
+            if (
+                targetBossController == null
+                || targetBossController.CurrentState
+                    != DesertTempleBossMoveController.DesertTempleBossState.NormalAttacking
+            )
+                break;
+
+            // ボスが移動している可能性を考慮して再度位置を更新
+            bossPos = targetObj.transform.position;
+            offsetX =
+                (transform.position.x > bossPos.x)
+                    ? interceptNormalAttackOffset.x
+                    : -interceptNormalAttackOffset.x;
+            targetPos = bossPos + new Vector3(offsetX, interceptNormalAttackOffset.y, 0f);
+
+            // 弾を発射（対象は動いていないと仮定して速度0を渡す）
+            FireBulletAt(targetPos, Vector3.zero, settings.bulletSpeed, 0f, settings.damage);
+
+            // 次の弾までの間隔を待機
+            if (i < interceptNormalAttackCount - 1)
+            {
+                yield return new WaitForSeconds(interceptNormalAttackInterval);
+            }
+        }
+
+        // 3. 撃ち終わったら少し余韻を残して通常状態へ
+        yield return new WaitForSeconds(prayDurationAfterAttack);
+
+        if (animator != null)
+            animator.SetBool(isPrayingParam, false);
+
+        antiNormalCoroutine = null;
+        attackCoroutine = StartCoroutine(AttackLoop());
     }
 
     /// <summary>

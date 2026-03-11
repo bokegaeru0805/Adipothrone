@@ -2,7 +2,6 @@ public enum BladeName
 {
     None = 0, //何も装備していない状態
 
-    //表示の順番に関係するので、IDの順番と数字の順番は一致させてください
     blade_wood = 1001,
 
     knife_stone = 1003,
@@ -10,6 +9,7 @@ public enum BladeName
     blade_NightBorne = 1005,
     hammer_StoneGolem = 1006,
     blade_FlareSeraphim = 1010,
+    blade_IronWood = 1011,
     blade_Debug = 1999,
 }
 
@@ -17,8 +17,8 @@ public enum ShootName
 {
     None = 0, //何も装備していない状態
 
-    //表示の順番に関係するので、IDの順番と数字の順番は一致させてください
     normal = 2001,
     big = 2002,
     fireball1 = 2005,
+    CactusBall = 2006,
 }

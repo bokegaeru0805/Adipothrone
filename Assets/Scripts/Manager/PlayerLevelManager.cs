@@ -193,6 +193,56 @@ public class PlayerLevelManager : MonoBehaviour
         return determinedLevel;
     }
 
+    // （...既存の AddExperience, CanLevelUp, LevelUp, GetExpToNextLevel, GetLevelFromExp メソッドはそのまま維持...）
+
+    /// <summary>
+    /// デバッグ機能などからプレイヤーのレベルを直接指定の値に変更します。
+    /// 経験値もそのレベルの最低必要値に上書きされます。
+    /// </summary>
+    /// <param name="targetLevel">設定したい目標レベル</param>
+    public void SetPlayerLevel(int targetLevel)
+    {
+        var PlayerStatus = GameManager.instance.savedata.PlayerStatus;
+        if (PlayerStatus == null)
+        {
+            Debug.LogError("PlayerStatusDataがnullです");
+            return;
+        }
+
+        // レベルの範囲を制限 (1 ～ 最大レベル)
+        targetLevel = Mathf.Clamp(targetLevel, 1, GameConstants.PLAYER_MAX_LEVEL);
+
+        int oldLevel = playerLv;
+        if (oldLevel == targetLevel)
+            return;
+
+        // 目標レベルに必要な経験値を取得して上書き
+        if (GameConstants.LevelExpRequirements.TryGetValue(targetLevel, out int requiredExp))
+        {
+            PlayerStatus.playerExp = requiredExp;
+        }
+        else
+        {
+            Debug.LogWarning($"レベル {targetLevel} の必要経験値が定義されていません。");
+            return;
+        }
+
+        playerLv = targetLevel;
+        UpdateLevelBasedStats(true); // レベルに応じた能力の変化値を更新し、HPをリセット
+
+        int levelIncreased = targetLevel - oldLevel;
+        if (levelIncreased > 0)
+        {
+            GameUIManager.instance?.ShowLevelUpUI(targetLevel); // レベルアップのメッセージを表示
+            OnLeveledUp?.Invoke(levelIncreased); //レベルアップしたことを通知する
+        }
+        else
+        {
+            // レベルダウンした場合はステータス更新のみ行い、レベルアップ通知は行わない
+            Debug.Log($"レベルが {targetLevel} に下がりました。ステータスを再計算しました。");
+        }
+    }
+
     /// <summary>
     /// レベルに応じたステータスを更新し、PlayerManagerに反映させる
     /// </summary>

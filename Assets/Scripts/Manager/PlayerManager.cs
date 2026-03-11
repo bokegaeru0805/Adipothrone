@@ -489,8 +489,8 @@ public class PlayerManager : MonoBehaviour
     /// </summary>
     public void HealHP(int heal)
     {
-        // 0以下の回復量は無意味なので終了
-        if (heal <= 0)
+        // 0未満の回復量は無意味なので終了
+        if (heal < 0)
             return;
 
         int currentHP = GetPlayerIntStatus(PlayerStatusIntName.playerCurrentHP);
@@ -531,6 +531,34 @@ public class PlayerManager : MonoBehaviour
         {
             HealHP(recoverAmount);
         }
+    }
+
+    /// <summary>
+    /// デバッグや特殊イベント用：最大HPの制限を無視して、指定した値にHPを強制設定します。
+    /// 死亡状態からの蘇生判定およびイベント発行も行います。
+    /// </summary>
+    /// <param name="targetHP">設定したいHPの値</param>
+    public void ForceSetHP(int targetHP)
+    {
+        int currentHP = GetPlayerIntStatus(PlayerStatusIntName.playerCurrentHP);
+        bool wasDead = currentHP <= 0; // 変更前に死亡していたかを記録
+
+        // マイナス値にはならないように下限のみ0で制限
+        int newHP = Mathf.Max(0, targetHP);
+
+        // HPに変化がなければイベント不要
+        if (newHP == currentHP)
+            return;
+
+        SetPlayerIntStatus(PlayerStatusIntName.playerCurrentHP, newHP);
+
+        // 死亡状態から復活した場合のイベントを発火
+        if (wasDead && newHP > 0)
+        {
+            OnPlayerRevived?.Invoke();
+        }
+
+        OnChangeHP?.Invoke(newHP);
     }
 
     #endregion

@@ -476,6 +476,36 @@ public class GameManager : MonoBehaviour
         return GetAllTypeIDToAmount(itemData.GetItemID());
     }
 
+    /// <summary>
+    /// デバッグ用：データベース内のすべての重要アイテム（KeyItem）を指定個数入手します。
+    /// </summary>
+    /// <param name="amount">入手する個数</param>
+    public void AddAllKeyItems(int amount = 1)
+    {
+        if (keyItemDatabase == null || keyItemDatabase.keyItems == null)
+            return;
+
+        foreach (var keyItem in keyItemDatabase.keyItems)
+        {
+            AddAllTypeIDToInventory(keyItem.itemID, amount);
+        }
+    }
+
+    /// <summary>
+    /// デバッグ用：データベース内のすべての回復アイテム（HealItem）を指定個数入手します。
+    /// </summary>
+    /// <param name="amount">入手する個数</param>
+    public void AddAllHealItems(int amount = 1)
+    {
+        if (healItemDatabase == null || healItemDatabase.healItems == null)
+            return;
+
+        foreach (var healItem in healItemDatabase.healItems)
+        {
+            AddAllTypeIDToInventory(healItem.itemID, amount);
+        }
+    }
+
     #endregion
 
     #region Tips Management

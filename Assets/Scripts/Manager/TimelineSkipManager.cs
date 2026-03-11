@@ -269,7 +269,15 @@ public class TimelineSkipManager : MonoBehaviour
         AudioListener.volume = 0f;
 
         // 3. 時間加速
-        Time.timeScale = skipTimeScale;
+        if (TimeManager.instance != null)
+        {
+            TimeManager.instance.StartSkip(skipTimeScale);
+        }
+        else
+        {
+            // TimeManagerが存在しない場合のフォールバック（デバッグ用）
+            Time.timeScale = Mathf.Min(skipTimeScale, 100f);
+        }
         // Time.fixedDeltaTime = 0.02f * skipTimeScale;
         // ↑ これを有効にすると、物理演算の1ステップが大きくなりすぎ（例: 1秒）、
         //   敵が地面をすり抜けて落下してしまうため無効化しました。
@@ -296,8 +304,15 @@ public class TimelineSkipManager : MonoBehaviour
         }
 
         // 5. 復帰
-        Time.timeScale = 1.0f;
-        Time.fixedDeltaTime = defaultFixedDeltaTime;
+        if (TimeManager.instance != null)
+        {
+            TimeManager.instance.StopSkip();
+        }
+        else
+        {
+            Time.timeScale = 1.0f;
+        }
+        // Time.fixedDeltaTime = defaultFixedDeltaTime;
         AudioListener.volume = originalVolume;
 
         // --- プレイヤーの物理挙動を復元する ---

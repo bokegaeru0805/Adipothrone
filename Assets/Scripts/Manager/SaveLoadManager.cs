@@ -494,11 +494,7 @@ public class SaveLoadManager : MonoBehaviour
 
             if (loadScene)
             {
-#if DEMO_BUILD
-                string sceneName = GameConstants.SCENE_NAME_CHAPTER_1; //デモ版の場合、デフォルトのシーン名を変更
-#else
                 string sceneName = GameConstants.SCENE_NAME_TUTORIAL_START; //デフォルトのシーン名を設定
-#endif
 
                 // セーブデータからシーン名を読み込む（存在チェックも含める）
                 if (ES3.KeyExists("CurrentSceneName", filePath))
@@ -561,12 +557,6 @@ public class SaveLoadManager : MonoBehaviour
             {
                 //プレイヤーの初期座標がセーブされていない場合は、GameManagerのPlayerStartPosを使用
                 PlayerPosition = PlayerStartPos;
-
-#if DEMO_BUILD
-                PlayerPosition = new Vector3(-200, 0, 0);
-#else
-                PlayerPosition = PlayerStartPos;
-#endif
             }
 
             // シーン内に配置された補正エリアを確認し、該当する場合は座標を上書きする
@@ -612,10 +602,6 @@ public class SaveLoadManager : MonoBehaviour
             {
                 FadeCanvas.instance.FadeIn(0.5f); //画面を明転させる
             }
-
-#if DEMO_BUILD
-            FadeCanvas.instance.FadeIn(0.5f); //画面を明転させる
-#endif
 
             if (WeaponManager.instance != null)
             {

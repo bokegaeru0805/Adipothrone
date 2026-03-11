@@ -352,6 +352,28 @@ public class WeaponManager : MonoBehaviour
         return weaponItemDatabase.GetWeaponData(id);
     }
 
+    /// <summary>
+    /// デバッグ用：データベース内のすべての武器を指定個数入手します。
+    /// </summary>
+    /// <param name="amount">入手する個数</param>
+    public void AddAllWeapons(int amount = 1)
+    {
+        if (weaponItemDatabase == null)
+        {
+            Debug.LogWarning("WeaponItemDatabaseが設定されていません。");
+            return;
+        }
+        
+        foreach (var shoot in weaponItemDatabase.shoots)
+        {
+            GameManager.instance.AddAllTypeIDToInventory(shoot.weaponID, amount);
+        }
+        foreach (var blade in weaponItemDatabase.blades)
+        {
+            GameManager.instance.AddAllTypeIDToInventory(blade.weaponID, amount);
+        }
+    }
+
     // // IDからBase武器データを取得
     // public WeaponData GetBaseWeaponDataByID(int id)
     // {

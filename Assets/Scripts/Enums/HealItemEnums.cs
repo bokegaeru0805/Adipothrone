@@ -9,4 +9,7 @@ public enum HealItemName
     StarHerb = 8006, //スターハーブ
     SeleYam = 8007, //セレヤム
     Donut = 8008, //ドーナツ
+    Coconut = 8009, //ココナッツ
+    HoneyGlazedDates = 8010, //蜜漬けナツメヤシ
+    TealJasperElixir = 8011, //碧玉の霊薬
 }

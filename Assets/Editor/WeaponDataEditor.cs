@@ -12,6 +12,8 @@ public class ShootWeaponDataEditor : Editor
     SerializedProperty shotInterval;
     SerializedProperty penetrationLimitCount;
     SerializedProperty moveType;
+    SerializedProperty gravityScale;
+    SerializedProperty upwardAngle;
     SerializedProperty colliderOffset;
     SerializedProperty colliderRadius;
     SerializedProperty shootAnimation;
@@ -37,6 +39,8 @@ public class ShootWeaponDataEditor : Editor
         shotInterval = serializedObject.FindProperty("shotInterval");
         penetrationLimitCount = serializedObject.FindProperty("penetrationLimitCount");
         moveType = serializedObject.FindProperty("moveType");
+        gravityScale = serializedObject.FindProperty("gravityScale");
+        upwardAngle = serializedObject.FindProperty("upwardAngle");
         colliderOffset = serializedObject.FindProperty("colliderOffset");
         colliderRadius = serializedObject.FindProperty("colliderRadius");
         shootAnimation = serializedObject.FindProperty("shootAnimation");
@@ -79,6 +83,8 @@ public class ShootWeaponDataEditor : Editor
         EditorGUILayout.PropertyField(shotInterval, new GUIContent("発射間隔"));
         EditorGUILayout.PropertyField(penetrationLimitCount, new GUIContent("貫通限界数"));
         EditorGUILayout.PropertyField(moveType, new GUIContent("弾の移動タイプ"));
+        EditorGUILayout.PropertyField(gravityScale, new GUIContent("重力スケール"));
+        EditorGUILayout.PropertyField(upwardAngle, new GUIContent("上昇角度"));
         EditorGUILayout.PropertyField(colliderRadius, new GUIContent("Colliderの半径"));
         EditorGUILayout.PropertyField(colliderOffset, new GUIContent("Colliderの座標オフセット"));
         EditorGUILayout.PropertyField(shootAnimation, new GUIContent("アニメーション(任意)"));

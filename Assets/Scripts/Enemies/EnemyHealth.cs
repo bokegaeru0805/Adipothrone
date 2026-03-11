@@ -58,12 +58,24 @@ public class EnemyHealth : CharacterHealth, IEnemyResettable
     {
         if (!isInitialized)
         {
-            if (enemyData == null)
+            // スポナー経由でなく、シーンに直接配置された場合の初期化
+            if (enemyData != null)
             {
-                Debug.LogError($"{this.gameObject.name}はEnemyDataが設定されていません");
-                return;
+                Initialize(enemyData);
             }
-            Initialize(this.enemyData);
+            else if (useManualHP)
+            {
+                // 手動HP設定が有効な場合は、インスペクターの値を最大HPとして使用する
+                MaxHP = manualMaxHP;
+                CurrentHP = MaxHP;
+                isInitialized = true;
+            }
+            else
+            {
+                Debug.LogWarning(
+                    $"[{gameObject.name}] EnemyDataが設定されていません。手動HP設定(useManualHP)も無効です。"
+                );
+            }
         }
     }
 

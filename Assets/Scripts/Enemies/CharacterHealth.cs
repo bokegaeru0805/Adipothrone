@@ -2,7 +2,6 @@ using System;
 using System.Collections;
 using MyGame.CameraControl;
 using NaughtyAttributes;
-using UnityEditor.EditorTools;
 using UnityEngine;
 
 /// <summary>
@@ -19,6 +18,17 @@ public abstract class CharacterHealth : PoolableObject, IDamageable, IDroppable,
     private const string SHADER_PROP_OVERLAY_ON = "_OverlayOn";
     private const string SHADER_KEYWORD_OVERLAY_ON = "_OVERLAY_ON";
 
+    #endregion
+
+    #region Manual HP Settings
+    [Header("手動HP設定")]
+    [Tooltip("EnemyDataを使用せず、インスペクターから直接最大HPを設定するかどうか")]
+    [SerializeField]
+    protected bool useManualHP = false;
+
+    [Tooltip("useManualHPがtrueの場合、この値が最大HPになります")]
+    [SerializeField, NaughtyAttributes.ShowIf(nameof(useManualHP))]
+    protected int manualMaxHP = 0;
     #endregion
 
     #region Properties
