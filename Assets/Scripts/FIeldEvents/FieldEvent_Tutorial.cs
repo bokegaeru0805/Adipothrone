@@ -1,9 +1,17 @@
+using System.Collections.Generic;
+using NaughtyAttributes;
 using UnityEngine;
 
 public class FieldEvent_Tutorial : BaseFieldEvent
 {
     [SerializeField]
     private FieldName fieldname = FieldName.None; // フィールド名を設定するための変数
+
+    [ShowIf(nameof(fieldname), FieldName.EnemyTutorialField)]
+    [Header("Enemy Tutorial Settings")]
+    [Tooltip("EnemyTutorialFieldでドロップアイテムを全開放する敵のデータのリスト")]
+    [SerializeField]
+    private List<EnemyData> targetEnemiesForTutorial = new List<EnemyData>();
 
     private enum FieldName
     {
@@ -117,6 +125,18 @@ public class FieldEvent_Tutorial : BaseFieldEvent
                     FungusHelper.ExecuteBlock(targetFlowchart, "EnemyTutorialField");
                     isEventTriggered = true;
                     GameManager.instance.savedata.TipsData.RegisterTipsData(TipsName.HudDisplay); // HUD表示のヒントを登録
+                    if (targetEnemiesForTutorial != null && targetEnemiesForTutorial.Count > 0)
+                    {
+                        foreach (var enemyData in targetEnemiesForTutorial)
+                        {
+                            if (enemyData != null)
+                            {
+                                GameManager.instance.savedata.EnemyRecordData.UnlockAllDropItems(
+                                    enemyData
+                                );
+                            }
+                        }
+                    }
                 }
                 break;
 

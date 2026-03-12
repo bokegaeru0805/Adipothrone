@@ -163,7 +163,8 @@ public class ObjectHealth : CharacterHealth, IEnemyResettable
         else
         {
             Debug.LogWarning(
-                $"[{gameObject.name}] EnemyDataが設定されておらず、手動HP設定(useManualHP)も無効です。"
+                $"[{gameObject.name}] EnemyDataが設定されておらず、手動HP設定(useManualHP)も無効です。",
+                this
             );
         }
 

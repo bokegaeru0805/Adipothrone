@@ -652,6 +652,12 @@ public class NightBorneMoveController : MonoBehaviour, IEnemyResettable
 
                 if (sr != null)
                 {
+                    // ファンネルのスプライトをデータから取得したものに自動で差し替える
+                    if (funnelBladeSprite != null)
+                    {
+                        sr.sprite = funnelBladeSprite;
+                    }
+
                     initialFunnelColors.Add(sr.color); // SpriteRendererが存在すれば、初期色を保存
                     sr.sortingLayerID = sortingLayerID; //初期化時にソーティングレイヤーを合わせる
                     sr.sortingOrder = sortingOrder; //初期化時にソーティングオーダーを合わせる

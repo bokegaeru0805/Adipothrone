@@ -48,7 +48,7 @@ public class ShopData : ScriptableObject
     }
 
     /// <summary>
-    /// 条件付き会話リストを評価し、適切なセリフを1つ返します。（★ ロジックを共通化・最適化）
+    /// 条件付き会話リストを評価し、適切なセリフを1つ返します。
     /// </summary>
     /// <param name="dialogueList">評価する会話リスト</param>
     /// <param name="defaultDialogue">どの条件にも一致しなかった場合に使う会話</param>

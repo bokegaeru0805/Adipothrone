@@ -237,7 +237,7 @@ public class DesertTempleBossMoveController : MonoBehaviour
     [Header("ゴーレム召喚攻撃の設定")]
     [Tooltip("召喚の最大数")]
     [SerializeField]
-    private int maxGolemCount = 5;
+    private int maxGolemCount = 3;
 
     [Tooltip("ゴーレム召喚攻撃後の時間間隔の最小値")]
     [SerializeField]

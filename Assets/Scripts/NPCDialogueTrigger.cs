@@ -199,7 +199,23 @@ public class NPCDialogueTrigger : MonoBehaviour
         // どの条件にも一致しなかった場合、デフォルトのブロックを実行
         if (!string.IsNullOrEmpty(defaultBlockName))
         {
-            FungusHelper.ExecuteBlock(targetFlowchart, defaultBlockName);
+            // ショップトリガーとしての処理かどうかを判定
+            bool isShopBlock =
+                isShopTrigger
+                && string.Equals(defaultBlockName, "Shop", StringComparison.OrdinalIgnoreCase);
+
+            if (isShopBlock)
+            {
+                // ShopInteractionTriggerが設定されている場合、ShopTriggerを実行
+                if (shopInteractionTrigger != null)
+                {
+                    shopInteractionTrigger.ShopTrigger();
+                }
+            }
+            else
+            {
+                FungusHelper.ExecuteBlock(targetFlowchart, defaultBlockName);
+            }
         }
     }
 

@@ -11,6 +11,7 @@ public class FillAttackController : MonoBehaviour
 {
     #region 定義 (Definitions)
     private const string BULLET_POOL_TAG = "FillBullet";
+    private const string INTERCEPT_BULLET_POOL_TAG = "FillInterceptBullet";
 
     /// <summary>
     /// Fillの形態
@@ -388,7 +389,8 @@ public class FillAttackController : MonoBehaviour
         Vector3 targetVel,
         float bulletSpeed,
         float spreadAngle,
-        int damage
+        int damage,
+        string poolTag = BULLET_POOL_TAG
     )
     {
         Vector3 spawnPos = transform.position + spawnOffset;
@@ -417,7 +419,7 @@ public class FillAttackController : MonoBehaviour
 
         // ObjectPoolerを利用して弾を生成
         GameObject bullet = ObjectPooler.SceneInstance.SpawnFromPool(
-            BULLET_POOL_TAG,
+            poolTag,
             spawnPos,
             Quaternion.identity
         );
@@ -463,6 +465,31 @@ public class FillAttackController : MonoBehaviour
     }
 
     /// <summary>
+    /// プレイヤーの現在HP割合に応じて、迎撃を行うかどうかの確率を判定します。
+    /// HP 20%以下で100%、HP 100%で20%の確率となり、その間はなだらかに変動します。
+    /// </summary>
+    /// <returns>迎撃を行う場合はtrue</returns>
+    private bool CheckInterceptProbability()
+    {
+        float hpRatio = 1.0f;
+
+        // プレイヤーのHP割合を取得
+        if (PlayerManager.instance != null)
+        {
+            hpRatio = PlayerManager.instance.GetNormalizedHP();
+        }
+
+        // hpRatioが 1.0(100%) のとき t = 0、0.2(20%)以下のとき t = 1 となるように変換
+        float t = Mathf.InverseLerp(1.0f, 0.2f, hpRatio);
+
+        // t に基づいて、0.2(20%) から 1.0(100%) の間で確率を補間
+        float interceptChance = Mathf.Lerp(0.2f, 1.0f, t);
+
+        // 0.0f〜1.0f のランダムな値が、計算された確率以下なら迎撃を実行
+        return Random.value <= interceptChance;
+    }
+
+    /// <summary>
     /// ボスの状態が変化した際に呼ばれるイベントコールバック
     /// </summary>
     /// <param name="state">ボスの新しい状態</param>
@@ -471,9 +498,8 @@ public class FillAttackController : MonoBehaviour
         // ボスが降雨攻撃状態に切り替わった場合
         if (state == DesertTempleBossMoveController.DesertTempleBossState.RainAttacking)
         {
-            // --- 追加：条件判定（今回は例として1/5の確率でアタリ） ---
-            // Random.Range(0, 5) は 0, 1, 2, 3, 4 のいずれかを返します
-            bool shouldIntercept = (Random.Range(0, 5) == 0);
+            // プレイヤーのHP割合に応じた確率で迎撃判定を行う
+            bool shouldIntercept = CheckInterceptProbability();
 
             if (shouldIntercept)
             {
@@ -499,9 +525,8 @@ public class FillAttackController : MonoBehaviour
         // 降雨攻撃が終わり、別の状態に移行した場合
         else if (state == DesertTempleBossMoveController.DesertTempleBossState.NormalAttacking)
         {
-            // // 「頼れる相棒」感を出すため、高確率（例: 50%）で迎撃を行う
-            // bool shouldIntercept = (Random.Range(0, 2) == 0);
-            bool shouldIntercept = true; // 仮
+            // プレイヤーのHP割合に応じた確率で迎撃判定を行う
+            bool shouldIntercept = CheckInterceptProbability();
 
             if (shouldIntercept)
             {
@@ -645,7 +670,14 @@ public class FillAttackController : MonoBehaviour
             targetPos = bossPos + new Vector3(offsetX, interceptNormalAttackOffset.y, 0f);
 
             // 弾を発射（対象は動いていないと仮定して速度0を渡す）
-            FireBulletAt(targetPos, Vector3.zero, settings.bulletSpeed, 0f, settings.damage);
+            FireBulletAt(
+                targetPos,
+                Vector3.zero,
+                settings.bulletSpeed,
+                0f,
+                settings.damage,
+                INTERCEPT_BULLET_POOL_TAG
+            );
 
             // 次の弾までの間隔を待機
             if (i < interceptNormalAttackCount - 1)
@@ -704,7 +736,8 @@ public class FillAttackController : MonoBehaviour
                 targetVelocity,
                 settings.bulletSpeed * 1.5f,
                 settings.accuracySpreadAngle,
-                settings.damage
+                settings.damage,
+                INTERCEPT_BULLET_POOL_TAG
             );
             return;
         }
@@ -718,7 +751,7 @@ public class FillAttackController : MonoBehaviour
 
         // --- 弾の生成と発射 ---
         GameObject bullet = ObjectPooler.SceneInstance.SpawnFromPool(
-            BULLET_POOL_TAG,
+            INTERCEPT_BULLET_POOL_TAG,
             spawnPos,
             Quaternion.identity
         );

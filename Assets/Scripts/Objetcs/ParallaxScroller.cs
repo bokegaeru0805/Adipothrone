@@ -10,6 +10,7 @@ using UnityEditor;
 /// </summary>
 public class ParallaxScroller : MonoBehaviour
 {
+#pragma warning disable 0414 // 使われていない変数の警告（CS0414）を一時的に無効化
     [InfoBox(
         "【背景設定のルール】\n"
             + "背景が途切れないようにするため、以下の条件を満たしてください。\n\n"
@@ -19,6 +20,7 @@ public class ParallaxScroller : MonoBehaviour
     [ReadOnly]
     [SerializeField]
     private string _instruction = "設定不要";
+#pragma warning restore 0414 // 警告の無効化を解除（これ以降のコードでは通常通り警告を出す）
 
     [Header("背景設定")]
     [Tooltip("横に並べてスクロールさせる背景のGameObjectのリスト")]
@@ -46,17 +48,18 @@ public class ParallaxScroller : MonoBehaviour
     // この値よりscrollSpeedが速い場合、親の動きを補正して見た目の速度を一定に保ちます
     private const float COMPENSATION_THRESHOLD = 10f;
 
-    // --- 外部からアクセス可能なプロパティ ---
-    public float ScrollSpeed
-    {
-        get { return scrollSpeed; }
-        set { scrollSpeed = value; }
-    }
-
     // --- 内部で利用する変数 ---
     private float backgroundWidth;
     private Vector3 lastParentPosition;
     private Renderer[] backgroundRenderers;
+
+    /// 外部（Invoke Methodなど）からスクロール速度を動的に変更します。
+    /// </summary>
+    /// <param name="newSpeed">新しいスクロール速度（マイナス値にすると右に動きます）</param>
+    public void SetScrollSpeed(float newSpeed)
+    {
+        scrollSpeed = newSpeed;
+    }
 
     void Start()
     {

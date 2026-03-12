@@ -21,4 +21,5 @@ public enum ShootName
     big = 2002,
     fireball1 = 2005,
     CactusBall = 2006,
+    shoot_Debug = 2999,
 }

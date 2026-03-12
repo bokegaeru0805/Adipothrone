@@ -1,8 +1,5 @@
 #if DEMO_BUILD
-using System;
-using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.UI;
 using TMPro;
 using UnityEngine.EventSystems;
 
@@ -29,6 +26,10 @@ public class DebugMenuManager : MonoBehaviour
     [SerializeField]
     private TMP_InputField levelInput; // レベル指定用入力欄
 
+    [Header("座標移動用入力")]
+    [SerializeField]
+    private TMP_InputField posInput; // X, Y座標をカンマ区切りで一気に入力するための入力欄
+
     [Header("アイテム入手設定")]
     [SerializeField]
     private TMP_InputField itemAmountInput; // 入手個数を指定する入力欄
@@ -41,7 +42,7 @@ public class DebugMenuManager : MonoBehaviour
     {
         if (debugCanvas != null)
         {
-            debugCanvas.enabled = false; // 初期状態ではデバッグ画面を非表示にする
+            debugCanvas.gameObject.SetActive(false);
         }
 
         if (hpInput != null)
@@ -53,6 +54,10 @@ public class DebugMenuManager : MonoBehaviour
         if (levelInput != null)
             levelInput.onSubmit.AddListener(ApplyLevel);
 
+        // 座標入力欄でEnterが押されたときの処理を登録
+        if (posInput != null)
+            posInput.onSubmit.AddListener(ApplyPosition);
+
         // タイムスケール入力欄でEnterが押されたときの処理
         if (timeScaleInput != null)
         {
@@ -61,8 +66,6 @@ public class DebugMenuManager : MonoBehaviour
 
         // 初期値のセットアップ
         UpdateCurrentStatusToUI();
-        if (timeScaleInput != null)
-            timeScaleInput.text = "1.0"; // タイムスケールのデフォルト値
         if (itemAmountInput != null)
             itemAmountInput.text = "1"; // アイテム取得個数のデフォルト値
     }
@@ -74,7 +77,9 @@ public class DebugMenuManager : MonoBehaviour
         {
             if (debugCanvas != null)
             {
-                debugCanvas.enabled = !debugCanvas.enabled;
+                // 現在の状態の反転を取得し、GameObjectのアクティブ状態を切り替える
+                bool nextState = !debugCanvas.gameObject.activeSelf;
+                debugCanvas.gameObject.SetActive(nextState);
 
                 // EventSystemが存在する場合、InputModuleを切り替える
                 if (EventSystem.current != null)
@@ -242,6 +247,48 @@ public class DebugMenuManager : MonoBehaviour
     }
 
     /// <summary>
+    /// 座標入力欄でEnterが押されたときの処理。
+    /// X, Yの形式で入力された文字列を解析してプレイヤーを一気に移動させます。
+    /// </summary>
+    private void ApplyPosition(string text)
+    {
+        if (PlayerManager.instance == null)
+        {
+            Debug.LogWarning("PlayerManagerが存在しないため、プレイヤーを移動できません。");
+            return;
+        }
+
+        // 入力された文字列をカンマで分割する
+        string[] splitText = text.Split(',');
+
+        // カンマで区切られた2つの値が存在するか確認
+        if (splitText.Length == 2)
+        {
+            // 余分な空白を取り除き、小数 (float) として解析する
+            if (
+                float.TryParse(splitText[0].Trim(), out float targetX)
+                && float.TryParse(splitText[1].Trim(), out float targetY)
+            )
+            {
+                Vector2 targetPos = new Vector2(targetX, targetY);
+                // PlayerManagerの強制移動コルーチンを呼び出す
+                PlayerManager.instance.StartCoroutine(PlayerManager.instance.PlayerMove(targetPos));
+                Debug.Log($"プレイヤーを ({targetX}, {targetY}) に一気に移動させました。");
+            }
+            else
+            {
+                Debug.LogWarning("座標の数値解析に失敗しました。半角数字で入力してください。");
+            }
+        }
+        else
+        {
+            Debug.LogWarning(
+                "入力形式が正しくありません。「10.5, 20.0」のようにカンマで区切って入力してください。"
+            );
+        }
+    }
+
+    /// <summary>
     /// PlayerManagerやPlayerLevelManagerから現在のステータスを取得し、
     /// 各InputFieldのテキストにデフォルト値として反映させます。
     /// </summary>
@@ -270,6 +317,22 @@ public class DebugMenuManager : MonoBehaviour
         if (PlayerLevelManager.instance != null && levelInput != null)
         {
             levelInput.text = PlayerLevelManager.instance.playerLv.ToString();
+        }
+
+        //プレイヤーの現在座標を取得し、X, Yの形式で表示
+        if (PlayerManager.instance != null)
+        {
+            Vector2 currentPos = PlayerManager.instance.GetPlayerPosition();
+            if (posInput != null)
+            {
+                // 小数点第2位まで表示し、間にカンマとスペースを入れる
+                posInput.text = $"{currentPos.x:F2}, {currentPos.y:F2}";
+            }
+        }
+        // 現在のゲームスピードを取得して表示
+        if (TimeManager.instance != null && timeScaleInput != null)
+        {
+            timeScaleInput.text = TimeManager.instance.DebugBaseTimeScale.ToString("F1");
         }
     }
 }

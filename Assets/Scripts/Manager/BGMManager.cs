@@ -127,11 +127,7 @@ public class BGMManager : MonoBehaviour
     public void Play(BGMCategory category)
     {
         // 再生中の曲が同じでも、再生されていなければ再開させる
-        if (
-            currentCategory == category
-            && currentPlayer != null
-            && currentPlayer.GetStatus() == CriAtomExPlayer.Status.Playing
-        )
+        if (currentCategory == category && IsPlayerActive(currentPlayer))
         {
             return;
         }
@@ -143,7 +139,7 @@ public class BGMManager : MonoBehaviour
         }
 
         // 停止中の場合は、最初のプレイヤーで再生開始
-        if (currentPlayer == null || currentPlayer.GetStatus() != CriAtomExPlayer.Status.Playing)
+        if (!IsPlayerActive(currentPlayer))
         {
             currentPlayer = player1;
             currentPlayer.SetVolume(1.0f);
@@ -188,7 +184,7 @@ public class BGMManager : MonoBehaviour
         if (currentCategory == category && activeFadeCoroutine == null)
             return;
 
-        if (currentPlayer != null && currentPlayer.GetStatus() == CriAtomExPlayer.Status.Playing)
+        if (IsPlayerActive(currentPlayer))
         {
             // 安全なクロスフェード処理を呼び出す
             StartCrossfadeInternal(category, duration);
@@ -253,7 +249,7 @@ public class BGMManager : MonoBehaviour
     /// </summary>
     public void FadeOut(float duration)
     {
-        if (currentPlayer != null && currentPlayer.GetStatus() == CriAtomExPlayer.Status.Playing)
+        if (IsPlayerActive(currentPlayer))
         {
             if (activeFadeCoroutine != null)
             {
@@ -302,7 +298,7 @@ public class BGMManager : MonoBehaviour
             return;
 
         // 停止中ならFadeInとして扱う
-        if (currentPlayer == null || currentPlayer.GetStatus() != CriAtomExPlayer.Status.Playing)
+        if (!IsPlayerActive(currentPlayer))
         {
             FadeIn(newCategory, crossfadeDuration);
         }
@@ -332,7 +328,7 @@ public class BGMManager : MonoBehaviour
 
         // 2. 現在再生を担当していない方のプレイヤー（古いフェードイン担当）を特定して停止する
         // これにより、中途半端にフェードインしていた曲が確実に止まる
-        if (currentPlayer != null && currentPlayer.GetStatus() == CriAtomExPlayer.Status.Playing)
+        if (IsPlayerActive(currentPlayer))
         {
             CriAtomExPlayer playerToStop = (currentPlayer == player1) ? player2 : player1;
             playerToStop.Stop();
@@ -350,6 +346,12 @@ public class BGMManager : MonoBehaviour
         // 1. フェードイン/アウトするプレイヤーを決定
         CriAtomExPlayer fadeInPlayer = (currentPlayer == player1) ? player2 : player1;
         CriAtomExPlayer fadeOutPlayer = currentPlayer;
+
+        // クロスフェードの開始直後に、メインプレイヤーの判定を新しい曲（fadeInPlayer）に切り替える。
+        // Time.timeScaleが2.0などでFungusが高速進行し、フェード完了前に次の曲が割り込んできた場合でも、
+        // 古い曲ではなく「現在フェードイン中の最新の曲」を正しく基準にするため。
+        currentPlayer = fadeInPlayer;
+        currentCategory = newCategory;
 
         // 2. 新しい曲を再生準備し、ボリューム0で再生開始
         fadeInPlayer.SetCue(bgmAcbAsset.Handle, bgmNameTable[newCategory]);
@@ -396,9 +398,7 @@ public class BGMManager : MonoBehaviour
     /// </summary>
     public bool IsPlayingCategory(BGMCategory category)
     {
-        return currentCategory == category
-            && currentPlayer != null
-            && currentPlayer.GetStatus() == CriAtomExPlayer.Status.Playing;
+        return currentCategory == category && IsPlayerActive(currentPlayer);
     }
 
     /// <summary>
@@ -428,5 +428,16 @@ public class BGMManager : MonoBehaviour
         // AISACコントロールを設定してBGMの音量を変化させる
         currentPlayer.SetAisacControl(DUCKING_AISAC_NAME, targetValue);
         currentPlayer.UpdateAll(); // 変更を即座に反映
+    }
+
+    /// <summary>
+    /// プレイヤーが再生中、または再生準備中かどうかを判定するヘルパーメソッド
+    /// </summary>
+    private bool IsPlayerActive(CriAtomExPlayer player)
+    {
+        if (player == null)
+            return false;
+        CriAtomExPlayer.Status status = player.GetStatus();
+        return status == CriAtomExPlayer.Status.Playing || status == CriAtomExPlayer.Status.Prep;
     }
 }

@@ -50,6 +50,9 @@ public class PlayerManager : MonoBehaviour
     // プレイヤーが操作不能状態（強制移動中など）のときtrue
     public bool isControlLocked { get; private set; } = false;
 
+    // 被弾時に付与される無敵時間（秒）
+    private float damageInvincibilityTime = 1.25f;
+
     // ステータス関連
     public int playerMaxHP { get; private set; } = GameConstants.GetMaxHP(1); // プレイヤーの最大HP
     public int playerMaxWP { get; private set; } = GameConstants.GetMaxWP(1); // プレイヤーの最大WP
@@ -356,6 +359,14 @@ public class PlayerManager : MonoBehaviour
             return;
         }
 
+        // 【多段ヒット防止の安全装置】
+        // Heroin_move側の無敵フラグの反映遅れや、参照外れに備えて、
+        // 前回ダメージを受けてから指定時間（damageInvincibilityTime）経過していなければ確実にはじく
+        if (Time.time - LastDamageTime < damageInvincibilityTime)
+        {
+            return;
+        }
+
         // 会話中はダメージを受けないようにする
         if (isTalking)
         {
@@ -531,6 +542,25 @@ public class PlayerManager : MonoBehaviour
         {
             HealHP(recoverAmount);
         }
+    }
+
+    /// <summary>
+    /// 現在のプレイヤーのHP割合（0.0f ～ 1.0f）を取得します。
+    /// UIの更新や条件分岐（HPが半分以下など）に使用します。
+    /// </summary>
+    /// <returns>現在のHP割合</returns>
+    public float GetNormalizedHP()
+    {
+        // ゼロ除算を防止
+        if (playerMaxHP <= 0)
+        {
+            return 0f;
+        }
+
+        int currentHP = GetPlayerIntStatus(PlayerStatusIntName.playerCurrentHP);
+
+        // 計算結果が0～1の間に収まるようにClamp01を使用
+        return Mathf.Clamp01((float)currentHP / playerMaxHP);
     }
 
     /// <summary>

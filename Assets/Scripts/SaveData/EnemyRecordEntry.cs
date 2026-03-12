@@ -98,6 +98,7 @@ public class EnemyRecordData
 {
     // 全敵のレコードリスト
     public List<EnemyRecordEntry> enemyRecords = new();
+
     // 入手済みユニークアイテムIDリスト
     public List<int> ObtainedUniqueItemIds = new List<int>();
 
@@ -137,6 +138,43 @@ public class EnemyRecordData
             if (!entry.UnlockedDropItemIds.Contains(itemID))
             {
                 entry.UnlockedDropItemIds.Add(itemID);
+            }
+        }
+    }
+
+    /// <summary>
+    /// 指定された敵のマスターデータ(EnemyData)を元に、その敵が持つすべてのドロップアイテムを解禁済みとして記録します。
+    /// デバッグや図鑑の全開放機能などに使用します。
+    /// </summary>
+    /// <param name="enemyData">全開放したい敵のマスターデータ</param>
+    public void UnlockAllDropItems(EnemyData enemyData)
+    {
+        if (enemyData == null || enemyData.dropItems == null)
+        {
+            return;
+        }
+
+        // 該当の敵のエントリーを取得（存在しない場合は自動的に新規作成されます）
+        var entry = GetOrCreateEntry(enemyData.enemyID);
+
+        foreach (var dropItem in enemyData.dropItems)
+        {
+            if (dropItem.baseItemData != null)
+            {
+                // BaseItemDataからEnum型のIDを取得し、保存用のint型に変換
+                int itemID = Convert.ToInt32(dropItem.baseItemData.GetItemID());
+
+                // 通常のドロップアイテムとして図鑑に登録（重複チェック）
+                if (!entry.UnlockedDropItemIds.Contains(itemID))
+                {
+                    entry.UnlockedDropItemIds.Add(itemID);
+                }
+
+                // 条件付きドロップ（特定レベル以下での討伐など）に設定されている場合は、その条件も解禁済みにする
+                if (dropItem.hasCondition && !entry.UnlockedConditionItemIds.Contains(itemID))
+                {
+                    entry.UnlockedConditionItemIds.Add(itemID);
+                }
             }
         }
     }
@@ -305,14 +343,13 @@ public class EnemyRecordData
         return unlockedList;
     }
 
-        /// <summary>
+    /// <summary>
     /// 指定したアイテムが既に入手済みのユニークアイテムか判定する
     /// </summary>
     public bool IsUniqueItemObtained(int itemID)
     {
         return ObtainedUniqueItemIds.Contains(itemID);
     }
-
 
     #endregion
 
