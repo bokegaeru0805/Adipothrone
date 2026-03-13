@@ -31,8 +31,14 @@ public class CharacterHealthUIController : MonoBehaviour
     /// 実行中の「非表示タイマー」コルーチンの参照
     private Coroutine hideCoroutine = null;
 
+    // UIの向き・スケール固定用の初期値を保存する変数
+    private Vector3 initialLossyScale;
+
     private void Awake()
     {
+        // 初期スケール（ワールド空間での絶対的な大きさ）を保存
+        initialLossyScale = transform.lossyScale;
+
         // 親オブジェクトから CharacterHealth コンポーネントを取得
         characterHealth = GetComponentInParent<CharacterHealth>();
 
@@ -107,6 +113,28 @@ public class CharacterHealthUIController : MonoBehaviour
         if (hpBarRootObject != null)
         {
             hpBarRootObject.SetActive(false);
+        }
+    }
+
+    private void LateUpdate()
+    {
+        // 1. 回転を固定（親オブジェクトの回転の影響を消し、常に画面の正位置を保つ）
+        transform.rotation = Quaternion.identity;
+
+        // 2. スケールを固定（親オブジェクトの左右反転の影響を消し、元の見た目を保つ）
+        if (transform.parent != null)
+        {
+            Vector3 parentScale = transform.parent.lossyScale;
+
+            // 親のスケールが0に近づいた場合のゼロ除算を防ぎつつ、逆算してワールドスケールを初期状態に保つ
+            float scaleX =
+                Mathf.Abs(parentScale.x) > 0.001f ? initialLossyScale.x / parentScale.x : 0f;
+            float scaleY =
+                Mathf.Abs(parentScale.y) > 0.001f ? initialLossyScale.y / parentScale.y : 0f;
+            float scaleZ =
+                Mathf.Abs(parentScale.z) > 0.001f ? initialLossyScale.z / parentScale.z : 0f;
+
+            transform.localScale = new Vector3(scaleX, scaleY, scaleZ);
         }
     }
 

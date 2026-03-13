@@ -136,6 +136,12 @@ public static class UIUtility
             }
         }
 
+        // アクティブなボタン同士のExplicitナビゲーションを自動構築
+        if (columnCount > 0 && validButtonCount > 0)
+        {
+            SetupGridNavigation(buttons, validButtonCount, columnCount);
+        }
+
         // --- 選択インデックスの決定処理 ---
 
         if (moveRight)
@@ -236,6 +242,12 @@ public static class UIUtility
             }
         }
 
+        // アクティブなボタン同士のExplicitナビゲーションを自動構築
+        if (validButtonCount > 0)
+        {
+            SetupVerticalNavigation(buttons, validButtonCount);
+        }
+
         // --- 選択インデックスの決定処理 ---
 
         if (moveDown)
@@ -254,5 +266,129 @@ public static class UIUtility
         EventSystem.current.SetSelectedGameObject(buttons[selectIndex].gameObject);
 
         return true;
+    }
+
+    /// <summary>
+    /// グリッド配置されたボタン群に対して、有効なボタン同士を繋ぐ Explicit ナビゲーションを構築します。
+    /// 左右の端では移動先を null にし、PageNavigationHandler にページ送りを委譲します。
+    /// 上下の端では同一列内でループ移動させます。
+    /// </summary>
+    private static void SetupGridNavigation(
+        List<Button> buttons,
+        int validButtonCount,
+        int columnCount
+    )
+    {
+        // 全体の行数を計算
+        int totalRows = Mathf.CeilToInt((float)validButtonCount / columnCount);
+
+        for (int i = 0; i < validButtonCount; i++)
+        {
+            Navigation nav = new Navigation();
+            nav.mode = Navigation.Mode.Explicit;
+
+            int row = i / columnCount;
+            int col = i % columnCount;
+
+            // --- 上方向の移動設定 ---
+            int upIndex = i - columnCount;
+            if (upIndex < 0)
+            {
+                // 最上段なら、同じ列の最下段へループさせる
+                int bottomIndex = (totalRows - 1) * columnCount + col;
+                // ただし、最下段のその列にアイテムがない場合は、1つ上の行にする
+                if (bottomIndex >= validButtonCount)
+                {
+                    bottomIndex -= columnCount;
+                }
+                upIndex = bottomIndex;
+            }
+            nav.selectOnUp = (upIndex >= 0 && upIndex < validButtonCount) ? buttons[upIndex] : null;
+
+            // --- 下方向の移動設定 ---
+            int downIndex = i + columnCount;
+            if (downIndex >= validButtonCount)
+            {
+                // 最下段なら、同じ列の最上段へループさせる
+                downIndex = col;
+            }
+            nav.selectOnDown =
+                (downIndex >= 0 && downIndex < validButtonCount) ? buttons[downIndex] : null;
+
+            // --- 左方向の移動設定 ---
+            if (col == 0)
+            {
+                // 左端ならカーソル移動させない（PageNavigationHandler のページ送りに任せる）
+                nav.selectOnLeft = null;
+            }
+            else
+            {
+                nav.selectOnLeft = buttons[i - 1];
+            }
+
+            // --- 右方向の移動設定 ---
+            if (col == columnCount - 1 || i == validButtonCount - 1)
+            {
+                // 右端、または表示されている最後のアイテムならカーソル移動させない（ページ送りに任せる）
+                nav.selectOnRight = null;
+            }
+            else
+            {
+                nav.selectOnRight = buttons[i + 1];
+            }
+
+            buttons[i].navigation = nav;
+        }
+
+        // 非表示のボタンはナビゲーションを None にして、絶対にフォーカスが合わないようにする
+        for (int i = validButtonCount; i < buttons.Count; i++)
+        {
+            Navigation nav = new Navigation();
+            nav.mode = Navigation.Mode.None;
+            buttons[i].navigation = nav;
+        }
+    }
+
+    /// <summary>
+    /// 縦1列に配置されたボタン群に対して、有効なボタン同士を繋ぐ Explicit ナビゲーションを構築します。
+    /// 上下でループし、左右入力では移動しないようにします。
+    /// </summary>
+    private static void SetupVerticalNavigation(List<Button> buttons, int validButtonCount)
+    {
+        for (int i = 0; i < validButtonCount; i++)
+        {
+            Navigation nav = new Navigation();
+            nav.mode = Navigation.Mode.Explicit;
+
+            // --- 上方向の移動設定 ---
+            int upIndex = i - 1;
+            if (upIndex < 0)
+            {
+                upIndex = validButtonCount - 1; // 先頭なら末尾へループ
+            }
+            nav.selectOnUp = buttons[upIndex];
+
+            // --- 下方向の移動設定 ---
+            int downIndex = i + 1;
+            if (downIndex >= validButtonCount)
+            {
+                downIndex = 0; // 末尾なら先頭へループ
+            }
+            nav.selectOnDown = buttons[downIndex];
+
+            // 左右方向は移動しない
+            nav.selectOnLeft = null;
+            nav.selectOnRight = null;
+
+            buttons[i].navigation = nav;
+        }
+
+        // 非表示のボタンはナビゲーションを None にする
+        for (int i = validButtonCount; i < buttons.Count; i++)
+        {
+            Navigation nav = new Navigation();
+            nav.mode = Navigation.Mode.None;
+            buttons[i].navigation = nav;
+        }
     }
 }

@@ -5,9 +5,9 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.EventSystems;
 
-public class TitleUIManager : MonoBehaviour,IPanelStackManager
+public class TitleUIManager : MonoBehaviour, IPanelStackManager
 {
-    public static TitleUIManager instance{ get; private set; }
+    public static TitleUIManager instance { get; private set; }
 
     [SerializeField, Tooltip("セーブファイルがないときの最初のボタン")]
     private GameObject GameStartfirstSelected;
@@ -22,6 +22,10 @@ public class TitleUIManager : MonoBehaviour,IPanelStackManager
     [Header("バージョン表示")]
     [SerializeField, Tooltip("バージョン表示のテキストオブジェクト")]
     private TextMeshProUGUI versionText;
+
+    [Header("デモ版設定")]
+    [SerializeField, Tooltip("デモ版であることを示すUIオブジェクト")]
+    private GameObject demoVersionUI;
 
     // [SerializeField, Tooltip("キャンセルキーのUIオブジェクト")]
     // private RectTransform cancelButtonUI;
@@ -51,6 +55,7 @@ public class TitleUIManager : MonoBehaviour,IPanelStackManager
         {
             initialConfirmScale = confirmButtonUI.localScale;
         }
+
         // if (cancelButtonUI != null)
         // {
         //     initialCancelScale = cancelButtonUI.localScale;
@@ -108,6 +113,15 @@ public class TitleUIManager : MonoBehaviour,IPanelStackManager
             versionText.text = $"Ver.{Application.version}";
         }
 
+        if (demoVersionUI != null)
+        {
+#if DEMO_BUILD
+            demoVersionUI.SetActive(true);
+#else
+            demoVersionUI.SetActive(false);
+#endif
+        }
+
         // 最初にボタンの強調アニメーションを開始
         StartButtonEmphasis();
     }
@@ -116,7 +130,7 @@ public class TitleUIManager : MonoBehaviour,IPanelStackManager
     {
         // アニメーションを停止
         StopButtonEmphasis();
-        
+
         if (instance == this)
         {
             SaveLoadManager.UnregisterActiveManager(this);

@@ -146,12 +146,18 @@ public class UIManager : MonoBehaviour, IPanelStackManager
         // UI上の選択が消えたら元に戻す
         if (EventSystem.current != null)
         {
-            if (EventSystem.current.currentSelectedGameObject == null && lastSelected != null)
+            // ① 現在のUI上の選択が消えてしまった場合
+            if (EventSystem.current.currentSelectedGameObject == null)
             {
-                EventSystem.current.SetSelectedGameObject(lastSelected);
+                // ② 記憶していたボタン(lastSelected)が破棄されておらず、かつ画面に表示されている場合のみフォーカスを戻す
+                if (lastSelected != null && lastSelected.activeInHierarchy)
+                {
+                    EventSystem.current.SetSelectedGameObject(lastSelected);
+                }
             }
             else
             {
+                // ③ 選択が正常に行われている場合は、現在のボタンを記憶し続ける
                 lastSelected = EventSystem.current.currentSelectedGameObject;
             }
         }
@@ -245,7 +251,7 @@ public class UIManager : MonoBehaviour, IPanelStackManager
             if (panelStack.Count > 0)
             {
                 top = panelStack.Peek(); //次のパネルを取得
-                IPanelActive panelActive = top.GetComponent<IPanelActive>();
+                var panelActive = top.GetComponent<IPanelActive>();
                 if (panelActive != null)
                 {
                     panelActive.SelectFirstButton(); //次のパネルの最初の選択ボタンを指定する

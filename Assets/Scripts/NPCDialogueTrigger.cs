@@ -16,7 +16,15 @@ public class NPCDialogueTrigger : MonoBehaviour
     #region Inspector Settings
 
     [Header("実行するFungusのFlowchart")]
+    [Tooltip(
+        "trueの場合、シーン内の「GlobalFlowchart」という名前のオブジェクトを自動的に取得して使用します。"
+    )]
     [SerializeField]
+    private bool useGlobalFlowchart = false;
+
+    [Tooltip("実行するFlowchart（useGlobalFlowchartがtrueの場合は自動で上書きされます）")]
+    [SerializeField]
+    [HideIf(nameof(useGlobalFlowchart))]
     private Flowchart targetFlowchart;
 
     [Header("会話の分岐設定")]
@@ -52,7 +60,7 @@ public class NPCDialogueTrigger : MonoBehaviour
     private void Awake()
     {
         // 必須コンポーネントのチェック
-        if (targetFlowchart == null)
+        if (targetFlowchart == null && !useGlobalFlowchart)
         {
             Debug.LogError("ターゲットのFlowchartが設定されていません。", this);
         }
@@ -64,6 +72,18 @@ public class NPCDialogueTrigger : MonoBehaviour
         if (speechBubbleObject != null)
         {
             speechBubbleObject.SetActive(false);
+        }
+    }
+
+    private void Start()
+    {
+        if (useGlobalFlowchart)
+        {
+            targetFlowchart = GlobalFlowchartController.instance.globalFlowchart;
+            if (targetFlowchart == null)
+            {
+                Debug.LogError("GlobalFlowchartControllerのFlowchartが設定されていません。", this);
+            }
         }
     }
 

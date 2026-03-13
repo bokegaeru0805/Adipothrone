@@ -5,7 +5,7 @@ using UnityEngine.UI;
 [System.Serializable]
 public class TabSpriteSet
 {
-    public Sprite selected;   // 選択中のスプライト
+    public Sprite selected; // 選択中のスプライト
     public Sprite unselected; // 非選択のスプライト
 }
 
@@ -28,6 +28,10 @@ public class TabPanelController : MonoBehaviour
     [SerializeField]
     private TabSpriteSet commonTabSprites;
 
+    [Header("タブ切り替えの階層（-1の場合は単純追加）")]
+    [SerializeField]
+    private int panelStage;
+
     [Header("有効化時に最初のタブに戻すか")]
     [SerializeField]
     private bool resetOnEnable = false;
@@ -49,7 +53,11 @@ public class TabPanelController : MonoBehaviour
             return;
         }
 
-        if (commonTabSprites == null || commonTabSprites.selected == null || commonTabSprites.unselected == null)
+        if (
+            commonTabSprites == null
+            || commonTabSprites.selected == null
+            || commonTabSprites.unselected == null
+        )
         {
             Debug.LogError("TabPanelController: 共通タブスプライトが設定されていません。");
             return;
@@ -64,7 +72,9 @@ public class TabPanelController : MonoBehaviour
         inputManager = InputManager.instance;
         if (inputManager == null)
         {
-            Debug.LogError("InputManagerが設定されていません。TabPanelControllerが正しく動作しません。");
+            Debug.LogError(
+                "InputManagerが設定されていません。TabPanelControllerが正しく動作しません。"
+            );
             return;
         }
     }
@@ -89,7 +99,8 @@ public class TabPanelController : MonoBehaviour
 
     private void Update()
     {
-        if (inputManager == null) return;
+        if (inputManager == null)
+            return;
 
         // 入力検知
         if (inputManager.GetTabRight())
@@ -149,18 +160,23 @@ public class TabPanelController : MonoBehaviour
     /// </summary>
     private void UpdatePanelVisibility()
     {
+        // 現在アクティブなManager（UIManagerなど）を取得
+        var activeManager = SaveLoadManager.CurrentActiveManager;
+
         for (int i = 0; i < tabPanels.Count; i++)
         {
             bool isSelected = (i == currentTabIndex);
 
-            if (tabPanels[i] != null)
+            if (tabPanels[i] != null && activeManager != null && isSelected)
             {
-                tabPanels[i].SetActive(isSelected);
+                activeManager.OpenPanel(tabPanels[i], panelStage); // タブが選択されたときにパネルを開く
             }
 
             if (tabButtons[i] != null)
             {
-                tabButtons[i].sprite = isSelected ? commonTabSprites.selected : commonTabSprites.unselected;
+                tabButtons[i].sprite = isSelected
+                    ? commonTabSprites.selected
+                    : commonTabSprites.unselected;
             }
         }
     }
@@ -176,7 +192,7 @@ public class TabPanelController : MonoBehaviour
             {
                 tabPanels[i].SetActive(false);
             }
-            
+
             if (tabButtons[i] != null)
             {
                 tabButtons[i].sprite = commonTabSprites.unselected;

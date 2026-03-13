@@ -60,7 +60,7 @@ public class DoorOpener : MonoBehaviour
                 // 砂漠の神殿の入り口の特別な処理があればここに追加
                 break;
             case DoorType.DesertTempleDoor:
-                // 砂漠の神殿のドアの特別な処理があればここに追加
+                SEManager.instance?.PlayFieldSE(SE_Field.DoorOpen_Metal);
                 break;
             default:
                 // 特に何もしない

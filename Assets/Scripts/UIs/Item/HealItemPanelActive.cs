@@ -154,8 +154,9 @@ public class HealItemPanelActive : MonoBehaviour, IPanelActive, IPageNavigable
             // 現在のリストでその位置に最も近いアイテムをターゲットにする
             if (lastSelectedIndex != -1 && itemList.Count > 0)
             {
-                // リストの範囲内に収まるようにインデックスを調整
-                targetItemIndex = Mathf.Min(lastSelectedIndex, itemList.Count - 1);
+                // ページ数を考慮した絶対インデックスを計算する
+                int absoluteIndex = (this.page * buttonList.Count) + lastSelectedIndex;
+                targetItemIndex = Mathf.Min(absoluteIndex, itemList.Count - 1);
             }
             // それでもターゲットが決まらなければ、リストの先頭アイテムにする
             else if (itemList.Count > 0)
@@ -178,24 +179,40 @@ public class HealItemPanelActive : MonoBehaviour, IPanelActive, IPageNavigable
         this.page = targetPage;
         UpdateDisplayedButtons();
 
-        // 手順6：計算したボタンを選択状態にする
+        // 手順6：計算したボタンを「1フレーム遅延させて」選択状態にする
         if (targetButtonIndexOnPage != -1)
         {
-            EventSystem.current.SetSelectedGameObject(
-                buttonList[targetButtonIndexOnPage].gameObject
-            );
+            StartCoroutine(SelectButtonAfterDelay(buttonList[targetButtonIndexOnPage].gameObject));
         }
         // フォールバックの最終手段として、表示されている最初のボタンを選択
         else if (itemList.Count > 0)
         {
             var firstButton = buttonList.FirstOrDefault(b => b.gameObject.activeInHierarchy);
             if (firstButton != null)
-                EventSystem.current.SetSelectedGameObject(firstButton.gameObject);
+                StartCoroutine(SelectButtonAfterDelay(firstButton.gameObject));
         }
         else
         {
             // アイテムが一つもない場合は、何も選択しない
             EventSystem.current.SetSelectedGameObject(null);
+        }
+    }
+
+    /// <summary>
+    /// EventSystemのクリック終了判定との競合を避けるため、1フレーム遅延してボタンを選択状態にします。
+    /// </summary>
+    private System.Collections.IEnumerator SelectButtonAfterDelay(GameObject targetButton)
+    {
+        // EventSystemのクリック処理とUIManagerのUpdateが完全に終わるのを待つ
+        yield return new WaitForEndOfFrame();
+        yield return null;
+
+        // ボタンが存在し、かつ画面に表示されている場合のみ選択する
+        if (targetButton != null && targetButton.activeInHierarchy)
+        {
+            // 一旦フォーカスをクリアして内部状態をリセットする（EventSystemのスタック回避）
+            EventSystem.current.SetSelectedGameObject(null);
+            EventSystem.current.SetSelectedGameObject(targetButton);
         }
     }
 
@@ -248,11 +265,14 @@ public class HealItemPanelActive : MonoBehaviour, IPanelActive, IPageNavigable
         if (selectedButton == null)
             return;
 
+        // ポップアップを開く直前に、現在の選択状態を確実に記憶する
+        lastSelectedItemID = EnumIDUtility.ToID(itemID);
+        lastSelectedIndex = buttonList.IndexOf(selectedButton);
+
         if (UIManager.instance != null && ItemUsePromptPanel != null)
         {
-            // まず、クリックされたボタンのRectTransformと座標を取得
-            RectTransform buttonRect = selectedButton.GetComponent<RectTransform>();
-            Vector2 selectButtonPosition = buttonRect.anchoredPosition;
+            // まず、クリックされたボタンのワールド座標を取得
+            Vector3 buttonWorldPosition = selectedButton.transform.position;
 
             // offsetをコピーして、変更があっても元の値に影響しないようにする
             Vector2 finalOffset = offset;
@@ -266,7 +286,12 @@ public class HealItemPanelActive : MonoBehaviour, IPanelActive, IPageNavigable
 
             // 最終的なoffsetを使ってパネルの位置を決定
             RectTransform promptRect = ItemUsePromptPanel.GetComponent<RectTransform>();
-            promptRect.anchoredPosition = selectButtonPosition + finalOffset;
+
+            // 1. パネルの中心を、ボタンのワールド座標にピタッと合わせる
+            promptRect.position = buttonWorldPosition;
+
+            // 2. その状態から、インスペクターで設定した offset 分だけローカル座標でズラす
+            promptRect.anchoredPosition += finalOffset;
 
             UIManager.instance.OpenPanel(ItemUsePromptPanel, -1);
         }
