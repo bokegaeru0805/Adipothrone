@@ -57,9 +57,11 @@ public class ItemSelectButton : MonoBehaviour, IItemAssignable
             return;
         }
 
-        if(ItemAmount_text == null)
+        if (ItemAmount_text == null)
         {
-            Debug.LogWarning("アイテム選択ボタンの所持数表示テキストが設定されていません。所持数は表示されません。");
+            Debug.LogWarning(
+                "アイテム選択ボタンの所持数表示テキストが設定されていません。所持数は表示されません。"
+            );
         }
 
         // アイテム画像のベースサイズを取得
@@ -83,7 +85,7 @@ public class ItemSelectButton : MonoBehaviour, IItemAssignable
         // アイテム数変更イベントに登録
         if (GameManager.instance != null)
         {
-            GameManager.instance.savedata.ItemInventoryData.OnItemCountChanged += UpdateItemCount;
+            GameManager.instance.OnInventoryUpdated += UpdateItemCount;
         }
     }
 
@@ -94,7 +96,7 @@ public class ItemSelectButton : MonoBehaviour, IItemAssignable
         // オブジェクト破棄時にイベント解除
         if (GameManager.instance != null)
         {
-            GameManager.instance.savedata.ItemInventoryData.OnItemCountChanged -= UpdateItemCount;
+            GameManager.instance.OnInventoryUpdated -= UpdateItemCount;
         }
     }
 

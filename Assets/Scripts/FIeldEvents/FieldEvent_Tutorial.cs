@@ -219,12 +219,13 @@ public class FieldEvent_Tutorial : BaseFieldEvent
                 break;
 
             case FieldName.BreakableShootTutorialField:
-                if (!flagManager.GetBoolFlag(TutorialEvent.BreakableShootTutorialComplete))
-                {
-                    flagManager.SetBoolFlag(TutorialEvent.BreakableShootTutorialComplete, true);
-                    FungusHelper.ExecuteBlock(targetFlowchart, "BreakableShootTutorialField");
-                    isEventTriggered = true;
-                }
+                // if (!flagManager.GetBoolFlag(TutorialEvent.BreakableShootTutorialComplete))
+                // {
+                //     flagManager.SetBoolFlag(TutorialEvent.BreakableShootTutorialComplete, true);
+                //     FungusHelper.ExecuteBlock(targetFlowchart, "BreakableShootTutorialField");
+                    
+                // }
+                isEventTriggered = true;
                 break;
 
             // 初ボス直前イベント

@@ -344,7 +344,7 @@ public class HealItemPanelActive : MonoBehaviour, IPanelActive, IPageNavigable
         {
             if (buttonList[i].gameObject == selectedObj)
             {
-                IItemAssignable info = buttonList[i].GetComponent<IItemAssignable>();
+                var info = buttonList[i].GetComponent<IItemAssignable>();
                 if (info != null)
                 {
                     //選択されているアイテムのIDを取得する

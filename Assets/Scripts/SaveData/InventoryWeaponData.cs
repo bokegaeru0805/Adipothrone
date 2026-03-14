@@ -38,8 +38,6 @@ public class InventoryWeaponData
     private readonly Dictionary<WeaponType, int> weaponTypeDigits =
         new() { { WeaponType.shoot, (int)TypeID.Shoot }, { WeaponType.blade, (int)TypeID.Blade } };
 
-    public event Action OnWeaponAdded; // 武器追加時のイベント
-
     // 武器を追加
     public void AddWeapon(Enum weaponID, int amount = 1)
     {
@@ -56,7 +54,7 @@ public class InventoryWeaponData
             ownedWeapons.Add(newWeapon);
         }
 
-        OnWeaponAdded?.Invoke(); // 武器追加時のイベントを発火
+       GameManager.instance?.NotifyWeaponInventoryUpdated();  // 武器インベントリの更新を通知
     }
 
     // 武器を使用（在庫を減らす、戻り値: 成功/失敗）

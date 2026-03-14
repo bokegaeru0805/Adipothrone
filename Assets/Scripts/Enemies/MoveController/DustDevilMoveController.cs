@@ -55,8 +55,8 @@ public class DustDevilMoveController : MonoBehaviour, IEnemyResettable
     private bool isUseManualInitialPosition = false;
 
     private float maxCheckDistance = 20.0f; //地面を探す最大距離
-    private Vector2 myPos = Vector2.zero; // 自身の位置
     private LayerMask groundLayer;
+    private Transform _transform;
     private Animator animator;
     private EnemyHealth enemyHP;
     private CriWare.Assets.CriAtomSePlayer sePlayer;
@@ -80,14 +80,9 @@ public class DustDevilMoveController : MonoBehaviour, IEnemyResettable
         if (activator == null)
         {
             activator = GetComponentInParent<EnemyActivator>();
-            if (activator == null)
-            {
-                Debug.LogWarning(
-                    $"{this.name}の親にEnemyActivatorが見つかりませんでした。移動範囲の自動設定は行いません。"
-                );
-            }
         }
 
+        _transform = this.transform;
         sePlayer = GetComponent<CriWare.Assets.CriAtomSePlayer>();
         animator = GetComponent<Animator>();
 
@@ -155,7 +150,6 @@ public class DustDevilMoveController : MonoBehaviour, IEnemyResettable
         }
 
         AdjustHeight(); // 高さを調整
-        myPos = this.transform.position; // 現在の位置を保存
         tag = GameConstants.IMMUNE_ENEMY_TAG_NAME; // タグをリセット
         currentState = DustDevilState.Idle; // 初期状態をIdleに設定
 
@@ -250,7 +244,7 @@ public class DustDevilMoveController : MonoBehaviour, IEnemyResettable
         animator.SetTrigger("AttackTrigger");
         GameObject windObject = ObjectPooler.SceneInstance.SpawnFromPool(
             WIND_POOLTAG,
-            myPos,
+            _transform.position,
             Quaternion.identity
         );
 
@@ -289,7 +283,7 @@ public class DustDevilMoveController : MonoBehaviour, IEnemyResettable
     {
         if (playerTransform != null)
         {
-            return (Vector2)playerTransform.position - myPos;
+            return (Vector2)playerTransform.position - (Vector2)_transform.position;
         }
         return Vector2.zero;
     }

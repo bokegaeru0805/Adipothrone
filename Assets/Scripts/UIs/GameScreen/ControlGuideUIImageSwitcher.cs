@@ -58,6 +58,10 @@ public class ControlGuideUIImageSwitcher : MonoBehaviour
     [Tooltip("「メニュー」のガイドUI")]
     [SerializeField]
     private GameObject menuGuide;
+
+    [Tooltip("「シールド」のガイドUI")]
+    [SerializeField]
+    private GameObject shieldGuide;
     private Heroin_move playerScript = null;
     private Robot_move robotScript = null;
     private bool canRobotAttack = false;
@@ -140,7 +144,7 @@ public class ControlGuideUIImageSwitcher : MonoBehaviour
 
         // SpotlightControllerの取得
         spotlightController = SpotlightQuickItemController.instance;
-        if( spotlightController == null)
+        if (spotlightController == null)
         {
             Debug.LogError("SpotlightQuickItemControllerが見つかりません。");
             this.enabled = false; // 動けないので無効化
@@ -162,7 +166,6 @@ public class ControlGuideUIImageSwitcher : MonoBehaviour
 
             // ロボットの検索（構造依存: Playerの子要素）
             Transform robotTrans = playerObject.transform.Find(GameConstants.ROBOT_OBJECT_NAME);
-            // ※ GetChild(0)より名前検索(Find)の方が安全です。構造変化に強いため。
 
             if (robotTrans != null)
             {
@@ -247,6 +250,11 @@ public class ControlGuideUIImageSwitcher : MonoBehaviour
                 canChangeAttackType = isEnabled;
                 UpdateChangeWeaponGuideVisibility();
                 break;
+            // シールドが使用可能かどうかの状態
+            case PlayerStatusBoolName.isCanUseShield:
+                shieldGuide.SetActive(isEnabled);
+                break;
+            // メニューが開けるかどうかの状態
         }
     }
 
@@ -310,6 +318,11 @@ public class ControlGuideUIImageSwitcher : MonoBehaviour
         OnAnyBoolStatusChanged(
             PlayerStatusBoolName.isChangeAttackType,
             playerManager.GetPlayerBoolStatus(PlayerStatusBoolName.isChangeAttackType)
+        );
+        // isCanUseShieldの現在の状態でUIを初期化
+        OnAnyBoolStatusChanged(
+            PlayerStatusBoolName.isCanUseShield,
+            playerManager.GetPlayerBoolStatus(PlayerStatusBoolName.isCanUseShield)
         );
 
         if (normalControlGuide == null || quickItemHighlightControlGuide == null)

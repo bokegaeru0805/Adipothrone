@@ -393,11 +393,21 @@ public class DustDevilBossMoveController : MonoBehaviour, IEnemyResettable
                         );
 
                         // 弾が消えた場所(dust.transform.position)に敵を生成
-                        ObjectPooler.SceneInstance.SpawnFromPool(
+                        GameObject spawnedEnemy = ObjectPooler.SceneInstance.SpawnFromPool(
                             DUST_DEVIL_ENEMY_POOL_TAG,
                             dust.transform.position, // 消滅地点
                             Quaternion.identity
                         );
+
+                        // ボスから生成された場合、EnemyActivatorを通らないためここで明示的に初期化する
+                        if (spawnedEnemy != null)
+                        {
+                            var resettable = spawnedEnemy.GetComponent<IEnemyResettable>();
+                            if (resettable != null)
+                            {
+                                resettable.ResetState();
+                            }
+                        }
                     }
                 };
             }

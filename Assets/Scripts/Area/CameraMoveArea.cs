@@ -218,6 +218,23 @@ public class CameraMoveArea : MonoBehaviour
         }
     }
 
+    private void OnTriggerExit2D(Collider2D other)
+    {
+        if (other.CompareTag(GameConstants.PLAYER_TAG_NAME))
+        {
+            // 自分が現在アクティブなエリアだった場合のみ、退出処理を行う
+            if (activeArea == this)
+            {
+                HandlePlayerExit();
+                activeArea = null;
+
+                // 他のエリアの境界内にまだ留まっている可能性があるため、
+                // アクティブなエリアを再検索して適用させる
+                RefreshActiveArea();
+            }
+        }
+    }
+
     #endregion
 
     #region Core Logic (Enter / Exit)

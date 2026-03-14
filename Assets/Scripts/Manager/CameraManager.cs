@@ -619,8 +619,12 @@ namespace MyGame.CameraControl
             if (duration <= 0f)
             {
                 // 即時変更
-                virtualCamera.m_Lens.OrthographicSize = orthoSize;
-                virtualCamera.m_Lens.NearClipPlane = nearClip;
+                // m_Lensは構造体のため、一度変数に受けてから変更し再代入する
+                var lens = virtualCamera.m_Lens;
+                lens.OrthographicSize = orthoSize;
+                lens.NearClipPlane = nearClip;
+                virtualCamera.m_Lens = lens;
+
                 framing.m_FollowOffset = offset;
                 framing.m_XDamping = damping.x;
                 framing.m_YDamping = damping.y;
@@ -628,17 +632,25 @@ namespace MyGame.CameraControl
             else
             {
                 // DOTweenで滑らかに変更
+                // m_Lensは構造体のため、直接のプロパティ変更が反映されない現象を防ぐため再代入方式でTweenする
                 lensTween = DOTween
                     .To(
                         () => virtualCamera.m_Lens.OrthographicSize,
-                        x => virtualCamera.m_Lens.OrthographicSize = x,
+                        x =>
+                        {
+                            var lens = virtualCamera.m_Lens;
+                            lens.OrthographicSize = x;
+                            virtualCamera.m_Lens = lens;
+                        },
                         orthoSize,
                         duration
                     )
                     .SetUpdate(true); // TimeScaleの影響を受けないようにする場合
 
-                // NearClipは通常即時変更で問題ないが、必要ならここもTween可能
-                virtualCamera.m_Lens.NearClipPlane = nearClip;
+                // NearClipは通常即時変更で問題ないが、確実に反映させるため再代入を行う
+                var initialLens = virtualCamera.m_Lens;
+                initialLens.NearClipPlane = nearClip;
+                virtualCamera.m_Lens = initialLens;
 
                 offsetTween = DOTween
                     .To(

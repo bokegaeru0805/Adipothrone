@@ -68,7 +68,7 @@ public class WeaponManager : MonoBehaviour
     private void Start()
     {
         //武器追加時のイベントの登録
-        GameManager.instance.savedata.WeaponInventoryData.OnWeaponAdded += RebuildOwnedWeaponData;
+        GameManager.instance.OnWeaponInventoryUpdated += RebuildOwnedWeaponData;
     }
 
     //セーブデータからの参照用辞書・リストの再構築
@@ -85,8 +85,7 @@ public class WeaponManager : MonoBehaviour
         //イベントの登録解除
         if (GameManager.instance != null && GameManager.instance.savedata != null)
         {
-            GameManager.instance.savedata.WeaponInventoryData.OnWeaponAdded -=
-                RebuildOwnedWeaponData;
+            GameManager.instance.OnWeaponInventoryUpdated -= RebuildOwnedWeaponData;
         }
     }
 

@@ -292,8 +292,7 @@ public class QuickItemPanel : MonoBehaviour
             //セーブデータを取得する
             quickList = GameManager.instance.savedata.QuickItemData.ownedItems;
             //アイテムの所持数が変化したときに使用
-            GameManager.instance.savedata.ItemInventoryData.OnItemCountChanged +=
-                ChangeAllCountTextImage;
+            GameManager.instance.OnInventoryUpdated += ChangeAllCountTextImage;
         }
 
         // 他のマネージャーからのイベントを購読する
@@ -325,8 +324,7 @@ public class QuickItemPanel : MonoBehaviour
             return;
 
         // イベント解除（メモリリーク防止）
-        GameManager.instance.savedata.ItemInventoryData.OnItemCountChanged -=
-            ChangeAllCountTextImage;
+        GameManager.instance.OnInventoryUpdated -= ChangeAllCountTextImage;
 
         if (playerManager != null)
         {

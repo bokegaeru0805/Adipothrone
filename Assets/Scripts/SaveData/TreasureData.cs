@@ -31,14 +31,11 @@ public class TreasureData
     [SerializeField]
     private List<TreasureStatus> openedTreasures = new List<TreasureStatus>();
 
-    public event Action<int, bool> OnTreasureStatusChanged;
-
     public void SetTreasureOpened(TreasureBoxName id, bool isOpened = true)
     {
         int treasureIdInt = (int)id;
         if (GetTreasureOpened(id) == isOpened) return;
         openedTreasures.Add(new TreasureStatus(treasureIdInt, isOpened));
-        OnTreasureStatusChanged?.Invoke(treasureIdInt, isOpened);
     }
 
     public bool GetTreasureOpened(TreasureBoxName id)

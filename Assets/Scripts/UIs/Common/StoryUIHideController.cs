@@ -58,14 +58,19 @@ public class StoryUIHideController : MonoBehaviour
     /// </summary>
     private bool IsCurrentBlockStory()
     {
-        Block[] allBlocks = FindObjectsOfType<Block>();
-
-        foreach (Block block in allBlocks)
+        // 重いFindObjectsOfTypeを廃止し、Fungusが自動管理しているFlowchartリストを参照する
+        foreach (Flowchart flowchart in Flowchart.CachedFlowcharts)
         {
-            // 現在実行中（Executing）のブロックを探し、タイプを判定
-            if (block.State == ExecutionState.Executing)
+            // そのFlowchartが持っているブロックのみを取得（シーン全体検索に比べて圧倒的に軽量）
+            Block[] blocksInFlowchart = flowchart.GetComponents<Block>();
+
+            foreach (Block block in blocksInFlowchart)
             {
-                return block.TypeOfBlock == BlockType.Story;
+                // 現在実行中（Executing）のブロックを探し、タイプを判定
+                if (block.State == ExecutionState.Executing)
+                {
+                    return block.TypeOfBlock == BlockType.Story;
+                }
             }
         }
         return false;

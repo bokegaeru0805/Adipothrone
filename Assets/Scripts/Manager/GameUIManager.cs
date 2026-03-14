@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using Fungus;
 using TMPro;
 using UnityEngine;
 
@@ -73,11 +74,12 @@ public class GameUIManager : MonoBehaviour
         public string itemName;
         public float timestamp;
     }
+
     private Queue<ItemInfo> _itemLogQueue = new Queue<ItemInfo>();
 
     // --- 状態フラグ ---
     private bool _isTalking = false; // 会話状態を保存するローカル変数
-
+    private bool _isStoryTalking = false; // Storyブロックの会話状態を保存するローカル変数
     #endregion
 
     #region Unity Lifecycle Methods
@@ -104,7 +106,9 @@ public class GameUIManager : MonoBehaviour
         _playerManager = PlayerManager.instance;
         if (_playerManager == null)
         {
-            Debug.LogError("PlayerManagerのインスタンスが見つかりません！このスクリプトは動作しません。");
+            Debug.LogError(
+                "PlayerManagerのインスタンスが見つかりません！このスクリプトは動作しません。"
+            );
             return; // PlayerManagerがなければ、ここで処理を中断
         }
 
@@ -116,7 +120,9 @@ public class GameUIManager : MonoBehaviour
             _playerManager.OnChangeMaxHP += InitializePlayerHPData;
 
             InitializePlayerHPData(_playerManager.playerMaxHP); //プレイヤーのHPの初期値を取得
-            UpdatePlayerWPCache(_playerManager.GetPlayerIntStatus(PlayerStatusIntName.playerCurrentWP)); // プレイヤーのWPの初期値を取得
+            UpdatePlayerWPCache(
+                _playerManager.GetPlayerIntStatus(PlayerStatusIntName.playerCurrentWP)
+            ); // プレイヤーのWPの初期値を取得
         }
 
         GameManager.OnTalkingStateChanged += HandleTalkingStateChanged; // 会話状態の変更に応じてボスのUIをアクティブにする
@@ -160,11 +166,15 @@ public class GameUIManager : MonoBehaviour
             return;
         }
 
-        if (_uiRefs.BossHealthBarImage == null ||
-            _uiRefs.BossHealthUIPanel == null ||
-            _uiRefs.BossLevelNumberText == null)
+        if (
+            _uiRefs.BossHealthBarImage == null
+            || _uiRefs.BossHealthUIPanel == null
+            || _uiRefs.BossLevelNumberText == null
+        )
         {
-            Debug.LogError("GameUIRefsにボスのHPバー、背景、レベルUI、レベル番号テキストが設定されていません");
+            Debug.LogError(
+                "GameUIRefsにボスのHPバー、背景、レベルUI、レベル番号テキストが設定されていません"
+            );
         }
 
         if (_uiRefs.SkillNameDisplay == null)
@@ -183,7 +193,8 @@ public class GameUIManager : MonoBehaviour
     /// </summary>
     private void HideInitialUI()
     {
-        if (_uiRefs == null) return;
+        if (_uiRefs == null)
+            return;
 
         // ボスUI非表示
         SetBossUIVisibility(false);
@@ -207,7 +218,8 @@ public class GameUIManager : MonoBehaviour
         // アイテムログUI非表示
         foreach (var slot in _uiRefs.ItemLogSlots)
         {
-            if (slot != null) slot.SetActive(false);
+            if (slot != null)
+                slot.SetActive(false);
         }
 
         // レベルアップポップアップ非表示
@@ -262,8 +274,10 @@ public class GameUIManager : MonoBehaviour
         if (_itemLogQueue.Count != 0)
         {
             // キューの先頭にあるアイテムの表示時間が過ぎていれば順に削除
-            while (_itemLogQueue.Count > 0 &&
-                   Time.time - _itemLogQueue.Peek().timestamp > _itemDisplayDuration)
+            while (
+                _itemLogQueue.Count > 0
+                && Time.time - _itemLogQueue.Peek().timestamp > _itemDisplayDuration
+            )
             {
                 // 先頭のアイテムの表示時間が経過したため、キューから削除
                 _itemLogQueue.Dequeue();
@@ -323,7 +337,8 @@ public class GameUIManager : MonoBehaviour
         if (_uiRefs.PlayerHPHealthBarImage != null)
         {
             // 初期化時は即座に反映
-            _uiRefs.PlayerHPHealthBarImage.fillAmount = (float)_currentPlayerHP / (float)_playerMaxHP;
+            _uiRefs.PlayerHPHealthBarImage.fillAmount =
+                (float)_currentPlayerHP / (float)_playerMaxHP;
         }
     }
 
@@ -348,7 +363,8 @@ public class GameUIManager : MonoBehaviour
         if (_uiRefs.PlayerWPHealthBarImage != null)
         {
             // 初期化時は即座に反映
-            _uiRefs.PlayerWPHealthBarImage.fillAmount = (float)_currentPlayerWP / (float)_playerMaxWP;
+            _uiRefs.PlayerWPHealthBarImage.fillAmount =
+                (float)_currentPlayerWP / (float)_playerMaxWP;
         }
     }
 
@@ -399,7 +415,10 @@ public class GameUIManager : MonoBehaviour
             // スクリプトがない場合でもUIを非表示にするなどの処理は行う
             SetBossUIVisibility(false);
             SetBossBattleState(false); // 念のためfalseに設定
-            Debug.LogWarning("ボスオブジェクトにCharacterHealthスクリプトが見つかりません。", bossGameObject);
+            Debug.LogWarning(
+                "ボスオブジェクトにCharacterHealthスクリプトが見つかりません。",
+                bossGameObject
+            );
             return;
         }
 
@@ -472,6 +491,32 @@ public class GameUIManager : MonoBehaviour
     {
         _isTalking = talkState; // ローカル変数に会話状態を保存
 
+        if (talkState)
+        {
+            // 会話開始時：実行中のブロックがStoryタイプか確認
+            if (IsCurrentBlockStory())
+            {
+                _isStoryTalking = true;
+
+                // 既存のアイテムログ（_uiRefs.ItemLogSlots）をすべて強制的に非表示にする
+                if (_uiRefs != null && _uiRefs.ItemLogSlots != null)
+                {
+                    foreach (var slot in _uiRefs.ItemLogSlots)
+                    {
+                        if (slot != null && slot.gameObject.activeSelf)
+                        {
+                            slot.gameObject.SetActive(false);
+                        }
+                    }
+                }
+            }
+        }
+        else
+        {
+            // 会話終了時：フラグをリセット
+            _isStoryTalking = false;
+        }
+
         if (_currentBossGameObject == null)
         {
             // ボスがいないなら、もちろんボス戦中でもない
@@ -481,6 +526,29 @@ public class GameUIManager : MonoBehaviour
 
         // 会話中はボスUIを隠す
         SetBossUIVisibility(!talkState);
+    }
+
+    /// <summary>
+    /// 現在実行中のFungusブロックが「Story」タイプかどうかを判定します。
+    /// </summary>
+    private bool IsCurrentBlockStory()
+    {
+        // 重いFindObjectsOfTypeを廃止し、Fungusが自動管理しているFlowchartリストを参照する
+        foreach (Flowchart flowchart in Flowchart.CachedFlowcharts)
+        {
+            // そのFlowchartが持っているブロックのみを取得（シーン全体検索に比べて圧倒的に軽量）
+            Block[] blocksInFlowchart = flowchart.GetComponents<Block>();
+
+            foreach (Block block in blocksInFlowchart)
+            {
+                // 現在実行中（Executing）のブロックを探し、タイプを判定
+                if (block.State == ExecutionState.Executing)
+                {
+                    return block.TypeOfBlock == BlockType.Story;
+                }
+            }
+        }
+        return false;
     }
 
     /// <summary>
@@ -551,13 +619,19 @@ public class GameUIManager : MonoBehaviour
     /// </summary>
     private void RefreshItemLogDisplay()
     {
+        // ストーリー会話中はアイテムログの表示をキャンセルして終了する
+        if (_isStoryTalking)
+        {
+            return;
+        }
+
         // Queueを配列に変換して、インデックスアクセスを可能にする
         var itemsArray = _itemLogQueue.ToArray();
 
         for (int i = 0; i < _uiRefs.ItemLogSlots.Count; i++)
         {
             // アイテムログのスロットを取得
-            TextMeshProUGUI itemText = _uiRefs.ItemLogSlots[i].GetComponentInChildren<TextMeshProUGUI>();
+            var itemText = _uiRefs.ItemLogSlots[i].GetComponentInChildren<TextMeshProUGUI>();
 
             if (i < itemsArray.Length)
             {

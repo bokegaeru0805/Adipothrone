@@ -15,6 +15,25 @@ public class GameManager : MonoBehaviour
     public event Action OnAnyItemAddedToInventory; // 任意のアイテムがインベントリに追加されたときのイベント
     public event Action<Enum> OnAnyItemRemovedFromInventory; // 任意のアイテムがインベントリから削除されたときのイベント
     public static event Action<bool> OnTalkingStateChanged; // 会話状態が変化したときのイベント
+    public event Action OnInventoryUpdated; // インベントリ（所持品）が更新されたときの共通イベント
+
+    /// <summary>
+    /// アイテムの増減やロードによってインベントリが更新されたことを全体に通知します。
+    /// </summary>
+    public void NotifyInventoryUpdated()
+    {
+        OnInventoryUpdated?.Invoke();
+    }
+
+    public event Action OnWeaponInventoryUpdated; // 武器データ（追加・変化）が更新されたときの共通イベント
+
+    /// <summary>
+    /// 武器の追加や変化、ロードによって武器データが更新されたことを全体に通知します。
+    /// </summary>
+    public void NotifyWeaponInventoryUpdated()
+    {
+        OnWeaponInventoryUpdated?.Invoke();
+    }
     #endregion
 
     #region Static Flags & States
@@ -33,7 +52,7 @@ public class GameManager : MonoBehaviour
     public GameObject DropItemPrefab;
 
     [HideInInspector]
-    public Fungus.Flowchart globalFlowchart; //ゲーム全体のflowchartの参照
+    public Flowchart globalFlowchart; //ゲーム全体のflowchartの参照
 
     [HideInInspector]
     public SaveData savedata = new SaveData(); //セーブデータを保存する変数

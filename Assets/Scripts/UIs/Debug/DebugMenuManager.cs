@@ -72,8 +72,7 @@ public class DebugMenuManager : MonoBehaviour
 
     private void Update()
     {
-        // F3キーでデバッグメニューの表示・非表示を切り替える
-        if (Input.GetKeyDown(KeyCode.F3))
+        if (Input.GetKey(KeyCode.RightShift) && Input.GetKeyDown(KeyCode.Backspace))
         {
             if (debugCanvas != null)
             {

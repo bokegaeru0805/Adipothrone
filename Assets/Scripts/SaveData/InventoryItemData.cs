@@ -35,7 +35,6 @@ public class InventoryItemData
             { ItemType.HealItem, (int)TypeID.HealItem },
             { ItemType.KeyItem, (int)TypeID.KeyItem },
         };
-    public event Action OnItemCountChanged; //アイテムの所持数が変更されたときのイベント
 
     /// <summary>
     /// アイテムを追加
@@ -64,7 +63,7 @@ public class InventoryItemData
                 Debug.LogError("PlayerManagerが見つかりません。アイテムの並び替えができません。");
             }
         }
-        OnItemCountChanged?.Invoke();
+        GameManager.instance?.NotifyInventoryUpdated(); // アイテム追加後に更新を通知
     }
 
     /// <summary>
@@ -86,7 +85,7 @@ public class InventoryItemData
             //クイックリストの参照のために排除しない
             // if (entry.count <= 0)
             //     ownedItems.Remove(entry);
-            OnItemCountChanged?.Invoke();
+            GameManager.instance?.NotifyInventoryUpdated(); // アイテム使用後に更新を通知
             return true;
         }
         return false;

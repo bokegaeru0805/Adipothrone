@@ -237,7 +237,7 @@ public class LotteryGameManager : MonoBehaviour
             currentRoundPrize != null && currentRoundPrize.itemData != null
                 ? currentRoundPrize.itemData.itemName
                 : "ハズレ";
-        Debug.Log($"[Lottery] 当たりは宝箱 {winningChestIndex} 番。中身: {itemName}");
+        Debug.Log($"[Lottery] 当たりは宝箱 {winningChestIndex + 1} 番。中身: {itemName}");
 
         // 4. 全ての宝箱を閉じる（リセット）
         foreach (var chest in chests)
@@ -273,7 +273,7 @@ public class LotteryGameManager : MonoBehaviour
             // ランダムに1つ選んで開ける（空であることを示す）
             int revealIndex = openableIndices[UnityEngine.Random.Range(0, openableIndices.Count)];
             chests[revealIndex].OpenVisual();
-            // Debug.Log($"[Lottery] ヒント: 宝箱 {revealIndex} は空です");
+            // Debug.Log($"[Lottery] ヒント: 宝箱 {revealIndex + 1} は空です");
         }
 
         // 最終選択フェーズへ移行

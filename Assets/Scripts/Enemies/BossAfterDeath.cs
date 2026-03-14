@@ -319,6 +319,7 @@ public class BossAfterDeath : MonoBehaviour
                     PlayerStatusBoolName.isCanUseShield,
                     true
                 ); // シールド機能を解放する
+                GameManager.instance.savedata.TipsData.RegisterTipsData(TipsName.Shield); // Tipsを登録する
                 FungusHelper.ExecuteBlock(flowchart, "DustDevilBossDefeat");
                 break;
             case BossHealth.BossName.DesertTempleBossSmoke:

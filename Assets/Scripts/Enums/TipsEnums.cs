@@ -1,11 +1,3 @@
-//操作関連のTipsは0番台
-//ゲームシステム系のTipsは100～200番台
-//装備・アイテム活用Tipsは300～400番台
-//戦闘関連のTipsは500番台
-//敵のTipsは600番台
-//探索・謎解き系Tipsは700番台
-//その他のTipsは800番台
-
 public enum TipsName
 {
     //表示の順番はTipsInfoDatabaseのtipsリストの順番に依存します。
@@ -33,4 +25,5 @@ public enum TipsName
     CurrentEffects = 18013, // 現在の状態異常
     EffectTypes1 = 18014, // 状態異常の種類1
     FastTravel = 18015, // ファストトラベルの説明
+    Shield = 18016, // シールドの説明
 }

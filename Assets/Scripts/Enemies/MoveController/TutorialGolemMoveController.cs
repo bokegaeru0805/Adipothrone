@@ -2,7 +2,7 @@ using System.Collections;
 using UnityEngine;
 
 [RequireComponent(typeof(CriWare.Assets.CriAtomSePlayer))]
-public class TutorialGolemMoveController : MonoBehaviour
+public class TutorialGolemMoveController : MonoBehaviour, IEnemyResettable
 {
     [Header("Flowchart設定")]
     [SerializeField]
@@ -159,6 +159,18 @@ public class TutorialGolemMoveController : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// 親オブジェクトから有効化された際に状態をリセットし、行動を再開します。
+    /// </summary>
+    public void ResetState()
+    {
+        // 既に死亡している場合は何もしない
+        if (!isDead)
+        {
+            StartAttackWhenReady();
+        }
+    }
+
     private void OnEnable()
     {
         //イベントを購読
@@ -201,48 +213,56 @@ public class TutorialGolemMoveController : MonoBehaviour
             }
 
             PlayerPosition = playerTransform.position;
-            
+
             if (DetectLeft < PlayerPosition.x && PlayerPosition.x < DetectRight)
             {
                 yield return new WaitForSeconds(Interval); //攻撃間隔を待機
-                sePlayer.Play(SE_EnemyAction.Shoot1_Enemy); //効果音を鳴らす
+
+                // コルーチン側はアニメーションの再生指示だけを行う
                 animator.SetTrigger("Attack"); //攻撃アニメーションを起動
-                yield return new WaitUntil(() => spriteRenderer.sprite == AttackSprite); //特定のスプライトになるまで待機
 
-                float targetHeight =
-                    (GroundY + RobotHeight) + flatShootRadius * Random.Range(-1, 1); //弾の高さをランダムに設定(-1か0)
-                Vector2 spawnPos = new Vector2(
-                    this.transform.position.x + offsetX,
-                    this.transform.position.y + offsetY
-                );
-                GameObject shoot = Instantiate(shoot_prefab, spawnPos, Quaternion.identity); //弾を生成
-                var script = shoot.GetComponent<ContactDamageController>(); //ダメージに関するスクリプトを取得
-                if (script != null)
-                {
-                    script.SetNormalDamage(ShootDamage); //弾のダメージを設定
-                }
-                else
-                {
-                    Debug.LogWarning($"EnemyStateControllerが{shoot.name}に見つかりませんでした。");
-                }
-                shoot.transform.localScale = Vector3.one * 2.5f; //弾のサイズを調整
-                shoot.transform.SetParent(this.transform); // 弾の親をこのオブジェクトに設定
-
-                Rigidbody2D newrbody = shoot.GetComponent<Rigidbody2D>(); //弾のRigidbody2Dを取得
-                newrbody.gravityScale = 0; //弾の重力を消去
-                Vector2 shootDirection = new Vector2(
-                    offsetX_2 - offsetX,
-                    targetHeight - spawnPos.y
-                );
-                newrbody.AddForce(
-                    new Vector2(shootDirection.x, shootDirection.y).normalized * flatvelocity,
-                    ForceMode2D.Impulse
-                ); //弾の速度を設定
-
-                StartCoroutine(DestroyShoot(shoot, targetHeight, newrbody));
+                // アニメーションが確実に終わるまでの余裕時間を待機する（連射防止用）
+                // ※ ここはアニメーションの長さに合わせて調整してください
+                yield return new WaitForSeconds(1.0f);
             }
             yield return null; // 条件を満たさなくても、必ずフレームを待つ！
         }
+    }
+
+    /// <summary>
+    /// 攻撃アニメーションの特定のフレーム（Animation Event）から呼び出されます
+    /// </summary>
+    public void ExecuteShootEvent()
+    {
+        sePlayer.Play(SE_EnemyAction.Shoot1_Enemy); //効果音を鳴らす
+
+        float targetHeight = (GroundY + RobotHeight) + flatShootRadius * Random.Range(-1, 1); //弾の高さをランダムに設定(-1か0)
+        Vector2 spawnPos = new Vector2(
+            this.transform.position.x + offsetX,
+            this.transform.position.y + offsetY
+        );
+        GameObject shoot = Instantiate(shoot_prefab, spawnPos, Quaternion.identity); //弾を生成
+        var script = shoot.GetComponent<ContactDamageController>(); //ダメージに関するスクリプトを取得
+        if (script != null)
+        {
+            script.SetNormalDamage(ShootDamage); //弾のダメージを設定
+        }
+        else
+        {
+            Debug.LogWarning($"EnemyStateControllerが{shoot.name}に見つかりませんでした。");
+        }
+        shoot.transform.localScale = Vector3.one * 2.5f; //弾のサイズを調整
+        shoot.transform.SetParent(this.transform); // 弾の親をこのオブジェクトに設定
+
+        var newrbody = shoot.GetComponent<Rigidbody2D>(); //弾のRigidbody2Dを取得
+        newrbody.gravityScale = 0; //弾の重力を消去
+        Vector2 shootDirection = new Vector2(offsetX_2 - offsetX, targetHeight - spawnPos.y);
+        newrbody.AddForce(
+            new Vector2(shootDirection.x, shootDirection.y).normalized * flatvelocity,
+            ForceMode2D.Impulse
+        ); //弾の速度を設定
+
+        StartCoroutine(DestroyShoot(shoot, targetHeight, newrbody));
     }
 
     private IEnumerator DestroyShoot(GameObject shoot, float targetHeight, Rigidbody2D prefab_rbody)
