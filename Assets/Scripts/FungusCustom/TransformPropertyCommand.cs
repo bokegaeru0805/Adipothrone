@@ -75,6 +75,10 @@ public class TransformPropertyCommand : Command
     [SerializeField]
     protected AnimationCurve easeCurve = AnimationCurve.Linear(0, 0, 1, 1);
 
+    // 物理演算の競合防止用変数
+    private Rigidbody2D activeRb2d = null;
+    private RigidbodyType2D originalBodyType = RigidbodyType2D.Dynamic;
+
     // --- NaughtyAttributes用のバリデーション ---
     private bool IsScaleMode() => transformMode == TransformMode.Scale;
 
@@ -88,6 +92,15 @@ public class TransformPropertyCommand : Command
             return;
         }
 
+        //  Rigidbody2Dの干渉（落下や床抜け）を防ぐ処理
+        activeRb2d = targetTransform.Value.GetComponent<Rigidbody2D>();
+        if (activeRb2d != null)
+        {
+            originalBodyType = activeRb2d.bodyType;
+            activeRb2d.velocity = Vector2.zero; // 蓄積した落下速度をリセット
+            activeRb2d.bodyType = RigidbodyType2D.Kinematic; // 物理演算を一時無効化してTweenに専念させる
+        }
+
         // ターゲットの値（Vector3）を計算
         Vector3 startVal = GetCurrentValue();
         Vector3 endVal = CalculateEndValue(startVal);
@@ -96,6 +109,15 @@ public class TransformPropertyCommand : Command
         if (duration.Value <= 0f)
         {
             ApplyValue(endVal);
+
+            // 物理演算の状態を元に戻す
+            if (activeRb2d != null)
+            {
+                activeRb2d.velocity = Vector2.zero; // 念押しでリセット
+                activeRb2d.bodyType = originalBodyType;
+                activeRb2d = null;
+            }
+
             Continue();
         }
         else
@@ -141,8 +163,21 @@ public class TransformPropertyCommand : Command
         else
             ApplyValue(end);
 
+        // Tween完了時に物理演算の状態を元に戻す
+        if (activeRb2d != null)
+        {
+            activeRb2d.velocity = Vector2.zero;
+            activeRb2d.bodyType = originalBodyType;
+            activeRb2d = null;
+        }
+
+
         // Tween完了後、waitUntilFinishedがtrueならContinue()で次のコマンドへ
-        Continue();
+        // falseの時に二重にContinueが呼ばれ、フローが壊れるバグを修正
+        if (waitUntilFinished)
+        {
+            Continue();
+        }
     }
 
     private void ApplyRotation(Quaternion rotation)
@@ -158,6 +193,14 @@ public class TransformPropertyCommand : Command
     // ただし、コルーチンが回っている場合はそちらでContinue制御を行う
     public override void OnStopExecuting()
     {
+        // 強制停止時の復帰処理
+        if (activeRb2d != null)
+        {
+            activeRb2d.velocity = Vector2.zero;
+            activeRb2d.bodyType = originalBodyType;
+            activeRb2d = null;
+        }
+
         StopAllCoroutines();
         base.OnStopExecuting();
     }

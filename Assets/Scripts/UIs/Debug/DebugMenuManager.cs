@@ -72,7 +72,7 @@ public class DebugMenuManager : MonoBehaviour
 
     private void Update()
     {
-        if (Input.GetKey(KeyCode.RightShift) && Input.GetKeyDown(KeyCode.Backspace))
+        if (Input.GetKeyDown(KeyCode.F2))
         {
             if (debugCanvas != null)
             {

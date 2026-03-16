@@ -69,6 +69,27 @@ public class CameraMoveArea : MonoBehaviour
     }
 
     /// <summary>
+    /// ロードによるシーン遷移が行われた際、強制的に静的フラグや参照をリセットします。
+    /// これにより、前のシーンでのBGMロック状態やエリア判定が次のシーンに持ち越されるバグを防ぎます。
+    /// </summary>
+    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
+    private static void RegisterSceneChangeCallback()
+    {
+        // エディタのドメインリロード無効時などでの多重登録を防ぐため、一度解除してから登録する
+        UnityEngine.SceneManagement.SceneManager.activeSceneChanged -= OnActiveSceneChanged;
+        UnityEngine.SceneManagement.SceneManager.activeSceneChanged += OnActiveSceneChanged;
+    }
+
+    private static void OnActiveSceneChanged(
+        UnityEngine.SceneManagement.Scene current,
+        UnityEngine.SceneManagement.Scene next
+    )
+    {
+        activeArea = null;
+        isAreaBgmLocked = false;
+    }
+
+    /// <summary>
     /// 現在プレイヤーがいるアクティブなエリアのBGMをフェードインで再生します。
     /// </summary>
     public static void PlayCurrentAreaBgm(float fadeDuration)
@@ -222,16 +243,13 @@ public class CameraMoveArea : MonoBehaviour
     {
         if (other.CompareTag(GameConstants.PLAYER_TAG_NAME))
         {
-            // 自分が現在アクティブなエリアだった場合のみ、退出処理を行う
-            if (activeArea == this)
-            {
-                HandlePlayerExit();
-                activeArea = null;
+            // エリア内にいる判定だけはオフにする
+            isPlayerInArea = false;
 
-                // 他のエリアの境界内にまだ留まっている可能性があるため、
-                // アクティブなエリアを再検索して適用させる
-                RefreshActiveArea();
-            }
+            // 【重要】自分が現在アクティブなエリアだった場合でも、ここでは退出処理を行いません。
+            // プレイヤーがマージン（あそび）の隙間にいる間は、背景やカメラ制限、Lightを維持するためです。
+            // 実際に HandlePlayerExit() が呼ばれてLight等が消えるのは、
+            // 「次の新しいエリアの OnTriggerEnter2D に入った瞬間」になります。
         }
     }
 
@@ -404,6 +422,14 @@ public class CameraMoveArea : MonoBehaviour
 
                 // 1つのエリアに入ったら終了（エリアが重なっていない前提）
                 return;
+            }
+
+            // どのエリアにも入っていない（かつワープ等で強制リフレッシュされた）場合、
+            // 古いアクティブエリアが残っていればここで破棄する
+            if (activeArea != null)
+            {
+                activeArea.HandlePlayerExit();
+                activeArea = null;
             }
         }
     }

@@ -207,13 +207,89 @@ namespace MyGame.CameraControl
         {
             if (framing != null)
             {
-                // 1. 元の設定値を保持
-                float prevXDamping = framing.m_XDamping;
-                float prevYDamping = framing.m_YDamping;
+                // // 1. 元の設定値を保持
+                // float prevXDamping = framing.m_XDamping;
+                // float prevYDamping = framing.m_YDamping;
 
-                // 2. Dampingを無効化して即時追従モードにする
-                framing.m_XDamping = 0;
-                framing.m_YDamping = 0;
+                // // 2. Dampingを無効化して即時追従モードにする
+                // framing.m_XDamping = 0;
+                // framing.m_YDamping = 0;
+
+                // // Cinemachineにワープを通知（内部演算のリセット）
+                // virtualCamera.OnTargetObjectWarped(
+                //     framing.FollowTarget,
+                //     framing.FollowTargetPosition - cam.transform.position
+                // );
+
+                // float timeElapsed = 0f;
+                // float timeOut = 2.0f;
+
+                // // 【追加】カメラが静止したことを検知するための変数
+                // Vector3 lastCamPos = cam.transform.position;
+
+                // // 【重要】CameraMoveAreaのConfiner更新（最大10フレーム程度かかる）を待つため、
+                // // 最低でもこの時間は強制同期を続け、完了判定を行わないようにする。
+                // // これにより「古いエリアの端」で誤って完了判定され、カメラが置き去りになるのを防ぐ。
+                // float minDuration = 0.25f;
+
+                // while (true)
+                // {
+                //     timeElapsed += Time.unscaledDeltaTime;
+
+                //     // 3. 毎フレーム強制的にカメラ位置をターゲット位置へ移動させる
+                //     // Confinerが更新されるまでの間も位置合わせを試行し続けることで、
+                //     // 更新された瞬間に正しい位置（低いエリア）へ即座に移動できるようにする
+                //     Vector3 targetPos = framing.FollowTargetPosition;
+                //     targetPos.z = cam.transform.position.z;
+                //     cam.transform.position = targetPos;
+
+                //     yield return null; // 1フレーム待機（物理・Confiner等の更新）
+
+                //     // 4. 最低待機時間を超えるまでは完了判定をスキップ
+                //     if (timeElapsed < minDuration)
+                //     {
+                //         continue;
+                //     }
+
+                //     // 5. 判定
+                //     Vector3 currentCamPos = cam.transform.position;
+                //     Vector3 currentTargetPos = framing.FollowTargetPosition;
+
+                //     float distanceXY = Vector2.Distance(
+                //         new Vector2(currentCamPos.x, currentCamPos.y),
+                //         new Vector2(currentTargetPos.x, currentTargetPos.y)
+                //     );
+
+                //     bool isCloseEnough = distanceXY <= 0.1f;
+
+                //     // 端にいるかどうかの判定。
+                //     // minDuration経過後であれば、Confinerは正しいものになっているはずなので、
+                //     // ここで端判定が出れば「本当に端にいて動けない」と判断できる。
+                //     bool isAtEdge = boundaryChecker.CameraAtEdge != null;
+
+                //     // 静止判定（上下の壁に当たって動けないケースなどに対応）
+                //     // 強制移動させているにも関わらず座標が変わらない＝Confiner等で止められていると判断
+                //     bool isStationary = Vector3.Distance(currentCamPos, lastCamPos) < 0.001f;
+
+                //     bool isTimeOut = timeElapsed >= timeOut;
+
+                //     if (isCloseEnough || isAtEdge || isStationary || isTimeOut)
+                //     {
+                //         // タイムアウトかつ、静止もしていない（何かに引っかかって震えている等）場合のみ警告
+                //         if (isTimeOut && !isStationary && !isCloseEnough)
+                //         {
+                //             Debug.LogWarning($"CameraMove Timeout (Dist:{distanceXY:F2}).");
+                //         }
+                //         break;
+                //     }
+
+                //     // 次フレーム比較用に座標を更新
+                //     lastCamPos = currentCamPos;
+                // }
+
+                // // 6. Damping設定を元に戻す
+                // framing.m_XDamping = prevXDamping;
+                // framing.m_YDamping = prevYDamping;
 
                 // Cinemachineにワープを通知（内部演算のリセット）
                 virtualCamera.OnTargetObjectWarped(
@@ -221,75 +297,18 @@ namespace MyGame.CameraControl
                     framing.FollowTargetPosition - cam.transform.position
                 );
 
-                float timeElapsed = 0f;
-                float timeOut = 2.0f;
+                // カメラの座標をターゲット位置へ強制的に移動させる
+                Vector3 targetPos = framing.FollowTargetPosition;
+                targetPos.z = cam.transform.position.z;
+                cam.transform.position = targetPos;
 
-                // 【追加】カメラが静止したことを検知するための変数
-                Vector3 lastCamPos = cam.transform.position;
+                // 前フレームまでの位置計算や慣性をすべて破棄し、即座にカットさせる
+                virtualCamera.PreviousStateIsValid = false;
 
                 // 【重要】CameraMoveAreaのConfiner更新（最大10フレーム程度かかる）を待つため、
-                // 最低でもこの時間は強制同期を続け、完了判定を行わないようにする。
-                // これにより「古いエリアの端」で誤って完了判定され、カメラが置き去りになるのを防ぐ。
-                float minDuration = 0.25f;
-
-                while (true)
-                {
-                    timeElapsed += Time.unscaledDeltaTime;
-
-                    // 3. 毎フレーム強制的にカメラ位置をターゲット位置へ移動させる
-                    // Confinerが更新されるまでの間も位置合わせを試行し続けることで、
-                    // 更新された瞬間に正しい位置（低いエリア）へ即座に移動できるようにする
-                    Vector3 targetPos = framing.FollowTargetPosition;
-                    targetPos.z = cam.transform.position.z;
-                    cam.transform.position = targetPos;
-
-                    yield return null; // 1フレーム待機（物理・Confiner等の更新）
-
-                    // 4. 最低待機時間を超えるまでは完了判定をスキップ
-                    if (timeElapsed < minDuration)
-                    {
-                        continue;
-                    }
-
-                    // 5. 判定
-                    Vector3 currentCamPos = cam.transform.position;
-                    Vector3 currentTargetPos = framing.FollowTargetPosition;
-
-                    float distanceXY = Vector2.Distance(
-                        new Vector2(currentCamPos.x, currentCamPos.y),
-                        new Vector2(currentTargetPos.x, currentTargetPos.y)
-                    );
-
-                    bool isCloseEnough = distanceXY <= 0.1f;
-
-                    // 端にいるかどうかの判定。
-                    // minDuration経過後であれば、Confinerは正しいものになっているはずなので、
-                    // ここで端判定が出れば「本当に端にいて動けない」と判断できる。
-                    bool isAtEdge = boundaryChecker.CameraAtEdge != null;
-
-                    // 静止判定（上下の壁に当たって動けないケースなどに対応）
-                    // 強制移動させているにも関わらず座標が変わらない＝Confiner等で止められていると判断
-                    bool isStationary = Vector3.Distance(currentCamPos, lastCamPos) < 0.001f;
-
-                    bool isTimeOut = timeElapsed >= timeOut;
-
-                    if (isCloseEnough || isAtEdge || isStationary || isTimeOut)
-                    {
-                        // タイムアウトかつ、静止もしていない（何かに引っかかって震えている等）場合のみ警告
-                        if (isTimeOut && !isStationary && !isCloseEnough)
-                        {
-                            Debug.LogWarning($"CameraMove Timeout (Dist:{distanceXY:F2}).");
-                        }
-                        break;
-                    }
-
-                    // 次フレーム比較用に座標を更新
-                    lastCamPos = currentCamPos;
-                }
-
-                // 6. Damping設定を元に戻す
-                framing.m_XDamping = prevXDamping;
-                framing.m_YDamping = prevYDamping;
+                // 最低でもこの時間は待機し、物理・Confiner等の更新を安定させる。
+                // ワープの暗転中（FadeOut後）に行われるため、プレイヤーからは待機時間は見えません。
+                yield return new WaitForSecondsRealtime(0.25f);
             }
             else
             {
