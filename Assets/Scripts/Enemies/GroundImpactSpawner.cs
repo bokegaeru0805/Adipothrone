@@ -111,12 +111,6 @@ public class GroundImpactSpawner : MonoBehaviour
                 }
             }
 
-            // // プール未設定、またはプール取得失敗時はInstantiate
-            // if (spawnedObj == null && item.prefab != null)
-            // {
-            //     spawnedObj = Instantiate(item.prefab, transform.position, Quaternion.identity);
-            // }
-
             // 2. 速度適用処理
             if (spawnedObj != null)
             {

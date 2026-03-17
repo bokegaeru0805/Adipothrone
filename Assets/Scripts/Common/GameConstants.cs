@@ -135,9 +135,7 @@ public static class GameConstants
     public const float ROBOT_JUMP_PEAK_HEIGHT = ROBOT_BASE_HEIGHT + PLAYER_JUMP_HEIGHT; // ロボットのジャンプ頂点高さ
     public const float PLAYER_GRAVITY_SCALE = 2.0f; // プレイヤーの重力スケール
 #if UNITY_EDITOR
-    public const float INVINCIBLE_DURATION_ON_LOAD = 0.0f;
-#elif DEMO_BUILD
-    public const float INVINCIBLE_DURATION_ON_LOAD = 0.0f; // デモビルド用の値
+    public const float INVINCIBLE_DURATION_ON_LOAD = 0.0f; // エディタプレイ時は無敵時間なし（テストしやすくするため）
 #else
     public const float INVINCIBLE_DURATION_ON_LOAD = 3.0f; // 通常の実機ビルド用の値
 #endif

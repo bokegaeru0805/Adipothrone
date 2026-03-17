@@ -8,8 +8,11 @@ using UnityEngine;
 [RequireComponent(typeof(CriWare.Assets.CriAtomSePlayer))]
 public class DesertTempleBossMoveController : MonoBehaviour
 {
+    // ※注意
+    // 弾の種類を増やした場合、FillBulletのtargetEnemyPoolTagsにタグを追加するのを忘れないこと（相殺させたい場合）  
     private const string RIGHT_ARM_BULLET_POOLTAG = "DesertTempleGolemShoot";
     public const string RIGHT_ARM_BULLET_SPAWN_EFFECT_POOLTAG = "DesertTempleBossShootSpawnEffect"; //61D2FF
+    public const string RAIN_BULLET_POOLTAG = "DesertTempleBossRainBullet";
     private const string GOLEM_POOLTAG = "DesertTempleGolem";
     public const float LEFTARM_ARMUP_ANIMATION_DURATION = 0.938f;
     public const float LEFTARM_ATTACK_ANIMATION_DURATION = 0.188f;
@@ -1690,7 +1693,7 @@ public class DesertTempleBossMoveController : MonoBehaviour
 
         // プールから弾を取得
         GameObject bullet = ObjectPooler.SceneInstance.SpawnFromPool(
-            RIGHT_ARM_BULLET_POOLTAG,
+            RAIN_BULLET_POOLTAG,
             startPos,
             Quaternion.identity
         );
@@ -1704,7 +1707,7 @@ public class DesertTempleBossMoveController : MonoBehaviour
             float angle = Mathf.Atan2(direction.y, direction.x) * Mathf.Rad2Deg;
             bullet.transform.rotation = Quaternion.Euler(0, 0, angle);
 
-            Rigidbody2D rb = bullet.GetComponent<Rigidbody2D>();
+            var rb = bullet.GetComponent<Rigidbody2D>();
             if (rb != null)
             {
                 rb.velocity = direction * rainAttackBulletSpeed;

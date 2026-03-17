@@ -6,7 +6,11 @@ using UnityEngine;
 /// </summary>
 public class FillBullet : PoolableObject
 {
-    private string targetEnemyPoolTag = "DesertTempleGolemShoot"; // 相殺対象の敵の弾のプールタグ
+    private string[] targetEnemyPoolTags =
+    {
+        "DesertTempleGolemShoot",
+        "DesertTempleBossRainBullet",
+    }; // 相殺対象の敵の弾のプールタグ（複数指定可能）
 
     [Header("迎撃設定")]
     [Tooltip(
@@ -47,7 +51,11 @@ public class FillBullet : PoolableObject
 
         // 2. 敵の弾（降雨攻撃など）との相殺判定
         var enemyBullet = collision.GetComponent<PoolableObject>();
-        if (enemyBullet != null && enemyBullet.PoolTag == targetEnemyPoolTag)
+        // 衝突したオブジェクトのプールタグが、設定したタグの配列（リスト）に含まれているかを判定
+        if (
+            enemyBullet != null
+            && System.Array.Exists(targetEnemyPoolTags, tag => tag == enemyBullet.PoolTag)
+        )
         {
             // 相手の弾と自分の弾を両方ともプールに返却
             enemyBullet.ReturnToPool();
@@ -69,7 +77,11 @@ public class FillBullet : PoolableObject
         }
 
         var enemyBullet = collision.gameObject.GetComponent<PoolableObject>();
-        if (enemyBullet != null && enemyBullet.PoolTag == targetEnemyPoolTag)
+        // 衝突したオブジェクトのプールタグが、設定したタグの配列（リスト）に含まれているかを判定
+        if (
+            enemyBullet != null
+            && System.Array.Exists(targetEnemyPoolTags, tag => tag == enemyBullet.PoolTag)
+        )
         {
             enemyBullet.ReturnToPool();
             ReturnToPool();

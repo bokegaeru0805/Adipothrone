@@ -317,6 +317,29 @@ public class QuickItemPanel : MonoBehaviour
         ChangeSelection(0); //最初のボタンを選択する
     }
 
+    /// <summary>
+    /// UIが再び表示された（アクティブになった）時に呼ばれます。
+    /// 非表示の間に解除されたイベントを再登録し、UIを最新状態に更新します。
+    /// </summary>
+    private void OnEnable()
+    {
+        // ゲーム起動直後など、まだStartが呼ばれておらずManagerが取得できていない場合はスキップ
+        // （初回の登録はStart()内で行われるため）
+        if (playerManager == null || GameManager.instance == null)
+            return;
+
+        // 1. OnDisableで解除されたイベントを再登録
+        playerManager.OnQuickSlotAssigned += HandleQuickSlotAssigned;
+        GameManager.instance.OnInventoryUpdated += ChangeAllCountTextImage;
+
+        // 2. 非表示の間にアイテムが増減した可能性があるので、即座にUIを最新状態にリフレッシュ
+        HandleQuickSlotAssigned();
+        ChangeAllCountTextImage();
+
+        // 3. アニメーションや選択状態を復帰させる
+        ChangeSelection(currentIndex);
+    }
+
     private void OnDisable()
     {
         // ゲームがまだ開始されていない場合は何もしない

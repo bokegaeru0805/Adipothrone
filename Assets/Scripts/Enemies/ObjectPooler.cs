@@ -298,7 +298,8 @@ public class ObjectPooler : MonoBehaviour
         objectToSpawn.transform.rotation = rotation;
 
         // 貸し出したオブジェクトを追跡リストに追加
-        activeObjects.Add(objectToSpawn, tag);
+        activeObjects[objectToSpawn] = tag; // Addではなくインデクサーで上書きすることでエラーを回避
+        
 
         return objectToSpawn;
     }
@@ -310,6 +311,10 @@ public class ObjectPooler : MonoBehaviour
     /// <param name="objectToReturn">返却するGameObject</param>
     public void ReturnToPool(string tag, GameObject objectToReturn)
     {
+        // すでに破棄されている場合は何もしない（MissingReference対策）
+        if (objectToReturn == null)
+            return;
+
         // 存在しないプールのタグが指定された場合
         if (!poolDictionary.ContainsKey(tag))
         {
@@ -319,11 +324,15 @@ public class ObjectPooler : MonoBehaviour
             return;
         }
 
-        // 返却されたオブジェクトを追跡リスト（貸出中リスト）から削除
-        if (activeObjects.ContainsKey(objectToReturn))
+        // 返却されたオブジェクトが追跡リスト（貸出中リスト）に存在しない場合、
+        // 既に返却済みとみなして、キューへの重複登録を防ぐために処理をスキップする
+        if (!activeObjects.ContainsKey(objectToReturn))
         {
-            activeObjects.Remove(objectToReturn);
+            return; // ※この return; がないとエラーの原因になります
         }
+
+        // 存在する場合はリストから削除
+        activeObjects.Remove(objectToReturn);
 
         // 親を null ではなく、InitializePools で作成した整理用の親 (poolParent) に戻す
         if (poolParentDictionary.TryGetValue(tag, out Transform poolParent))
@@ -388,8 +397,15 @@ public class ObjectPooler : MonoBehaviour
         // コピーしておかないと InvalidOperationException (コレクションが変更されました) エラーになるのを防ぐため。
         foreach (var pair in activeObjects.ToList())
         {
-            ReturnToPool(pair.Value, pair.Key);
+            // nullチェック（破棄済みのオブジェクトへのアクセス防止）
+            if (pair.Key != null)
+            {
+                ReturnToPool(pair.Value, pair.Key);
+            }
         }
+
+        // 念のため貸出リストを完全にクリア
+        activeObjects.Clear();
     }
 
     /// <summary>

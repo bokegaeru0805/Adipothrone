@@ -3,6 +3,8 @@ using UnityEngine;
 
 public class Enemy2MoveController : MonoBehaviour, IEnemyResettable
 {
+    private const string POOL_TAG_SHOOT = "Enemy2Shoot"; // 弾のプールタグ
+
     [Header("敵のタイプ")]
     [SerializeField]
     private EnemyVariant variantType = EnemyVariant.None; //敵の種類を設定
@@ -56,10 +58,6 @@ public class Enemy2MoveController : MonoBehaviour, IEnemyResettable
     [SerializeField]
     private Sprite chaseSprite; //追跡用の画像のスプライト
 
-    [Header("弾のプレハブ")]
-    [SerializeField]
-    private GameObject shoot_prefab; //弾のプレハブ
-
     // 敵の種類を定義
     private enum EnemyVariant
     {
@@ -90,9 +88,9 @@ public class Enemy2MoveController : MonoBehaviour, IEnemyResettable
                 break;
         }
 
-        if (normalSprite == null || chaseSprite == null || shoot_prefab == null)
+        if (normalSprite == null || chaseSprite == null)
         {
-            Debug.LogError($"{this.name}のスプライトまたは弾のプレハブが設定されていません。");
+            Debug.LogError($"{this.name}のスプライトが設定されていません。");
         }
 
         if (lowerBound == 0)
@@ -246,7 +244,11 @@ public class Enemy2MoveController : MonoBehaviour, IEnemyResettable
                 newPos.x += (rightFlag ? 1 : -1) * offsetX; //弾のx座標を指定
                 newPos.y += offsetY; //弾のx座標を指定
                 newPos.z = -5; //弾のz座標を指定
-                GameObject newGameObject = Instantiate(shoot_prefab) as GameObject; // 弾のプレハブを生成
+                GameObject newGameObject = ObjectPooler.SceneInstance.SpawnFromPool(
+                    POOL_TAG_SHOOT,
+                    newPos,
+                    Quaternion.identity
+                ); // 弾をプールから生成
                 newGameObject.transform.position = newPos; //弾の位置を設定
                 var script = newGameObject.GetComponent<ContactDamageController>(); //ダメージに関するスクリプトを取得
                 if (script != null)
@@ -259,7 +261,7 @@ public class Enemy2MoveController : MonoBehaviour, IEnemyResettable
                         $"EnemyStateControllerが{newGameObject.name}に見つかりませんでした。"
                     );
                 }
-                Rigidbody2D newrbody = newGameObject.GetComponent<Rigidbody2D>(); //弾のRigidbody2Dを取得
+                var newrbody = newGameObject.GetComponent<Rigidbody2D>(); //弾のRigidbody2Dを取得
                 newrbody.gravityScale = 1; //重力の大きさを初期化
                 newrbody.AddForce(
                     new Vector2((rightFlag ? 1 : -1) * shoot1_throwX, 0),
@@ -290,7 +292,7 @@ public class Enemy2MoveController : MonoBehaviour, IEnemyResettable
     {
         if (shoot == null)
             yield break;
-        Rigidbody2D prefab_rbody = shoot.GetComponent<Rigidbody2D>(); //Rigidbody2Dコンポーネントを取得
+        var prefab_rbody = shoot.GetComponent<Rigidbody2D>(); //Rigidbody2Dコンポーネントを取得
 
         while (true)
         {
@@ -311,7 +313,11 @@ public class Enemy2MoveController : MonoBehaviour, IEnemyResettable
                 Vector3 pos = shoot.transform.position;
                 if (pos.y < ExistBottom)
                 {
-                    Destroy(shoot);
+                    var poolObj = shoot.GetComponent<PoolableObject>();
+                    if (poolObj != null)
+                    {
+                        poolObj.ReturnToPool(); // プールに返却する
+                    }
                     yield break;
                 }
 
@@ -345,6 +351,11 @@ public class Enemy2MoveController : MonoBehaviour, IEnemyResettable
             }
             // 持っている場合は何もしないので、安全にスキップされる
         }
+    }
+
+    private void OnDestroy()
+    {
+        ObjectPooler.SceneInstance?.ReturnAllToPool(); // シーン内の全てのオブジェクトをプールに返却
     }
 
     private void OnDrawGizmosSelected()

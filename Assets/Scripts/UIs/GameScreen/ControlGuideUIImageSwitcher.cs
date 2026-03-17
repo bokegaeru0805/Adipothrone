@@ -68,6 +68,7 @@ public class ControlGuideUIImageSwitcher : MonoBehaviour
     private bool canChangeAttackType = false;
     private bool isRobotVisible = false;
     private bool previousQuickItemHighlightState = false;
+    private bool isInitialized = false; // 初期化が完了しているかを判定するフラグ
 
     private void Start()
     {
@@ -188,6 +189,8 @@ public class ControlGuideUIImageSwitcher : MonoBehaviour
 
         // 4. Updateを動かすためにコンポーネントを有効化
         this.enabled = true;
+
+        isInitialized = true; // 初期化完了フラグを立てる
     }
 
     private void Update()
@@ -205,6 +208,33 @@ public class ControlGuideUIImageSwitcher : MonoBehaviour
         quickItemHighlightControlGuide?.SetActive(currentHighlightState);
 
         previousQuickItemHighlightState = currentHighlightState;
+    }
+
+    /// <summary>
+    /// UIが再び表示された際に呼ばれます。
+    /// OnDisableで解除されたイベントを再登録し、UIを最新状態に更新します。
+    /// </summary>
+    private void OnEnable()
+    {
+        // ロード中やゲーム起動直後など、まだ初期化が終わっていない場合はスキップ
+        // （初回の登録は InitializeControlGuide の中で行われるため）
+        if (!isInitialized)
+            return;
+
+        // 1. OnDisableで解除された各種イベントを再登録
+        if (playerManager != null)
+            playerManager.OnBoolStatusChanged += OnAnyBoolStatusChanged;
+
+        GameManager.OnTalkingStateChanged += OnTalkingStateChanged;
+
+        if (playerScript != null)
+            playerScript.OnPlayerVisibilityChanged += OnPlayerVisibilityChanged;
+
+        if (robotScript != null)
+            robotScript.OnRobotVisibilityChanged += OnRobotVisibilityChanged;
+
+        // 2. 非表示の間に武器が解放されたり状態が変わっている可能性があるので、最新状態にリフレッシュ
+        InitialUISetup();
     }
 
     /// <summary>

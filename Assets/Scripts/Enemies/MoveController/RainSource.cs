@@ -1,9 +1,12 @@
 using System.Collections;
+using System.Collections.Generic;
 using UnityEngine;
 
 [RequireComponent(typeof(CriWare.Assets.CriAtomSePlayer))]
 public class RainSource : MonoBehaviour
 {
+    private const string POOL_TAG_RAIN = "RainBullet"; // 雨のプールタグ
+
     [Header("雨のダメージ設定")]
     [SerializeField]
     private int rainDamage = 0; // 雨がプレイヤーに与えるダメージ量
@@ -59,12 +62,9 @@ public class RainSource : MonoBehaviour
 
     [SerializeField]
     private float FallTimeMax = 1; // 雨が地面に到達するまでの最大時間
-
-    [Header("雨のプレハブ")]
-    [SerializeField]
-    private GameObject rain_prefab; // 雨のプレハブ
     private bool isEnable; //存在しているかどうかのフラグ
     private Vector3 playerPosition; //プレイヤーの位置
+    private List<GameObject> activeRains = new List<GameObject>(); // 発生させた雨を管理するリスト（エリア外に出た時や破棄時に一斉消去するため）
     private CriWare.Assets.CriAtomSePlayer sePlayer;
 
     private enum RainType
@@ -79,11 +79,6 @@ public class RainSource : MonoBehaviour
         if (rainDamage <= 0)
         {
             Debug.LogError("RainSourceの雨のダメージ量が設定されていません。");
-        }
-
-        if (rain_prefab == null)
-        {
-            Debug.LogError("RainSourceに雨のプレハブが設定されていません。");
         }
 
         if (raintype == RainType.none)
@@ -141,7 +136,12 @@ public class RainSource : MonoBehaviour
                 yield return new WaitForSeconds(interval);
                 float AppearY = Random.Range(rainCornerA.y, rainCornerB.y);
                 Vector2 spawnPos = new Vector2(Random.Range(rainCornerA.x, rainCornerB.x), AppearY);
-                GameObject rain = Instantiate(rain_prefab, spawnPos, Quaternion.identity); // 雨を生成
+                GameObject rain = ObjectPooler.SceneInstance.SpawnFromPool(
+                    POOL_TAG_RAIN,
+                    spawnPos,
+                    Quaternion.identity
+                ); //雨をプールから生成
+                activeRains.Add(rain); // リストに登録して管理する
                 var script = rain.GetComponent<ContactDamageController>(); //ダメージに関するスクリプトを取得
                 if (script != null)
                 {
@@ -151,9 +151,7 @@ public class RainSource : MonoBehaviour
                 {
                     Debug.LogWarning("Rain prefab does not have ContactDamageController script.");
                 }
-
-                rain.transform.SetParent(this.transform); // 雨の親をこのオブジェクトに設定（雲に追従）
-                Rigidbody2D newrbody = rain.GetComponent<Rigidbody2D>(); //雨のRigidbody2Dを取得
+                var newrbody = rain.GetComponent<Rigidbody2D>(); //雨のRigidbody2Dを取得
                 float FallTime = Random.Range(FallTimeMin, FallTimeMax);
                 float vy = (ExistBottom - AppearY) / FallTime;
                 newrbody.AddForce(new Vector2(0, vy), ForceMode2D.Impulse); //雨の速度を設定
@@ -166,10 +164,16 @@ public class RainSource : MonoBehaviour
                 if (isEnable)
                 {
                     isEnable = false;
-                    foreach (Transform child in transform)
+                    foreach (var r in activeRains)
                     {
-                        Destroy(child.gameObject);
+                        if (r != null && r.activeInHierarchy)
+                        {
+                            PoolableObject poolObj = r.GetComponent<PoolableObject>();
+                            if (poolObj != null)
+                                poolObj.ReturnToPool();
+                        }
                     }
+                    activeRains.Clear(); // リストをリセット
                 }
             }
             yield return null; // 条件を満たさなくても、必ずフレームを待つ！
@@ -200,7 +204,12 @@ public class RainSource : MonoBehaviour
                 float AppearX = Random.Range(rainCornerA.x, rainCornerB.x);
                 float AppearY = Random.Range(rainCornerA.y, rainCornerB.y);
                 Vector2 spawnPos = new Vector2(AppearX, AppearY);
-                GameObject rain = Instantiate(rain_prefab, spawnPos, Quaternion.identity); // 雨を生成
+                GameObject rain = ObjectPooler.SceneInstance.SpawnFromPool(
+                    POOL_TAG_RAIN,
+                    spawnPos,
+                    Quaternion.identity
+                ); //雨をプールから生成
+                activeRains.Add(rain); // リストに登録して管理する
                 var script = rain.GetComponent<ContactDamageController>(); //ダメージに関するスクリプトを取得
                 if (script != null)
                 {
@@ -211,15 +220,12 @@ public class RainSource : MonoBehaviour
                     Debug.LogWarning("Rain prefab does not have ContactDamageController script.");
                 }
 
-                Rigidbody2D newrbody = rain.GetComponent<Rigidbody2D>();
+                var newrbody = rain.GetComponent<Rigidbody2D>();
                 float targetPointX = Random.Range(ExistLeft, ExistRight);
                 float FallTime = Random.Range(FallTimeMin, FallTimeMax);
                 float vx = (targetPointX - AppearX) / FallTime;
                 float vy = (ExistBottom - AppearY) / FallTime;
                 newrbody.AddForce(new Vector2(vx, vy), ForceMode2D.Impulse);
-
-                rain.transform.SetParent(this.transform);
-
                 StartCoroutine(DestroyRain(rain));
             }
             else
@@ -227,10 +233,17 @@ public class RainSource : MonoBehaviour
                 if (isEnable)
                 {
                     isEnable = false;
-                    foreach (Transform child in transform)
+                    // リストに登録された雨粒を一斉にプールへ返却する
+                    foreach (var r in activeRains)
                     {
-                        Destroy(child.gameObject);
+                        if (r != null && r.activeInHierarchy)
+                        {
+                            PoolableObject poolObj = r.GetComponent<PoolableObject>();
+                            if (poolObj != null)
+                                poolObj.ReturnToPool();
+                        }
                     }
+                    activeRains.Clear(); // リストをリセット
                 }
             }
 
@@ -247,7 +260,13 @@ public class RainSource : MonoBehaviour
             Vector3 pos = rain.transform.position;
             if (pos.y < ExistBottom || pos.x < ExistLeft || pos.x > ExistRight)
             {
-                Destroy(rain);
+                var poolObj = rain.GetComponent<PoolableObject>();
+                if (poolObj != null)
+                {
+                    poolObj.ReturnToPool(); // プールに返却する
+                }
+
+                // 雨が地面に到達したときのSE再生（1/5の確率で再生）
                 int isDropSoundPlay = Random.Range(1, 6);
                 if (isDropSoundPlay == 1)
                 {

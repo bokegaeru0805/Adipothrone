@@ -1,10 +1,14 @@
 using System.Collections;
-using UnityEngine;
 using MyGame.CameraControl;
+using UnityEngine;
 
 [RequireComponent(typeof(CriWare.Assets.CriAtomSePlayer))]
 public class GhostwolfMoveController : MonoBehaviour
 {
+    private const string POOL_TAG_SHOOT1 = "TutorialStageShoot1"; // 弾1のプールタグ
+    private const string POOL_TAG_SHOOT2 = "RainBullet"; // 弾2のプールタグ
+    private const string POOL_TAG_SHOOT3 = "TutorialStageShoot2"; // 弾3のプールタグ
+
     private GameObject PlayerObject; //ターゲットオブジェクトを定義
 
     [Header("行動範囲のパラメータ")]
@@ -111,16 +115,6 @@ public class GhostwolfMoveController : MonoBehaviour
     [SerializeField, Tooltip("扇状弾幕攻撃(溜め攻撃)")]
     private float Attack5wait_Sec; //攻撃5の後の待機時間の長さ
 
-    [Header("弾のプレハブ")]
-    [SerializeField]
-    private GameObject shoot_prefab1; //弾1のプレハブ
-
-    [SerializeField]
-    private GameObject shoot_prefab2; //弾2のプレハブ
-
-    [SerializeField]
-    private GameObject shoot_prefab3; //弾3のプレハブ
-
     [Header("弾幕が出るときのスプライト")]
     [SerializeField]
     private Sprite howlsprite; //弾幕が出るときのスプライト
@@ -147,11 +141,6 @@ public class GhostwolfMoveController : MonoBehaviour
         if (normalShootDamage <= 0 || rainDamage <= 0 || flatShootDamage <= 0)
         {
             Debug.LogError("GhostWolfに弾のダメージ量が設定されていません。", this);
-        }
-
-        if (shoot_prefab1 == null || shoot_prefab2 == null || shoot_prefab3 == null)
-        {
-            Debug.LogError("GhostWolfに弾のプレハブが設定されていません。", this);
         }
 
         if (howlsprite == null)
@@ -279,8 +268,11 @@ public class GhostwolfMoveController : MonoBehaviour
         Vector3 newPos = this.transform.position; //自分の座標を保存
         newPos.x += shoot_offsetX; //弾のx座標を調整
         newPos.y += shoot_offsetX; //弾のy座標を調整
-        GameObject newGameObject = Instantiate(shoot_prefab1) as GameObject; // 弾1のプレハブを生成
-        newGameObject.transform.SetParent(this.transform); // 弾の親をこのオブジェクトに設定
+        GameObject newGameObject = ObjectPooler.SceneInstance.SpawnFromPool(
+            POOL_TAG_SHOOT1,
+            newPos,
+            Quaternion.identity
+        ); // 弾1をプールから生成
         newGameObject.tag = GameConstants.DAMAGEABLE_ENEMY_TAG_NAME; //弾のタグを設定
         var script = newGameObject.GetComponent<ContactDamageController>(); //ダメージに関するスクリプトを取得
         if (script != null)
@@ -291,8 +283,7 @@ public class GhostwolfMoveController : MonoBehaviour
         {
             Debug.LogWarning($"EnemyStateControllerが{newGameObject.name}に見つかりませんでした。");
         }
-        newGameObject.transform.position = newPos; //弾の位置を設定
-        Rigidbody2D newrbody = newGameObject.GetComponent<Rigidbody2D>(); //弾のRigidbody2Dを取得
+        var newrbody = newGameObject.GetComponent<Rigidbody2D>(); //弾のRigidbody2Dを取得
         newrbody.gravityScale = 1; //弾の重力を初期化
         float targetPointX = Random.Range(leftBoundary, rightBoundary); //着弾地点を設定
         playerPos = PlayerObject.transform.position; //プレイヤーの座標を取得
@@ -326,8 +317,11 @@ public class GhostwolfMoveController : MonoBehaviour
 
         for (int i = 0; i < 3; i++)
         {
-            GameObject newGameObject = Instantiate(shoot_prefab1) as GameObject; // 弾1のプレハブを生成
-            newGameObject.transform.SetParent(this.transform); // 弾の親をこのオブジェクトに設定
+            GameObject newGameObject = ObjectPooler.SceneInstance.SpawnFromPool(
+                POOL_TAG_SHOOT1,
+                newPos,
+                Quaternion.identity
+            ); // 弾1をプールから生成
             newGameObject.tag = GameConstants.DAMAGEABLE_ENEMY_TAG_NAME; //弾のタグを設定
             var script = newGameObject.GetComponent<ContactDamageController>(); //ダメージに関するスクリプトを取得
             if (script != null)
@@ -340,8 +334,7 @@ public class GhostwolfMoveController : MonoBehaviour
                     $"EnemyStateControllerが{newGameObject.name}に見つかりませんでした。"
                 );
             }
-            newGameObject.transform.position = newPos; //弾の位置を設定
-            Rigidbody2D newrbody = newGameObject.GetComponent<Rigidbody2D>(); //弾のRigidbody2Dを取得
+            var newrbody = newGameObject.GetComponent<Rigidbody2D>(); //弾のRigidbody2Dを取得
             newrbody.gravityScale = 1; //弾の重力を初期化
             float targetPointX = Random.Range(leftBoundary, rightBoundary); //着弾地点を設定
             playerPos = PlayerObject.transform.position; //プレイヤーの座標を取得
@@ -380,8 +373,17 @@ public class GhostwolfMoveController : MonoBehaviour
 
         for (int i = 0; i < droptimes; i++)
         {
-            GameObject newGameObject = Instantiate(shoot_prefab2) as GameObject; // 弾2のプレハブを生成
-            newGameObject.transform.SetParent(this.transform); // 弾の親をこのオブジェクトに設定
+            playerPos = PlayerObject.transform.position; //プレイヤーの座標を取得
+            Vector2 spawnPos = new Vector2(
+                Random.Range(playerPos.x - rainRange / 2, playerPos.x + rainRange / 2),
+                ceilingHeight
+            ); //弾の生成位置を計算
+
+            GameObject newGameObject = ObjectPooler.SceneInstance.SpawnFromPool(
+                POOL_TAG_SHOOT2,
+                spawnPos,
+                Quaternion.identity
+            ); // 弾2をプールから生成
             newGameObject.tag = GameConstants.DAMAGEABLE_ENEMY_TAG_NAME; //弾のタグを設定
             var script = newGameObject.GetComponent<ContactDamageController>(); //ダメージに関するスクリプトを取得
             if (script != null)
@@ -394,12 +396,7 @@ public class GhostwolfMoveController : MonoBehaviour
                     $"EnemyStateControllerが{newGameObject.name}に見つかりませんでした。"
                 );
             }
-            playerPos = PlayerObject.transform.position; //プレイヤーの座標を取得
-            newGameObject.transform.position = new Vector2(
-                Random.Range(playerPos.x - rainRange / 2, playerPos.x + rainRange / 2),
-                ceilingHeight
-            ); //弾の位置を設定
-            Rigidbody2D newrbody = newGameObject.GetComponent<Rigidbody2D>(); //弾のRigidbody2Dを取得
+            var newrbody = newGameObject.GetComponent<Rigidbody2D>(); //弾のRigidbody2Dを取得
             newrbody.gravityScale = 0; //弾の重力を消去
             newrbody.AddForce(new Vector2(0, -drop_speed), ForceMode2D.Impulse); //弾の落下速度を設定
             _sePlayer.Play(SE_Field.WaterDrip1); //攻撃の効果音を鳴らす
@@ -426,9 +423,12 @@ public class GhostwolfMoveController : MonoBehaviour
 
         for (int i = 0; i < shoottimes; i++)
         {
-            GameObject newGameObject = Instantiate(shoot_prefab3) as GameObject; // 弾4のプレハブを生成
+            GameObject newGameObject = ObjectPooler.SceneInstance.SpawnFromPool(
+                POOL_TAG_SHOOT3,
+                newPos,
+                Quaternion.identity
+            ); // 弾をプールから生成
             newGameObject.transform.localScale = Vector3.one * 2.5f; //弾のサイズを調整(子オブジェクトにする前に行う)
-            newGameObject.transform.SetParent(this.transform); // 弾の親をこのオブジェクトに設定
             newGameObject.tag = GameConstants.DAMAGEABLE_ENEMY_TAG_NAME; //弾のタグを設定
             var script = newGameObject.GetComponent<ContactDamageController>(); //ダメージに関するスクリプトを取得
             if (script != null)
@@ -441,8 +441,7 @@ public class GhostwolfMoveController : MonoBehaviour
                     $"EnemyStateControllerが{newGameObject.name}に見つかりませんでした。"
                 );
             }
-            newGameObject.transform.position = newPos; //弾の位置を設定
-            Rigidbody2D newrbody = newGameObject.GetComponent<Rigidbody2D>(); //弾のRigidbody2Dを取得
+            var newrbody = newGameObject.GetComponent<Rigidbody2D>(); //弾のRigidbody2Dを取得
             newrbody.gravityScale = 0; //弾の重力を無効化
 
             float targetHeight = RobotHeight - flatShootRadius * Random.Range(0, 2);
@@ -497,9 +496,12 @@ public class GhostwolfMoveController : MonoBehaviour
 
         for (int i = 0; i < arcShootCount; i++)
         {
-            GameObject newGameObject = Instantiate(shoot_prefab3) as GameObject; // 弾5のプレハブを生成
+            GameObject newGameObject = ObjectPooler.SceneInstance.SpawnFromPool(
+                POOL_TAG_SHOOT3,
+                newPos,
+                Quaternion.identity
+            ); // 弾5をプールから生成
             newGameObject.transform.localScale = Vector3.one * 2.5f; //弾のサイズを調整(子オブジェクトにする前に行う)
-            newGameObject.transform.SetParent(this.transform); // 弾の親をこのオブジェクトに設定
             newGameObject.tag = GameConstants.DAMAGEABLE_ENEMY_TAG_NAME; //弾のタグを設定
             var script = newGameObject.GetComponent<ContactDamageController>(); //ダメージに関するスクリプトを取得
             if (script != null)
@@ -512,8 +514,7 @@ public class GhostwolfMoveController : MonoBehaviour
                     $"EnemyStateControllerが{newGameObject.name}に見つかりませんでした。"
                 );
             }
-            newGameObject.transform.position = newPos; //弾の位置を設定
-            Rigidbody2D newrbody = newGameObject.GetComponent<Rigidbody2D>(); //弾のRigidbody2Dを取得
+            var newrbody = newGameObject.GetComponent<Rigidbody2D>(); //弾のRigidbody2Dを取得
             newrbody.gravityScale = 0; //弾の重力を無効化
 
             float angleDeg =
@@ -556,7 +557,11 @@ public class GhostwolfMoveController : MonoBehaviour
                 Vector3 pos = shoot.transform.position;
                 if (pos.y < ExistBottom || pos.x < leftBoundary || pos.x > rightBoundary)
                 {
-                    Destroy(shoot);
+                    var poolObj = shoot.GetComponent<PoolableObject>();
+                    if (poolObj != null)
+                    {
+                        poolObj.ReturnToPool(); // プールに返却する
+                    }
                     yield break;
                 }
 
@@ -598,7 +603,11 @@ public class GhostwolfMoveController : MonoBehaviour
                 Vector3 pos = shoot.transform.position;
                 if (pos.y < ExistBottom || pos.x < leftBoundary || pos.x > rightBoundary)
                 {
-                    Destroy(shoot);
+                    var poolObj = shoot.GetComponent<PoolableObject>();
+                    if (poolObj != null)
+                    {
+                        poolObj.ReturnToPool(); // プールに返却する
+                    }
                     yield break;
                 }
 
@@ -625,6 +634,11 @@ public class GhostwolfMoveController : MonoBehaviour
 
             yield return null; //1フレーム待って次のフレームで再評価する（フリーズ防止）
         }
+    }
+
+    private void OnDestroy()
+    {
+        ObjectPooler.SceneInstance?.ReturnAllToPool();
     }
 
     private void OnDrawGizmosSelected()

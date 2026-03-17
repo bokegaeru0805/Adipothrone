@@ -4,6 +4,8 @@ using UnityEngine;
 [RequireComponent(typeof(CriWare.Assets.CriAtomSePlayer))]
 public class TutorialGolemMoveController : MonoBehaviour, IEnemyResettable
 {
+    private const string POOL_TAG_SHOOT = "TutorialStageShoot2"; // 弾のプールタグ
+
     [Header("Flowchart設定")]
     [SerializeField]
     private Fungus.Flowchart flowchart = null;
@@ -46,10 +48,6 @@ public class TutorialGolemMoveController : MonoBehaviour, IEnemyResettable
     [SerializeField]
     private float flatShootRadius; //攻撃４の地面と平行な弾の速度
 
-    [Header("弾のプレハブ")]
-    [SerializeField]
-    private GameObject shoot_prefab; // 攻撃のプレハブ
-
     [Header("死亡後のオブジェクト")]
     [SerializeField]
     private GameObject AfterDeathObject; //死亡後のオブジェクト
@@ -75,11 +73,6 @@ public class TutorialGolemMoveController : MonoBehaviour, IEnemyResettable
         if (flowchart == null)
         {
             Debug.LogError("TutorialGolemにFlowchartが設定されていません。");
-        }
-
-        if (shoot_prefab == null)
-        {
-            Debug.LogError("TutorialGolemにshoot_prefabが設定されていません。");
         }
 
         if (AfterDeathObject == null)
@@ -241,7 +234,11 @@ public class TutorialGolemMoveController : MonoBehaviour, IEnemyResettable
             this.transform.position.x + offsetX,
             this.transform.position.y + offsetY
         );
-        GameObject shoot = Instantiate(shoot_prefab, spawnPos, Quaternion.identity); //弾を生成
+        GameObject shoot = ObjectPooler.SceneInstance.SpawnFromPool(
+            POOL_TAG_SHOOT,
+            spawnPos,
+            Quaternion.identity
+        ); //弾をプールから生成
         var script = shoot.GetComponent<ContactDamageController>(); //ダメージに関するスクリプトを取得
         if (script != null)
         {
@@ -252,7 +249,6 @@ public class TutorialGolemMoveController : MonoBehaviour, IEnemyResettable
             Debug.LogWarning($"EnemyStateControllerが{shoot.name}に見つかりませんでした。");
         }
         shoot.transform.localScale = Vector3.one * 2.5f; //弾のサイズを調整
-        shoot.transform.SetParent(this.transform); // 弾の親をこのオブジェクトに設定
 
         var newrbody = shoot.GetComponent<Rigidbody2D>(); //弾のRigidbody2Dを取得
         newrbody.gravityScale = 0; //弾の重力を消去
@@ -272,7 +268,11 @@ public class TutorialGolemMoveController : MonoBehaviour, IEnemyResettable
             Vector3 pos = shoot.transform.position;
             if (pos.x < ExistLeft)
             {
-                Destroy(shoot);
+                var poolObj = shoot.GetComponent<PoolableObject>();
+                if (poolObj != null)
+                {
+                    poolObj.ReturnToPool(); // プールに返却する
+                }
                 yield break;
             }
 

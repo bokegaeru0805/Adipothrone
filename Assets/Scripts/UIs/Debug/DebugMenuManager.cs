@@ -1,11 +1,9 @@
-#if DEMO_BUILD
-using UnityEngine;
 using TMPro;
+using UnityEngine;
 using UnityEngine.EventSystems;
 
 /// <summary>
 /// デバッグ用のステータス変更・アイテム入手機能を提供するマネージャー。
-/// DEMO_BUILD のシンボルが定義されているビルドでのみコンパイルされます。
 /// </summary>
 public class DebugMenuManager : MonoBehaviour
 {
@@ -38,8 +36,14 @@ public class DebugMenuManager : MonoBehaviour
     [SerializeField]
     private TMP_InputField timeScaleInput; // ゲームスピード変更用入力欄
 
+    public static bool isDebugModeUnlocked = false; // デバッグモードが解放されているか
+
     private void Start()
     {
+        // PlayerPrefsからデバッグモードの解放状態を読み込む（1なら解放、0なら未解放）
+        // エディタ上でもビルド後でも状態が保存・復元されるようになります
+        isDebugModeUnlocked = PlayerPrefs.GetInt("DebugModeUnlocked", 0) == 1;
+
         if (debugCanvas != null)
         {
             debugCanvas.gameObject.SetActive(false);
@@ -72,6 +76,10 @@ public class DebugMenuManager : MonoBehaviour
 
     private void Update()
     {
+        // デバッグモードが解放されていない場合は何もしない
+        if (!isDebugModeUnlocked)
+            return;
+
         if (Input.GetKeyDown(KeyCode.F2))
         {
             if (debugCanvas != null)
@@ -335,4 +343,3 @@ public class DebugMenuManager : MonoBehaviour
         }
     }
 }
-#endif

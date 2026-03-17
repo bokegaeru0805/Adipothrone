@@ -115,11 +115,10 @@ public class TitleUIManager : MonoBehaviour, IPanelStackManager
 
         if (demoVersionUI != null)
         {
-#if DEMO_BUILD
-            demoVersionUI.SetActive(true);
-#else
-            demoVersionUI.SetActive(false);
-#endif
+            if (demoVersionUI != null)
+            {
+                demoVersionUI.SetActive(DebugMenuManager.isDebugModeUnlocked);
+            }
         }
 
         // 最初にボタンの強調アニメーションを開始
@@ -247,5 +246,17 @@ public class TitleUIManager : MonoBehaviour, IPanelStackManager
         //     // 保存しておいた初期スケールに戻す
         //     cancelButtonUI.localScale = initialCancelScale;
         // }
+    }
+
+    /// <summary>
+    /// デバッグモードの解放状態が変更されたときに呼び出され、
+    /// デモ版（デバッグ用）UIの表示/非表示を即座に更新します。
+    /// </summary>
+    public void UpdateDebugUI()
+    {
+        if (demoVersionUI != null)
+        {
+            demoVersionUI.SetActive(DebugMenuManager.isDebugModeUnlocked);
+        }
     }
 }

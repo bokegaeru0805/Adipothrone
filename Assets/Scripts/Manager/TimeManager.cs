@@ -57,9 +57,7 @@ public class TimeManager : MonoBehaviour
             isDebugScene = SceneManager.GetActiveScene().name.Contains("Debug");
 #endif
 
-#if DEMO_BUILD
             DebugBaseTimeScale = PlayerPrefs.GetFloat("DebugTimeScale", 1.0f);
-#endif
         }
         else
         {
@@ -250,10 +248,8 @@ public class TimeManager : MonoBehaviour
         // 0以下の値や極端な加速によるエラーを防ぐため、下限と上限を設定 (例: 0.1 ～ 10.0)
         DebugBaseTimeScale = Mathf.Clamp(scale, 0.1f, 10.0f);
 
-#if DEMO_BUILD
         PlayerPrefs.SetFloat("DebugTimeScale", DebugBaseTimeScale);
         PlayerPrefs.Save();
-#endif
 
         // 設定後に再計算処理を呼ぶことで即座に反映させる
         UpdateTimeScale();
