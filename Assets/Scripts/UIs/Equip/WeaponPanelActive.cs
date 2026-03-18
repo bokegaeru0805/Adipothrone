@@ -1,7 +1,5 @@
 using System;
-using System.Collections;
 using System.Collections.Generic;
-using System.Linq;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
@@ -24,7 +22,7 @@ public class WeaponPanelActive : MonoBehaviour, IPanelActive, IPageNavigable
 
     [Header("選択する武器の種類")]
     [SerializeField]
-    private WeaponManager.WeaponType weaponType;
+    private InventoryWeaponData.WeaponType weaponType;
     private Enum selectedButtonWeaponID = null;
     private Enum preselectedButtonWeaponID = null;
     private WeaponDetailPanel weaponDetailPanelScript;
@@ -64,8 +62,8 @@ public class WeaponPanelActive : MonoBehaviour, IPanelActive, IPageNavigable
         }
 
         if (
-            weaponType != WeaponManager.WeaponType.shoot
-            && weaponType != WeaponManager.WeaponType.blade
+            weaponType != InventoryWeaponData.WeaponType.shoot
+            && weaponType != InventoryWeaponData.WeaponType.blade
         )
         //武器の種類が設定されていない場合
         {
@@ -79,10 +77,10 @@ public class WeaponPanelActive : MonoBehaviour, IPanelActive, IPageNavigable
         {
             switch (weaponType)
             {
-                case WeaponManager.WeaponType.shoot:
+                case InventoryWeaponData.WeaponType.shoot:
                     weaponDetailPanelScript.weaponType = InventoryWeaponData.WeaponType.shoot;
                     break;
-                case WeaponManager.WeaponType.blade:
+                case InventoryWeaponData.WeaponType.blade:
                     weaponDetailPanelScript.weaponType = InventoryWeaponData.WeaponType.blade;
                     break;
             }
@@ -99,9 +97,127 @@ public class WeaponPanelActive : MonoBehaviour, IPanelActive, IPageNavigable
         GetSelectedButtonWeaponID();
     }
 
+    /// <summary>
+    /// パネルが開かれた際にUIManagerから呼ばれる初期化・フォーカス処理
+    /// 装備中の武器を探し、該当ページを開いてフォーカスを当てます。
+    /// </summary>
     public void SelectFirstButton()
     {
-        InitializeWeaponButtonUI(); //武器ボタンの初期化
+        if (buttonList == null || buttonList.Count == 0)
+            return;
+
+        // --- 1. 装備中の武器を取得 ---
+        var saveData = GameManager.instance.savedata;
+        if (saveData == null)
+        {
+            FallbackSelectFirst();
+            return;
+        }
+
+        // UI描画用のメンバ変数 itemList に最新の所持リストを代入しておく
+        itemList = saveData.WeaponInventoryData.GetAllItemByType(weaponType);
+
+        // 万が一、所持武器が0個の場合は既存の初期化（非表示処理）を呼んで安全に終了する
+        if (itemList == null || itemList.Count == 0)
+        {
+            InitializeWeaponButtonUI();
+            return;
+        }
+
+        // 現在のタブ（weaponType）に対応する装備中武器のリストを取得
+        var equippedWeapons = saveData.WeaponEquipmentData.GetAllItemByType(weaponType);
+
+        // 装備中の武器がない場合は先頭を選択
+        if (equippedWeapons == null || equippedWeapons.Count == 0)
+        {
+            FallbackSelectFirst();
+            return;
+        }
+
+        // ItemEntryのitemIDは int型 なので、EnumIDUtility.FromID() を使って Enum に変換する
+        int equippedWeaponIntID = equippedWeapons[0].itemID;
+        Enum equippedWeaponID = EnumIDUtility.FromID(equippedWeaponIntID);
+
+        // --- 2. 所持リストから装備中武器が何番目（インデックス）にあるか検索 ---
+        var ownedWeapons = saveData.WeaponInventoryData.GetAllItemByType(weaponType);
+        int equippedIndex = -1;
+        for (int i = 0; i < ownedWeapons.Count; i++)
+        {
+            // 【修正】比較する際は、確実で早い int型 同士（itemID）で一致確認を行う
+            if (ownedWeapons[i].itemID == equippedWeaponIntID)
+            {
+                equippedIndex = i;
+                break;
+            }
+        }
+
+        // 万が一、装備しているはずの武器が所持リストに見つからなかった場合の安全措置
+        if (equippedIndex == -1)
+        {
+            FallbackSelectFirst();
+            return;
+        }
+
+        // --- 3. ページ番号を計算してUIを構築 ---
+        // 1ページあたりのボタン数で割ることで、装備中武器が存在するページ番号を算出
+        int targetPage = equippedIndex / buttonList.Count;
+        Page = targetPage;
+
+        // ページを描画（TryAssignItemsToPageの引数は既存のコードに合わせてください）
+        TryAssignItemsToPage(Page, 0, true);
+
+        // --- 4. 描画されたボタンの中から該当武器を探してフォーカス ---
+        foreach (var button in buttonList)
+        {
+            var weaponButton = button.GetComponent<WeaponSelectButton>();
+            if (
+                weaponButton != null
+                && weaponButton.AssignedItemID != null
+                && weaponButton.AssignedItemID.Equals(equippedWeaponID)
+            )
+            {
+                // 見つけたボタンをEventSystemで選択状態にする
+                EventSystem.current.SetSelectedGameObject(button.gameObject);
+
+                // 選択が変わったので詳細パネルを更新する処理を呼ぶ
+                selectedButtonWeaponID = equippedWeaponID;
+                if (weaponDetailPanelScript != null)
+                {
+                    weaponDetailPanel.SetActive(true);
+                    weaponDetailPanelScript.DisplayNextWeaponDetails(selectedButtonWeaponID);
+                }
+                return; // 無事にフォーカスできたので処理終了
+            }
+        }
+
+        // ここまで来て見つからなかった場合の最終安全措置
+        FallbackSelectFirst();
+    }
+
+    /// <summary>
+    /// エラー時や未装備時に、強制的に0ページ目の先頭ボタンを選択する安全措置（フォールバック）
+    /// </summary>
+    private void FallbackSelectFirst()
+    {
+        Page = 0;
+        TryAssignItemsToPage(0, 0, true); // 0ページ目を強制描画
+
+        if (buttonList.Count > 0 && buttonList[0].gameObject.activeInHierarchy)
+        {
+            EventSystem.current.SetSelectedGameObject(buttonList[0].gameObject);
+
+            // 詳細パネルの更新
+            var firstWeapon = buttonList[0].GetComponent<WeaponSelectButton>();
+            if (
+                firstWeapon != null
+                && firstWeapon.AssignedItemID != null
+                && weaponDetailPanelScript != null
+            )
+            {
+                weaponDetailPanel.SetActive(true);
+                weaponDetailPanelScript.DisplayNextWeaponDetails(firstWeapon.AssignedItemID);
+            }
+        }
     }
 
     //ページ番号に応じてアイテムをボタンに割り当てる
@@ -131,13 +247,13 @@ public class WeaponPanelActive : MonoBehaviour, IPanelActive, IPageNavigable
         if (GameManager.instance?.savedata?.WeaponInventoryData.ownedWeapons != null)
         {
             // 所持中の特定タイプの武器のIDと個数のリストを順番付きで取得
-            if (weaponType == WeaponManager.WeaponType.shoot)
+            if (weaponType == InventoryWeaponData.WeaponType.shoot)
             {
                 itemList = GameManager.instance.savedata.WeaponInventoryData.GetAllItemByType(
                     InventoryWeaponData.WeaponType.shoot
                 );
             }
-            else if (weaponType == WeaponManager.WeaponType.blade)
+            else if (weaponType == InventoryWeaponData.WeaponType.blade)
             {
                 itemList = GameManager.instance.savedata.WeaponInventoryData.GetAllItemByType(
                     InventoryWeaponData.WeaponType.blade

@@ -329,6 +329,15 @@ public class BossAfterDeath : MonoBehaviour
                 GameManager.instance.savedata.ProgressLogData.RegisterProgressData(
                     ProgressLogName.TempleBossSmokeDefeat
                 ); // 進行ログを登録
+                GameManager.instance.savedata.EnemyRecordData.RegisterEncounter(
+                    EnemyName.DustDevil_Active
+                ); // 図鑑に砂嵐（アクティブ）を登録
+                GameManager.instance.savedata.EnemyRecordData.RegisterEncounter(
+                    EnemyName.Golem_DesertTemple_Float
+                ); // 図鑑に浮遊ゴーレムを登録
+                GameManager.instance.savedata.EnemyRecordData.RegisterEncounter(
+                    EnemyName.Golem_DesertTemple_Walk
+                ); // 図鑑に徘徊ゴーレムを登録
                 FungusHelper.ExecuteBlock(flowchart, "TempleBossSmokeDefeat");
                 break;
             case BossHealth.BossName.DesertTempleBoss:

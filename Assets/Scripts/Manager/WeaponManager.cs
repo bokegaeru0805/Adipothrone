@@ -30,12 +30,6 @@ public class WeaponManager : MonoBehaviour
         }
     }
 
-    public enum WeaponType
-    {
-        shoot = 1,
-        blade = 2,
-    }
-
     [Min(1)]
     private float bladeRangeLimit = 100; // ブレード武器の射程距離上限
 

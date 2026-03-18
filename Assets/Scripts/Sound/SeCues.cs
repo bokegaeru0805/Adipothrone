@@ -90,8 +90,12 @@ public enum SE_EnemyAction
     GearTurn = 4103,
     LaserAttack1 = 4105,
     Spawn1 = 4110,
+    Spawn2 = 4111,
     ShieldCrack1 = 4115,
     SheldBreak1 = 4120,
+    Vanish1 = 4125,
+    WaterMagic1 = 4130,
+    Disappear1 = 4135,
 }
 
 /// <summary>
@@ -103,6 +107,7 @@ public enum SE_Field
     DoorOpen_Metal = 5005,
     DoorOpenLock = 5010,
     OpenTreasurebox1 = 5015,
+    OpenTreasurebox2 = 5016,
     Collapse1 = 5020,
     Collapse2 = 5021,
     Collapse3 = 5022,

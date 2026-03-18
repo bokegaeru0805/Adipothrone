@@ -64,18 +64,18 @@ public static class DropOnDeathHandler
                 continue;
             int itemIDInt = EnumIDUtility.ToID(tempDropID);
 
+            // Uniqueアイテムの入手済みチェック（条件の有無に関係なく最初にはじく）
+            if (
+                drop.isUnique
+                && GameManager.instance.savedata.EnemyRecordData.IsUniqueItemObtained(itemIDInt)
+            )
+            {
+                continue; // 既に入手済みならスキップ
+            }
+
             // ドロップに条件がある場合、条件をチェックする
             if (drop.hasCondition && drop.conditionType != DropConditionType.None)
             {
-                // Uniqueアイテムの入手済みチェック
-                if (
-                    drop.isUnique
-                    && GameManager.instance.savedata.EnemyRecordData.IsUniqueItemObtained(itemIDInt)
-                )
-                {
-                    continue; // 既に入手済みならスキップ
-                }
-
                 // 1. 既に条件が解禁されているかチェック
                 // Entryのプロパティに直接アクセスする（検索処理が走らない）
                 bool isUnlocked = recordEntry.UnlockedConditionItemIds.Contains(itemIDInt);

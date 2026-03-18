@@ -453,13 +453,13 @@ public class PlayerManager : MonoBehaviour
         OnPlayerDied?.Invoke();
 
         bool isEnableSave = SaveLoadManager.instance?.isEnableSave ?? false;
-        StartCoroutine(DeathSequenceCoroutine(isEnableSave));
+        StartCoroutine(DeathSequenceCoroutine());
     }
 
     /// <summary>
     /// 死亡演出（時間停止、フェード、遅延）を順次実行します。
     /// </summary>
-    private IEnumerator DeathSequenceCoroutine(bool isSaveEnabled)
+    private IEnumerator DeathSequenceCoroutine()
     {
         // 1. 時間を停止
         TimeManager.instance?.SetEnemyMovePaused(true); // 敵の動きを停止
@@ -467,7 +467,7 @@ public class PlayerManager : MonoBehaviour
         // 2. フェードアウトを開始
         if (FadeCanvas.instance != null)
         {
-            FadeCanvas.instance.FadeOut(isSaveEnabled ? fadeOutDuration : fadeOutDuration - 0.5f);
+            FadeCanvas.instance.FadeOut(fadeOutDuration);
         }
         else
         {
@@ -475,25 +475,55 @@ public class PlayerManager : MonoBehaviour
         }
 
         // 3. さらに指定したfadeOutDuration秒数待機
-        yield return new WaitForSecondsRealtime(
-            isSaveEnabled ? fadeOutDuration : fadeOutDuration - 0.5f
-        );
+        yield return new WaitForSecondsRealtime(fadeOutDuration);
 
         // 4. 時間の停止を解除し、最終処理を実行
         TimeManager.instance?.SetEnemyMovePaused(false); // 敵の動きを再開
 
-        if (isSaveEnabled)
-        {
-            fastTravelManager?.ExecuteDeathFastTravel(); // 死亡時のファストトラベルを実行
-        }
-        else
-        {
-            GameOverUIManager.instance.StartGameOver(); // ゲームオーバーの関数を呼び出す
-        }
+        fastTravelManager?.ExecuteDeathFastTravel(); // 死亡時のファストトラベルを実行
 
         // 5. 死亡処理フラグをリセット
         isDying = false;
     }
+
+    // /// <summary>
+    // /// 死亡演出（時間停止、フェード、遅延）を順次実行します。
+    // /// </summary>
+    // private IEnumerator DeathSequenceCoroutine(bool isSaveEnabled)
+    // {
+    //     // 1. 時間を停止
+    //     TimeManager.instance?.SetEnemyMovePaused(true); // 敵の動きを停止
+
+    //     // 2. フェードアウトを開始
+    //     if (FadeCanvas.instance != null)
+    //     {
+    //         FadeCanvas.instance.FadeOut(isSaveEnabled ? fadeOutDuration : fadeOutDuration - 0.5f);
+    //     }
+    //     else
+    //     {
+    //         Debug.LogWarning("FadeCanvasのインスタンスが見つかりません。");
+    //     }
+
+    //     // 3. さらに指定したfadeOutDuration秒数待機
+    //     yield return new WaitForSecondsRealtime(
+    //         isSaveEnabled ? fadeOutDuration : fadeOutDuration - 0.5f
+    //     );
+
+    //     // 4. 時間の停止を解除し、最終処理を実行
+    //     TimeManager.instance?.SetEnemyMovePaused(false); // 敵の動きを再開
+
+    //     if (isSaveEnabled)
+    //     {
+    //         fastTravelManager?.ExecuteDeathFastTravel(); // 死亡時のファストトラベルを実行
+    //     }
+    //     else
+    //     {
+    //         GameOverUIManager.instance.StartGameOver(); // ゲームオーバーの関数を呼び出す
+    //     }
+
+    //     // 5. 死亡処理フラグをリセット
+    //     isDying = false;
+    // }
 
     /// <summary>
     /// 指定値をHP回復します。死亡からの蘇生判定もここで行います。

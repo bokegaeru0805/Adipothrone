@@ -70,6 +70,12 @@ public class FieldEvent_Chapter2 : BaseFieldEvent
                     GameManager.instance.savedata.ProgressLogData.RegisterProgressData(
                         ProgressLogName.Chapter2Start
                     ); //進行ログを登録
+                    GameManager.instance.savedata.EnemyRecordData.RegisterEncounter(
+                        EnemyName.BabyDrake
+                    ); // ベビードレイクと遭遇済みとして登録
+                    GameManager.instance.savedata.EnemyRecordData.RegisterEncounter(
+                        EnemyName.Cactus
+                    ); // サボテンと遭遇済みとして登録
                     isEventTriggered = true; // イベントがトリガーされたことを記録
                 }
                 break;
@@ -169,6 +175,9 @@ public class FieldEvent_Chapter2 : BaseFieldEvent
                         ProgressLogName.FirstMetDesertTempleBoss
                     ); //進行ログを登録
                     FungusHelper.ExecuteBlock(targetFlowchart, "FirstMetDesertTempleBoss");
+                    GameManager.instance.savedata.EnemyRecordData.RegisterEncounter(
+                        EnemyName.DustDevil
+                    ); // ダストデビルと遭遇済みとして登録
                 }
                 else if (
                     flagManager.GetBoolFlag(Chapter2TriggeredEvent.OasisPartiallyRestoredByFill)
@@ -346,7 +355,6 @@ public class FieldEvent_Chapter2 : BaseFieldEvent
     /// </summary>
     private void CheckAllOrbsPlaced()
     {
-
         // 既に完了イベントが発火済みなら何もしない
         if (flagManager.GetBoolFlag(Chapter2TriggeredEvent.AllOrbsPlacedInDevice))
             return;

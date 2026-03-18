@@ -33,6 +33,15 @@ namespace CriWare.Assets
         private bool stopOnDisable = true;
 
         /// <summary>
+        /// 非アクティブ時に音を停止するかどうかを外部から設定・取得します。
+        /// </summary>
+        public bool StopOnDisable
+        {
+            get { return stopOnDisable; }
+            set { stopOnDisable = value; }
+        }
+
+        /// <summary>
         /// 再生するキュー名を取得または設定します。
         /// </summary>
         public string cueName

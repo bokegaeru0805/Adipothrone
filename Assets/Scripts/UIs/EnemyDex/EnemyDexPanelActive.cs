@@ -201,9 +201,18 @@ public class EnemyDexPanelActive : MonoBehaviour, IPanelActive
                 int enemyIndex = currentTopIndex + i;
                 UnlockedEnemy unlockedEnemy = allUnlockedEnemies[enemyIndex];
 
-                enemyButtons[i].GetComponentInChildren<TextMeshProUGUI>().text = unlockedEnemy
-                    .MasterData
-                    .enemyName;
+                // 討伐数が0（遭遇のみ）の場合は名前を隠す
+                if (unlockedEnemy.SaveEntry.killCount == 0)
+                {
+                    enemyButtons[i].GetComponentInChildren<TextMeshProUGUI>().text = "未登録";
+                }
+                else
+                {
+                    enemyButtons[i].GetComponentInChildren<TextMeshProUGUI>().text = unlockedEnemy
+                        .MasterData
+                        .enemyName;
+                }
+
                 buttonHelpers[i]
                     .Initialize(this, unlockedEnemy.MasterData, unlockedEnemy.SaveEntry);
                 enemyButtons[i].SetActive(true);

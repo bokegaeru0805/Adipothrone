@@ -17,6 +17,7 @@ public class LotteryItemEntry
 /// くじ引き用宝箱の個体コントローラー。
 /// プレイヤーのインタラクトを検知し、見た目を変更する機能を持つ。
 /// </summary>
+[RequireComponent(typeof(CriWare.Assets.CriAtomSePlayer))]
 public class LotteryChestController : MonoBehaviour
 {
     [Header("Visuals")]
@@ -27,6 +28,7 @@ public class LotteryChestController : MonoBehaviour
     private Sprite closeSprite; // 閉じている状態（ゲーム中）
 
     private SpriteRenderer spriteRenderer;
+    private CriWare.Assets.CriAtomSePlayer _sePlayer;
     private LotteryGameManager gameManager;
     private int chestIndex;
     private bool isOpened = true; // 初期状態は開いている
@@ -34,6 +36,7 @@ public class LotteryChestController : MonoBehaviour
     private void Awake()
     {
         spriteRenderer = GetComponent<SpriteRenderer>();
+        _sePlayer = GetComponent<CriWare.Assets.CriAtomSePlayer>();
     }
 
     private void Start()
@@ -74,6 +77,7 @@ public class LotteryChestController : MonoBehaviour
         isOpened = true;
         if (openSprite != null)
             spriteRenderer.sprite = openSprite;
+        _sePlayer.Play(SE_Field.OpenTreasurebox2);
         this.tag = GameConstants.UNTAGGED_TAG_NAME;
     }
 

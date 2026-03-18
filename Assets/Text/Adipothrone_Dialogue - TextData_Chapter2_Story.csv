@@ -72,7 +72,7 @@
 あ、お水を。さっき渡しそびれてしまったものです。
 どうぞ受け取ってください。",Fill,OasisSpringEnemiesDefeat,Fill_normal_smile
 ありがとうございます。助かります。,Heroin,OasisSpringEnemiesDefeat,Heroin_flexible_smile
-"ふふ、お役に立ててよかったです。
+"こちらこそ、助けていただきありがとうございました。
 では、私はこれで失礼しますね。",Fill,OasisSpringEnemiesDefeat,Fill_normal_smile
 ……っ、あ！,Fill,OasisSpringEnemiesDefeat,Fill_normal_anxious
 フィルさんは小さく声を漏らし、その場に膝をついて崩れ落ちた。,narrative,OasisSpringEnemiesDefeat,
@@ -425,7 +425,7 @@
 "周辺の環境データから推測します。
 無造作に置かれているとは考えにくいため、
 未発見の宝箱の中に厳重に保管されている確率が高いです。",Fabo,OrangeOrbHint,
-"やっと装置に着いた！
+"やっと着いた！
 ……あれ、そういえば例の珠って、どこにあるか心当たりある？",Heroin,PurpleOrbHint,Heroin_flexible_normal
 "現在のデータだけでは、珠の正確な位置を特定できません。
 ここは一度、フィルに相談し、
@@ -541,7 +541,7 @@
 まさか、あのオアシスの魔物も……！,Fill,TempleBossAppear,Fill_armed2_surprised
 "そうだ。オアシスで貴様を襲撃したのは、
 その特異な能力に目をつけ、手早く拘束し、
-残るすべての遺物を投与して『特注の供給源』を造り上げるためだ。",Levias_smoke,TempleBossAppear,Levias_smoke_normal_normal
+残る遺物を投与して『特注の供給源』を造り上げるためだ。",Levias_smoke,TempleBossAppear,Levias_smoke_normal_normal
 "もっとも、貴様らが自ら最果てへ向かい、
 進んで遺物を体内に取り込んで戻ってくるとは、
 我にとっても想定外であったがな。",Levias_smoke,TempleBossAppear,Levias_smoke_normal_normal

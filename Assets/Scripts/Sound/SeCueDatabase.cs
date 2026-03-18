@@ -91,8 +91,12 @@ public static class SeCueDatabase
             { SE_EnemyAction.GearTurn, "GearTurn" },
             { SE_EnemyAction.LaserAttack1, "LaserExpand2" },
             { SE_EnemyAction.Spawn1, "Spawn1" },
+            { SE_EnemyAction.Spawn2, "Spawn2" },
             { SE_EnemyAction.ShieldCrack1, "ShieldCrack1" },
             { SE_EnemyAction.SheldBreak1, "ShieldBreak_Enemy1" },
+            { SE_EnemyAction.Vanish1, "Vanish_Burst1" },
+            { SE_EnemyAction.WaterMagic1, "WaterMagic1" },
+            { SE_EnemyAction.Disappear1, "Disappear1" },
         };
 
     /// <summary>
@@ -107,6 +111,7 @@ public static class SeCueDatabase
         { SE_Field.DoorOpen_Metal, "DoorOpen_Metal" },
         { SE_Field.DoorOpenLock, "DoorOpenLock" },
         { SE_Field.OpenTreasurebox1, "OpenTreasurebox1" },
+        { SE_Field.OpenTreasurebox2, "OpenTreasurebox2" },
         { SE_Field.Collapse1, "Collapse1" },
         { SE_Field.Collapse2, "Collapse2" },
         { SE_Field.Collapse3, "Collapse3" },

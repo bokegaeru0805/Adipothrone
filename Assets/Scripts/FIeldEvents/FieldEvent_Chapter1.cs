@@ -18,6 +18,7 @@ public class FieldEvent_Chapter1 : BaseFieldEvent
         ShopGirlHouse = 12, // ショップの女の子の家
         CaveBossField = 13, // 洞窟のボスフィールド
     }
+
     protected override string EventName => fieldname.ToString();
 
     protected override void Awake()
@@ -46,6 +47,15 @@ public class FieldEvent_Chapter1 : BaseFieldEvent
                     GameManager.instance.savedata.ProgressLogData.RegisterProgressData(
                         ProgressLogName.Chapter1Start
                     ); // 第一章開始のログを登録
+                    GameManager.instance.savedata.EnemyRecordData.RegisterEncounter(
+                        EnemyName.Slime_Normal
+                    ); // スライム（ノーマル）と遭遇済みとして登録
+                    GameManager.instance.savedata.EnemyRecordData.RegisterEncounter(
+                        EnemyName.Bird_Normal
+                    ); // 鳥（ノーマル）と遭遇済みとして登録
+                    GameManager.instance.savedata.EnemyRecordData.RegisterEncounter(
+                        EnemyName.Slime_Rare
+                    ); // スライム（レア）と遭遇済みとして登録
                 }
                 break;
             case FieldName.VillageEntranceField:

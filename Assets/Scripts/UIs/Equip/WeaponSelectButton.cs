@@ -15,7 +15,7 @@ public class WeaponSelectButton : MonoBehaviour, IItemAssignable
     [HideInInspector]
     public Enum AssignedItemID => assignedItemID; //選択されているアイテムのID
     private Enum assignedItemID; // 実際のEnum型
-    private WeaponManager.WeaponType weaponType; // 武器の種類
+    private InventoryWeaponData.WeaponType weaponType; // 武器の種類
     private float weaponUIImageScale = 0.45f; //武器の画像のScale
 
     public void AssignItem(Enum itemID)
@@ -66,11 +66,11 @@ public class WeaponSelectButton : MonoBehaviour, IItemAssignable
 
         if (assignedItemID is ShootName)
         {
-            weaponType = WeaponManager.WeaponType.shoot;
+            weaponType = InventoryWeaponData.WeaponType.shoot;
         }
         else if (assignedItemID is BladeName)
         {
-            weaponType = WeaponManager.WeaponType.blade;
+            weaponType = InventoryWeaponData.WeaponType.blade;
         }
         else
         {
@@ -79,7 +79,7 @@ public class WeaponSelectButton : MonoBehaviour, IItemAssignable
         }
 
         //武器の種類によって画像の角度を変更
-        if (weaponType == WeaponManager.WeaponType.blade)
+        if (weaponType == InventoryWeaponData.WeaponType.blade)
         {
             myImage.rectTransform.rotation = Quaternion.Euler(0, 0, 90f); //剣の武器の場合は画像の角度を90度だけ変更
         }
@@ -94,7 +94,7 @@ public class WeaponSelectButton : MonoBehaviour, IItemAssignable
         if (myImage != null)
         {
             myImage.sprite = weaponSprite; //下記のmyImage.sprite.rect.widthのため先に行う
-            if (weaponType == WeaponManager.WeaponType.blade)
+            if (weaponType == InventoryWeaponData.WeaponType.blade)
             {
                 myImage.rectTransform.rotation = Quaternion.Euler(0, 0, 90f); //剣の武器の場合は画像の角度を90度だけ変更
                 myImage.SetNativeSize(); //スプライトの元サイズに合わせる

@@ -2,10 +2,6 @@ using UnityEngine;
 
 public class Enemy1MoveController : MonoBehaviour, IEnemyResettable
 {
-    [Header("敵のタイプ")]
-    [SerializeField]
-    private EnemyVariant variantType = EnemyVariant.None; //敵の種類を設定
-
     [Header("設定項目")]
     [SerializeField]
     private EnemyActivator activator = null; // 親のEnemyActivatorコンポーネント
@@ -15,6 +11,9 @@ public class Enemy1MoveController : MonoBehaviour, IEnemyResettable
     private MoveType moveType = MoveType.None; // 移動タイプの選択
 
     [Header("移動・攻撃の基本設定")]
+    [SerializeField, Tooltip("この敵がプレイヤーに与えるダメージ")]
+    private int damage = 0; // 攻撃力
+
     [SerializeField]
     private float speed = 0; // 移動スピード
 
@@ -32,13 +31,6 @@ public class Enemy1MoveController : MonoBehaviour, IEnemyResettable
     [SerializeField]
     private float rightBound = 0; // 右端の位置
 
-    // 敵の種類を定義
-    private enum EnemyVariant
-    {
-        None = 0,
-        TutorialStage = 1,
-    }
-
     private enum MoveType
     {
         None = 0,
@@ -46,12 +38,12 @@ public class Enemy1MoveController : MonoBehaviour, IEnemyResettable
         HorizontalSine = 20,
     }
 
-    private int damage = 0; // 攻撃力
     private float swingtime = 0; //y軸移動の時間を保存
     private bool movingRight = true; // 右に移動中かどうか
     private Rigidbody2D rbody;
     private SpriteRenderer spriteRenderer;
     private EnemyHealth enemyHP;
+    private ContactDamageController _contactDamageController;
 
     private void Awake()
     {
@@ -61,16 +53,6 @@ public class Enemy1MoveController : MonoBehaviour, IEnemyResettable
                 $"{this.gameObject.name}の移動タイプが設定されていません。MoveTypeを選択してください。"
             );
             return;
-        }
-
-        switch (variantType)
-        {
-            case EnemyVariant.TutorialStage:
-                damage = 9;
-                break;
-            default:
-                Debug.LogError($"{this.name}のEnemyVariantが設定されていません。");
-                break;
         }
 
         if (activator == null)
@@ -85,22 +67,9 @@ public class Enemy1MoveController : MonoBehaviour, IEnemyResettable
         }
 
         spriteRenderer = this.GetComponent<SpriteRenderer>();
-
-        rbody = GetComponent<Rigidbody2D>(); //Rigidbody2Dコンポーネントを取得
-        if (rbody == null)
-        {
-            Debug.LogError($"{this.gameObject.name}にRigidbody2Dコンポーネントがありません。");
-            return;
-        }
-
+        rbody = this.GetComponent<Rigidbody2D>();
         enemyHP = this.GetComponent<EnemyHealth>();
-        {
-            if (enemyHP == null)
-            {
-                Debug.LogError($"{this.gameObject.name}にEnemyHealthコンポーネントがありません。");
-                return;
-            }
-        }
+        _contactDamageController = this.GetComponent<ContactDamageController>();
     }
 
     private void Start()
@@ -125,19 +94,6 @@ public class Enemy1MoveController : MonoBehaviour, IEnemyResettable
                 }
             }
         }
-
-        //攻撃力の設定
-        ContactDamageController contactDamageController = GetComponent<ContactDamageController>();
-        if (contactDamageController != null)
-        {
-            contactDamageController.SetNormalDamage(damage); // 攻撃力を設定
-        }
-        else
-        {
-            Debug.LogWarning(
-                $"{this.gameObject.name}にEnemyStateControllerコンポーネントがありません。"
-            );
-        }
     }
 
     public void ResetState()
@@ -147,6 +103,7 @@ public class Enemy1MoveController : MonoBehaviour, IEnemyResettable
         swingtime = 0; //y軸移動の時間の初期化
         movingRight = true; // 右に移動中に初期化
         this.tag = GameConstants.DAMAGEABLE_ENEMY_TAG_NAME; // タグを初期化
+        _contactDamageController.SetNormalDamage(damage); // ContactDamageControllerのダメージ設定をリセット
 
         if (rbody != null)
         {

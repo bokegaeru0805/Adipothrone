@@ -5,7 +5,6 @@ using UnityEngine;
 [RequireComponent(typeof(CriWare.Assets.CriAtomSePlayer))]
 public class DesertTempleBossClone : MonoBehaviour
 {
-    //TODO: 消滅エフェクトの攻撃力
     private const string CLONE_ATTACK_BULLET_POOLTAG = "DesertTempleGolemShoot";
     private const string DESPAWN_EFFECT_POOLTAG = "DesertTempleBossCloneDespawnEffect"; //FFF86C(透明度90)
 
@@ -54,6 +53,7 @@ public class DesertTempleBossClone : MonoBehaviour
 
     // --- 内部変数 ---
     private bool isFacingLocked = false; // 向きの更新をロックするフラグ
+    private int despawnDamage = 0; // 消滅エフェクトの攻撃力
     private Transform playerTransform;
     private Tweener floatTween;
     private CriWare.Assets.CriAtomSePlayer _sePlayer;
@@ -73,7 +73,8 @@ public class DesertTempleBossClone : MonoBehaviour
         float _bulletSpeed,
         Vector2 _bulletOffset,
         float _groundY,
-        int _cloneAttackDamage
+        int _cloneAttackDamage,
+        int _despawnDamage
     )
     {
         // 状態リセット
@@ -91,6 +92,7 @@ public class DesertTempleBossClone : MonoBehaviour
         this.bulletOffset = _bulletOffset;
         this.groundY = _groundY;
         this.cloneAttackDamage = _cloneAttackDamage;
+        this.despawnDamage = _despawnDamage;
 
         // 浮遊開始
         StartFloating();
@@ -98,7 +100,7 @@ public class DesertTempleBossClone : MonoBehaviour
         // フェードイン演出
         FadeTo(1f, 0.5f);
         this.tag = GameConstants.IMMUNE_ENEMY_TAG_NAME; // Outline用にタグを戻す
-        //TODO: 出現SE再生
+        _sePlayer.Play(SE_EnemyAction.Spawn2); // 登場SE再生
     }
 
     private void Update()
@@ -354,16 +356,24 @@ public class DesertTempleBossClone : MonoBehaviour
 
         // フェードアウト -> 完了したら非アクティブ化
         this.tag = GameConstants.UNTAGGED_TAG_NAME; // Outlineを消すためにタグを外す
-        ObjectPooler.SceneInstance.SpawnFromPool(
+        GameObject despawnEffectObject = ObjectPooler.SceneInstance.SpawnFromPool(
             DESPAWN_EFFECT_POOLTAG,
             transform.position,
             Quaternion.identity
         );
-        //TODO: 消失SE再生
+        // 消滅エフェクトの攻撃力設定
+        var damageController = despawnEffectObject.GetComponent<ContactDamageController>();
+        if (damageController != null)
+        {
+            damageController.SetNormalDamage(despawnDamage);
+        }
+        _sePlayer.StopOnDisable = false; // 非表示になっても消滅SEが途切れないように一時的にフラグを解除
+        _sePlayer.Play(SE_EnemyAction.Disappear1); // 消滅SE再生
         Sequence seq = FadeTo(0f, 0.5f);
         seq.OnComplete(() =>
         {
             gameObject.SetActive(false);
+            _sePlayer.StopOnDisable = true; // 次回プールから再利用される時のためにフラグを元に戻しておく
         });
     }
 

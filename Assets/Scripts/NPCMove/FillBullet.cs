@@ -4,6 +4,7 @@ using UnityEngine;
 /// Fillの弾にアタッチするクラス
 /// PoolableObjectを継承し、敵の弾（特定のプールタグを持つオブジェクト）との衝突判定と相殺処理を行います。
 /// </summary>
+[RequireComponent(typeof(CriWare.Assets.CriAtomSePlayer))]
 public class FillBullet : PoolableObject
 {
     private string[] targetEnemyPoolTags =
@@ -18,6 +19,12 @@ public class FillBullet : PoolableObject
     )]
     public bool isInterceptOnly = false;
     private int currentDamage = 0; // 発射時にコントローラーから設定される攻撃力
+    private CriWare.Assets.CriAtomSePlayer _sePlayer;
+
+    private void Awake()
+    {
+        _sePlayer = GetComponent<CriWare.Assets.CriAtomSePlayer>();
+    }
 
     /// <summary>
     /// 弾が発射される際に、攻撃力を設定します。
@@ -58,6 +65,7 @@ public class FillBullet : PoolableObject
         )
         {
             // 相手の弾と自分の弾を両方ともプールに返却
+            SEManager.instance?.Play(SE_EnemyAction.Vanish1); // 相殺SE再生
             enemyBullet.ReturnToPool();
             ReturnToPool();
         }
@@ -77,12 +85,12 @@ public class FillBullet : PoolableObject
         }
 
         var enemyBullet = collision.gameObject.GetComponent<PoolableObject>();
-        // 衝突したオブジェクトのプールタグが、設定したタグの配列（リスト）に含まれているかを判定
         if (
             enemyBullet != null
             && System.Array.Exists(targetEnemyPoolTags, tag => tag == enemyBullet.PoolTag)
         )
         {
+            SEManager.instance?.Play(SE_EnemyAction.Vanish1); // 相殺SE再生
             enemyBullet.ReturnToPool();
             ReturnToPool();
         }

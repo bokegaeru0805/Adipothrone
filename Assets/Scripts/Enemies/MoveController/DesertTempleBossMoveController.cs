@@ -9,7 +9,7 @@ using UnityEngine;
 public class DesertTempleBossMoveController : MonoBehaviour
 {
     // ※注意
-    // 弾の種類を増やした場合、FillBulletのtargetEnemyPoolTagsにタグを追加するのを忘れないこと（相殺させたい場合）  
+    // 弾の種類を増やした場合、FillBulletのtargetEnemyPoolTagsにタグを追加するのを忘れないこと（相殺させたい場合）
     private const string RIGHT_ARM_BULLET_POOLTAG = "DesertTempleGolemShoot";
     public const string RIGHT_ARM_BULLET_SPAWN_EFFECT_POOLTAG = "DesertTempleBossShootSpawnEffect"; //61D2FF
     public const string RAIN_BULLET_POOLTAG = "DesertTempleBossRainBullet";
@@ -54,6 +54,10 @@ public class DesertTempleBossMoveController : MonoBehaviour
     [Tooltip("分身攻撃(本体)の弾の攻撃力")]
     [SerializeField]
     private int cloneAttackDamage = 0;
+
+    [Tooltip("クローンが消滅する際に発生するエフェクトの攻撃力")]
+    [SerializeField]
+    private int cloneDespawnDamage = 0;
 
     [Tooltip("囲い込み攻撃の弾の攻撃力")]
     [SerializeField]
@@ -350,6 +354,7 @@ public class DesertTempleBossMoveController : MonoBehaviour
     private SpriteRenderer bodySpriteRenderer;
     private CharacterHealth _characterHpScript;
     private ShieldController _shieldController;
+    private CriWare.Assets.CriAtomSePlayer _sePlayer;
 
     // --- 外部参照 ---
     private SpriteRenderer rightArmSpriteRenderer;
@@ -362,7 +367,6 @@ public class DesertTempleBossMoveController : MonoBehaviour
     private Animator rightArmAnimator;
     private Animator leftArmAnimator;
     private Animator sparkEffectAnimator;
-    private CriWare.Assets.CriAtomSePlayer _sePlayer;
 
     private void Awake()
     {
@@ -755,7 +759,7 @@ public class DesertTempleBossMoveController : MonoBehaviour
             int shieldCount = _shieldController != null ? _shieldController.CurrentShieldCount : 0;
 
             // 条件に応じて攻撃パターンを決定
-            if (hpRatio > 0.9f || shieldCount >= 1)
+            if (hpRatio > 0.9f && shieldCount >= 1)
             {
                 // HPが90％より大きい、もしくはシールドが1枚以上残っている場合
                 // - 5/7で通常攻撃(4)、2/7でゴーレム召喚(5)
@@ -1190,7 +1194,7 @@ public class DesertTempleBossMoveController : MonoBehaviour
         this.tag = GameConstants.IMMUNE_ENEMY_TAG_NAME; // Outline用にタグを戻す
 
         fadeInSeq.SetEase(Ease.InQuad); // 再生開始(待機はしない)
-        //TODO: 出現SE再生
+        _sePlayer.Play(SE_EnemyAction.Spawn2); // 登場SE再生
 
         // --- 分身の配置 ---
         // プールの数が足りているか確認しつつ使用
@@ -1216,7 +1220,8 @@ public class DesertTempleBossMoveController : MonoBehaviour
                     _bulletSpeed: cloneAttackBulletSpeed,
                     _bulletOffset: leftArmAttackBulletOffset,
                     _groundY: groundY,
-                    _cloneAttackDamage: cloneAttackDamage
+                    _cloneAttackDamage: cloneAttackDamage,
+                    _despawnDamage: cloneDespawnDamage
                 );
 
                 // 出現演出 (Setupでscale=0にされている前提)
@@ -1720,11 +1725,12 @@ public class DesertTempleBossMoveController : MonoBehaviour
                 damageController.SetNormalDamage(rainAttackDamage);
             }
 
-            // 必要であればSE再生
-            /*
-            var sePlayer = GetComponent<CriWare.Assets.CriAtomSePlayer>();
-            if (sePlayer != null) sePlayer.Play(SE_EnemyAction.Shoot_Water1);
-            */
+            // SE再生
+            var sePlayer = bullet.GetComponent<CriWare.Assets.CriAtomSePlayer>();
+            if (sePlayer != null)
+            {
+                sePlayer.Play(SE_EnemyAction.WaterMagic1);
+            }
 
             // 降雨の弾が生成されたことを通知するイベントを発火
             OnRainBulletFired?.Invoke(bullet);
