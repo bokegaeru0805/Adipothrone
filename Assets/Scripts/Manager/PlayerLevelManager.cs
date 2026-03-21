@@ -15,8 +15,7 @@ public class PlayerLevelManager : MonoBehaviour
 
     // --- プレイヤーのレベル関連ステータス ---
     public int playerLv { get; private set; } = 1; // プレイヤーのレベル
-    public float attackLvActualDeltaValue { get; private set; } = 0; // レベルによる攻撃力の変化値
-    public int defenseLvActualDeltaValue { get; private set; } = 0; // レベルによる防御力の変化値
+
     public event Action<int> OnLeveledUp; //レベルアップ時に発行されるイベント
 
     private void Awake()
@@ -255,8 +254,7 @@ public class PlayerLevelManager : MonoBehaviour
         }
 
         //レベルに応じた実際の攻撃力と防御力の変化値を計算し、自身のプロパティを更新
-        attackLvActualDeltaValue = playerLv * GameConstants.LEVEL_ATTACK_BONUS;
-        defenseLvActualDeltaValue = GameConstants.GetDefense(playerLv);
+        // ※経験値とアイテム強化のハイブリッドシステム移行に伴い、ここでの攻撃・防御の計算は廃止しました。
 
         // --- ここからPlayerManagerへの反映処理 ---
         if (playerManager == null)

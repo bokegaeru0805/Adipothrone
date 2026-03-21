@@ -26,8 +26,10 @@ public class PlayerEffectManager : MonoBehaviour
         GameConstants.DEFAULT_ATTACK_BUFF_LIMIT_LEVEL; // 攻撃力バフの上限
     public int defenceBuffLimitLevel { get; private set; } =
         GameConstants.DEFAULT_DEFENSE_BUFF_LIMIT_LEVEL; // 防御力バフの上限
-    public int speedBuffLimitLevel { get; private set; } = GameConstants.DEFAULT_SPEED_BUFF_LIMIT_LEVEL; // スピードバフの上限
-    public int luckBuffLimitLevel { get; private set; } = GameConstants.DEFAULT_LUCK_BUFF_LIMIT_LEVEL; // 運バフの上限
+    public int speedBuffLimitLevel { get; private set; } =
+        GameConstants.DEFAULT_SPEED_BUFF_LIMIT_LEVEL; // スピードバフの上限
+    public int luckBuffLimitLevel { get; private set; } =
+        GameConstants.DEFAULT_LUCK_BUFF_LIMIT_LEVEL; // 運バフの上限
 
     private Coroutine poisonCoroutine = null; // 毒の効果を管理するコルーチン
     #region Events
@@ -406,14 +408,21 @@ public class PlayerEffectManager : MonoBehaviour
     /// <summary>
     /// 最終的な攻撃力を計算
     /// </summary>
-    public int CalculateFinalAttackPower(int baseAttackPower)
+    public int CalculateFinalAttackPower(int baseAttackPower) // ここでのbaseAttackPowerは「武器の基本攻撃力」を指します
     {
-        float multiplier = 1;
+        // PlayerStatusLevelManagerからプレイヤーの基礎攻撃力（整数）を取得
+        int playerBaseAttack = playerManager.StatusLevelManager.TotalBaseAttackPower;
+
+        // プレイヤーの基礎攻撃力を、武器威力を引き出す倍率に変換（例：100なら 1.0 = +100%ボーナス）
+        float statMultiplier =
+            1.0f + (playerBaseAttack / GameConstants.PLAYER_ATTACK_TO_MULTIPLIER_RATE);
+
+        // バフ効果の倍率を取得
         float effectDelta =
             GameConstants.PLAYER_ATTACK_EFFECT_MULTIPLIER * GetDeltaValue(StatusEffectType.Attack);
 
-        // PlayerManagerからレベル補正値を取得し、バフ効果と合算
-        multiplier += playerLevelManager.attackLvActualDeltaValue + effectDelta;
+        // 最終的な基礎倍率
+        float multiplier = statMultiplier + effectDelta;
 
         if (multiplier > 1)
         {
@@ -425,22 +434,24 @@ public class PlayerEffectManager : MonoBehaviour
             multiplier = GameConstants.MIN_ATTACK_POWER_MULTIPLIER;
         }
 
+        // 武器の基本攻撃力 × 倍率
         int totalDamage = (int)(baseAttackPower * multiplier);
         return Mathf.Max(1, totalDamage); // ダメージ量は1以上にする
     }
 
-    /// <summary>
     /// 最終的な防御力を計算
     /// </summary>
     public int CalculateFinalDefensePower()
     {
-        int totalDefense = 0;
+        // PlayerStatusLevelManagerからプレイヤーの基礎防御力（経験値レベル分＋ステータスレベル分）を取得
+        int totalDefense = playerManager.StatusLevelManager.TotalBaseDefensePower;
+
         int effectDelta = (int)(
             GameConstants.PLAYER_DEFENSE_EFFECT_MULTIPLIER * GetDeltaValue(StatusEffectType.Defense)
         );
 
-        // PlayerLevelManagerからレベル補正値を取得し、バフ効果と合算
-        totalDefense = playerLevelManager.defenseLvActualDeltaValue + effectDelta;
+        // バフ効果を加算
+        totalDefense += effectDelta;
 
         if (totalDefense > 0)
         {
@@ -456,19 +467,23 @@ public class PlayerEffectManager : MonoBehaviour
     /// </summary>
     public float CalculateFinalPlayerMoveSpeed(float baseSpeed)
     {
+        // ステータスレベルによる素早さの固定値ボーナスを加算
+        float statusSpeedBonus = playerManager.StatusLevelManager.SpeedBonus;
+        float currentBaseSpeed = baseSpeed + statusSpeedBonus;
+
         // スピードエフェクトの変化量を取得
         float deltaValue = GetDeltaValue(StatusEffectType.Speed);
 
-        // 変化量が0なら基本速度を返す
+        // 変化量が0ならステータスレベル込みの基本速度を返す
         if (deltaValue == 0)
         {
-            return baseSpeed;
+            return currentBaseSpeed;
         }
 
         float effectDelta = GameConstants.PLAYER_MOVE_SPEED_EFFECT_MULTIPLIER * deltaValue;
 
         // PlayerBodyManagerからWP倍率を取得して反映
-        float finalSpeed = baseSpeed * playerBodyManager.speedWpScale * (1f + effectDelta);
+        float finalSpeed = currentBaseSpeed * playerBodyManager.speedWpScale * (1f + effectDelta);
 
         return Mathf.Min(finalSpeed, GameConstants.PLAYER_MOVE_MAX_SPEED); // 最大速度を超えないようにする
     }

@@ -4,7 +4,7 @@ public enum TypeID
     Shoot = 2,
     Jewelry3 = 7,
     HealItem = 8,
-    AttackItem = 9,
+    StatusEnhanceItem = 9,
     MaterialItem = 10,
     KeyItem = 12,
     ProgressLog = 16,

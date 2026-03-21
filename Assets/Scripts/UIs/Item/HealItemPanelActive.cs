@@ -5,7 +5,7 @@ using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
 
-public class HealItemPanelActive : MonoBehaviour, IPanelActive, IPageNavigable
+public class HealItemPanelActive : MonoBehaviour, IPanelActive, IPageNavigable, IItemPromptHandler
 {
     [Tooltip("アイテム使用確認パネルの位置調整用オフセット")]
     [SerializeField]
@@ -378,6 +378,19 @@ public class HealItemPanelActive : MonoBehaviour, IPanelActive, IPageNavigable
 
     private void OnEnable()
     {
+        // 共通のボタン群に「現在アクティブなのは自分だ」と教える
+        if (buttonList != null)
+        {
+            foreach (var btn in buttonList)
+            {
+                var itemBtn = btn.GetComponent<ItemSelectButton>();
+                if (itemBtn != null)
+                {
+                    itemBtn.RegisterActivePanel(this);
+                }
+            }
+        }
+
         // パネルが有効化されたときに最初のボタンを選択する
         SelectFirstButton();
     }

@@ -18,10 +18,9 @@ public class HeroinPortraitController : BasePortraitController
     [Header("Heroin Specific UI References")]
     [Tooltip("Immobile状態の時に表示する補助的なImage")]
     public Image immobileAuxImage;
-
-    // 次に表示される際のImmobile状態を一時保持するフラグ
-    private bool _nextIsImmobile = false;
-
+    private float armed2FaceOffsetY = -8f; // Armed2状態の顔のYオフセット
+    private bool _nextIsArmed2 = false; //次に表示される際のArmed2状態を一時保持するフラグ
+    private bool _nextIsImmobile = false; // 次に表示される際のImmobile状態を一時保持するフラグ
     #endregion
 
     #region Unity Lifecycle Methods
@@ -97,6 +96,9 @@ public class HeroinPortraitController : BasePortraitController
                 bodyStateString = char.ToLower(bodyStateString[0]) + bodyStateString.Substring(1);
             }
 
+            // --- armed2状態かどうかの判定 ---
+            _nextIsArmed2 = (bodyStateString == "armed2");
+
             // --- immobile状態かどうかの判定 ---
             _nextIsImmobile = (bodyStateString == "immobile");
 
@@ -149,6 +151,23 @@ public class HeroinPortraitController : BasePortraitController
         if (immobileAuxImage != null)
         {
             immobileAuxImage.enabled = _nextIsImmobile;
+        }
+
+        // --- Armed2状態の顔・表情のY座標調整 ---
+        float targetOffsetY = _nextIsArmed2 ? armed2FaceOffsetY : 0f;
+
+        if (faceImage != null)
+        {
+            Vector2 facePos = faceImage.rectTransform.anchoredPosition;
+            facePos.y = targetOffsetY;
+            faceImage.rectTransform.anchoredPosition = facePos;
+        }
+
+        if (expressionImage != null)
+        {
+            Vector2 expPos = expressionImage.rectTransform.anchoredPosition;
+            expPos.y = targetOffsetY;
+            expressionImage.rectTransform.anchoredPosition = expPos;
         }
     }
 

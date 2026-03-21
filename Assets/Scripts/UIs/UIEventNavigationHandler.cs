@@ -15,27 +15,27 @@ public class UIEventNavigationHandler : MonoBehaviour
         if (selected == null)
             return;
 
-        // UIオブジェクトに Selectable コンポーネントがあるか確認（Button, Toggle, 等）
+        // UIオブジェクトに Selectable コンポーネントがあるか確認（Button, Toggle, Slider等）
         Selectable current = selected.GetComponent<Selectable>();
         if (current == null)
             return;
 
-        // 上下左右のカスタム入力に応じて、対応するUI要素を探し、選択を切り替える
+        // 方向キーの入力判定
         if (InputManager.instance.UIMoveUp())
         {
-            TryMoveTo(current.FindSelectableOnUp());
+            HandleMoveOrNavigate(current, MoveDirection.Up, current.FindSelectableOnUp());
         }
         else if (InputManager.instance.UIMoveDown())
         {
-            TryMoveTo(current.FindSelectableOnDown());
+            HandleMoveOrNavigate(current, MoveDirection.Down, current.FindSelectableOnDown());
         }
         else if (InputManager.instance.UIMoveLeft())
         {
-            TryMoveTo(current.FindSelectableOnLeft());
+            HandleMoveOrNavigate(current, MoveDirection.Left, current.FindSelectableOnLeft());
         }
         else if (InputManager.instance.UIMoveRight())
         {
-            TryMoveTo(current.FindSelectableOnRight());
+            HandleMoveOrNavigate(current, MoveDirection.Right, current.FindSelectableOnRight());
         }
 
         // 決定ボタンが押された場合、現在の選択オブジェクトに「Submit」イベントを送信
@@ -47,6 +47,52 @@ public class UIEventNavigationHandler : MonoBehaviour
                 new BaseEventData(EventSystem.current),
                 ExecuteEvents.submitHandler
             );
+        }
+    }
+
+    /// <summary>
+    /// フォーカス移動、または現在選択中の要素（スライダー等）の操作を行う
+    /// </summary>
+    private void HandleMoveOrNavigate(
+        Selectable current,
+        MoveDirection direction,
+        Selectable target
+    )
+    {
+        // 1. もし現在選択中のUIがスライダーであり、かつ移動先に別のUIが存在しない（または移動先が自分自身）場合、
+        // フォーカス移動ではなく、スライダーを動かすための「Moveイベント」を直接送信する。
+        if (current is Slider && (target == null || target == current))
+        {
+            AxisEventData data = new AxisEventData(EventSystem.current);
+            data.moveDir = direction;
+            data.moveVector = GetMoveVector(direction);
+
+            // SliderにMoveイベント（値を増減させる処理）を実行させる
+            ExecuteEvents.Execute(current.gameObject, data, ExecuteEvents.moveHandler);
+            return;
+        }
+
+        // 2. それ以外（通常時のフォーカス移動）
+        TryMoveTo(target);
+    }
+
+    /// <summary>
+    /// MoveDirectionからベクトルへの変換
+    /// </summary>
+    private Vector2 GetMoveVector(MoveDirection dir)
+    {
+        switch (dir)
+        {
+            case MoveDirection.Up:
+                return Vector2.up;
+            case MoveDirection.Down:
+                return Vector2.down;
+            case MoveDirection.Left:
+                return Vector2.left;
+            case MoveDirection.Right:
+                return Vector2.right;
+            default:
+                return Vector2.zero;
         }
     }
 

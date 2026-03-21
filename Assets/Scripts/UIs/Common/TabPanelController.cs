@@ -2,6 +2,9 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 
+/// <summary>
+/// タブの選択用スプライトを管理するクラス
+/// </summary>
 [System.Serializable]
 public class TabSpriteSet
 {
@@ -10,10 +13,13 @@ public class TabSpriteSet
 }
 
 /// <summary>
-/// 複数のパネルをタブで切り替えて表示・管理する汎用クラス
+/// 複数のパネルをタブで切り替えて表示・管理する汎用クラス。
+/// UIManagerのスタックには積まず、ローカルなサブビューとしてタブを切り替えます。
 /// </summary>
-public class TabPanelController : MonoBehaviour
+public class TabPanelController : MonoBehaviour, IPanelActive
 {
+    #region 内部参照とUI設定
+
     private InputManager inputManager;
 
     [Header("タブに対応するパネルリスト（順番が重要）")]
@@ -28,18 +34,22 @@ public class TabPanelController : MonoBehaviour
     [SerializeField]
     private TabSpriteSet commonTabSprites;
 
-    [Header("タブ切り替えの階層（-1の場合は単純追加）")]
-    [SerializeField]
-    private int panelStage;
+    #endregion
+
+    #region 状態変数とオプション
 
     [Header("有効化時に最初のタブに戻すか")]
     [SerializeField]
     private bool resetOnEnable = false;
 
-    private int currentTabIndex = 0;
+    private int currentTabIndex = 0; // 現在選択されているタブのインデックス
+    #endregion
+
+    #region Unity Lifecycle Methods
 
     private void Awake()
     {
+        // 必要な参照が設定されているかチェック
         if (tabPanels == null || tabButtons == null)
         {
             Debug.LogError("TabPanelController: パネルまたはボタンのリストが設定されていません。");
@@ -75,7 +85,6 @@ public class TabPanelController : MonoBehaviour
             Debug.LogError(
                 "InputManagerが設定されていません。TabPanelControllerが正しく動作しません。"
             );
-            return;
         }
     }
 
@@ -102,7 +111,7 @@ public class TabPanelController : MonoBehaviour
         if (inputManager == null)
             return;
 
-        // 入力検知
+        // 入力検知によるタブ切り替え
         if (inputManager.GetTabRight())
         {
             ChangeTab(1);
@@ -112,6 +121,10 @@ public class TabPanelController : MonoBehaviour
             ChangeTab(-1);
         }
     }
+
+    #endregion
+
+    #region タブ切り替えロジック
 
     /// <summary>
     /// 現在のタブから指定した方向へ切り替える
@@ -160,16 +173,17 @@ public class TabPanelController : MonoBehaviour
     /// </summary>
     private void UpdatePanelVisibility()
     {
-        // 現在アクティブなManager（UIManagerなど）を取得
-        var activeManager = SaveLoadManager.CurrentActiveManager;
-
         for (int i = 0; i < tabPanels.Count; i++)
         {
             bool isSelected = (i == currentTabIndex);
 
-            if (tabPanels[i] != null && activeManager != null && isSelected)
+            if (tabPanels[i] != null)
             {
-                activeManager.OpenPanel(tabPanels[i], panelStage); // タブが選択されたときにパネルを開く
+                // UIManagerのOpenPanelを使わず、子オブジェクトとして直接アクティブ状態を切り替える
+                tabPanels[i].SetActive(isSelected);
+
+                // ※各タブコンポーネントの OnEnable() で SelectFirstButton() が呼ばれるため、
+                // ここでの手動呼び出しは不要です。
             }
 
             if (tabButtons[i] != null)
@@ -199,4 +213,30 @@ public class TabPanelController : MonoBehaviour
             }
         }
     }
+
+    #endregion
+
+    #region IPanelActive 実装
+
+    /// <summary>
+    /// IPanelActiveの実装。UIManagerからこの親パネルにフォーカス要求が来た際、
+    /// 現在アクティブなタブ（子パネル）へフォーカス処理を委譲します。
+    /// </summary>
+    public void SelectFirstButton()
+    {
+        if (tabPanels != null && tabPanels.Count > currentTabIndex)
+        {
+            GameObject activeTabObj = tabPanels[currentTabIndex];
+            if (activeTabObj != null && activeTabObj.activeInHierarchy)
+            {
+                IPanelActive activeTab = activeTabObj.GetComponent<IPanelActive>();
+                if (activeTab != null)
+                {
+                    activeTab.SelectFirstButton();
+                }
+            }
+        }
+    }
+
+    #endregion
 }

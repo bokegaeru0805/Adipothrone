@@ -14,7 +14,7 @@ public class ItemUsePromptButton : MonoBehaviour
     [SerializeField]
     private PromptType promptType;
 
-    [SerializeField,ShowIf(nameof(promptType), PromptType.Register)] //Registerボタンの場合のみ表示
+    [SerializeField, ShowIf(nameof(promptType), PromptType.Register)] //Registerボタンの場合のみ表示
     private GameObject ItemRegisterPromptPanel;
 
     private enum PromptType
@@ -68,7 +68,29 @@ public class ItemUsePromptButton : MonoBehaviour
 
     private void HandleYes()
     {
-        playerManager.UseHealItem(itemID);
+        if (itemID == null)
+            return;
+
+        // アイテムのTypeIDを抽出して使用処理を振り分ける
+        int typeID = EnumIDUtility.ExtractTypeID(EnumIDUtility.ToID(itemID));
+
+        if (typeID == (int)TypeID.HealItem)
+        {
+            // 従来の回復アイテム使用処理
+            playerManager.UseHealItem(itemID);
+        }
+        else if (typeID == (int)TypeID.StatusEnhanceItem)
+        {
+            playerManager.UseStatusEnhanceItem(itemID);
+            Debug.Log($"ステータス強化アイテム({itemID})を使用しました");
+        }
+        else
+        {
+            Debug.LogWarning(
+                $"対応していないアイテムタイプ(TypeID: {typeID})が使用されようとしました"
+            );
+        }
+
         ClosePanel();
     }
 

@@ -26,6 +26,7 @@ public class InventoryItemData
     public enum ItemType
     {
         HealItem = 8,
+        StatusEnhanceItem = 9,
         KeyItem = 12,
     }
 
@@ -33,6 +34,7 @@ public class InventoryItemData
         new()
         {
             { ItemType.HealItem, (int)TypeID.HealItem },
+            { ItemType.StatusEnhanceItem, (int)TypeID.StatusEnhanceItem },
             { ItemType.KeyItem, (int)TypeID.KeyItem },
         };
 

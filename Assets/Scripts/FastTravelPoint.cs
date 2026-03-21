@@ -18,6 +18,7 @@ public class FastTravelPoint : MonoBehaviour
     private float floatingHeight = 1f; //上下に浮遊する移動幅
     private float floatingDuration = 2.0f; //浮遊アニメーションの片道にかかる時間（秒）
     private Vector3 initialPosition; // 浮遊アニメーションの基準となる初期座標
+    private GameManager gameManager;
 
     private void Awake()
     {
@@ -50,6 +51,8 @@ public class FastTravelPoint : MonoBehaviour
         // OnEnableでも呼ばれるが、Startでも念のため呼び出すことで、
         // 実行順の問題を回避し、確実に初期状態が設定されるようにする。
         UpdateUnlockState();
+
+        gameManager = GameManager.instance;
     }
 
     private void OnEnable()
@@ -81,7 +84,10 @@ public class FastTravelPoint : MonoBehaviour
         }
 
         // --- 元のロジックをここに移動 ---
-        if (fastTravelData.unlockedFastTravels != null && fastTravelData.unlockedFastTravels.Count > 0)
+        if (
+            fastTravelData.unlockedFastTravels != null
+            && fastTravelData.unlockedFastTravels.Count > 0
+        )
         {
             // このファストトラベルポイントが登録されているか確認
             isUnLocked = fastTravelData.IsFastTravelDataRegistered(
@@ -111,6 +117,7 @@ public class FastTravelPoint : MonoBehaviour
             if (
                 InputManager.instance.GetInteract()
                 && collision.CompareTag(GameConstants.PLAYER_TAG_NAME)
+                && !gameManager.IsTalking
             )
             {
                 if (!isUnLocked)

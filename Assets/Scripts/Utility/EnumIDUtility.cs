@@ -18,6 +18,7 @@ public static class EnumIDUtility
             (int)TypeID.Blade => (BladeName)id,
             (int)TypeID.Shoot => (ShootName)id,
             (int)TypeID.HealItem => (HealItemName)id,
+            (int)TypeID.StatusEnhanceItem => (EnhanceItemName)id,
             (int)TypeID.ProgressLog => (ProgressLogName)id,
             (int)TypeID.Tips => (TipsName)id,
             (int)TypeID.KeyItem => (KeyItemName)id,

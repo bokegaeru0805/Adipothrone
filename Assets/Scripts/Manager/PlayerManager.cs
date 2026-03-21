@@ -21,9 +21,17 @@ public class PlayerManager : MonoBehaviour
     /// </summary>
     public PlayerEffectManager EffectManager { get; private set; }
 
+    /// <summary>
+    /// アイテムによるステータスレベルを管理するマネージャーへの参照。
+    /// </summary>
+    public PlayerStatusLevelManager StatusLevelManager { get; private set; }
+
     [Header("References")]
     [SerializeField]
     private HealItemDatabase healItemDatabase;
+
+    [SerializeField]
+    private StatusEnhanceItemDatabase statusEnhanceItemDatabase;
 
     private FastTravelManager fastTravelManager;
     private Heroin_move heroinMove;
@@ -112,10 +120,19 @@ public class PlayerManager : MonoBehaviour
             Debug.LogError("PlayerEffectManagerが同じGameObjectにアタッチされていません！");
         }
 
+        // 同一GameObjectにアタッチされているPlayerStatusLevelManagerを取得し、連携する
+        StatusLevelManager = GetComponent<PlayerStatusLevelManager>();
+        if (StatusLevelManager == null)
+        {
+            Debug.LogError("PlayerStatusLevelManagerが同じGameObjectにアタッチされていません！");
+        }
+
         isControlLocked = false; // 初期状態では操作可能
 
-        if (healItemDatabase == null)
-            Debug.LogError("HealItemDatabaseが設定されていません");
+        if (healItemDatabase == null || statusEnhanceItemDatabase == null)
+        {
+            Debug.LogError("PlayerManagerに必要なデータベースが設定されていません");
+        }
 
         // Awakeの最後に、ソート順マップの初期化処理を実行
         InitializeItemSortOrderMap();
@@ -815,6 +832,40 @@ public class PlayerManager : MonoBehaviour
                     : int.MaxValue
             )
             .ToList();
+    }
+
+    /// <summary>
+    /// 指定したステータス強化アイテムを使用し、効果を適用します。
+    /// </summary>
+    /// <param name="ID">使用する強化アイテムのID</param>
+    /// <returns>アイテムの使用に成功したかどうか</returns>
+    public bool UseStatusEnhanceItem(Enum ID)
+    {
+        var ItemInventory = GameManager.instance.savedata.ItemInventoryData;
+        if (ItemInventory.ownedItems == null)
+        {
+            Debug.Log("ItemInventoryが存在しません");
+            return false;
+        }
+
+        // アイテムを消費（個数を減らす）
+        if (!ItemInventory.UseItem(ID, 1))
+        {
+            return false;
+        }
+
+        SEManager.instance?.PlayPlayerActionSE(SE_PlayerAction.HealItem1); // 強化時の効果音を鳴らす（必要に応じて専用SEに変更）
+
+        // データベースからIDに一致するアイテムデータを取得
+        StatusEnhanceItemData itemData = statusEnhanceItemDatabase.GetItemByID(ID);
+
+        // ステータス上限の解放処理をPlayerStatusLevelManagerに委任する
+        if (itemData != null && StatusLevelManager != null)
+        {
+            StatusLevelManager.UseEnhanceItem(itemData);
+        }
+
+        return true; // アイテムの使用に成功
     }
 
     #endregion

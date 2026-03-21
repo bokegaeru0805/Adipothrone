@@ -119,6 +119,8 @@ public class FastTravelManager : MonoBehaviour
         // ロード完了を確認してからフェードインを開始
         FadeCanvas.instance.FadeIn(1f / 60f);
 
+        Debug.Log($"ファストトラベルでシーン遷移完了: {sceneName} に移動しました");
+
         // 移動完了後の共通処理（チュートリアル等）を実行
         OnFastTravelComplete();
     }

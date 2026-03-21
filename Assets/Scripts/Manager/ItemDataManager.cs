@@ -17,10 +17,13 @@ public class ItemDataManager : MonoBehaviour
     private HealItemDatabase healItemDatabase;
 
     [SerializeField]
-    private TipsInfoDatabase tipsInfoDatabase;
+    private StatusEnhanceItemDatabase statusEnhanceItemDatabase;
 
     [SerializeField]
     private KeyItemDatabase keyItemDatabase;
+
+    [SerializeField]
+    private TipsInfoDatabase tipsInfoDatabase;
 
     private void Awake()
     {
@@ -34,27 +37,15 @@ public class ItemDataManager : MonoBehaviour
             Destroy(gameObject);
         }
 
-        if (weaponItemDatabase == null)
+        if (
+            weaponItemDatabase == null
+            || healItemDatabase == null
+            || tipsInfoDatabase == null
+            || keyItemDatabase == null
+            || statusEnhanceItemDatabase == null
+        )
         {
-            Debug.LogError("ItemDataManagerにWeaponItemDatabaseが設定されていません");
-            return;
-        }
-
-        if (healItemDatabase == null)
-        {
-            Debug.LogError("ItemDataManagerにHealItemDatabaseが設定されていません");
-            return;
-        }
-
-        if (tipsInfoDatabase == null)
-        {
-            Debug.LogError("ItemDataManagerにTipsInfoDatabaseが設定されていません");
-            return;
-        }
-
-        if (keyItemDatabase == null)
-        {
-            Debug.LogError("ItemDataManagerにKeyItemDatabaseが設定されていません");
+            Debug.LogError("ItemDataManagerに必要なデータベースが設定されていません");
             return;
         }
     }
@@ -83,6 +74,9 @@ public class ItemDataManager : MonoBehaviour
                 break;
             case (int)TypeID.HealItem:
                 itemData = healItemDatabase.GetItemByID(ID);
+                break;
+            case (int)TypeID.StatusEnhanceItem:
+                itemData = statusEnhanceItemDatabase.GetItemByID(ID);
                 break;
             case (int)TypeID.KeyItem:
                 itemData = keyItemDatabase.GetItemByID(ID);

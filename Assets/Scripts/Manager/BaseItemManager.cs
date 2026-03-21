@@ -26,6 +26,10 @@ public class BaseItemManager : MonoBehaviour
         {
             return heal.itemID;
         }
+        else if (item is StatusEnhanceItemData statusEnhance)
+        {
+            return statusEnhance.itemID;
+        }
         else if (item is ShootWeaponData shoot)
         {
             return shoot.weaponID;

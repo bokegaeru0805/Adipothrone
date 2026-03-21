@@ -71,7 +71,20 @@ public class KeyItemPanelActive : MonoBehaviour, IPanelActive, IPageNavigable
 
     private void OnEnable()
     {
-        // パネルが有効化されたときにデータをロードし、適切なボタンを表示・選択する
+        // 共通のボタン群に「現在アクティブなのは自分だ」と教える
+        if (buttonList != null)
+        {
+            foreach (var btn in buttonList)
+            {
+                var itemBtn = btn.GetComponent<ItemSelectButton>();
+                if (itemBtn != null)
+                {
+                    itemBtn.RegisterActivePanel(this);
+                }
+            }
+        }
+
+        // パネルが有効化されたときに最初のボタンを選択する
         SelectFirstButton();
     }
 

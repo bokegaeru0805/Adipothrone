@@ -222,6 +222,19 @@ public class DebugMenuManager : MonoBehaviour
     }
 
     /// <summary>
+    /// すべての StatusEnhanceItem を指定個数入手します。（UIボタンの OnClick 等に設定）
+    /// </summary>
+    public void GiveAllStatusEnhanceItems()
+    {
+        if (GameManager.instance != null)
+        {
+            int amount = GetItemAmount();
+            GameManager.instance.AddAllStatusEnhanceItems(amount);
+            Debug.Log($"すべての StatusEnhanceItem を {amount} 個ずつ入手しました。");
+        }
+    }
+
+    /// <summary>
     /// すべての Weapon を指定個数入手します。（UIボタンの OnClick 等に設定）
     /// </summary>
     public void GiveAllWeapons()

@@ -46,9 +46,20 @@ public class GameManager : MonoBehaviour
     #region Global References
 
     [Header("ゲーム全体で使用するデータベース")]
+    [Tooltip("武器アイテムのデータベース")]
     public HealItemDatabase healItemDatabase;
+
+    [Tooltip("ステータス強化アイテムのデータベース")]
+    public StatusEnhanceItemDatabase statusEnhanceItemDatabase;
+
+    [Tooltip("重要アイテムのデータベース")]
     public KeyItemDatabase keyItemDatabase;
+
+    [Tooltip("Tips情報のデータベース")]
     public TipsInfoDatabase tipsInfoDatabase;
+
+    [Header("ゲーム全体で使用するプレハブ")]
+    [Tooltip("アイテムドロップのプレハブ")]
     public GameObject DropItemPrefab;
 
     [HideInInspector]
@@ -62,7 +73,7 @@ public class GameManager : MonoBehaviour
     #endregion
 
     #region Internal States
-
+    public bool IsTalking => isTalking;
     private bool isTalking = false;
     private float jumpCooldownDuration = 0.2f; // ジャンプ入力を受け付けないクールダウン時間（秒）
     public Vector2? crossScenePlayerSpawnPoint = null; //シーン遷移後の次のプレイヤーのスポーン位置
@@ -118,7 +129,12 @@ public class GameManager : MonoBehaviour
             Debug.LogError("GameManagerにDropItemPrefabが設定されていません");
         }
 
-        if (healItemDatabase == null || keyItemDatabase == null || tipsInfoDatabase == null)
+        if (
+            healItemDatabase == null
+            || keyItemDatabase == null
+            || tipsInfoDatabase == null
+            || statusEnhanceItemDatabase == null
+        )
         {
             Debug.LogError("GameManagerに必要なデータベースが設定されていません");
             return;
@@ -306,6 +322,9 @@ public class GameManager : MonoBehaviour
             case (int)TypeID.HealItem:
                 itemPrefix = "回復アイテム";
                 break;
+            case (int)TypeID.StatusEnhanceItem:
+                itemPrefix = "強化アイテム";
+                break;
             case (int)TypeID.KeyItem:
                 itemPrefix = "重要アイテム";
                 break;
@@ -340,6 +359,7 @@ public class GameManager : MonoBehaviour
                     GameManager.instance.savedata.WeaponInventoryData.AddWeapon(ID);
                     break;
                 case (int)TypeID.HealItem:
+                case (int)TypeID.StatusEnhanceItem:
                 case (int)TypeID.KeyItem:
                     GameManager.instance.savedata.ItemInventoryData.AddItem(ID);
                     break;
@@ -408,6 +428,7 @@ public class GameManager : MonoBehaviour
                     GameManager.instance.savedata.WeaponInventoryData.UseWeapon(ID);
                     break;
                 case (int)TypeID.HealItem:
+                case (int)TypeID.StatusEnhanceItem:
                 case (int)TypeID.KeyItem:
                     GameManager.instance.savedata.ItemInventoryData.UseItem(ID);
                     break;
@@ -467,6 +488,9 @@ public class GameManager : MonoBehaviour
             case (int)TypeID.HealItem:
                 amount = GameManager.instance.savedata.ItemInventoryData.GetItemAmount(ID);
                 break;
+            case (int)TypeID.StatusEnhanceItem:
+                amount = GameManager.instance.savedata.ItemInventoryData.GetItemAmount(ID);
+                break;
             case (int)TypeID.KeyItem:
                 amount = GameManager.instance.savedata.ItemInventoryData.GetItemAmount(ID);
                 break;
@@ -522,6 +546,24 @@ public class GameManager : MonoBehaviour
         foreach (var healItem in healItemDatabase.healItems)
         {
             AddAllTypeIDToInventory(healItem.itemID, amount);
+        }
+    }
+
+    /// <summary>
+    /// デバッグ用：データベース内のすべての強化アイテム（StatusEnhanceItem）を指定個数入手します。
+    /// <param name="amount">入手する個数</param>
+    /// </summary>
+    public void AddAllStatusEnhanceItems(int amount = 1)
+    {
+        if (
+            statusEnhanceItemDatabase == null
+            || statusEnhanceItemDatabase.statusEnhanceItems == null
+        )
+            return;
+
+        foreach (var enhanceItem in statusEnhanceItemDatabase.statusEnhanceItems)
+        {
+            AddAllTypeIDToInventory(enhanceItem.itemID, amount);
         }
     }
 

@@ -15,7 +15,6 @@ public class ItemSelectButton : MonoBehaviour, IItemAssignable
     public void AssignItem(Enum itemID)
     {
         // 強制的に更新がかかるように前回値をリセット
-        // これがないと、所持数が0個のときに「0 != 0」で更新がスキップされ、デフォルトの値のままになる
         preItemAmount = -1;
 
         assignedItemID = itemID;
@@ -30,17 +29,18 @@ public class ItemSelectButton : MonoBehaviour, IItemAssignable
     [SerializeField]
     private TextMeshProUGUI ItemAmount_text; //アイテム選択ボタンの所持数を表示するTextMeshProUGUIコンポーネント
 
-    [Header("アイテム選択ボタンの親パネル")]
-    [SerializeField]
-    private GameObject ItemPanel; //アイテム選択ボタンのパネル
     private int itemAmount = 0; //アイテムの現在の個数
     private int preItemAmount = 0; //前フレームでのアイテムの個数
     private float baseSize = 0; // ボタンのアイテム画像のベースサイズ（初期化時に設定）
 
-    private enum ItemType
+    private MonoBehaviour currentActivePanel; // 現在アクティブな親パネルを記憶する
+
+    /// <summary>
+    /// パネル側から「現在アクティブなのは自分だ」と登録を受け付けるメソッド
+    /// </summary>
+    public void RegisterActivePanel(MonoBehaviour panel)
     {
-        HealItem = 8,
-        KeyItem = 12,
+        currentActivePanel = panel;
     }
 
     private void Awake()
@@ -48,12 +48,6 @@ public class ItemSelectButton : MonoBehaviour, IItemAssignable
         if (IconImage == null && ItemAmount_text == null)
         {
             Debug.LogError("アイテム選択ボタンのコンポーネントが設定されていません。");
-            return;
-        }
-
-        if (ItemPanel == null)
-        {
-            Debug.LogError("アイテム選択ボタンのパネルが設定されていません。");
             return;
         }
 
@@ -153,62 +147,25 @@ public class ItemSelectButton : MonoBehaviour, IItemAssignable
 
     /// <summary>
     /// アイテムのアイコンを更新します。
+    /// ItemDataManagerを利用してアイテム種別に関わらず取得します。
     /// </summary>
     private void UpdateItemIcon()
     {
-        Sprite itemSprite = null;
-
-        if (assignedItemID == null)
-            return;
-        if (GameManager.instance == null)
+        if (assignedItemID == null || GameManager.instance == null)
             return;
 
-        // GameManagerからデータベースへのショートカット参照
-        var healDB = GameManager.instance.healItemDatabase;
-        var keyDB = GameManager.instance.keyItemDatabase;
-
-        // アイテムタイプを識別
-        ItemType itemType = default;
-        switch (EnumIDUtility.ExtractTypeID(EnumIDUtility.ToID(assignedItemID)))
+        // データベースからアイテムデータを一括取得
+        var itemData = ItemDataManager.instance.GetBaseItemDataByID(assignedItemID);
+        if (itemData == null)
         {
-            case (int)TypeID.HealItem:
-                itemType = ItemType.HealItem;
-                break;
-            case (int)TypeID.KeyItem:
-                itemType = ItemType.KeyItem;
-                break;
-            default:
-                Debug.LogError($"このID{assignedItemID}はアイテムタイプを識別できません");
-                return;
-        }
-
-        // アイテムタイプに応じた処理
-        switch (itemType)
-        {
-            case ItemType.HealItem:
-                HealItemData item = healDB.GetItemByID(assignedItemID);
-                if (item == null)
-                {
-                    Debug.LogError("該当するIDのアイテムが見つかりませんでした。");
-                    return;
-                }
-                itemSprite = item.itemSprite;
-                break;
-            case ItemType.KeyItem:
-                KeyItemData keyItem = keyDB.GetItemByID(assignedItemID);
-                if (keyItem == null)
-                {
-                    Debug.LogError("該当するIDのキーアイテムが見つかりませんでした。");
-                    return;
-                }
-                itemSprite = keyItem.itemSprite;
-                break;
+            Debug.LogError($"該当するID({assignedItemID})のアイテムデータが見つかりませんでした。");
+            return;
         }
 
         // スプライト設定
         if (IconImage != null)
         {
-            UIUtility.SetSpriteFitToSquare(IconImage, itemSprite, baseSize);
+            UIUtility.SetSpriteFitToSquare(IconImage, itemData.itemSprite, baseSize);
         }
         else
         {
@@ -218,11 +175,14 @@ public class ItemSelectButton : MonoBehaviour, IItemAssignable
 
     private void SelectItem()
     {
-        PanelActive panelActive = ItemPanel.GetComponent<PanelActive>();
-        if (panelActive != null)
+        // 1. パネルの最後の選択状態を保存する
+        // IPanelActive(インターフェース)ではなく、PanelActive(具象クラス)かどうかを判定する
+        if (currentActivePanel is PanelActive panelActive)
         {
             panelActive.SetLastSelectedButton(this.gameObject);
         }
+        // ※ HealItemPanelActive などの新しいタブパネルは自身の OnDisable 等で
+        // 自動的に記憶するため、ここでは何もしなくてOKです。
 
         if (itemAmount <= 0)
         {
@@ -231,21 +191,15 @@ public class ItemSelectButton : MonoBehaviour, IItemAssignable
             return;
         }
 
-        if (ItemPanel != null)
+        // 2. アイテム使用プロンプトを表示する
+        if (currentActivePanel is IItemPromptHandler promptHandler)
         {
-            var script = ItemPanel.GetComponent<HealItemPanelActive>();
-            if (script != null)
-            {
-                script.SetPromptPanel(assignedItemID, this.GetComponent<Button>());
-            }
-            else
-            {
-                Debug.LogWarning("ItemPanelActiveコンポーネントが付いていません");
-            }
+            // パネルがプロンプト対応なら開く
+            promptHandler.SetPromptPanel(assignedItemID, this.GetComponent<Button>());
         }
         else
         {
-            Debug.LogWarning("ItemPanelが存在しません");
+            // KeyItemPanel など、プロンプトを持たないパネルの場合は何もしない
         }
     }
 }
