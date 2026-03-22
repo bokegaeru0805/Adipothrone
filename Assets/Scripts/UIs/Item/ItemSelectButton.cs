@@ -196,6 +196,7 @@ public class ItemSelectButton : MonoBehaviour, IItemAssignable
         {
             // パネルがプロンプト対応なら開く
             promptHandler.SetPromptPanel(assignedItemID, this.GetComponent<Button>());
+
         }
         else
         {

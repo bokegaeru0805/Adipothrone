@@ -1,6 +1,8 @@
 using System;
+using System.Collections;
 using NaughtyAttributes;
 using UnityEngine;
+using UnityEngine.EventSystems;
 
 public class QuickItemRegisterPanel : MonoBehaviour
 {
@@ -8,7 +10,6 @@ public class QuickItemRegisterPanel : MonoBehaviour
     public Enum itemID;
 
     [InfoBox("必ずこのゲームオブジェクトは初期状態で表示にしてください。")]
-
     [SerializeField]
     private QuickItemPanel quickItemPanel; //ゲーム画面のショートカットパネルのオブジェクト
     private GameObject lastSelectedObject; //最後に選ばれていたボタンを保存する変数
@@ -17,10 +18,11 @@ public class QuickItemRegisterPanel : MonoBehaviour
     {
         if (quickItemPanel == null)
         {
-            Debug.LogError("QuickItemUIManager: QuickItemPanelが設定されていません");
+            Debug.LogError(
+                "QuickItemRegisterPanel: quickItemPanel の参照が設定されていません。",
+                this
+            );
         }
-
-        this.gameObject.SetActive(false); //最初は非表示にする
     }
 
     private void Update()
@@ -40,12 +42,22 @@ public class QuickItemRegisterPanel : MonoBehaviour
             HandleNo();
     }
 
-    // <summary>
+    /// <summary>
+    /// 親パネル（HealItemPanel等）の「1フレーム遅延フォーカス復旧処理」を上書きするため、
+    /// こちらも少し待ってからフォーカスを完全にクリア（null）にします。
+    /// </summary>
+    private IEnumerator ClearFocusAfterDelay()
+    {
+        yield return new WaitForEndOfFrame();
+        yield return null;
+
+        EventSystem.current.SetSelectedGameObject(null);
+    }
+
+    /// <summary>
     /// 水平方向にカーソルを移動させる（左右）
     /// </summary>
-    /// <param name="horizontal">
-    /// -1なら左、+1なら右に移動
-    /// </param>
+    /// <param name="horizontal">-1なら左、+1なら右に移動</param>
     private void Move(int horizontal)
     {
         quickItemPanel.Move(horizontal);
@@ -73,30 +85,14 @@ public class QuickItemRegisterPanel : MonoBehaviour
 
     private void ClosePanel()
     {
-        // オブジェクト名による分岐を、SaveLoadManager経由の呼び出しに変更
-        if (SaveLoadManager.CurrentActiveManager != null)
-        {
-            // 登録されているManagerのCloseTopPanel()を呼び出す
-            SaveLoadManager.CurrentActiveManager.CloseTopPanel();
-        }
-        else
-        {
-            // CurrentActiveManager が見つからなかった場合 (各ManagerのAwakeで登録し忘れている可能性)
-            Debug.LogWarning(
-                "SaveLoadPromptButton: SaveLoadManager.CurrentActiveManager が設定されていません。データ変更確認画面を閉じることができません。",
-                this
-            );
-            this.gameObject.SetActive(false);
-        }
+        UIManager.instance.ClosePopup(); //このパネルはUIManagerのスタックに積まない独立したポップアップとして扱うため、ClosePopup()で閉じる
+        UIManager.instance.SetQuickItemRegistering(false); //クイックアイテム登録画面が開いているフラグを下げる
+        UIManager.instance.RefocusTopPanel(); //親パネルにフォーカスを戻す
     }
 
     private void OnEnable()
     {
         UIManager.instance.SetQuickItemRegistering(true); //クイックアイテム登録画面が開いているフラグを立てる
-    }
-
-    private void OnDisable()
-    {
-        UIManager.instance.SetQuickItemRegistering(false); //クイックアイテム登録画面が開いているフラグを下げる
+        StartCoroutine(ClearFocusAfterDelay());
     }
 }

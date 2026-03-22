@@ -498,15 +498,29 @@ public class GameUIManager : MonoBehaviour
             {
                 _isStoryTalking = true;
 
-                // 既存のアイテムログ（_uiRefs.ItemLogSlots）をすべて強制的に非表示にする
-                if (_uiRefs != null && _uiRefs.ItemLogSlots != null)
+                if (_uiRefs != null)
                 {
-                    foreach (var slot in _uiRefs.ItemLogSlots)
+                    // 既存のアイテムログ（_uiRefs.ItemLogSlots）をすべて強制的に非表示にする
+                    if (_uiRefs.ItemLogSlots != null)
                     {
-                        if (slot != null && slot.gameObject.activeSelf)
+                        foreach (var slot in _uiRefs.ItemLogSlots)
                         {
-                            slot.gameObject.SetActive(false);
+                            if (slot != null && slot.gameObject.activeSelf)
+                            {
+                                slot.gameObject.SetActive(false);
+                            }
                         }
+                    }
+
+                    // Story会話中はレベルアップや技名表示も非表示にする
+                    if (_uiRefs.LevelUpPopup != null && _uiRefs.LevelUpPopup.activeSelf)
+                    {
+                        _uiRefs.LevelUpPopup.SetActive(false);
+                    }
+
+                    if (_uiRefs.SkillNameDisplay != null && _uiRefs.SkillNameDisplay.activeSelf)
+                    {
+                        _uiRefs.SkillNameDisplay.SetActive(false);
                     }
                 }
             }
@@ -652,6 +666,10 @@ public class GameUIManager : MonoBehaviour
     /// <param name="level">新しいレベル</param>
     public void ShowLevelUpUI(int level)
     {
+        // ストーリー会話中は新規表示をキャンセルする
+        if (_isStoryTalking)
+            return;
+
         if (_uiRefs.LevelUpPopup == null)
             return;
 
@@ -682,6 +700,10 @@ public class GameUIManager : MonoBehaviour
     /// <param name="skillName">表示する技名</param>
     public void ShowSkillNameUI(string skillName)
     {
+        // ストーリー会話中は新規表示をキャンセルする
+        if (_isStoryTalking)
+            return;
+
         if (_uiRefs.SkillNameDisplay == null || _uiRefs.SkillNameText == null)
             return;
 

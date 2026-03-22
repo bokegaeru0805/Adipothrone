@@ -26,17 +26,9 @@ public class HealItemPanelActive : MonoBehaviour, IPanelActive, IPageNavigable, 
     private List<Button> rightSideButtonList; //右側のアイテム用選択ボタンのリスト
 
     [Header("アイテム使用確認パネル")]
-    [Tooltip("アイテム使用確認パネルのオブジェクト")]
+    [Tooltip("アイテム使用確認パネルを総括する管理スクリプト")]
     [SerializeField]
-    private GameObject ItemUsePromptPanel = null;
-
-    [Tooltip("アイテム使用確認パネルのYesボタンのオブジェクト")]
-    [SerializeField]
-    private GameObject ItemUsePromptYes = null;
-
-    [Tooltip("アイテム使用確認パネルの登録ボタンのオブジェクト")]
-    [SerializeField]
-    private GameObject ItemRegisterPrompt = null;
+    private ItemUsePromptPanel itemUsePromptPanel;
 
     public List<Button> LeftSideButtons => leftSideButtonList;
     public List<Button> RightSideButtons => rightSideButtonList;
@@ -50,9 +42,12 @@ public class HealItemPanelActive : MonoBehaviour, IPanelActive, IPageNavigable, 
     private Enum selectedButtonItemID = null;
     private Enum preselectedButtonItemID = null;
 
-    // 最後に選択したアイテムのIDと「ボタンの位置」を記憶する変数を追加
+    // 最後に選択したアイテムのIDと「ボタンの位置」を記憶する変数
     private int? lastSelectedItemID = null;
     private int lastSelectedIndex = -1; // -1は未選択を表す
+
+    // 遅延更新用のコルーチンを保持する変数
+    private Coroutine detailUpdateCoroutine = null;
 
     // プレイヤーが所持しているアイテム情報のリスト。
     // 各要素は ItemEntry として、アイテムのID（itemID）とその所持数（count）を保持する。
@@ -79,16 +74,6 @@ public class HealItemPanelActive : MonoBehaviour, IPanelActive, IPageNavigable, 
             return;
         }
 
-        if (ItemUsePromptPanel == null || ItemUsePromptYes == null || ItemRegisterPrompt == null)
-        {
-            Debug.LogWarning(
-                "Menuアイテムのアイテム使用確認パネルのUIコンポーネントが設定されていません"
-            );
-            return;
-        }
-
-        //アイテム選択ボタンの初期化
-        ItemUsePromptPanel.SetActive(false);
         //アイテムの効果表示パネルを非表示化
         itemDetailPanel.gameObject.SetActive(false);
         rowCount = rightSideButtonList.Count; //UIの行数を設定
@@ -196,6 +181,8 @@ public class HealItemPanelActive : MonoBehaviour, IPanelActive, IPageNavigable, 
             // アイテムが一つもない場合は、何も選択しない
             EventSystem.current.SetSelectedGameObject(null);
         }
+
+        itemUsePromptPanel.gameObject.SetActive(false); //アイテム使用確認パネルを非表示化
     }
 
     /// <summary>
@@ -269,7 +256,7 @@ public class HealItemPanelActive : MonoBehaviour, IPanelActive, IPageNavigable, 
         lastSelectedItemID = EnumIDUtility.ToID(itemID);
         lastSelectedIndex = buttonList.IndexOf(selectedButton);
 
-        if (UIManager.instance != null && ItemUsePromptPanel != null)
+        if (itemUsePromptPanel != null)
         {
             // まず、クリックされたボタンのワールド座標を取得
             Vector3 buttonWorldPosition = selectedButton.transform.position;
@@ -285,7 +272,7 @@ public class HealItemPanelActive : MonoBehaviour, IPanelActive, IPageNavigable, 
             }
 
             // 最終的なoffsetを使ってパネルの位置を決定
-            RectTransform promptRect = ItemUsePromptPanel.GetComponent<RectTransform>();
+            RectTransform promptRect = itemUsePromptPanel.GetComponent<RectTransform>();
 
             // 1. パネルの中心を、ボタンのワールド座標にピタッと合わせる
             promptRect.position = buttonWorldPosition;
@@ -293,31 +280,10 @@ public class HealItemPanelActive : MonoBehaviour, IPanelActive, IPageNavigable, 
             // 2. その状態から、インスペクターで設定した offset 分だけローカル座標でズラす
             promptRect.anchoredPosition += finalOffset;
 
-            UIManager.instance.OpenPanel(ItemUsePromptPanel, -1);
-        }
-        else
-        {
-            Debug.LogWarning("UIManagerもしくはアイテム使用確認パネルが存在しません");
-        }
+            // パネルにアイテムIDを渡して、内容を更新する
+            itemUsePromptPanel.SetupPrompt(itemID, ItemUsePromptPanel.PromptMode.WithRegister);
 
-        var script = ItemUsePromptYes.GetComponent<ItemUsePromptButton>();
-        if (script != null)
-        {
-            script.itemID = itemID;
-        }
-        else
-        {
-            Debug.LogWarning("ItemUsePromptButtonスクリプトが入手できませんでした");
-        }
-
-        var script2 = ItemRegisterPrompt.GetComponent<ItemUsePromptButton>();
-        if (script2 != null)
-        {
-            script2.itemID = itemID;
-        }
-        else
-        {
-            Debug.LogWarning("ItemRegisterPromptスクリプトが入手できませんでした");
+            UIManager.instance.OpenPopup(itemUsePromptPanel.gameObject);
         }
     }
 
@@ -362,18 +328,47 @@ public class HealItemPanelActive : MonoBehaviour, IPanelActive, IPageNavigable, 
         //効果説明パネルの文章を変更する
         if (preselectedButtonItemID != selectedButtonItemID)
         {
-            if (!itemDetailPanel.gameObject.activeSelf)
-            {
-                //アイテム効果パネルを表示する
-                itemDetailPanel.gameObject.SetActive(true);
-            }
+            // IDを更新
+            preselectedButtonItemID = selectedButtonItemID;
 
-            // アイテムIDに基づいて、効果説明パネルの内容を更新する
-            itemDetailPanel.DisplayItemDetails(selectedButtonItemID);
+            if (selectedButtonItemID != null)
+            {
+                lastSelectedItemID = EnumIDUtility.ToID(selectedButtonItemID);
+
+                // 既に走っている更新待ち（コルーチン）があればキャンセルする
+                if (detailUpdateCoroutine != null)
+                {
+                    StopCoroutine(detailUpdateCoroutine);
+                }
+
+                // 新しく遅延更新をスタートする
+                detailUpdateCoroutine = StartCoroutine(
+                    UpdateDetailPanelWithDelay(selectedButtonItemID)
+                );
+            }
         }
 
         preselectedButtonItemID = selectedButtonItemID; //前フレームのアイテムIDを設定する
         lastSelectedItemID = EnumIDUtility.ToID(selectedButtonItemID); //最後に選択したアイテムのIDを保存
+    }
+
+    /// <summary>
+    /// 一瞬だけ待機してから詳細パネルを更新するコルーチン（デバウンス処理）
+    /// </summary>
+    private System.Collections.IEnumerator UpdateDetailPanelWithDelay(Enum targetItemID)
+    {
+        // カーソル移動中のブレを無視するための待機時間（0.05秒〜0.1秒程度がおすすめ）
+        yield return new WaitForSecondsRealtime(0.05f);
+
+        // 待機後もまだパネルが表示されるべき状態であれば更新
+        if (!itemDetailPanel.gameObject.activeSelf)
+        {
+            itemDetailPanel.gameObject.SetActive(true);
+        }
+
+        itemDetailPanel.DisplayItemDetails(targetItemID);
+        
+        // Debug.Log($"選択されたアイテムID: {targetItemID} の詳細を表示しました");
     }
 
     private void OnEnable()

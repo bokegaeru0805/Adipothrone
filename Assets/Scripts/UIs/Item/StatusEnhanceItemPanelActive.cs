@@ -31,13 +31,9 @@ public class StatusEnhanceItemPanelActive
     private List<Button> rightSideButtonList; //右側のアイテム用選択ボタンのリスト
 
     [Header("アイテム使用確認パネル")]
-    [Tooltip("アイテム使用確認パネルのオブジェクト")]
+    [Tooltip("アイテム使用確認パネル全体を管理するスクリプト")]
     [SerializeField]
-    private GameObject ItemUsePromptPanel = null;
-
-    [Tooltip("アイテム使用確認パネルのYesボタンのオブジェクト")]
-    [SerializeField]
-    private GameObject ItemUsePromptYes = null;
+    private ItemUsePromptPanel itemUsePromptPanel;
 
     // ※ステータス強化アイテムは「登録」しないため、RegisterPromptの変数は削除しています
 
@@ -57,6 +53,9 @@ public class StatusEnhanceItemPanelActive
     // 最後に選択したアイテムのIDと「ボタンの位置」を記憶する変数 (NewTabSubPanelTemplate仕様)
     private int? lastSelectedItemID = null;
     private int lastSelectedIndex = -1; // -1は未選択を表す
+
+    // 遅延更新用のコルーチンを保持する変数
+    private Coroutine detailUpdateCoroutine = null;
 
     // プレイヤーが所持しているアイテム情報のリスト
     private List<ItemEntry> itemList = new List<ItemEntry>();
@@ -82,14 +81,7 @@ public class StatusEnhanceItemPanelActive
             return;
         }
 
-        if (ItemUsePromptPanel == null || ItemUsePromptYes == null)
-        {
-            Debug.LogWarning("アイテム使用確認パネルのUIコンポーネントが設定されていません");
-            return;
-        }
-
         // 初期化処理
-        ItemUsePromptPanel.SetActive(false);
         itemDetailPanel.gameObject.SetActive(false);
         rowCount = rightSideButtonList.Count; //UIの行数を設定
     }
@@ -204,6 +196,8 @@ public class StatusEnhanceItemPanelActive
         {
             EventSystem.current.SetSelectedGameObject(null);
         }
+
+        itemUsePromptPanel.gameObject.SetActive(false); //アイテム使用確認パネルを非表示化
     }
 
     /// <summary>
@@ -268,37 +262,34 @@ public class StatusEnhanceItemPanelActive
         lastSelectedItemID = EnumIDUtility.ToID(itemID);
         lastSelectedIndex = buttonList.IndexOf(selectedButton);
 
-        if (UIManager.instance != null && ItemUsePromptPanel != null)
+        if (itemUsePromptPanel != null)
         {
+            // まず、クリックされたボタンのワールド座標を取得
             Vector3 buttonWorldPosition = selectedButton.transform.position;
+
+            // offsetをコピーして、変更があっても元の値に影響しないようにする
             Vector2 finalOffset = offset;
 
-            // 右側のボタンならオフセットを反転
+            // もしクリックされたボタンが「右側のボタンリスト」に含まれていたら
             if (rightSideButtonList.Contains(selectedButton))
             {
+                // offsetのx座標の正負を反転させる
                 finalOffset.x *= -1;
             }
 
-            RectTransform promptRect = ItemUsePromptPanel.GetComponent<RectTransform>();
+            // 最終的なoffsetを使ってパネルの位置を決定
+            RectTransform promptRect = itemUsePromptPanel.GetComponent<RectTransform>();
+
+            // 1. パネルの中心を、ボタンのワールド座標にピタッと合わせる
             promptRect.position = buttonWorldPosition;
+
+            // 2. その状態から、インスペクターで設定した offset 分だけローカル座標でズラす
             promptRect.anchoredPosition += finalOffset;
 
-            UIManager.instance.OpenPanel(ItemUsePromptPanel, -1);
-        }
-        else
-        {
-            Debug.LogWarning("UIManagerもしくはアイテム使用確認パネルが存在しません");
-        }
+            // パネルにアイテムIDを渡して、内容を更新する
+            itemUsePromptPanel.SetupPrompt(itemID, ItemUsePromptPanel.PromptMode.Standard);
 
-        // 使用ボタンにIDを渡す
-        var script = ItemUsePromptYes.GetComponent<ItemUsePromptButton>();
-        if (script != null)
-        {
-            script.itemID = itemID;
-        }
-        else
-        {
-            Debug.LogWarning("ItemUsePromptButtonスクリプトが入手できませんでした");
+            UIManager.instance.OpenPopup(itemUsePromptPanel.gameObject); //ポップアップとして開く
         }
     }
 
@@ -338,20 +329,46 @@ public class StatusEnhanceItemPanelActive
         }
 
         // 選択アイテムが変わった場合のみ詳細パネルを更新
-        if (preselectedButtonItemID != selectedButtonItemID && selectedButtonItemID != null)
+        if (preselectedButtonItemID != selectedButtonItemID)
         {
-            if (!itemDetailPanel.gameObject.activeSelf)
+            // IDを更新
+            preselectedButtonItemID = selectedButtonItemID;
+
+            if (selectedButtonItemID != null)
             {
-                itemDetailPanel.gameObject.SetActive(true);
+                lastSelectedItemID = EnumIDUtility.ToID(selectedButtonItemID);
+
+                // 既に走っている更新待ち（コルーチン）があればキャンセルする
+                if (detailUpdateCoroutine != null)
+                {
+                    StopCoroutine(detailUpdateCoroutine);
+                }
+
+                // 新しく遅延更新をスタートする
+                detailUpdateCoroutine = StartCoroutine(
+                    UpdateDetailPanelWithDelay(selectedButtonItemID)
+                );
             }
-            itemDetailPanel.DisplayItemDetails(selectedButtonItemID);
+        }
+    }
+
+    /// <summary>
+    /// 一瞬だけ待機してから詳細パネルを更新するコルーチン（デバウンス処理）
+    /// </summary>
+    private System.Collections.IEnumerator UpdateDetailPanelWithDelay(Enum targetItemID)
+    {
+        // カーソル移動中のブレを無視するための待機時間（0.05秒〜0.1秒程度がおすすめ）
+        yield return new WaitForSecondsRealtime(0.05f);
+
+        // 待機後もまだパネルが表示されるべき状態であれば更新
+        if (!itemDetailPanel.gameObject.activeSelf)
+        {
+            itemDetailPanel.gameObject.SetActive(true);
         }
 
-        preselectedButtonItemID = selectedButtonItemID;
-        if (selectedButtonItemID != null)
-        {
-            lastSelectedItemID = EnumIDUtility.ToID(selectedButtonItemID);
-        }
+        itemDetailPanel.DisplayItemDetails(targetItemID);
+
+        // Debug.Log($"選択されたアイテムID: {targetItemID} の詳細を表示しました");
     }
 
     /// <summary>
