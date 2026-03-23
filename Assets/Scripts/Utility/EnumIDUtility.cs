@@ -22,6 +22,7 @@ public static class EnumIDUtility
             (int)TypeID.ProgressLog => (ProgressLogName)id,
             (int)TypeID.Tips => (TipsName)id,
             (int)TypeID.KeyItem => (KeyItemName)id,
+            (int)TypeID.RecipeItem => (RecipeItemName)id,
             _ => throw new ArgumentException($"不明なID種別: {id}"),
         };
     }

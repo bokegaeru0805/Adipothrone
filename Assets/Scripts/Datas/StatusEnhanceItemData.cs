@@ -4,17 +4,17 @@ using UnityEngine;
 // 強化対象のステータス
 public enum EnhanceTargetStatus
 {
-    // HP = 1,
+    HP = 1,
     Attack = 2,
     Defense = 3,
     Speed = 4,
-    Luck = 5
+    Luck = 5,
 }
 
 // 強化の種類（将来的な拡張用）
 public enum EnhanceType
 {
-    MaxLevelUp = 1,    // 最大レベル（上限）を上げる
+    MaxLevelUp = 1, // 最大レベル（上限）を上げる
     // BonusValueUp   // 将来用：レベルごとの上昇値自体を底上げする
 }
 
@@ -27,10 +27,10 @@ public class EnhanceEffect
 {
     [Header("強化するステータス")]
     public EnhanceTargetStatus targetStatus;
-    
+
     [Header("強化の種類")]
     public EnhanceType enhanceType = EnhanceType.MaxLevelUp;
-    
+
     [Header("上昇量")]
     public int amount = 1; // 通常は1レベルずつ上げる
 }

@@ -62,7 +62,17 @@ public class PlayerManager : MonoBehaviour
     private float damageInvincibilityTime = 1.25f;
 
     // ステータス関連
-    public int playerMaxHP { get; private set; } = GameConstants.GetMaxHP(1); // プレイヤーの最大HP
+    public int playerMaxHP { get; private set; } =
+        GameConstants.STATUS_HP_INITIAL_BASE
+        + UnityEngine.Mathf.RoundToInt(
+            1
+                * (
+                    GameConstants.STATUS_HP_BASE_INCREASE
+                    + 1 * GameConstants.STATUS_HP_MAX_LEVEL_BONUS
+                )
+        );
+
+    // プレイヤーの最大HP
     public int playerMaxWP { get; private set; } = GameConstants.GetMaxWP(1); // プレイヤーの最大WP
     public float LastDamageTime { get; private set; } = float.MinValue; // 最後にダメージを受けた時間
 

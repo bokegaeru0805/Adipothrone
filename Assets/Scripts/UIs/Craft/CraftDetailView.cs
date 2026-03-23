@@ -1,0 +1,81 @@
+using UnityEngine;
+using UnityEngine.UI;
+using TMPro;
+
+/// <summary>
+/// 選択されたレシピの詳細情報（完成品のステータスや必要素材のリスト）を
+/// 右側の固定エリアに表示・更新するクラス。
+/// </summary>
+public class CraftDetailView : MonoBehaviour
+{
+    #region UI参照設定 (合成品情報)
+    [Header("合成品情報")]
+    [Tooltip("完成品アイテムのアイコン")]
+    [SerializeField] private Image itemIcon;
+    
+    [Tooltip("完成品アイテムの名称")]
+    [SerializeField] private TextMeshProUGUI itemNameText;
+    
+    [Tooltip("完成品アイテムの種類（回復アイテム、強化アイテム等）")]
+    [SerializeField] private TextMeshProUGUI itemTypeText;
+    
+    [Tooltip("完成品アイテムの説明文")]
+    [SerializeField] private TextMeshProUGUI descriptionText;
+    #endregion
+
+    #region UI参照設定 (素材リスト関連)
+    [Header("素材リスト関連")]
+    [Tooltip("素材UIを並べる親オブジェクト(VerticalLayoutGroup等をアタッチしておく)")]
+    [SerializeField] private Transform materialsContainer; 
+    
+    [Tooltip("素材1つ分を表示するためのUIプレハブ")]
+    [SerializeField] private GameObject materialUIPrefab;  
+    #endregion
+
+    #region 更新処理
+    /// <summary>
+    /// 左側のリストで新しいレシピが選択された際に呼ばれ、
+    /// 右側の詳細情報のUI表示をすべて更新します。
+    /// </summary>
+    /// <param name="recipeData">選択されたレシピのデータ</param>
+    /// <param name="maxCraftableCount">最大合成可能数（今回は表示に使用していませんが拡張用に保持）</param>
+    public void UpdateView(RecipeItemData recipeData, int maxCraftableCount)
+    {
+        if (recipeData == null) return;
+
+        // --- 1. 完成品の基本情報の更新 ---
+        itemIcon.sprite = recipeData.craftedItem.itemSprite;
+        itemNameText.text = recipeData.craftedItem.itemName;
+        itemTypeText.text = GameManager.instance.GetItemTypePrefix(recipeData.craftedItem.GetItemID());
+        descriptionText.text = recipeData.craftedItem.description;
+
+        // --- 2. 既存の素材UIの破棄 ---
+        // 別のレシピが選ばれるたびに、前に表示していた素材リストのオブジェクトを削除する
+        foreach (Transform child in materialsContainer)
+        {
+            Destroy(child.gameObject);
+        }
+
+        // --- 3. 新しい素材UIの生成と設定 ---
+        foreach (var mat in recipeData.materials)
+        {
+            // プレハブをコンテナの子として生成
+            GameObject obj = Instantiate(materialUIPrefab, materialsContainer);
+            int owned = GameManager.instance.GetAllTypeIDToAmount(mat.item);
+            
+            // プレハブ内のUIコンポーネントを取得 (※階層名 "Icon", "NameText", "CountText" に依存)
+            var icon = obj.transform.Find("Icon").GetComponent<Image>();
+            var nameText = obj.transform.Find("NameText").GetComponent<TextMeshProUGUI>();
+            var countText = obj.transform.Find("CountText").GetComponent<TextMeshProUGUI>();
+
+            // 情報をセット
+            icon.sprite = mat.item.itemSprite;
+            nameText.text = mat.item.itemName;
+            countText.text = $"{owned} / {mat.requiredAmount}";
+            
+            // 所持数が足りていない場合は文字を赤色にして警告する
+            countText.color = owned >= mat.requiredAmount ? Color.white : Color.red;
+        }
+    }
+    #endregion
+}

@@ -13,15 +13,15 @@ public class PlayerStatusLevelPanelActive : MonoBehaviour, IPanelActive
 {
     [Header("UI References - Left Panel")]
     [SerializeField]
-    private TextMeshProUGUI hpText; // 例: "HP: 100 / 100"
-
-    [SerializeField]
     private TextMeshProUGUI wpText; // 例: "WP: 15 / 15"
 
     [SerializeField]
     private TextMeshProUGUI expLevelText; // 例: "現在のレベル: 12"
 
     [Header("UI References - Right Panel (Sliders)")]
+    [SerializeField]
+    private Slider hpSlider;
+
     [SerializeField]
     private Slider attackSlider;
 
@@ -37,6 +37,9 @@ public class PlayerStatusLevelPanelActive : MonoBehaviour, IPanelActive
     [Header("UI References - Right Panel (Level Texts)")]
     // 例: "Lv 5 / 8" と表示するためのテキスト
     [SerializeField]
+    private TextMeshProUGUI hpLevelText;
+
+    [SerializeField]
     private TextMeshProUGUI attackLevelText;
 
     [SerializeField]
@@ -50,6 +53,9 @@ public class PlayerStatusLevelPanelActive : MonoBehaviour, IPanelActive
 
     [Header("UI References - Right Panel (Stat Texts)")]
     // 例: "基礎攻撃力: 125" と表示するためのテキスト
+    [SerializeField]
+    private TextMeshProUGUI hpStatText;
+
     [SerializeField]
     private TextMeshProUGUI attackStatText;
 
@@ -72,6 +78,15 @@ public class PlayerStatusLevelPanelActive : MonoBehaviour, IPanelActive
     private void Awake()
     {
         // スライダーのイベントリスナーを登録
+        if (hpSlider != null)
+            hpSlider.onValueChanged.AddListener(val =>
+                OnSliderValueChanged(
+                    hpSlider,
+                    PlayerStatusIntName.hpMaxLevel,
+                    PlayerStatusIntName.hpCurrentLevel,
+                    val
+                )
+            );
         if (attackSlider != null)
             attackSlider.onValueChanged.AddListener(val =>
                 OnSliderValueChanged(
@@ -182,18 +197,23 @@ public class PlayerStatusLevelPanelActive : MonoBehaviour, IPanelActive
         isUpdatingUI = true; // プログラムからスライダーを動かすためフラグを立てる
 
         // 左側パネルの更新（HP, WP, 経験値レベル）
-        int maxHP = PlayerManager.instance.playerMaxHP;
         int maxWP = PlayerManager.instance.playerMaxWP;
         int expLevel = PlayerLevelManager.instance.playerLv;
 
-        if (hpText != null)
-            hpText.text = $"最大HP 　: {maxHP}";
         if (wpText != null)
             wpText.text = $"最大WP 　: {maxWP}";
         if (expLevelText != null)
             expLevelText.text = $"レベル: {expLevel}";
 
         // 右側パネルの更新（スライダーの最大値＝天井、表示値＝現在レベル）
+        UpdateSliderState(
+            hpSlider,
+            hpLevelText,
+            hpStatText,
+            PlayerStatusIntName.hpMaxLevel,
+            PlayerStatusIntName.hpCurrentLevel,
+            expLevel
+        );
         UpdateSliderState(
             attackSlider,
             attackLevelText,

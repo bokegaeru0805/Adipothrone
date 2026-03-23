@@ -499,7 +499,8 @@ public class ItemDetailPanel : MonoBehaviour
     {
         switch (status)
         {
-            // case EnhanceTargetStatus.HP: return "最大HP"; // HPが追加された場合用
+            case EnhanceTargetStatus.HP:
+                return "最大HP";
             case EnhanceTargetStatus.Attack:
                 return "基礎攻撃力";
             case EnhanceTargetStatus.Defense:

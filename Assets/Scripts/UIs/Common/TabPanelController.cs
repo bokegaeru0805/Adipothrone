@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
@@ -43,6 +44,7 @@ public class TabPanelController : MonoBehaviour, IPanelActive
     private bool resetOnEnable = false;
 
     private int currentTabIndex = 0; // 現在選択されているタブのインデックス
+    public event Action<int> OnTabChanged; // タブが切り替わったときに発火するイベント（引数はタブのインデックス）
     #endregion
 
     #region Unity Lifecycle Methods
@@ -50,16 +52,9 @@ public class TabPanelController : MonoBehaviour, IPanelActive
     private void Awake()
     {
         // 必要な参照が設定されているかチェック
-        if (tabPanels == null || tabButtons == null)
+        if (tabPanels == null || tabButtons.Count == 0)
         {
             Debug.LogError("TabPanelController: パネルまたはボタンのリストが設定されていません。");
-            return;
-        }
-
-        // パネルとボタンの数が一致しているか確認
-        if (tabPanels.Count != tabButtons.Count)
-        {
-            Debug.LogError("TabPanelController: タブパネルとボタンの数が一致しません。");
             return;
         }
 
@@ -132,14 +127,19 @@ public class TabPanelController : MonoBehaviour, IPanelActive
     /// <param name="direction">1 または -1</param>
     private void ChangeTab(int direction)
     {
+        // タブの総数は、設定されているボタンの数を基準にする
+        int tabCount = tabButtons.Count;
+        if (tabCount == 0)
+            return;
+
         int newIndex = currentTabIndex + direction;
 
         // 範囲外をループさせる
         if (newIndex < 0)
         {
-            newIndex = tabPanels.Count - 1;
+            newIndex = tabCount - 1;
         }
-        else if (newIndex >= tabPanels.Count)
+        else if (newIndex >= tabCount)
         {
             newIndex = 0;
         }
@@ -154,12 +154,16 @@ public class TabPanelController : MonoBehaviour, IPanelActive
     /// <param name="index">タブ番号</param>
     public void SetTab(int index)
     {
+        int tabCount = tabButtons.Count;
+        if (tabCount == 0)
+            return;
+
         // インデックスの安全確認とループ処理
         if (index < 0)
         {
-            index = tabPanels.Count - 1;
+            index = tabCount - 1;
         }
-        else if (index >= tabPanels.Count)
+        else if (index >= tabCount)
         {
             index = 0;
         }
@@ -173,11 +177,12 @@ public class TabPanelController : MonoBehaviour, IPanelActive
     /// </summary>
     private void UpdatePanelVisibility()
     {
-        for (int i = 0; i < tabPanels.Count; i++)
+        for (int i = 0; i < tabButtons.Count; i++)
         {
             bool isSelected = (i == currentTabIndex);
 
-            if (tabPanels[i] != null)
+            // tabPanelsが設定されている場合のみ、GameObjectのアクティブ状態を切り替える
+            if (tabPanels != null && i < tabPanels.Count && tabPanels[i] != null)
             {
                 // UIManagerのOpenPanelを使わず、子オブジェクトとして直接アクティブ状態を切り替える
                 tabPanels[i].SetActive(isSelected);
@@ -193,6 +198,9 @@ public class TabPanelController : MonoBehaviour, IPanelActive
                     : commonTabSprites.unselected;
             }
         }
+
+        // タブの表示が更新された後、外部に現在のタブインデックスを通知する
+        OnTabChanged?.Invoke(currentTabIndex);
     }
 
     /// <summary>
@@ -206,7 +214,10 @@ public class TabPanelController : MonoBehaviour, IPanelActive
             {
                 tabPanels[i].SetActive(false);
             }
+        }
 
+        for (int i = 0; i < tabButtons.Count; i++)
+        {
             if (tabButtons[i] != null)
             {
                 tabButtons[i].sprite = commonTabSprites.unselected;

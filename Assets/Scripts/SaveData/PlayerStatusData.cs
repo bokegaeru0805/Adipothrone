@@ -66,7 +66,15 @@ public class PlayerStatusData
     {
         // --- 基礎ステータス初期化 ---
         // playerMaxHP = 100;
-        playerCurrentHP = GameConstants.GetMaxHP(1);
+        playerCurrentHP =
+            GameConstants.STATUS_HP_INITIAL_BASE
+            + UnityEngine.Mathf.RoundToInt(
+                1
+                    * (
+                        GameConstants.STATUS_HP_BASE_INCREASE
+                        + 1 * GameConstants.STATUS_HP_MAX_LEVEL_BONUS
+                    )
+            );
         playerCurrentWP = 0;
         wpConsumptionBuffer = 0f;
         playerExp = 0;
@@ -80,6 +88,8 @@ public class PlayerStatusData
         luckBuffLimitLevel = 5;
 
         // --- ステータスレベル初期化 ---
+        hpMaxLevel = 1;
+        hpCurrentLevel = 1;
         attackMaxLevel = 1;
         attackCurrentLevel = 1;
         defenceMaxLevel = 1;

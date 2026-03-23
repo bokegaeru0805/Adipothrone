@@ -10,10 +10,10 @@ public class HealItemDatabaseEditor : Editor
 
         var database = (HealItemDatabase)target;
 
-        if (GUILayout.Button("新規ヒールアイテムを自動検索・追加"))
+        if (GUILayout.Button("新規回復アイテムを自動検索・追加"))
         {
             if (EditorUtility.DisplayDialog("データベース更新の確認",
-                "指定フォルダから新しいヒールアイテムを検索し、リストの末尾に追加します。よろしいですか？", "はい", "いいえ"))
+                "指定フォルダから新しい回復アイテムを検索し、リストの末尾に追加します。よろしいですか？", "はい", "いいえ"))
             {
                 AddNewItems(database);
             }
@@ -54,11 +54,11 @@ public class HealItemDatabaseEditor : Editor
             // データベースのアセットに変更があったことをUnityに通知
             EditorUtility.SetDirty(database);
             AssetDatabase.SaveAssets();
-            Debug.Log($"新しいヒールアイテムを{addedCount}件、データベースに追加しました！");
+            Debug.Log($"新しい回復アイテムを{addedCount}件、データベースに追加しました！");
         }
         else
         {
-            Debug.Log("新しいヒールアイテムは見つかりませんでした。");
+            Debug.Log("新しい回復アイテムは見つかりませんでした。");
         }
     }
 }

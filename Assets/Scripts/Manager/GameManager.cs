@@ -55,6 +55,9 @@ public class GameManager : MonoBehaviour
     [Tooltip("重要アイテムのデータベース")]
     public KeyItemDatabase keyItemDatabase;
 
+    [Tooltip("レシピアイテムのデータベース")]
+    public RecipeItemDatabase recipeItemDatabase;
+
     [Tooltip("Tips情報のデータベース")]
     public TipsInfoDatabase tipsInfoDatabase;
 
@@ -134,6 +137,7 @@ public class GameManager : MonoBehaviour
             || keyItemDatabase == null
             || tipsInfoDatabase == null
             || statusEnhanceItemDatabase == null
+            || recipeItemDatabase == null
         )
         {
             Debug.LogError("GameManagerに必要なデータベースが設定されていません");
@@ -328,6 +332,9 @@ public class GameManager : MonoBehaviour
             case (int)TypeID.KeyItem:
                 itemPrefix = "重要アイテム";
                 break;
+            case (int)TypeID.RecipeItem:
+                itemPrefix = "レシピ";
+                break;
         }
 
         return itemPrefix;
@@ -362,6 +369,9 @@ public class GameManager : MonoBehaviour
                 case (int)TypeID.StatusEnhanceItem:
                 case (int)TypeID.KeyItem:
                     GameManager.instance.savedata.ItemInventoryData.AddItem(ID);
+                    break;
+                case (int)TypeID.RecipeItem:
+                    GameManager.instance.savedata.RecipeData.UnlockRecipe(ID);
                     break;
                 default:
                     Debug.LogError($"このID{ID}はSaveDataに保存できません");
@@ -432,6 +442,9 @@ public class GameManager : MonoBehaviour
                 case (int)TypeID.KeyItem:
                     GameManager.instance.savedata.ItemInventoryData.UseItem(ID);
                     break;
+                case (int)TypeID.RecipeItem:
+                    Debug.LogWarning($"レシピアイテムはインベントリから削除できません。ID: {ID}");
+                    break;
                 default:
                     Debug.LogError($"このID{ID}はSaveDataに保存できません");
                     break;
@@ -494,12 +507,58 @@ public class GameManager : MonoBehaviour
             case (int)TypeID.KeyItem:
                 amount = GameManager.instance.savedata.ItemInventoryData.GetItemAmount(ID);
                 break;
+            case (int)TypeID.RecipeItem:
+                amount = GameManager.instance.savedata.RecipeData.GetRecipeAmount(ID);
+                break;
             default:
                 Debug.LogError($"このID{ID}は数を取得できません");
                 break;
         }
 
         return amount;
+    }
+
+    /// <summary>
+    /// レシピを解放（取得）します。宝箱やイベントから呼び出される想定です。
+    /// </summary>
+    /// <param name="recipeID">解放するレシピのID(Enum)</param>
+    public void UnlockRecipe(Enum recipeID)
+    {
+        if (savedata == null)
+        {
+            Debug.LogError("SaveDataが存在しません");
+            return;
+        }
+
+        // 既に解放済みかチェック
+        if (!savedata.RecipeData.IsRecipeUnlocked(recipeID))
+        {
+            savedata.RecipeData.UnlockRecipe(recipeID);
+
+            // UI通知（既存のアイテム取得ログの仕組みを流用）
+            // string recipeName = itemDataManager.GetItemNameByID(recipeID);
+            // GameUIManager.instance?.AddGetItemLog($"{recipeName}のレシピ");
+
+            // Debug.Log($"レシピID:{recipeID} を解放しました！");
+        }
+        else
+        {
+            // // 宝箱等で重複取得した際の処理（代替アイテムを渡す等）が必要ならここに記述
+            // Debug.Log($"レシピID:{recipeID} は既に解放済みです。");
+        }
+    }
+
+    /// <summary>
+    /// BaseItemDataから直接レシピを解放するオーバーロード
+    /// </summary>
+    public void UnlockRecipe(BaseItemData itemData)
+    {
+        if (itemData == null)
+        {
+            Debug.LogWarning("UnlockRecipe: itemDataがnullです。");
+            return;
+        }
+        UnlockRecipe(itemData.GetItemID());
     }
 
     /// <summary>
@@ -564,6 +623,21 @@ public class GameManager : MonoBehaviour
         foreach (var enhanceItem in statusEnhanceItemDatabase.statusEnhanceItems)
         {
             AddAllTypeIDToInventory(enhanceItem.itemID, amount);
+        }
+    }
+
+    /// <summary>
+    /// デバッグ用：データベース内のすべてのレシピアイテム（RecipeItem）を指定個数入手します。
+    /// <param name="amount">入手する個数</param>
+    /// </summary>
+    public void AddAllRecipeItems(int amount = 1)
+    {
+        if (recipeItemDatabase == null || recipeItemDatabase.recipeItems == null)
+            return;
+
+        foreach (var recipeItem in recipeItemDatabase.recipeItems)
+        {
+            AddAllTypeIDToInventory(recipeItem.itemID, amount);
         }
     }
 

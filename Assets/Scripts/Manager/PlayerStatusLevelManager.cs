@@ -25,6 +25,27 @@ public class PlayerStatusLevelManager : MonoBehaviour
     #region 基礎ステータス算出プロパティ
 
     /// <summary>
+    /// UI表示および内部計算用の「プレイヤー最大HP」
+    /// 計算式: 初期ベース値 + 現在レベル * (基礎増加値 + 最大レベル * ボーナス係数)
+    /// </summary>
+    public int TotalBaseHP
+    {
+        get
+        {
+            int currentHpLv = playerManager.GetPlayerIntStatus(PlayerStatusIntName.hpCurrentLevel);
+            int maxHpLv = playerManager.GetPlayerIntStatus(PlayerStatusIntName.hpMaxLevel);
+
+            float calculated =
+                currentHpLv
+                * (
+                    GameConstants.STATUS_HP_BASE_INCREASE
+                    + maxHpLv * GameConstants.STATUS_HP_MAX_LEVEL_BONUS
+                );
+            return GameConstants.STATUS_HP_INITIAL_BASE + Mathf.RoundToInt(calculated);
+        }
+    }
+
+    /// <summary>
     /// UI表示および内部計算用の「プレイヤー基礎攻撃力」
     /// 計算式: 現在レベル * (基礎増加値 + 最大レベル * ボーナス係数)
     /// </summary>
@@ -150,9 +171,32 @@ public class PlayerStatusLevelManager : MonoBehaviour
         int clampedLevel = Mathf.Clamp(targetLevel, 1, maxLevel);
 
         playerManager.SetPlayerIntStatus(currentLevelName, clampedLevel);
+
+        // HPレベルが変更された場合、PlayerManagerの最大HPを即座に更新する
+        if (currentLevelName == PlayerStatusIntName.hpCurrentLevel)
+        {
+            ApplyHPLevelChange();
+        }
+
         Debug.Log(
             $"{currentLevelName} の現在レベルを {clampedLevel} に変更しました。（上限: {maxLevel}）"
         );
+    }
+
+    /// <summary>
+    /// HPのレベルが変動した際に、実際の最大HPを更新し、現在HPが上限を超えていればクランプ（切り捨て）する
+    /// </summary>
+    private void ApplyHPLevelChange()
+    {
+        int newMaxHP = TotalBaseHP;
+        playerManager.SetMaxHP(newMaxHP);
+
+        int currentHP = playerManager.GetPlayerIntStatus(PlayerStatusIntName.playerCurrentHP);
+        if (currentHP > newMaxHP)
+        {
+            // 最大HPが下がって現在HPがはみ出た場合、最大HPと同じ値に強制上書きする
+            playerManager.ForceSetHP(newMaxHP);
+        }
     }
 
     #endregion
@@ -188,6 +232,10 @@ public class PlayerStatusLevelManager : MonoBehaviour
         // ターゲットとなるステータスのEnumを決定
         switch (effect.targetStatus)
         {
+            case EnhanceTargetStatus.HP:
+                maxEnum = PlayerStatusIntName.hpMaxLevel;
+                currentEnum = PlayerStatusIntName.hpCurrentLevel;
+                break;
             case EnhanceTargetStatus.Attack:
                 maxEnum = PlayerStatusIntName.attackMaxLevel;
                 currentEnum = PlayerStatusIntName.attackCurrentLevel;

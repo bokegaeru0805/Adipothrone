@@ -253,28 +253,29 @@ public class PlayerLevelManager : MonoBehaviour
             return;
         }
 
-        //レベルに応じた実際の攻撃力と防御力の変化値を計算し、自身のプロパティを更新
-        // ※経験値とアイテム強化のハイブリッドシステム移行に伴い、ここでの攻撃・防御の計算は廃止しました。
-
-        // --- ここからPlayerManagerへの反映処理 ---
         if (playerManager == null)
             return;
 
-        //レベルに応じた最大HPを設定
-        int playerMaxHP = GameConstants.GetMaxHP(playerLv);
-        playerManager.SetMaxHP(playerMaxHP);
-        //レベルに応じた最大WPを設定
+        // レベルに応じた最大HPの設定を廃止（PlayerStatusLevelManagerが管理するため）
+        // int playerMaxHP = GameConstants.GetMaxHP(playerLv);
+        // playerManager.SetMaxHP(playerMaxHP);
+
+        // レベルに応じた最大WPを設定（これは経験値レベル依存のまま残す）
         int playerMaxWP = GameConstants.GetMaxWP(playerLv);
         playerManager.SetMaxWP(playerMaxWP);
 
         if (isResettingHP)
         {
-            // プレイヤーのHPを最大HPに設定
+            // プレイヤーのHPを最大HPに設定（レベルアップ時の全回復処理）
+            int playerMaxHP = playerManager.playerMaxHP; // 変更：PlayerManagerが保持している最新の最大HPを取得する
             int playerCurrentHP = playerManager.GetPlayerIntStatus(
                 PlayerStatusIntName.playerCurrentHP
             );
             int healthDelta = playerMaxHP - playerCurrentHP;
-            playerManager.HealHP(healthDelta);
+            if (healthDelta > 0)
+            {
+                playerManager.HealHP(healthDelta);
+            }
         }
     }
     #endregion

@@ -6,6 +6,7 @@ public enum TypeID
     HealItem = 8,
     StatusEnhanceItem = 9,
     MaterialItem = 10,
+    RecipeItem = 11,
     KeyItem = 12,
     ProgressLog = 16,
     TreasureBox = 17,

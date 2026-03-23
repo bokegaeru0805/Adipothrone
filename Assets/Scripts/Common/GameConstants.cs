@@ -63,13 +63,13 @@ public static class GameConstants
     #endregion
 
     #region プレイヤーステータス計算式
-    /// <summary>
+    /*/// <summary>
     /// レベルに応じた最大HPを計算する
     /// </summary>
     public static int GetMaxHP(int level)
     {
         return Mathf.RoundToInt(80 + 25f * level * Mathf.Log10(level + 9));
-    }
+    }*/
 
     /// <summary>
     /// レベルに応じた最大WPを計算する
@@ -125,6 +125,11 @@ public static class GameConstants
     // レベルアップ・ステータスレベルによる上昇ボーナス
     // 計算式: 現在レベル * (基礎増加値 + 最大レベル * ボーナス係数)
 
+    // HP計算用の定数
+    public const int STATUS_HP_INITIAL_BASE = 80; // レベル1でも保証される最低HP（旧計算式のベース値）
+    public const float STATUS_HP_BASE_INCREASE = 28.0f; // HPの基礎増加値
+    public const float STATUS_HP_MAX_LEVEL_BONUS = 0.4f; // HPの最大レベルボーナス係数
+
     // 攻撃力計算用の定数
     public const float STATUS_ATTACK_BASE_INCREASE = 2.0f; // 攻撃力の基礎増加値
     public const float STATUS_ATTACK_MAX_LEVEL_BONUS = 0.5f; // 攻撃力の最大レベルボーナス係数
@@ -141,7 +146,7 @@ public static class GameConstants
     // 幸運計算用の定数
     public const float STATUS_LUCK_BASE_INCREASE = 1.0f; // 幸運の基礎増加値
     public const float STATUS_LUCK_MAX_LEVEL_BONUS = 0.2f; // 幸運の最大レベルボーナス係数
-    
+
     public const float MIN_ATTACK_POWER_MULTIPLIER = 0.01f; // 攻撃力の倍率が0以下にならないようにする最小値
 
     // バフレベル上限

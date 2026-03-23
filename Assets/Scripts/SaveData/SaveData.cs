@@ -46,6 +46,9 @@ public class SaveData
     // ===== 敵の記録 =====
     public EnemyRecordData EnemyRecordData = new EnemyRecordData();
 
+    // ===== レシピ・合成進行度 =====
+    public RecipeSaveData RecipeData = new RecipeSaveData();
+
     /// <summary>
     /// データの整合性をチェックし、nullの箇所があれば初期化して修復する
     /// ロード直後に呼び出すこと
@@ -72,5 +75,7 @@ public class SaveData
             FastTravelData = new FastTravelData();
         if (EnemyRecordData == null)
             EnemyRecordData = new EnemyRecordData();
+        if (RecipeData == null)
+            RecipeData = new RecipeSaveData();
     }
 }

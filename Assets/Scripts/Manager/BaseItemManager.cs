@@ -42,8 +42,14 @@ public class BaseItemManager : MonoBehaviour
         {
             return key.itemID;
         }
-
-        Debug.LogWarning("対応していないItemDataの型です: " + item.GetType().Name);
+        else if (item is RecipeItemData recipe)
+        {
+            return recipe.itemID;
+        }
+        else
+        {
+            Debug.LogWarning("対応していないItemDataの型です: " + item.GetType().Name);
+        }
         return null;
     }
 }

@@ -248,6 +248,19 @@ public class DebugMenuManager : MonoBehaviour
     }
 
     /// <summary>
+    /// すべての RecipeItem を指定個数入手します。（UIボタンの OnClick 等に設定）
+    /// </summary>
+    public void GiveAllRecipeItems()
+    {
+        if (GameManager.instance != null)
+        {
+            int amount = GetItemAmount();
+            GameManager.instance.AddAllRecipeItems(amount);
+            Debug.Log($"すべての RecipeItem を {amount} 個ずつ入手しました。");
+        }
+    }
+
+    /// <summary>
     /// タイムスケール入力欄でEnterが押されたときの処理
     /// </summary>
     private void ApplyTimeScale(string text)

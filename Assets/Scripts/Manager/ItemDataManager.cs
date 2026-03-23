@@ -23,6 +23,9 @@ public class ItemDataManager : MonoBehaviour
     private KeyItemDatabase keyItemDatabase;
 
     [SerializeField]
+    private RecipeItemDatabase recipeItemDatabase;
+
+    [SerializeField]
     private TipsInfoDatabase tipsInfoDatabase;
 
     private void Awake()
@@ -43,6 +46,7 @@ public class ItemDataManager : MonoBehaviour
             || tipsInfoDatabase == null
             || keyItemDatabase == null
             || statusEnhanceItemDatabase == null
+            || recipeItemDatabase == null
         )
         {
             Debug.LogError("ItemDataManagerに必要なデータベースが設定されていません");
@@ -80,6 +84,9 @@ public class ItemDataManager : MonoBehaviour
                 break;
             case (int)TypeID.KeyItem:
                 itemData = keyItemDatabase.GetItemByID(ID);
+                break;
+            case (int)TypeID.RecipeItem:
+                itemData = recipeItemDatabase.GetItemByID(ID);
                 break;
             default:
                 Debug.LogWarning($"このID {ID} はBaseItemDataを持ちません");
