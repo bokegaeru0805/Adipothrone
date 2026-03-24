@@ -133,6 +133,39 @@ public class PlayerStatusLevelManager : MonoBehaviour
         }
     }
 
+    #region 総合ステータスレベル算出
+
+    /// <summary>
+    /// 敵のドロップ判定等に使用する「総合ステータスレベル」を算出します。
+    /// HP、攻撃力、防御力の現在レベルを使用し、「平均値」と「最大値」の中間（最大値ブレンド法）を取ることで、
+    /// 1つのステータスだけを極端に上げる（極振り）による抜け道を塞ぎます。
+    /// </summary>
+    public int TotalStatusLevel
+    {
+        get
+        {
+            // 戦闘に直結する3つの現在レベルを取得
+            int hpLevel = playerManager.GetPlayerIntStatus(PlayerStatusIntName.hpCurrentLevel);
+            int attackLevel = playerManager.GetPlayerIntStatus(
+                PlayerStatusIntName.attackCurrentLevel
+            );
+            int defenseLevel = playerManager.GetPlayerIntStatus(
+                PlayerStatusIntName.defenceCurrentLevel
+            );
+
+            // 1. 平均値を算出
+            float averageLevel = (hpLevel + attackLevel + defenseLevel) / 3f;
+
+            // 2. 3つの中の最大値を算出
+            int maxLevel = Mathf.Max(hpLevel, attackLevel, defenseLevel);
+
+            // 3. 平均値と最大値を足して2で割り、四捨五入して整数にする
+            float totalLevel = (averageLevel + maxLevel) / 2f;
+            return Mathf.RoundToInt(totalLevel);
+        }
+    }
+
+    #endregion
     #endregion
 
     #region ステータスレベル操作メソッド
@@ -152,7 +185,7 @@ public class PlayerStatusLevelManager : MonoBehaviour
         // 最大レベルが上がったので、現在レベルもそれに合わせる
         playerManager.SetPlayerIntStatus(currentLevelName, currentMax + 1);
 
-        Debug.Log($"{maxLevelName} の上限が {currentMax + 1} に解放されました。");
+        // Debug.Log($"{maxLevelName} の上限が {currentMax + 1} に解放されました。");
     }
 
     /// <summary>
@@ -178,9 +211,9 @@ public class PlayerStatusLevelManager : MonoBehaviour
             ApplyHPLevelChange();
         }
 
-        Debug.Log(
-            $"{currentLevelName} の現在レベルを {clampedLevel} に変更しました。（上限: {maxLevel}）"
-        );
+        // Debug.Log(
+        //     $"{currentLevelName} の現在レベルを {clampedLevel} に変更しました。（上限: {maxLevel}）"
+        // );
     }
 
     /// <summary>
@@ -196,6 +229,64 @@ public class PlayerStatusLevelManager : MonoBehaviour
         {
             // 最大HPが下がって現在HPがはみ出た場合、最大HPと同じ値に強制上書きする
             playerManager.ForceSetHP(newMaxHP);
+        }
+    }
+
+    /// <summary>
+    /// 指定されたステータスの最大レベルを、引数で渡された「指定レベル」まで引き上げます。
+    /// （現在の最大レベルが既に指定レベルに達している、または超えている場合は何もしません）
+    /// </summary>
+    /// <param name="targetStatus">引き上げ対象のステータスの種類</param>
+    /// <param name="targetLevel">目標とする指定レベル</param>
+    public void UpgradeMaxStatusLevelTo(EnhanceTargetStatus targetStatus, int targetLevel)
+    {
+        PlayerStatusIntName maxEnum = PlayerStatusIntName.attackMaxLevel;
+        PlayerStatusIntName currentEnum = PlayerStatusIntName.attackCurrentLevel;
+
+        // ターゲットとなるステータスのEnumを決定
+        switch (targetStatus)
+        {
+            case EnhanceTargetStatus.HP:
+                maxEnum = PlayerStatusIntName.hpMaxLevel;
+                currentEnum = PlayerStatusIntName.hpCurrentLevel;
+                break;
+            case EnhanceTargetStatus.Attack:
+                maxEnum = PlayerStatusIntName.attackMaxLevel;
+                currentEnum = PlayerStatusIntName.attackCurrentLevel;
+                break;
+            case EnhanceTargetStatus.Defense:
+                maxEnum = PlayerStatusIntName.defenceMaxLevel;
+                currentEnum = PlayerStatusIntName.defenceCurrentLevel;
+                break;
+            case EnhanceTargetStatus.Speed:
+                maxEnum = PlayerStatusIntName.speedMaxLevel;
+                currentEnum = PlayerStatusIntName.speedCurrentLevel;
+                break;
+            case EnhanceTargetStatus.Luck:
+                maxEnum = PlayerStatusIntName.luckMaxLevel;
+                currentEnum = PlayerStatusIntName.luckCurrentLevel;
+                break;
+            default:
+                Debug.LogError("未知のステータスが指定されました: " + targetStatus);
+                return;
+        }
+
+        int currentMax = playerManager.GetPlayerIntStatus(maxEnum);
+
+        // 現在の最大レベルが指定レベル未満の場合のみ引き上げる
+        if (currentMax < targetLevel)
+        {
+            playerManager.SetPlayerIntStatus(maxEnum, targetLevel);
+            // 現在レベルも引き上げた最大レベルに合わせて同期する
+            playerManager.SetPlayerIntStatus(currentEnum, targetLevel);
+
+            // HPの最大レベルが変動した場合は、実際のプレイヤーの最大HP実数値を即座に再計算・適用する
+            if (targetStatus == EnhanceTargetStatus.HP)
+            {
+                ApplyHPLevelChange();
+            }
+
+            // Debug.Log($"{targetStatus} の上限レベルが {targetLevel} に引き上げられました。");
         }
     }
 
@@ -218,7 +309,7 @@ public class PlayerStatusLevelManager : MonoBehaviour
             ApplyEnhanceEffect(effect);
         }
 
-        Debug.Log($"{itemData.itemName} を使用し、ステータスが強化されました！");
+        // Debug.Log($"{itemData.itemName} を使用し、ステータスが強化されました！");
     }
 
     /// <summary>
@@ -252,6 +343,9 @@ public class PlayerStatusLevelManager : MonoBehaviour
                 maxEnum = PlayerStatusIntName.luckMaxLevel;
                 currentEnum = PlayerStatusIntName.luckCurrentLevel;
                 break;
+            default:
+                Debug.LogError("未知のステータスが指定されました: " + effect.targetStatus);
+                return;
         }
 
         // 強化の種類に応じた処理
@@ -284,7 +378,7 @@ public class PlayerStatusLevelManager : MonoBehaviour
         playerManager.SetPlayerIntStatus(maxLevelName, newMax);
         playerManager.SetPlayerIntStatus(currentLevelName, newMax); // 現在レベルも最大値に合わせる
 
-        Debug.Log($"{maxLevelName} の上限が {amount} 上がり、{newMax} になりました。");
+        // Debug.Log($"{maxLevelName} の上限が {amount} 上がり、{newMax} になりました。");
     }
 
     #endregion

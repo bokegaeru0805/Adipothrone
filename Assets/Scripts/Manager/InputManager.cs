@@ -111,9 +111,19 @@ public class InputManager : MonoBehaviour
         return InputAllowed() && Input.GetKeyDown(inputSettings.UIMoveUp);
     }
 
+    public bool UIMoveUpHold()
+    {
+        return InputAllowed() && Input.GetKey(inputSettings.UIMoveUp);
+    }
+
     public bool UIMoveDown()
     {
         return InputAllowed() && Input.GetKeyDown(inputSettings.UIMoveDown);
+    }
+
+    public bool UIMoveDownHold()
+    {
+        return InputAllowed() && Input.GetKey(inputSettings.UIMoveDown);
     }
 
     public bool UIMoveLeft()

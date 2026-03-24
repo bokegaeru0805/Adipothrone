@@ -43,16 +43,29 @@ public class CraftMenuManager : MonoBehaviour, IPanelActive
     #endregion
 
     #region ライフサイクル
-    private void Start()
+
+    private void Awake()
+    {
+        HideDetailView(); // 最初は詳細ビューを非表示にしておく
+    }
+
+    /// <summary>
+    /// このパネルがアクティブ（表示状態）になった瞬間に呼ばれます。
+    /// タブコントローラーのイベントを購読し、直後に発行される更新通知を待ち受けます。
+    /// </summary>
+    private void OnEnable()
     {
         if (tabPanelController != null)
         {
-            // タブが切り替わった時のイベントに ReloadList を登録
             tabPanelController.OnTabChanged += ReloadList;
         }
     }
 
-    private void OnDestroy()
+    /// <summary>
+    /// このパネルが非アクティブ（非表示状態）になった瞬間に呼ばれます。
+    /// 裏で無駄な更新処理が走らないよう、イベントの購読を解除します。
+    /// </summary>
+    private void OnDisable()
     {
         if (tabPanelController != null)
         {
@@ -136,6 +149,12 @@ public class CraftMenuManager : MonoBehaviour, IPanelActive
             }
         }
 
+        // リストが空の場合のダミーボタン生成
+        if (instantiatedButtons.Count == 0)
+        {
+            CreateDummyButton(recipeListContainer, ref isFirstButtonSet);
+        }
+
         // 生成された全ボタンのナビゲーション（上下ループ）を設定
         SetupNavigation();
     }
@@ -147,10 +166,28 @@ public class CraftMenuManager : MonoBehaviour, IPanelActive
     {
         int count = instantiatedButtons.Count;
 
-        // ボタンが0個、または1個しかない場合はループ設定が不要なため処理を抜ける
-        if (count <= 1)
+        // ボタンが0個の場合は設定できないため処理を抜ける
+        if (count == 0)
             return;
 
+        // ボタンが1個しかない場合、すべての方向への移動を無効化する
+        if (count == 1)
+        {
+            Selectable singleSelectable = instantiatedButtons[0].GetComponent<Selectable>();
+            if (singleSelectable != null)
+            {
+                Navigation nav = new Navigation();
+                nav.mode = Navigation.Mode.Explicit;
+                nav.selectOnUp = null;
+                nav.selectOnDown = null;
+                nav.selectOnLeft = null;
+                nav.selectOnRight = null;
+                singleSelectable.navigation = nav;
+            }
+            return;
+        }
+
+        // 2個以上の場合は、既存の上下ループ設定を行う
         for (int i = 0; i < count; i++)
         {
             // 生成したオブジェクトから Selectable コンポーネント（Buttonなど）を取得
@@ -225,6 +262,32 @@ public class CraftMenuManager : MonoBehaviour, IPanelActive
             isFirstButtonSet = true;
         }
     }
+
+    /// <summary>
+    /// レシピが1つもない場合、既存のプレハブを流用してダミーボタンを生成します。
+    /// </summary>
+    private void CreateDummyButton(Transform container, ref bool isFirstButtonSet)
+    {
+        // プレハブをそのまま生成
+        GameObject obj = Instantiate(recipeButtonPrefab, container, false);
+        obj.transform.localScale = Vector3.one;
+        instantiatedButtons.Add(obj);
+
+        var buttonUI = obj.GetComponent<RecipeButtonUI>();
+        if (buttonUI != null)
+        {
+            // ダミー専用のセットアップを呼び出す
+            buttonUI.SetupAsDummy();
+        }
+
+        // ダミーボタンにフォーカスを当てる（EventSystemが迷子になるのを防ぐ）
+        if (!isFirstButtonSet)
+        {
+            EventSystem.current.SetSelectedGameObject(obj);
+            isFirstButtonSet = true;
+        }
+    }
+
     #endregion
 
     #region 子UIとの連携処理
@@ -235,7 +298,24 @@ public class CraftMenuManager : MonoBehaviour, IPanelActive
     /// <param name="maxCraftable">最大合成可能数</param>
     public void UpdateDetailView(RecipeItemData recipe, int maxCraftable)
     {
+        // パネルが非表示になっていれば表示する
+        if (detailView != null && !detailView.gameObject.activeSelf)
+        {
+            detailView.gameObject.SetActive(true);
+        }
+
         detailView.UpdateView(recipe, maxCraftable);
+    }
+
+    /// <summary>
+    /// ダミーボタンがフォーカスされた際などに呼ばれ、右側の詳細ビューを非表示にします。
+    /// </summary>
+    public void HideDetailView()
+    {
+        if (detailView != null && detailView.gameObject.activeSelf)
+        {
+            detailView.gameObject.SetActive(false);
+        }
     }
 
     /// <summary>

@@ -8,6 +8,20 @@ using UnityEngine.UI;
 /// </summary>
 public class UIEventNavigationHandler : MonoBehaviour
 {
+    #region 長押し（リピート）設定
+    [Header("長押し入力設定")]
+    [Tooltip("キーを押し続けてから連続入力が始まるまでの待機時間（秒）")]
+    [SerializeField]
+    private float repeatDelay = 0.4f;
+
+    [Tooltip("連続入力中の1回あたりの入力間隔（秒）")]
+    [SerializeField]
+    private float repeatRate = 0.05f;
+
+    private float nextActionTime = 0f;
+    private MoveDirection? currentHoldDirection = null;
+    #endregion
+
     private void Update()
     {
         // 現在選択中の UI オブジェクトを取得（nullの可能性あり）
@@ -21,32 +35,77 @@ public class UIEventNavigationHandler : MonoBehaviour
             return;
 
         // 方向キーの入力判定
-        if (InputManager.instance.UIMoveUp())
-        {
-            HandleMoveOrNavigate(current, MoveDirection.Up, current.FindSelectableOnUp());
-        }
-        else if (InputManager.instance.UIMoveDown())
-        {
-            HandleMoveOrNavigate(current, MoveDirection.Down, current.FindSelectableOnDown());
-        }
-        else if (InputManager.instance.UIMoveLeft())
-        {
-            HandleMoveOrNavigate(current, MoveDirection.Left, current.FindSelectableOnLeft());
-        }
-        else if (InputManager.instance.UIMoveRight())
-        {
-            HandleMoveOrNavigate(current, MoveDirection.Right, current.FindSelectableOnRight());
-        }
+        MoveDirection? inputDir = null;
 
-        // 決定ボタンが押された場合、現在の選択オブジェクトに「Submit」イベントを送信
-        if (InputManager.instance.UIConfirm())
+        // 1. 押された瞬間 (GetKeyDown) の判定
+        if (InputManager.instance.UIMoveUp())
+            inputDir = MoveDirection.Up;
+        else if (InputManager.instance.UIMoveDown())
+            inputDir = MoveDirection.Down;
+        else if (InputManager.instance.UIMoveLeft())
+            inputDir = MoveDirection.Left;
+        else if (InputManager.instance.UIMoveRight())
+            inputDir = MoveDirection.Right;
+
+        if (inputDir != null)
         {
-            // 選択中オブジェクトに "submit" イベントを送る（Buttonなどが反応）
-            ExecuteEvents.Execute(
-                current.gameObject,
-                new BaseEventData(EventSystem.current),
-                ExecuteEvents.submitHandler
-            );
+            // 押された瞬間に1回実行し、長押しの待機タイマーをセット
+            ExecuteMove(current, inputDir.Value);
+            currentHoldDirection = inputDir;
+            nextActionTime = Time.unscaledTime + repeatDelay;
+        }
+        else
+        {
+            // 2. 押しっぱなし (GetKey) の判定
+            bool isHolding = false;
+            MoveDirection? holdDir = null;
+
+            if (InputManager.instance.UIMoveUpHold())
+            {
+                isHolding = true;
+                holdDir = MoveDirection.Up;
+            }
+            else if (InputManager.instance.UIMoveDownHold())
+            {
+                isHolding = true;
+                holdDir = MoveDirection.Down;
+            }
+            else if (InputManager.instance.UIMoveLeftHold())
+            {
+                isHolding = true;
+                holdDir = MoveDirection.Left;
+            }
+            else if (InputManager.instance.UIMoveRightHold())
+            {
+                isHolding = true;
+                holdDir = MoveDirection.Right;
+            }
+
+            // 同じ方向キーが押し続けられている場合
+            if (isHolding && holdDir == currentHoldDirection)
+            {
+                // 待機時間を超えたら、連続入力を発動
+                if (Time.unscaledTime >= nextActionTime)
+                {
+                    ExecuteMove(current, holdDir.Value);
+                    nextActionTime = Time.unscaledTime + repeatRate; // 次の連続入力までの間隔をセット
+                }
+            }
+            else
+            {
+                // キーを離した、または別の方向キーに切り替わった場合はリセット
+                currentHoldDirection = null;
+            }
+
+            //  決定・キャンセルの判定
+            if (InputManager.instance.UIConfirm())
+            {
+                ExecuteEvents.Execute(
+                    current.gameObject,
+                    new BaseEventData(EventSystem.current),
+                    ExecuteEvents.submitHandler
+                );
+            }
         }
     }
 
@@ -112,5 +171,29 @@ public class UIEventNavigationHandler : MonoBehaviour
             return;
 
         EventSystem.current.SetSelectedGameObject(targetGO);
+    }
+
+    /// <summary>
+    /// 方向に基づいてターゲットを取得し、実際の移動処理（HandleMoveOrNavigate）を呼び出します。
+    /// </summary>
+    private void ExecuteMove(Selectable current, MoveDirection dir)
+    {
+        Selectable target = null;
+        switch (dir)
+        {
+            case MoveDirection.Up:
+                target = current.FindSelectableOnUp();
+                break;
+            case MoveDirection.Down:
+                target = current.FindSelectableOnDown();
+                break;
+            case MoveDirection.Left:
+                target = current.FindSelectableOnLeft();
+                break;
+            case MoveDirection.Right:
+                target = current.FindSelectableOnRight();
+                break;
+        }
+        HandleMoveOrNavigate(current, dir, target);
     }
 }

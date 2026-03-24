@@ -14,6 +14,10 @@ public class QuickItemRegisterPanel : MonoBehaviour
     private QuickItemPanel quickItemPanel; //ゲーム画面のショートカットパネルのオブジェクト
     private GameObject lastSelectedObject; //最後に選ばれていたボタンを保存する変数
 
+    private int activeSortOrder = 21; // 表示中に設定するSortOrderの値
+    private int originalSortOrder; // 元のSortOrderを記憶しておく変数
+    private Canvas quickItemCanvas; // QuickItemPanelのCanvasコンポーネント
+
     private void Awake()
     {
         if (quickItemPanel == null)
@@ -85,6 +89,12 @@ public class QuickItemRegisterPanel : MonoBehaviour
 
     private void ClosePanel()
     {
+        // 記憶しておいた元のSortOrderに戻す
+        if (quickItemCanvas != null)
+        {
+            quickItemCanvas.sortingOrder = originalSortOrder;
+        }
+
         UIManager.instance.ClosePopup(); //このパネルはUIManagerのスタックに積まない独立したポップアップとして扱うため、ClosePopup()で閉じる
         UIManager.instance.SetQuickItemRegistering(false); //クイックアイテム登録画面が開いているフラグを下げる
         UIManager.instance.RefocusTopPanel(); //親パネルにフォーカスを戻す
@@ -93,6 +103,22 @@ public class QuickItemRegisterPanel : MonoBehaviour
     private void OnEnable()
     {
         UIManager.instance.SetQuickItemRegistering(true); //クイックアイテム登録画面が開いているフラグを立てる
+
+        // QuickItemPanelのCanvasを取得してSortOrderを変更する
+        if (quickItemPanel != null)
+        {
+            quickItemCanvas = quickItemPanel.GetComponent<Canvas>();
+            if (quickItemCanvas != null)
+            {
+                originalSortOrder = quickItemCanvas.sortingOrder; // 元の値を保存
+                quickItemCanvas.sortingOrder = activeSortOrder; // 新しい値を設定
+            }
+            else
+            {
+                Debug.LogWarning("QuickItemPanelにCanvasコンポーネントが見つかりません。");
+            }
+        }
+
         StartCoroutine(ClearFocusAfterDelay());
     }
 }

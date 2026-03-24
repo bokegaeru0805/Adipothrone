@@ -1,24 +1,41 @@
 using System.Collections;
 using TMPro;
+using UnityEditor.EditorTools;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
 
 /// <summary>
-/// ステータス画面のUIを制御するクラス。
-/// 経験値レベル（天井）、アイテム解放レベル（最大）、現在レベル（縛り）の3つを視覚化し、
-/// リアルタイムでステータス実数値を更新します。
+/// プレイヤーのステータス画面UIを総括して制御するクラス。
+///
+/// 【主な役割】
+/// 1. プレイヤーの現在の経験値レベル（スライダーの最大幅・天井）を表示。
+/// 2. アイテムやイベントで解放したステータスの「最大レベル（解放済みレベル）」を表示。
+/// 3. プレイヤー自身が縛りプレイなどのために任意に下げることのできる「現在レベル」をスライダーで操作・視覚化。
+/// 4. 変更されたレベルに基づき、実際の基礎ステータス値（攻撃力や素早さ補正など）をリアルタイムに計算・反映します。
 /// </summary>
 public class PlayerStatusLevelPanelActive : MonoBehaviour, IPanelActive
 {
-    [Header("UI References - Left Panel")]
-    [SerializeField]
-    private TextMeshProUGUI wpText; // 例: "WP: 15 / 15"
+    #region UIコンポーネント参照 (左パネル・共通情報)
 
+    [Header("UI References - Left Panel (Common Info)")]
+    [Tooltip("プレイヤーの現在の最大WP（ウェポンポイント）を表示するテキスト")]
     [SerializeField]
-    private TextMeshProUGUI expLevelText; // 例: "現在のレベル: 12"
+    private TextMeshProUGUI wpText; // 例: "最大WP: 15"
+
+    [Tooltip("プレイヤーの現在の経験値レベル（全てのステータスの上限値）を表示するテキスト")]
+    [SerializeField]
+    private TextMeshProUGUI expLevelText; // 例: "レベル: 12"
+
+    [Tooltip("プレイヤーの現在のステータスレベルを表示するテキスト")]
+    [SerializeField]
+    private TextMeshProUGUI statusLevelText; // 例: "総合レベル: 10"
+    #endregion
+
+    #region UIコンポーネント参照 (右パネル・ステータス詳細)
 
     [Header("UI References - Right Panel (Sliders)")]
+    [Tooltip("現在レベルを操作・視覚化するためのスライダー群")]
     [SerializeField]
     private Slider hpSlider;
 
@@ -35,9 +52,9 @@ public class PlayerStatusLevelPanelActive : MonoBehaviour, IPanelActive
     private Slider luckSlider;
 
     [Header("UI References - Right Panel (Level Texts)")]
-    // 例: "Lv 5 / 8" と表示するためのテキスト
+    [Tooltip("各ステータスの「現在レベル / 最大(解放済み)レベル」を表示するテキスト群")]
     [SerializeField]
-    private TextMeshProUGUI hpLevelText;
+    private TextMeshProUGUI hpLevelText; // 例: "Lv 5 / 8"
 
     [SerializeField]
     private TextMeshProUGUI attackLevelText;
@@ -52,12 +69,12 @@ public class PlayerStatusLevelPanelActive : MonoBehaviour, IPanelActive
     private TextMeshProUGUI luckLevelText;
 
     [Header("UI References - Right Panel (Stat Texts)")]
-    // 例: "基礎攻撃力: 125" と表示するためのテキスト
+    [Tooltip("現在のレベル設定に基づいて算出された、実際の基礎ステータス数値を表示するテキスト群")]
     [SerializeField]
-    private TextMeshProUGUI hpStatText;
+    private TextMeshProUGUI hpStatText; // 例: "最大HP: 250"
 
     [SerializeField]
-    private TextMeshProUGUI attackStatText;
+    private TextMeshProUGUI attackStatText; // 例: "基礎攻撃力: 125"
 
     [SerializeField]
     private TextMeshProUGUI defenseStatText;
@@ -68,16 +85,34 @@ public class PlayerStatusLevelPanelActive : MonoBehaviour, IPanelActive
     [SerializeField]
     private TextMeshProUGUI luckStatText;
 
+    #endregion
+
+    #region 内部状態変数・フォーカス管理
+
     [Header("Focus Management")]
+    [Tooltip("コントローラー操作用に、フォーカスを当てるスライダー(UI)のリストを順番に設定します")]
     [SerializeField]
-    private GameObject[] myButtons; // 4つのスライダーのGameObjectをインスペクターでアタッチする
+    private GameObject[] myButtons;
 
-    private int lastSelectedIndex = -1; // 最後に選択していたボタンの位置を記憶
-    private bool isUpdatingUI = false; // スクリプトからスライダーの値を変更した際の無限ループ防止フラグ
+    /// <summary>最後に選択していたUIオブジェクトの配列インデックス。画面復帰時の位置記憶に使用します。</summary>
+    private int lastSelectedIndex = -1;
 
+    /// <summary>スクリプトからスライダーの値を変更した際、OnValueChangedイベントが無限ループするのを防ぐための安全フラグ。</summary>
+    private bool isUpdatingUI = false;
+
+    #endregion
+
+    #region Unity ライフサイクルメソッド
+
+    /// <summary>
+    /// オブジェクト生成時の初期化処理。
+    /// 各スライダーの値が変更された際のイベント（リスナー）を登録します。
+    /// </summary>
     private void Awake()
     {
-        // スライダーのイベントリスナーを登録
+        // ユーザーがスライダーを動かした際、どのステータスを操作したかを判別できるよう、
+        // スライダー本体と、対応する「最大レベルのEnum」「現在レベルのEnum」をセットでメソッドに渡します。
+
         if (hpSlider != null)
             hpSlider.onValueChanged.AddListener(val =>
                 OnSliderValueChanged(
@@ -87,6 +122,7 @@ public class PlayerStatusLevelPanelActive : MonoBehaviour, IPanelActive
                     val
                 )
             );
+
         if (attackSlider != null)
             attackSlider.onValueChanged.AddListener(val =>
                 OnSliderValueChanged(
@@ -96,6 +132,7 @@ public class PlayerStatusLevelPanelActive : MonoBehaviour, IPanelActive
                     val
                 )
             );
+
         if (defenseSlider != null)
             defenseSlider.onValueChanged.AddListener(val =>
                 OnSliderValueChanged(
@@ -105,6 +142,7 @@ public class PlayerStatusLevelPanelActive : MonoBehaviour, IPanelActive
                     val
                 )
             );
+
         if (speedSlider != null)
             speedSlider.onValueChanged.AddListener(val =>
                 OnSliderValueChanged(
@@ -114,6 +152,7 @@ public class PlayerStatusLevelPanelActive : MonoBehaviour, IPanelActive
                     val
                 )
             );
+
         if (luckSlider != null)
             luckSlider.onValueChanged.AddListener(val =>
                 OnSliderValueChanged(
@@ -125,16 +164,22 @@ public class PlayerStatusLevelPanelActive : MonoBehaviour, IPanelActive
             );
     }
 
+    /// <summary>
+    /// このパネル（画面）が表示された際に呼ばれる処理。
+    /// 最新のプレイヤー情報を取得してUIを描画し、適切なボタンにフォーカスを当てます。
+    /// </summary>
     private void OnEnable()
     {
-        // パネルが開かれたらUIの最新状態を取得して表示し、フォーカスを当てる
         RefreshAllUI();
         SelectFirstButton();
     }
 
+    /// <summary>
+    /// このパネルが非表示になる際（タブ切り替え等）に呼ばれる処理。
+    /// 次回画面を開いた時のために、現在選択されているカーソル位置を記憶します。
+    /// </summary>
     private void OnDisable()
     {
-        // タブが切り替わる直前に、現在のカーソル位置を記憶する
         GameObject currentSelected = EventSystem.current.currentSelectedGameObject;
         if (currentSelected != null && myButtons != null)
         {
@@ -142,18 +187,27 @@ public class PlayerStatusLevelPanelActive : MonoBehaviour, IPanelActive
         }
     }
 
-    #region フォーカス制御 (NewTabSubPanelTemplateの機能)
+    #endregion
 
+    #region IPanelActive インターフェース実装 (フォーカス制御)
+
+    /// <summary>
+    /// 画面展開時などに、初期フォーカスを設定するメソッド。
+    /// 記憶していた前回位置があればそこへ、なければ先頭の項目へフォーカスを当てます。
+    /// </summary>
     public void SelectFirstButton()
     {
         GameObject targetButton = null;
+
+        // 前回選択していた位置が有効な範囲内であれば復元
         if (lastSelectedIndex >= 0 && lastSelectedIndex < myButtons.Length)
         {
-            targetButton = myButtons[lastSelectedIndex]; // 前回位置を復元
+            targetButton = myButtons[lastSelectedIndex];
         }
+        // なければ先頭の要素を選択
         else if (myButtons.Length > 0)
         {
-            targetButton = myButtons[0]; // なければ先頭
+            targetButton = myButtons[0];
         }
 
         if (targetButton != null)
@@ -164,12 +218,12 @@ public class PlayerStatusLevelPanelActive : MonoBehaviour, IPanelActive
         {
             EventSystem.current.SetSelectedGameObject(null);
         }
-
-        Debug.Log(
-            $"PlayerStatusLevelPanelActive: SelectFirstButton called. Restoring index {lastSelectedIndex}, target: {targetButton?.name}"
-        );
     }
 
+    /// <summary>
+    /// EventSystemのクリック判定残りなどの競合を防ぐため、
+    /// 1フレーム待機してから確実にフォーカスをセットするコルーチン。
+    /// </summary>
     private IEnumerator SelectButtonAfterDelay(GameObject targetObj)
     {
         yield return new WaitForEndOfFrame();
@@ -184,28 +238,34 @@ public class PlayerStatusLevelPanelActive : MonoBehaviour, IPanelActive
 
     #endregion
 
-    #region UI更新とスライダー制御
+    #region UI表示の初期化・更新処理
 
     /// <summary>
-    /// 全てのUI表示（左側の基本情報と右側のスライダー・数値）を最新の状態に更新します。
+    /// プレイヤーの情報を取得し、全てのUI表示（左側の基本情報と右側のスライダー・数値）を最新の状態に更新します。
+    /// 画面を開いた時や、スライダーを操作した直後に呼ばれます。
     /// </summary>
     private void RefreshAllUI()
     {
         if (PlayerManager.instance == null || PlayerLevelManager.instance == null)
             return;
 
-        isUpdatingUI = true; // プログラムからスライダーを動かすためフラグを立てる
+        // スクリプトからスライダーの値を直接書き換えるため、
+        // OnValueChangedイベントが走らないように安全フラグを立てる
+        isUpdatingUI = true;
 
-        // 左側パネルの更新（HP, WP, 経験値レベル）
+        // 1. 左側パネルの更新（WP, 経験値レベル,ステータスレベル）
         int maxWP = PlayerManager.instance.playerMaxWP;
         int expLevel = PlayerLevelManager.instance.playerLv;
+        int statusLevel = PlayerManager.instance.StatusLevelManager.TotalStatusLevel;
 
         if (wpText != null)
             wpText.text = $"最大WP 　: {maxWP}";
         if (expLevelText != null)
             expLevelText.text = $"レベル: {expLevel}";
+        if (statusLevelText != null)
+            statusLevelText.text = $"総合ランク: {statusLevel}";
 
-        // 右側パネルの更新（スライダーの最大値＝天井、表示値＝現在レベル）
+        // 2. 右側パネルのスライダーとテキストの更新
         UpdateSliderState(
             hpSlider,
             hpLevelText,
@@ -247,12 +307,19 @@ public class PlayerStatusLevelPanelActive : MonoBehaviour, IPanelActive
             expLevel
         );
 
+        // 処理が終わったのでフラグを下げる
         isUpdatingUI = false;
     }
 
     /// <summary>
-    /// 個別のスライダーと対応するテキスト表示を更新します。
+    /// 指定された1つのステータスについて、スライダーの幅や値、テキストの表記を更新します。
     /// </summary>
+    /// <param name="slider">更新対象のスライダーコンポーネント</param>
+    /// <param name="levelText">「Lv 現在 / 最大」を表示するテキストコンポーネント</param>
+    /// <param name="statText">「基礎攻撃力: 100」のような実数値を表示するテキストコンポーネント</param>
+    /// <param name="maxEnum">対象ステータスの「解放済み最大レベル」を示すキー</param>
+    /// <param name="currentEnum">対象ステータスの「現在設定しているレベル」を示すキー</param>
+    /// <param name="expLevel">プレイヤーの現在の経験値レベル（スライダーの最大幅の決定に使用）</param>
     private void UpdateSliderState(
         Slider slider,
         TextMeshProUGUI levelText,
@@ -265,15 +332,19 @@ public class PlayerStatusLevelPanelActive : MonoBehaviour, IPanelActive
         if (slider == null)
             return;
 
+        // Managerから該当ステータスの情報を取得
         int maxLv = PlayerManager.instance.GetPlayerIntStatus(maxEnum);
         int currentLv = PlayerManager.instance.GetPlayerIntStatus(currentEnum);
 
-        // スライダーの全体幅（天井）は現在の経験値レベル
-        // ※ただし、最低でも解放済みのmaxLvは表示できるようにする（経験値レベルが低い場合の安全策）
-        slider.maxValue = Mathf.Max(expLevel, maxLv);
+        // // スライダーの全体幅（天井）は「現在の経験値レベル」とする。
+        // // ※ただし、アイテム等で局所的にレベル上限が経験値レベルを上回っている場合の安全策として、Mathf.Maxで大きい方を採用する。
+        // slider.maxValue = Mathf.Max(expLevel, maxLv);
+
+        slider.maxValue = maxLv;
         slider.minValue = 1;
         slider.value = currentLv;
 
+        // レベル表記の更新
         if (levelText != null)
         {
             levelText.text = $"Lv {currentLv} / {maxLv}";
@@ -284,6 +355,10 @@ public class PlayerStatusLevelPanelActive : MonoBehaviour, IPanelActive
         {
             switch (maxEnum)
             {
+                case PlayerStatusIntName.hpMaxLevel:
+                    statText.text =
+                        $"最大HP　 : {PlayerManager.instance.StatusLevelManager.TotalBaseHP}";
+                    break;
                 case PlayerStatusIntName.attackMaxLevel:
                     statText.text =
                         $"基礎攻撃力: {PlayerManager.instance.StatusLevelManager.TotalBaseAttackPower}";
@@ -293,7 +368,7 @@ public class PlayerStatusLevelPanelActive : MonoBehaviour, IPanelActive
                         $"防御力　　: {PlayerManager.instance.StatusLevelManager.TotalBaseDefensePower}";
                     break;
                 case PlayerStatusIntName.speedMaxLevel:
-                    // 100を掛けてパーセント表記にする（例: 0.1 → +10%）
+                    // 小数点(0.1など)を100倍してパーセント表記(10%など)にする
                     statText.text =
                         $"素早さ補正: +{PlayerManager.instance.StatusLevelManager.SpeedBonus * 100:F0}%";
                     break;
@@ -305,9 +380,18 @@ public class PlayerStatusLevelPanelActive : MonoBehaviour, IPanelActive
         }
     }
 
+    #endregion
+
+    #region ユーザー入力処理 (スライダー操作イベントハンドラ)
+
     /// <summary>
-    /// プレイヤーがUIスライダーを操作した際に呼ばれるイベント。
+    /// プレイヤーがマウスやコントローラーでスライダーの値を動かした際に発火するイベント。
+    /// レベルの制限（クランプ）や、実際のプレイヤーデータへの反映を行います。
     /// </summary>
+    /// <param name="slider">操作されたスライダー本体</param>
+    /// <param name="maxEnum">操作対象のステータスの「最大レベル」キー</param>
+    /// <param name="currentEnum">操作対象のステータスの「現在レベル」キー</param>
+    /// <param name="value">変更後のスライダーの数値（float形式）</param>
     private void OnSliderValueChanged(
         Slider slider,
         PlayerStatusIntName maxEnum,
@@ -315,13 +399,15 @@ public class PlayerStatusLevelPanelActive : MonoBehaviour, IPanelActive
         float value
     )
     {
+        // スクリプトから強制的に値を書き換えた際に呼ばれた場合は、処理を行わず無視する
         if (isUpdatingUI)
-            return; // プログラムによる値変更時は無視する
+            return;
 
         int maxLevel = PlayerManager.instance.GetPlayerIntStatus(maxEnum);
         int targetValue = Mathf.RoundToInt(value);
 
-        // クランプ処理（解放済みの最大レベルまでしかドラッグできないようにする）
+        // --- クランプ（制限）処理 ---
+        // プレイヤーは「解放済みの最大レベル(maxLevel)」までしかレベルを上げることができない。
         if (targetValue > maxLevel)
             targetValue = maxLevel;
         if (targetValue < 1)
@@ -329,7 +415,8 @@ public class PlayerStatusLevelPanelActive : MonoBehaviour, IPanelActive
 
         int currentLevel = PlayerManager.instance.GetPlayerIntStatus(currentEnum);
 
-        // 値が実際に変動した場合のみ、Managerの更新とUIの再描画を行う
+        // --- データ更新とUI再描画 ---
+        // 実際に値が変動した場合のみ、Managerへ新しいレベルを保存し、全体のUIを再計算・再描画する
         if (currentLevel != targetValue)
         {
             PlayerManager.instance.StatusLevelManager.SetCurrentStatusLevel(
@@ -337,10 +424,12 @@ public class PlayerStatusLevelPanelActive : MonoBehaviour, IPanelActive
                 currentEnum,
                 targetValue
             );
-            RefreshAllUI(); // 数値テキストなどをリアルタイムで更新
+            RefreshAllUI();
         }
 
-        // スライダーが小数点位置に止まった場合や、上限を突破しようとした場合の視覚的な押し戻し
+        // --- 視覚的な押し戻し処理 ---
+        // スライダーが小数点位置に止まった場合や、上限を突破しようとしてドラッグされた場合、
+        // 実際にセット可能な整数値(targetValue)の位置へスライダーのツマミを強制的に戻す。
         if (slider.value != targetValue)
         {
             isUpdatingUI = true;

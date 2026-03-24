@@ -94,6 +94,32 @@ public class RecipeButtonUI : MonoBehaviour, ISelectHandler, ISubmitHandler
             newIcon.enabled = (entry != null && entry.isNew);
         }
     }
+
+    /// <summary>
+    /// レシピが1つもない場合のダミーボタン（表示専用）として初期化します。
+    /// </summary>
+    public void SetupAsDummy()
+    {
+        recipeData = null;
+        menuManager = null;
+        maxCraftableCount = 0;
+
+        // ダミー用のテキストに変更
+        itemNameText.text = "レシピがありません";
+        itemNameText.color = uncraftableColor;
+        ownedCountText.text = "";
+
+        // アイコン類は不要なので非表示にする
+        if (itemIcon != null)
+        {
+            itemIcon.gameObject.SetActive(false);
+        }
+        if (craftableIcon != null)
+        {
+            craftableIcon.gameObject.SetActive(false);
+        }
+    }
+
     #endregion
 
     #region 計算処理
@@ -151,6 +177,15 @@ public class RecipeButtonUI : MonoBehaviour, ISelectHandler, ISubmitHandler
     /// </summary>
     public void OnSelect(BaseEventData eventData)
     {
+        if (menuManager == null) return; 
+
+        // ダミーボタンの時は詳細ビューを非表示にする
+        if (recipeData == null)
+        {
+            menuManager.HideDetailView();
+            return;
+        }
+
         menuManager.UpdateDetailView(recipeData, maxCraftableCount);
 
         // もしこのレシピが新規（Newアイコンが表示されている状態）なら、フラグをオフにする
@@ -168,6 +203,10 @@ public class RecipeButtonUI : MonoBehaviour, ISelectHandler, ISubmitHandler
     /// </summary>
     public void OnSubmit(BaseEventData eventData)
     {
+        // ダミーボタンの時は決定キーを無視する
+        if (recipeData == null || menuManager == null)
+            return;
+
         if (maxCraftableCount > 0)
         {
             menuManager.OpenConfirmPopup(recipeData, maxCraftableCount);

@@ -45,6 +45,7 @@ public class TabPanelController : MonoBehaviour, IPanelActive
 
     private int currentTabIndex = 0; // 現在選択されているタブのインデックス
     public event Action<int> OnTabChanged; // タブが切り替わったときに発火するイベント（引数はタブのインデックス）
+    private bool isInitialized = false; // 初回起動が完了したかどうかのフラグ
     #endregion
 
     #region Unity Lifecycle Methods
@@ -81,6 +82,13 @@ public class TabPanelController : MonoBehaviour, IPanelActive
                 "InputManagerが設定されていません。TabPanelControllerが正しく動作しません。"
             );
         }
+
+        // 初回のイベント発火をStartに遅らせる
+        isInitialized = true;
+        
+        // 全てのスクリプトの準備（Awake/OnEnable）が終わったこのタイミングで
+        // 初回のUI更新とイベント発火(OnTabChanged)を確実に行う
+        SetTab(currentTabIndex);
     }
 
     private void OnEnable()
@@ -91,8 +99,13 @@ public class TabPanelController : MonoBehaviour, IPanelActive
             currentTabIndex = 0;
         }
 
-        // 現在のインデックスでタブを描画
-        SetTab(currentTabIndex);
+        // 最初の1回目はStart()で確実にイベントを発行するため、ここでは実行しない。
+        // メニューを閉じて「2回目以降」開かれた時だけここで更新する。
+        if (isInitialized)
+        {
+            // タブの表示を更新する（SetTabは内部でOnTabChangedも発火させる）
+            SetTab(currentTabIndex);
+        }
     }
 
     private void OnDisable()

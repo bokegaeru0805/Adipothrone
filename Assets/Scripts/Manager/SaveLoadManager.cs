@@ -981,16 +981,14 @@ public class SaveLoadManager : MonoBehaviour
 
                 // --- 段階的マイグレーション ---
                 // 新しいバージョンへの移行処理をここに追加していく
-
-                // 例: 1.1.0 より前のバージョンから、1.1.0 へのアップデート
-                if (loadedDataVersion < new Version("1.1.0"))
-                {
-                    MigrateToV1_1_0(saveData);
-                }
-
                 if (loadedDataVersion < new Version("1.2.0"))
                 {
                     MigrateToV1_2_0(saveData);
+                }
+
+                if (loadedDataVersion < new Version("1.2.1"))
+                {
+                    MigrateToV1_2_1(saveData);
                 }
 
                 // 全ての移行処理後、セーブデータ内のバージョンを最新に更新
@@ -1008,28 +1006,6 @@ public class SaveLoadManager : MonoBehaviour
     }
 
     /// <summary>
-    /// ver 1.1.0 への具体的な移行処理
-    /// </summary>
-    private void MigrateToV1_1_0(SaveData saveData)
-    {
-        Debug.Log("バージョン 1.1.0 への更新処理を実行中...");
-
-        // ここに具体的なデータ構造の変更処理を記述します。
-        // 例：新しいTips機能が追加された場合
-        // if (saveData.TipsData == null)
-        // {
-        //     saveData.TipsData = new TipsData();
-        // }
-
-        // 例：特定のフラグが立っていたら、新しいTipsを解放する
-        // bool hasClearedTutorial = FlagManager.instance.GetFlag("TUTORIAL_CLEARED"); // ※このタイミングではFlagManagerはまだロードされていない可能性があるので注意
-        // if (saveData.SomeOldFlag && !saveData.TipsData.unlockedTips.Contains(1))
-        // {
-        //      saveData.TipsData.unlockedTips.Add(1);
-        // }
-    }
-
-    /// <summary>
     /// ver 1.2.0 への具体的な移行処理
     /// </summary>
     private void MigrateToV1_2_0(SaveData saveData)
@@ -1041,6 +1017,46 @@ public class SaveLoadManager : MonoBehaviour
             {
                 entry.hasEncountered = true;
             }
+        }
+    }
+
+    /// <summary>
+    /// ver 1.2.1 への具体的な移行処理
+    /// </summary>
+    private void MigrateToV1_2_1(SaveData saveData)
+    {
+        if (saveData == null || saveData.PlayerStatus == null)
+        {
+            Debug.LogWarning("MigrateToV1_2_1: SaveData または PlayerStatus が null です。");
+            return;
+        }
+
+        // 注意：この処理はシーンがロードされる前（タイトル画面など）で呼ばれるため、
+        // PlayerManager 等のインスタンスはまだ存在しません。
+        // そのため、引数の saveData オブジェクトを直接書き換えます。
+
+        // PlayerLevelManagerの static メソッドを使って、保存されている経験値からレベルを計算
+        int playerLevel = PlayerLevelManager.GetLevelFromExp(saveData.PlayerStatus.playerExp);
+
+        // HPの最大レベルがプレイヤーレベル未満なら引き上げ、現在レベルも同期する
+        if (saveData.PlayerStatus.hpMaxLevel < playerLevel)
+        {
+            saveData.PlayerStatus.hpMaxLevel = playerLevel;
+            saveData.PlayerStatus.hpCurrentLevel = playerLevel;
+        }
+
+        // 攻撃力の最大レベルがプレイヤーレベル未満なら引き上げ、現在レベルも同期する
+        if (saveData.PlayerStatus.attackMaxLevel < playerLevel)
+        {
+            saveData.PlayerStatus.attackMaxLevel = playerLevel;
+            saveData.PlayerStatus.attackCurrentLevel = playerLevel;
+        }
+
+        // 防御力の最大レベルがプレイヤーレベル未満なら引き上げ、現在レベルも同期する
+        if (saveData.PlayerStatus.defenceMaxLevel < playerLevel)
+        {
+            saveData.PlayerStatus.defenceMaxLevel = playerLevel;
+            saveData.PlayerStatus.defenceCurrentLevel = playerLevel;
         }
     }
 
