@@ -27,6 +27,7 @@ public class InventoryItemData
     {
         HealItem = 8,
         StatusEnhanceItem = 9,
+        MaterialItem = 10,
         KeyItem = 12,
     }
 
@@ -35,6 +36,7 @@ public class InventoryItemData
         {
             { ItemType.HealItem, (int)TypeID.HealItem },
             { ItemType.StatusEnhanceItem, (int)TypeID.StatusEnhanceItem },
+            { ItemType.MaterialItem, (int)TypeID.MaterialItem },
             { ItemType.KeyItem, (int)TypeID.KeyItem },
         };
 

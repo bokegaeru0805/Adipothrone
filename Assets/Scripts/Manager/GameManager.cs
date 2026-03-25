@@ -52,6 +52,9 @@ public class GameManager : MonoBehaviour
     [Tooltip("ステータス強化アイテムのデータベース")]
     public StatusEnhanceItemDatabase statusEnhanceItemDatabase;
 
+    [Tooltip("素材アイテムのデータベース")]
+    public MaterialItemDatabase materialItemDatabase;
+
     [Tooltip("重要アイテムのデータベース")]
     public KeyItemDatabase keyItemDatabase;
 
@@ -138,6 +141,7 @@ public class GameManager : MonoBehaviour
             || tipsInfoDatabase == null
             || statusEnhanceItemDatabase == null
             || recipeItemDatabase == null
+            || materialItemDatabase == null
         )
         {
             Debug.LogError("GameManagerに必要なデータベースが設定されていません");
@@ -329,6 +333,9 @@ public class GameManager : MonoBehaviour
             case (int)TypeID.StatusEnhanceItem:
                 itemPrefix = "強化アイテム";
                 break;
+            case (int)TypeID.MaterialItem:
+                itemPrefix = "素材アイテム";
+                break;
             case (int)TypeID.KeyItem:
                 itemPrefix = "重要アイテム";
                 break;
@@ -368,6 +375,7 @@ public class GameManager : MonoBehaviour
                 case (int)TypeID.HealItem:
                 case (int)TypeID.StatusEnhanceItem:
                 case (int)TypeID.KeyItem:
+                case (int)TypeID.MaterialItem:
                     GameManager.instance.savedata.ItemInventoryData.AddItem(ID);
                     break;
                 case (int)TypeID.RecipeItem:
@@ -440,6 +448,7 @@ public class GameManager : MonoBehaviour
                 case (int)TypeID.HealItem:
                 case (int)TypeID.StatusEnhanceItem:
                 case (int)TypeID.KeyItem:
+                case (int)TypeID.MaterialItem:
                     GameManager.instance.savedata.ItemInventoryData.UseItem(ID);
                     break;
                 case (int)TypeID.RecipeItem:
@@ -502,6 +511,9 @@ public class GameManager : MonoBehaviour
                 amount = GameManager.instance.savedata.ItemInventoryData.GetItemAmount(ID);
                 break;
             case (int)TypeID.StatusEnhanceItem:
+                amount = GameManager.instance.savedata.ItemInventoryData.GetItemAmount(ID);
+                break;
+            case (int)TypeID.MaterialItem:
                 amount = GameManager.instance.savedata.ItemInventoryData.GetItemAmount(ID);
                 break;
             case (int)TypeID.KeyItem:
@@ -623,6 +635,21 @@ public class GameManager : MonoBehaviour
         foreach (var enhanceItem in statusEnhanceItemDatabase.statusEnhanceItems)
         {
             AddAllTypeIDToInventory(enhanceItem.itemID, amount);
+        }
+    }
+
+    /// <summary>
+    /// デバック用: データベース内の全ての素材アイテム(MaterialItem)を指定個数入手します。
+    /// <param name="amount">入手する個数</param>
+    /// </summary>
+    public void AddAllMaterialItems(int amount = 1)
+    {
+        if (materialItemDatabase == null || materialItemDatabase.materialItems == null)
+            return;
+
+        foreach (var materialItem in materialItemDatabase.materialItems)
+        {
+            AddAllTypeIDToInventory(materialItem.itemID, amount);
         }
     }
 

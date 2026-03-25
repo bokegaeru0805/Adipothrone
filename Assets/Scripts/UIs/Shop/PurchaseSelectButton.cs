@@ -163,12 +163,6 @@ public class PurchaseSelectButton : MonoBehaviour, IItemAssignable, ISelectHandl
             return;
         }
 
-        if (BaseItemManager.instance == null)
-        {
-            Debug.LogError("BaseItemManagerが初期化されていません。");
-            return;
-        }
-
         // アイテムのアイコン画像を設定
         UIUtility.SetSpriteFitToSquare(itemIconImage, baseItemData.itemSprite, baseSize);
 
@@ -201,10 +195,10 @@ public class PurchaseSelectButton : MonoBehaviour, IItemAssignable, ISelectHandl
         }
 
         if (assignedItemID == null)
-            {
-                Debug.LogWarning("AssignedItemIDがnullです。");
-                return;
-            }
+        {
+            Debug.LogWarning("AssignedItemIDがnullです。");
+            return;
+        }
 
         baseItemData = null; //購入時に必要なアイテムデータを初期化
         //アイテムIDからアイテムアイコンを取得
@@ -262,18 +256,11 @@ public class PurchaseSelectButton : MonoBehaviour, IItemAssignable, ISelectHandl
             RectTransform rect = this.gameObject.GetComponent<RectTransform>();
             Vector2 mypos = rect.anchoredPosition;
 
-            BaseItemManager baseItemManager = BaseItemManager.instance;
-            if (baseItemManager == null)
-            {
-                Debug.LogError("BaseItemManagerが見つかりません。");
-                return;
-            }
-
             Enum itemID = null; // アイテムのIDを初期化
             if (shopStatus == ShopUIManager.ShopStatus.Buy)
             {
                 // アイテムのIDを取得
-                itemID = baseItemManager.GetItemIDFromData(baseItemData);
+                itemID = baseItemData.GetItemID();
                 if (itemID == null)
                 {
                     Debug.LogWarning("アイテムのIDが取得できませんでした。");

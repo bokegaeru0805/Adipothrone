@@ -35,7 +35,7 @@ public class AddItemCommand : Command
             return;
         }
 
-        Enum containedItemID = BaseItemManager.instance.GetItemIDFromData(itemData);
+        Enum containedItemID = itemData.GetItemID(); //アイテムデータからIDを取得
         if (containedItemID == null)
         {
             Debug.LogWarning(

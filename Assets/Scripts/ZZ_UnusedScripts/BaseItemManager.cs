@@ -1,4 +1,4 @@
-using System;
+/*using System;
 using UnityEngine;
 
 public class BaseItemManager : MonoBehaviour
@@ -30,6 +30,10 @@ public class BaseItemManager : MonoBehaviour
         {
             return statusEnhance.itemID;
         }
+        else if (item is MaterialItemData material)
+        {
+            return material.itemID;
+        }
         else if (item is ShootWeaponData shoot)
         {
             return shoot.weaponID;
@@ -52,4 +56,4 @@ public class BaseItemManager : MonoBehaviour
         }
         return null;
     }
-}
+}*/

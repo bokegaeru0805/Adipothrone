@@ -1,7 +1,7 @@
 using UnityEngine;
 
 [CreateAssetMenu(fileName = "NewFastTravelPoint", menuName = "Fast Travel/Fast Travel Point")]
-public class FastTravelPointData : ScriptableObject
+public class FastTravelPointData : ScriptableObject, IItemIDProvider
 {
     public enum SceneNameEnum
     {
@@ -23,6 +23,11 @@ public class FastTravelPointData : ScriptableObject
 
     [Tooltip("移動先のワールド座標")]
     public Vector2 targetPosition;
+
+    public System.Enum GetItemID()
+    {
+        return fastTravelId;
+    }
 
     /// <summary>
     /// Enumに対応するシーン名の文字列を取得する

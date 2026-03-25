@@ -1,6 +1,6 @@
 using UnityEngine;
 
-public abstract class BaseItemData : ScriptableObject
+public abstract class BaseItemData : ScriptableObject, IItemIDProvider
 {
     public string itemName;
     public Sprite itemSprite;

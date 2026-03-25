@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Text;
 using TMPro;
@@ -368,7 +369,7 @@ public class EnemyDexPanelActive : MonoBehaviour, IPanelActive
                 string conditionText = "";
 
                 // 1. アイテムのID取得
-                var itemEnum = BaseItemManager.instance.GetItemIDFromData(item.baseItemData);
+                Enum itemEnum = item.baseItemData.GetItemID();
                 if (itemEnum != null)
                 {
                     int itemID = EnumIDUtility.ToID(itemEnum);

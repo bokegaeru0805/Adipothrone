@@ -45,12 +45,6 @@ public class TreasureBoxController : MonoBehaviour
             return;
         }
 
-        if (BaseItemManager.instance == null)
-        {
-            Debug.LogWarning("BaseItemManagerが存在しません");
-            return;
-        }
-
         //宝箱の中のアイテムのIDをEnum型に変換して取得する
         if (boxData.baseItemData == null)
         {
@@ -60,7 +54,7 @@ public class TreasureBoxController : MonoBehaviour
             return;
         }
 
-        containedItemID = BaseItemManager.instance.GetItemIDFromData(boxData.baseItemData);
+        containedItemID = boxData.baseItemData.GetItemID();
         if (containedItemID == null)
         {
             Debug.LogWarning(

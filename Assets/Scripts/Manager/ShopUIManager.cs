@@ -237,7 +237,7 @@ public class ShopUIManager : MonoBehaviour
         {
             if (obj == null)
             {
-                Debug.LogError($"ShopUIManagerに{name}がセットされていません。",this);
+                Debug.LogError($"ShopUIManagerに{name}がセットされていません。", this);
                 result = false;
             }
         }
@@ -552,13 +552,6 @@ public class ShopUIManager : MonoBehaviour
             button.gameObject.SetActive(false);
         }
 
-        BaseItemManager baseItemManager = BaseItemManager.instance;
-        if (baseItemManager == null)
-        {
-            Debug.LogError("BaseItemManagerが見つかりません。");
-            return;
-        }
-
         for (int i = 0; i < shopData.shopItems.Length; i++)
         {
             // ボタンを取得
@@ -574,7 +567,7 @@ public class ShopUIManager : MonoBehaviour
             }
 
             //アイテムのIDを取得
-            Enum itemID = BaseItemManager.instance?.GetItemIDFromData(shopData.shopItems[i]);
+            Enum itemID = shopData.shopItems[i].GetItemID();
             // アイテムのIDがnullの場合はスキップ
             if (itemID == null)
             {
@@ -789,9 +782,7 @@ public class ShopUIManager : MonoBehaviour
                         //選択されているアイテムのIDを取得
                         if (selectedButtonItemData != null)
                         {
-                            selectedButtonItemID = BaseItemManager.instance?.GetItemIDFromData(
-                                selectedButtonItemData
-                            );
+                            selectedButtonItemID = selectedButtonItemData.GetItemID();
                         }
                     }
                     else if (shopStatus == ShopStatus.Sell)

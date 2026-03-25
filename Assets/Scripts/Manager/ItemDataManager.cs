@@ -20,6 +20,9 @@ public class ItemDataManager : MonoBehaviour
     private StatusEnhanceItemDatabase statusEnhanceItemDatabase;
 
     [SerializeField]
+    private MaterialItemDatabase materialItemDatabase;
+
+    [SerializeField]
     private KeyItemDatabase keyItemDatabase;
 
     [SerializeField]
@@ -47,6 +50,7 @@ public class ItemDataManager : MonoBehaviour
             || keyItemDatabase == null
             || statusEnhanceItemDatabase == null
             || recipeItemDatabase == null
+            || materialItemDatabase == null
         )
         {
             Debug.LogError("ItemDataManagerに必要なデータベースが設定されていません");
@@ -81,6 +85,9 @@ public class ItemDataManager : MonoBehaviour
                 break;
             case (int)TypeID.StatusEnhanceItem:
                 itemData = statusEnhanceItemDatabase.GetItemByID(ID);
+                break;
+            case (int)TypeID.MaterialItem:
+                itemData = materialItemDatabase.GetItemByID(ID);
                 break;
             case (int)TypeID.KeyItem:
                 itemData = keyItemDatabase.GetItemByID(ID);

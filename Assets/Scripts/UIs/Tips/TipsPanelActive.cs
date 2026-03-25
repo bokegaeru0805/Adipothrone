@@ -411,8 +411,8 @@ public class TipsPanelActive : MonoBehaviour, IPanelActive
             return;
         }
 
-        // タイトルを設定
-        tipsPanelTitle.text = tipsInfo.tipsTitle;
+        // 本物の改行コードを取り除いて1行にする
+        tipsPanelTitle.text = tipsInfo.tipsTitle.Replace("\n", "").Replace("\r", "");
 
         // 画像が存在するかどうかを判定
         bool hasImage = (tipsInfo.tipsImage != null);

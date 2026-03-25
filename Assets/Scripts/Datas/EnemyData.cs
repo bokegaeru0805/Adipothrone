@@ -13,7 +13,7 @@ public enum DropConditionType
 }
 
 [CreateAssetMenu(fileName = "NewEnemy", menuName = "Enemies/NormalEnemy")]
-public class EnemyData : ScriptableObject
+public class EnemyData : ScriptableObject, IItemIDProvider
 {
     public EnemyName enemyID; // 敵のID
     public string enemyName; // 敵の名前
@@ -32,6 +32,11 @@ public class EnemyData : ScriptableObject
 
     [Tooltip("この敵を図鑑に表示するかどうか")]
     public bool isListedInDex = true;
+
+    public System.Enum GetItemID()
+    {
+        return enemyID;
+    }
 }
 
 [System.Serializable]

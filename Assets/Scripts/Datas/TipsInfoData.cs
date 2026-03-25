@@ -4,6 +4,8 @@ using UnityEngine;
 public class TipsInfoData : ScriptableObject
 {
     public TipsName tipsName; // Tipsの名前
+
+    [TextArea(1, 3)]
     public string tipsTitle; // Tipsのタイトル
     public Sprite tipsImage; // Tipsの画像
 

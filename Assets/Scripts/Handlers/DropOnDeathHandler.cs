@@ -59,7 +59,7 @@ public static class DropOnDeathHandler
         foreach (var drop in enemyData.dropItems)
         {
             // アイテムIDを取得（Enum -> int変換）
-            Enum tempDropID = BaseItemManager.instance.GetItemIDFromData(drop.baseItemData);
+            Enum tempDropID = drop.baseItemData.GetItemID();
             if (tempDropID == null)
                 continue;
             int itemIDInt = EnumIDUtility.ToID(tempDropID);
@@ -171,7 +171,7 @@ public static class DropOnDeathHandler
                 }
 
                 // アイテムID（Enum）をデータから取得
-                Enum dropID = BaseItemManager.instance.GetItemIDFromData(drop.baseItemData);
+                Enum dropID = drop.baseItemData.GetItemID();
                 if (dropID == null)
                 {
                     // IDが取得できない場合はドロップを中止

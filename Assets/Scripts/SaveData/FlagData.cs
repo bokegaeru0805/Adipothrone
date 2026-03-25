@@ -149,6 +149,7 @@ public enum Chapter2TriggeredEvent
     Chapter2Start = 2001, // 第二章が始まった
     FirstEnteredVillage = 2002, // 初めて村に入った
     FirstMetCoachman = 2005, // 初めて御者に会った
+    FirstMetAlchemistess = 2006, // 初めて錬金術師に会った
     FirstEnteredWaterSourceFrontField = 2007, // オアシスの源泉前フィールドに初めて入った
     OasisSpringEnemiesDefeated = 2008, // オアシスの源泉の敵を全て倒した
     AttemptedToReportCoachmanQuest = 2009, // 御者にクエスト完了の報告をしようとした
