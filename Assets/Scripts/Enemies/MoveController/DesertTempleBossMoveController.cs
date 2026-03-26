@@ -1770,7 +1770,7 @@ public class DesertTempleBossMoveController : MonoBehaviour
 
         if (golem != null)
         {
-            var golemCtrl = golem.GetComponent<DesertTempleGolemMoveController>();
+            var golemCtrl = golem.GetComponent<DesertTempleGolemFloatMoveController>();
             if (golemCtrl != null)
             {
                 // ボスの移動範囲（leftBound, rightBound）を渡して初期化

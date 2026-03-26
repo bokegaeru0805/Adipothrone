@@ -235,6 +235,19 @@ public class DebugMenuManager : MonoBehaviour
     }
 
     /// <summary>
+    /// すべての MaterialItem を指定個数入手します。（UIボタンの OnClick 等に設定）
+    /// </summary>
+    public void GiveAllMaterialItems()
+    {
+        if (GameManager.instance != null)
+        {
+            int amount = GetItemAmount();
+            GameManager.instance.AddAllMaterialItems(amount);
+            Debug.Log($"すべての MaterialItem を {amount} 個ずつ入手しました。");
+        }
+    }
+
+    /// <summary>
     /// すべての Weapon を指定個数入手します。（UIボタンの OnClick 等に設定）
     /// </summary>
     public void GiveAllWeapons()

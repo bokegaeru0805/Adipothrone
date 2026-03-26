@@ -1,240 +1,45 @@
 using System;
-using System.Collections.Generic;
-using System.Linq;
 using UnityEngine;
-using UnityEngine.EventSystems;
 using UnityEngine.UI;
 
-public class HealItemPanelActive : MonoBehaviour, IPanelActive, IPageNavigable, IItemPromptHandler
+#region 派生クラス：回復アイテムパネル
+/// <summary>
+/// 回復アイテムを管理するパネルクラス
+/// アイテム使用時のプロンプト表示（WithRegisterモード）を実装しています。
+/// </summary>
+public class HealItemPanelActive : ItemPanelActiveBase, IItemPromptHandler
 {
+    #region シリアライズフィールド
+    [Header("アイテム使用確認パネル")]
     [Tooltip("アイテム使用確認パネルの位置調整用オフセット")]
     [SerializeField]
     private Vector2 offset = Vector2.zero;
 
-    [Header("アイテム詳細情報のパネル")]
-    [SerializeField]
-    private ItemDetailPanel itemDetailPanel = null; //アイテム効果パネルのオブジェクト
-
-    [Header("選択ボタンコンポーネント")]
-    [SerializeField]
-    private List<Button> buttonList; //アイテム用選択ボタンのリスト
-
-    [SerializeField]
-    private List<Button> leftSideButtonList; //左側のアイテム用選択ボタンのリスト
-
-    [SerializeField]
-    private List<Button> rightSideButtonList; //右側のアイテム用選択ボタンのリスト
-
-    [Header("アイテム使用確認パネル")]
     [Tooltip("アイテム使用確認パネルを総括する管理スクリプト")]
     [SerializeField]
     private ItemUsePromptPanel itemUsePromptPanel;
+    #endregion
 
-    public List<Button> LeftSideButtons => leftSideButtonList;
-    public List<Button> RightSideButtons => rightSideButtonList;
-    public int Page
-    {
-        get => page;
-        set => page = value;
-    }
-    private int rowCount = 0; //UIの行数（例: 5行4列なら rowCount = 5）(自動設定)
-    private int page = 0; //現在のページ番号
-    private Enum selectedButtonItemID = null;
-    private Enum preselectedButtonItemID = null;
-
-    // 最後に選択したアイテムのIDと「ボタンの位置」を記憶する変数
-    private int? lastSelectedItemID = null;
-    private int lastSelectedIndex = -1; // -1は未選択を表す
-
-    // 遅延更新用のコルーチンを保持する変数
-    private Coroutine detailUpdateCoroutine = null;
-
-    // プレイヤーが所持しているアイテム情報のリスト。
-    // 各要素は ItemEntry として、アイテムのID（itemID）とその所持数（count）を保持する。
-    private List<ItemEntry> itemList = new List<ItemEntry>();
-
-    private void Awake()
-    {
-        if (itemDetailPanel == null)
-        {
-            Debug.LogWarning("アイテム効果パネルが設定されていません");
-            return;
-        }
-
-        if (
-            buttonList == null
-            || buttonList.Count == 0
-            || rightSideButtonList == null
-            || rightSideButtonList.Count == 0
-            || leftSideButtonList == null
-            || leftSideButtonList.Count == 0
-        )
-        {
-            Debug.LogWarning("アイテム選択ボタンが設定されていません");
-            return;
-        }
-
-        //アイテムの効果表示パネルを非表示化
-        itemDetailPanel.gameObject.SetActive(false);
-        rowCount = rightSideButtonList.Count; //UIの行数を設定
-    }
-
-    private void Update()
-    {
-        // 選択されているアイテムボタンのアイテムIDを取得し、効果説明パネルの文章を変更する
-        GetSelectedButtonItemID();
-    }
-
-    //ページ番号に応じてアイテムをボタンに割り当てる
-    public bool TryAssignItemsToPage(int pageNumber, int previousRow, bool moveRight)
-    {
-        return UIUtility.AssignItemsToButtons(
-            buttonList,
-            rowCount,
-            itemList,
-            pageNumber,
-            previousRow,
-            moveRight
-        );
-    }
+    #region 基底クラスの実装
+    /// <summary>
+    /// このパネルが扱うアイテムタイプを指定します
+    /// </summary>
+    protected override InventoryItemData.ItemType TargetItemType =>
+        InventoryItemData.ItemType.HealItem;
 
     /// <summary>
-    /// パネルが開かれた際に、最初に選択状態にするボタンを決定します。
-    /// 最後に選択していたアイテムと位置を復元し、なければ近いものを選択します。
+    /// 初期選択完了時に呼ばれるフック処理。使用確認パネルを非表示にします。
     /// </summary>
-    public void SelectFirstButton()
+    protected override void OnSelectFirstButtonFinished()
     {
-        // 手順1：最新の所持アイテムリストを読み込む
-        LoadItemData();
-        if (itemList.Count == 0)
+        if (itemUsePromptPanel != null && itemUsePromptPanel.gameObject.activeSelf)
         {
-            // 全てのボタンを非表示にする
-            foreach (var button in buttonList)
-            {
-                button.gameObject.SetActive(false);
-            }
-
-            // アイテム詳細パネルも非表示にする
-            itemDetailPanel.gameObject.SetActive(false);
-
-            // 何も選択しない状態にする（カーソルを消す）
-            EventSystem.current.SetSelectedGameObject(null);
-
-            // これ以降の処理は不要なのでメソッドを抜ける
-            return;
-        }
-
-        int targetItemIndex = -1;
-
-        // 手順2：最後に選択していたアイテムが、現在の所持リストにまだ存在するか探す
-        if (lastSelectedItemID.HasValue)
-        {
-            targetItemIndex = itemList.FindIndex(entry => entry.itemID == lastSelectedItemID.Value);
-        }
-
-        // 手順3：アイテムが存在しなかった場合（消費された等）、フォールバック処理を行う
-        if (targetItemIndex == -1)
-        {
-            // 最後に選択していた「ボタンの位置（インデックス）」をヒントに、
-            // 現在のリストでその位置に最も近いアイテムをターゲットにする
-            if (lastSelectedIndex != -1 && itemList.Count > 0)
-            {
-                // ページ数を考慮した絶対インデックスを計算する
-                int absoluteIndex = (this.page * buttonList.Count) + lastSelectedIndex;
-                targetItemIndex = Mathf.Min(absoluteIndex, itemList.Count - 1);
-            }
-            // それでもターゲットが決まらなければ、リストの先頭アイテムにする
-            else if (itemList.Count > 0)
-            {
-                targetItemIndex = 0;
-            }
-        }
-
-        // 手順4：最終的なターゲットアイテムの位置から、表示すべきページとボタンを計算
-        int targetPage = 0;
-        int targetButtonIndexOnPage = -1;
-
-        if (targetItemIndex != -1)
-        {
-            targetPage = targetItemIndex / buttonList.Count;
-            targetButtonIndexOnPage = targetItemIndex % buttonList.Count;
-        }
-
-        // 手順5：計算したページを表示する
-        this.page = targetPage;
-        UpdateDisplayedButtons();
-
-        // 手順6：計算したボタンを「1フレーム遅延させて」選択状態にする
-        if (targetButtonIndexOnPage != -1)
-        {
-            StartCoroutine(SelectButtonAfterDelay(buttonList[targetButtonIndexOnPage].gameObject));
-        }
-        // フォールバックの最終手段として、表示されている最初のボタンを選択
-        else if (itemList.Count > 0)
-        {
-            var firstButton = buttonList.FirstOrDefault(b => b.gameObject.activeInHierarchy);
-            if (firstButton != null)
-                StartCoroutine(SelectButtonAfterDelay(firstButton.gameObject));
-        }
-        else
-        {
-            // アイテムが一つもない場合は、何も選択しない
-            EventSystem.current.SetSelectedGameObject(null);
-        }
-
-        itemUsePromptPanel.gameObject.SetActive(false); //アイテム使用確認パネルを非表示化
-    }
-
-    /// <summary>
-    /// EventSystemのクリック終了判定との競合を避けるため、1フレーム遅延してボタンを選択状態にします。
-    /// </summary>
-    private System.Collections.IEnumerator SelectButtonAfterDelay(GameObject targetButton)
-    {
-        // EventSystemのクリック処理とUIManagerのUpdateが完全に終わるのを待つ
-        yield return new WaitForEndOfFrame();
-        yield return null;
-
-        // ボタンが存在し、かつ画面に表示されている場合のみ選択する
-        if (targetButton != null && targetButton.activeInHierarchy)
-        {
-            // 一旦フォーカスをクリアして内部状態をリセットする（EventSystemのスタック回避）
-            EventSystem.current.SetSelectedGameObject(null);
-            EventSystem.current.SetSelectedGameObject(targetButton);
+            itemUsePromptPanel.gameObject.SetActive(false); //アイテム使用確認パネルを非表示化
         }
     }
+    #endregion
 
-    /// <summary>
-    /// 最新の所持アイテムデータを読み込み、リストを更新します。
-    /// </summary>
-    private void LoadItemData()
-    {
-        itemList.Clear();
-        if (GameManager.instance.savedata?.ItemInventoryData?.ownedItems != null)
-        {
-            itemList = GameManager.instance.savedata.ItemInventoryData.GetAllItemByType(
-                InventoryItemData.ItemType.HealItem
-            );
-            itemList = itemList.Where(entry => entry.count > 0).ToList();
-        }
-    }
-
-    /// <summary>
-    /// 現在のページ番号とアイテムリストに基づいて、ボタンの表示/非表示を更新します。
-    /// </summary>
-    private void UpdateDisplayedButtons()
-    {
-        if (itemList.Count == 0 && itemDetailPanel.gameObject.activeSelf)
-        {
-            itemDetailPanel.gameObject.SetActive(false);
-        }
-        else if (itemList.Count > 0 && !itemDetailPanel.gameObject.activeSelf)
-        {
-            itemDetailPanel.gameObject.SetActive(true);
-        }
-
-        TryAssignItemsToPage(this.page, 0, false);
-    }
-
+    #region 固有メソッド (IItemPromptHandler)
     /// <summary>
     /// アイテム使用の確認パネルを表示します。
     /// </summary>
@@ -243,13 +48,7 @@ public class HealItemPanelActive : MonoBehaviour, IPanelActive, IPageNavigable, 
     public void SetPromptPanel(Enum itemID, Button selectedButton)
     {
         // パネルが非アクティブ状態なら、処理を中断
-        if (this.gameObject.activeSelf == false)
-        {
-            return;
-        }
-
-        // 引数で渡されたボタンがnullなら処理を中断
-        if (selectedButton == null)
+        if (!gameObject.activeSelf || selectedButton == null)
             return;
 
         // ポップアップを開く直前に、現在の選択状態を確実に記憶する
@@ -280,152 +79,12 @@ public class HealItemPanelActive : MonoBehaviour, IPanelActive, IPageNavigable, 
             // 2. その状態から、インスペクターで設定した offset 分だけローカル座標でズラす
             promptRect.anchoredPosition += finalOffset;
 
-            // パネルにアイテムIDを渡して、内容を更新する
+            // パネルにアイテムIDを渡して、内容を更新する (WithRegisterモード)
             itemUsePromptPanel.SetupPrompt(itemID, ItemUsePromptPanel.PromptMode.WithRegister);
 
             UIManager.instance.OpenPopup(itemUsePromptPanel.gameObject);
         }
     }
-
-    /// <summary>
-    /// 選択されているアイテムボタンのアイテムIDを取得し、効果説明パネルの文章を変更する
-    /// </summary>
-    private void GetSelectedButtonItemID()
-    {
-        //所持しているアイテムが0個で、かつエフェクト表示パネルが表示されているとき
-        if (itemList.Count == 0 && itemDetailPanel.gameObject.activeSelf)
-        {
-            itemDetailPanel.gameObject.SetActive(false);
-            return;
-        }
-
-        //現在選択されているボタンのゲームオブジェクトを取得
-        GameObject selectedObj = EventSystem.current.currentSelectedGameObject;
-        //選択されているボタンがないなら飛ばす
-        if (selectedObj == null)
-            return;
-
-        //現在選択しているパネルのアイテムのIDを取得する
-        for (int i = 0; i < buttonList.Count; i++)
-        {
-            if (buttonList[i].gameObject == selectedObj)
-            {
-                var info = buttonList[i].GetComponent<IItemAssignable>();
-                if (info != null)
-                {
-                    //選択されているアイテムのIDを取得する
-                    selectedButtonItemID = info.AssignedItemID;
-                }
-                else
-                {
-                    selectedButtonItemID = null; //選択されているアイテムのIDを初期化する
-                    preselectedButtonItemID = selectedButtonItemID; //前フレームのアイテムIDを設定する
-                    Debug.LogWarning("ItemSelectButton スクリプトが見つかりませんでした");
-                }
-            }
-        }
-
-        //効果説明パネルの文章を変更する
-        if (preselectedButtonItemID != selectedButtonItemID)
-        {
-            // IDを更新
-            preselectedButtonItemID = selectedButtonItemID;
-
-            if (selectedButtonItemID != null)
-            {
-                lastSelectedItemID = EnumIDUtility.ToID(selectedButtonItemID);
-
-                // 既に走っている更新待ち（コルーチン）があればキャンセルする
-                if (detailUpdateCoroutine != null)
-                {
-                    StopCoroutine(detailUpdateCoroutine);
-                }
-
-                // 新しく遅延更新をスタートする
-                detailUpdateCoroutine = StartCoroutine(
-                    UpdateDetailPanelWithDelay(selectedButtonItemID)
-                );
-            }
-        }
-
-        preselectedButtonItemID = selectedButtonItemID; //前フレームのアイテムIDを設定する
-        lastSelectedItemID = EnumIDUtility.ToID(selectedButtonItemID); //最後に選択したアイテムのIDを保存
-    }
-
-    /// <summary>
-    /// 一瞬だけ待機してから詳細パネルを更新するコルーチン（デバウンス処理）
-    /// </summary>
-    private System.Collections.IEnumerator UpdateDetailPanelWithDelay(Enum targetItemID)
-    {
-        // カーソル移動中のブレを無視するための待機時間（0.05秒〜0.1秒程度がおすすめ）
-        yield return new WaitForSecondsRealtime(0.05f);
-
-        // 待機後もまだパネルが表示されるべき状態であれば更新
-        if (!itemDetailPanel.gameObject.activeSelf)
-        {
-            itemDetailPanel.gameObject.SetActive(true);
-        }
-
-        itemDetailPanel.DisplayItemDetails(targetItemID);
-        
-        // Debug.Log($"選択されたアイテムID: {targetItemID} の詳細を表示しました");
-    }
-
-    private void OnEnable()
-    {
-        // 共通のボタン群に「現在アクティブなのは自分だ」と教える
-        if (buttonList != null)
-        {
-            foreach (var btn in buttonList)
-            {
-                var itemBtn = btn.GetComponent<ItemSelectButton>();
-                if (itemBtn != null)
-                {
-                    itemBtn.RegisterActivePanel(this);
-                }
-            }
-        }
-
-        // パネルが有効化されたときに最初のボタンを選択する
-        SelectFirstButton();
-    }
-
-    private void OnDisable()
-    {
-        GameObject currentSelected = EventSystem.current.currentSelectedGameObject;
-
-        // 現在何かボタンが選択されているかチェック
-        if (currentSelected != null)
-        {
-            // 選択されているボタンが、このパネルのボタンリストの何番目かを探す
-            lastSelectedIndex = buttonList.FindIndex(b => b.gameObject == currentSelected);
-
-            if (lastSelectedIndex != -1)
-            {
-                // 見つかった場合、そのボタンのアイテムIDを取得して保存
-                var itemInfo = buttonList[lastSelectedIndex].GetComponent<IItemAssignable>();
-                if (itemInfo != null && itemInfo.AssignedItemID != null)
-                {
-                    lastSelectedItemID = EnumIDUtility.ToID(itemInfo.AssignedItemID);
-                }
-                else
-                {
-                    lastSelectedItemID = null;
-                }
-            }
-            else
-            {
-                // 選択されているものがアイテムボタンではなかった場合、IDは保存しない
-                lastSelectedItemID = null;
-            }
-        }
-        else
-        {
-            // 何も選択されていなかった場合、両方の情報をリセット
-            lastSelectedItemID = null;
-            lastSelectedIndex = -1;
-        }
-
-        itemDetailPanel.gameObject.SetActive(false);
-    }
+    #endregion
 }
+#endregion

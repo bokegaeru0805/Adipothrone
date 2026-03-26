@@ -72,8 +72,7 @@ public class UniqueBossHealth : CharacterHealth, IEnemyResettable
     {
         IsDefeated = false;
         CurrentHP = MaxHP;
-        col.a = 1;
-        spriteRenderer.color = col;
+        ResetColor(); // 色と透明度を完全に戻す
 
         if (animator != null && HasParameter(deathAnimParam))
         {
@@ -139,8 +138,7 @@ public class UniqueBossHealth : CharacterHealth, IEnemyResettable
         }
 
         // 死亡時に色を元に戻す
-        col.a = 1;
-        spriteRenderer.color = col;
+        ResetColor();
 
         // 死亡アニメーションの長さを自動で取得
         if (animator != null && animator.runtimeAnimatorController != null && enemyData != null)

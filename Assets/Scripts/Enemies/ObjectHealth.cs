@@ -228,9 +228,7 @@ public class ObjectHealth : CharacterHealth, IEnemyResettable
         }
 
         // --- 3. 見た目のリセット ---
-        // フェードアウト前の初期状態に戻す（透明度リセット）
-        col.a = 1;
-        spriteRenderer.color = col;
+        ResetColor(); // 色と透明度を完全に戻す
 
         // --- 4. 破壊アニメーションと非アクティブ化 ---
         float waitTime = fadeOutDuration;
@@ -273,10 +271,7 @@ public class ObjectHealth : CharacterHealth, IEnemyResettable
         // HPが0以下で、かつ初期化済みの場合にフェードアウト
         if (Time.timeScale > 0 && CurrentHP <= 0 && isInitialized)
         {
-            col.a -= 1.0f / (60.0f * fadeOutDuration);
-            // 透明度が負にならないようにクランプ
-            col.a = Mathf.Max(col.a, 0f);
-            spriteRenderer.color = col;
+            SetAlpha(currentAlpha - (1.0f / (60.0f * fadeOutDuration)));
         }
     }
 
@@ -288,12 +283,7 @@ public class ObjectHealth : CharacterHealth, IEnemyResettable
         IsDefeated = false;
         CurrentHP = MaxHP;
 
-        // 色と透明度を完全に戻す
-        col.a = 1f;
-        if (spriteRenderer != null)
-        {
-            spriteRenderer.color = col;
-        }
+        ResetColor(); // 色と透明度を完全に戻す
 
         // 座標を初期位置に戻す
         if (enablePositionReset)

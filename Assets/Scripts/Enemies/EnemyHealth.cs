@@ -178,9 +178,8 @@ public class EnemyHealth : CharacterHealth, IEnemyResettable
             // rbody.isKinematic = true;
         }
 
-        // 元のHPバーの色をリセット
-        col.a = 1;
-        spriteRenderer.color = col;
+        // スプライトの透明度を完全にする
+        ResetColor();
 
         // 死亡アニメーションの有無で処理を分岐
         if (isDeathAnimActive && animator != null && HasParameter(deathAnimParam))
@@ -201,8 +200,7 @@ public class EnemyHealth : CharacterHealth, IEnemyResettable
     {
         if (Time.timeScale > 0 && CurrentHP <= 0)
         {
-            col.a -= 1 / (60 * fadeOutDuration);
-            spriteRenderer.color = col;
+            SetAlpha(currentAlpha - (1.0f / (60.0f * fadeOutDuration)));
         }
     }
 
@@ -213,8 +211,7 @@ public class EnemyHealth : CharacterHealth, IEnemyResettable
     {
         IsDefeated = false; // 倒された状態をリセット
         CurrentHP = MaxHP; // HPを最大HPにリセット
-        col.a = 1; // 透明度を完全に戻す
-        spriteRenderer.color = col;
+        ResetColor(); // 色と透明度を完全に戻す
 
         if (HasParameter(deathAnimParam))
         {

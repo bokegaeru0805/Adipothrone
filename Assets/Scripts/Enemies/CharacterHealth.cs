@@ -86,12 +86,25 @@ public abstract class CharacterHealth : PoolableObject, IDamageable, IDroppable,
 
     #region Inspector Settings
 
+    [Header("見た目（レンダラー）設定")]
+    [Tooltip("キャラクターが複数のSpriteRendererで構成されている場合はチェックを入れます")]
+    [SerializeField]
+    protected bool useMultipleRenderers = false;
+
+    [AllowNesting]
+    [Tooltip(
+        "点滅やエフェクトを適用するすべてのSpriteRendererを登録してください（メイン本体含む）"
+    )]
+    [SerializeField, ShowIf(nameof(useMultipleRenderers))]
+    protected SpriteRenderer[] manualRenderers;
+
     [Header("シールド連携設定")]
     [Tooltip("【受信側】シールド機能を有効にするか")]
     [SerializeField]
     private bool enableShield = false;
 
     [Tooltip("【受信側】自分自身のシールドを管理するコントローラー（ボスなどが設定）")]
+    [AllowNesting]
     [SerializeField, ShowIf(nameof(enableShield))]
     protected ShieldController myShieldController;
 
@@ -117,10 +130,12 @@ public abstract class CharacterHealth : PoolableObject, IDamageable, IDroppable,
     #region Internal Variables
 
     // --- 内部参照（継承先クラスで利用） ---
-    protected SpriteRenderer spriteRenderer;
-    protected Material material;
     protected Color col;
     protected Animator animator;
+    protected SpriteRenderer[] activeRenderers;
+    protected Material[] activeMaterials;
+    private Color[] originalColors;
+    protected float currentAlpha = 1.0f;
 
     // --- 被弾エフェクト設定 ---
     //この面積（ピクセル単位）を超えたら大きいと判断し、フラッシュを弱くします
@@ -141,17 +156,35 @@ public abstract class CharacterHealth : PoolableObject, IDamageable, IDroppable,
     /// </summary>
     protected virtual void Awake()
     {
-        // 描画用のコンポーネントを取得し、初期色を保存
-        spriteRenderer = GetComponent<SpriteRenderer>();
-        if (spriteRenderer == null)
+        // 1. 複数モードか通常モードかで配列を初期化
+        if (useMultipleRenderers && manualRenderers != null && manualRenderers.Length > 0)
         {
-            Debug.LogError($"{this.gameObject.name}にSpriteRendererがアタッチされていません");
-            return;
+            activeRenderers = manualRenderers;
         }
         else
         {
-            col = spriteRenderer.color;
-            material = spriteRenderer.material;
+            // 通常時（自身にアタッチされているものを取得）
+            SpriteRenderer singleRenderer = GetComponent<SpriteRenderer>();
+            if (singleRenderer != null)
+            {
+                activeRenderers = new SpriteRenderer[] { singleRenderer };
+            }
+            else
+            {
+                Debug.LogError(
+                    $"{this.gameObject.name}にSpriteRendererがアタッチされておらず、手動登録もされていません"
+                );
+                return;
+            }
+        }
+
+        // 2. 取得した全レンダラーからマテリアルと初期色を保存
+        activeMaterials = new Material[activeRenderers.Length];
+        originalColors = new Color[activeRenderers.Length];
+        for (int i = 0; i < activeRenderers.Length; i++)
+        {
+            activeMaterials[i] = activeRenderers[i].material;
+            originalColors[i] = activeRenderers[i].color;
         }
 
         if (enableShield && myShieldController == null)
@@ -316,126 +349,93 @@ public abstract class CharacterHealth : PoolableObject, IDamageable, IDroppable,
 
     /// <summary>
     /// 被弾時にキャラクターを点滅させる共通のコルーチン。
-    /// 色の明度（V値）に応じて、白く光るか半透明になるかの演出を切り替えます。
+    /// 配列に登録されたすべてのSpriteRendererを一斉にフラッシュさせます。
     /// </summary>
     protected IEnumerator FlashOnDamage()
     {
-        if (spriteRenderer == null)
+        if (activeMaterials == null || activeMaterials.Length == 0)
             yield break;
 
-        Material mat = spriteRenderer.material;
+        float flashAmountToUse = isLargeSprite ? reducedFlashAmount : normalFlashAmount;
 
-        if (mat.HasProperty(SHADER_PROP_FLASH_AMOUNT))
+        try
         {
-            // isLargeSpriteフラグに応じて、使用するフラッシュの明るさを決定
-            float flashAmountToUse = isLargeSprite ? reducedFlashAmount : normalFlashAmount;
-
-            try
+            // すべてのパーツを一瞬白く光らせる
+            foreach (var mat in activeMaterials)
             {
-                // 決定した明るさでフラッシュさせる
-                mat.SetFloat(SHADER_PROP_FLASH_AMOUNT, flashAmountToUse);
-                yield return new WaitForSeconds(0.1f);
+                if (mat.HasProperty(SHADER_PROP_FLASH_AMOUNT))
+                {
+                    mat.SetFloat(SHADER_PROP_FLASH_AMOUNT, flashAmountToUse);
+                }
             }
-            finally
-            {
-                mat.SetFloat(SHADER_PROP_FLASH_AMOUNT, 0.0f);
-            }
+            yield return new WaitForSeconds(0.1f);
         }
-        else
+        finally
         {
-            Debug.LogWarning("マテリアルに '_FlashAmount' プロパティが存在しません。", this);
+            // すべてのパーツの色を元に戻す
+            foreach (var mat in activeMaterials)
+            {
+                if (mat.HasProperty(SHADER_PROP_FLASH_AMOUNT))
+                {
+                    mat.SetFloat(SHADER_PROP_FLASH_AMOUNT, 0.0f);
+                }
+            }
         }
     }
 
-    /// <summary>
-    /// スプライトの画面上での実際のサイズを計算し、isLargeSpriteフラグを設定します。
+    // <summary>
+    /// 全てのSpriteRendererの領域を合体させ、画面上での実際の全体サイズを計算します。
     /// </summary>
     private void CalculateSpriteScreenSize()
     {
-        // カメラとスプライトがなければ計算不可
-        if (Camera.main == null || spriteRenderer.sprite == null)
+        if (Camera.main == null || activeRenderers == null || activeRenderers.Length == 0)
             return;
 
-        // Orthographicカメラ（2Dで一般的）を前提として計算
         if (Camera.main.orthographic)
         {
-            // 1ワールド単位あたりのピクセル数を計算
+            // 1. 全パーツをすっぽり囲むBounds（境界箱）を作成
+            Bounds totalBounds = activeRenderers[0].bounds;
+            for (int i = 1; i < activeRenderers.Length; i++)
+            {
+                // 各パーツのBoundsを合成していく
+                totalBounds.Encapsulate(activeRenderers[i].bounds);
+            }
+
+            // 2. 合成したBoundsのサイズを元にピクセル単位の面積を計算
             float pixelsPerUnit = Screen.height / (Camera.main.orthographicSize * 2);
-
-            // スプライトのワールド座標でのサイズを取得（transform.scaleも考慮される）
-            Vector2 spriteWorldSize = spriteRenderer.bounds.size;
-
-            // ピクセル単位でのサイズに変換
-            float spriteWidthPixels = spriteWorldSize.x * pixelsPerUnit;
-            float spriteHeightPixels = spriteWorldSize.y * pixelsPerUnit;
-
-            // ピクセル単位での面積を計算
+            float spriteWidthPixels = totalBounds.size.x * pixelsPerUnit;
+            float spriteHeightPixels = totalBounds.size.y * pixelsPerUnit;
             float spriteArea = spriteWidthPixels * spriteHeightPixels;
 
-            // 閾値と比較してフラグを設定
             isLargeSprite = spriteArea > largeSpriteAreaThreshold;
-
-            // // デバッグ用に計算結果を出力
-            // Debug.Log(
-            //     $"[{this.gameObject.name}] Sprite Area: {spriteArea:F0} pixels. Is large? -> {isLargeSprite}",
-            //     this
-            // );
-        }
-        else
-        {
-            // Perspectiveカメラの場合の計算はより複雑になるため、ここでは警告を出す
-            Debug.LogWarning(
-                $"[{this.gameObject.name}] はPerspectiveカメラを使用しています。スプライトサイズの計算が不正確になる可能性があります。"
-            );
         }
     }
 
     /// <summary>
     /// シェーダーのオーバーレイ機能を有効または無効にします。
-    /// このメソッドを呼び出すと、このオブジェクトに割り当てられたマテリアルが複製され、設定が独立します。
     /// </summary>
-    /// <param name="isEnabled">trueでオーバーレイを有効化、falseで無効化します。</param>
     public void SetOverlayEnabled(bool isEnabled)
     {
-        if (material == null)
+        if (activeMaterials == null || activeMaterials.Length == 0)
         {
             Debug.LogError("マテリアルが見つかりません。");
             return;
         }
 
-        if (material.HasProperty(SHADER_PROP_OVERLAY_ON))
+        foreach (var mat in activeMaterials)
         {
-            if (isEnabled)
+            if (mat.HasProperty(SHADER_PROP_OVERLAY_ON))
             {
-                // プロパティの数値を1（On）にする
-                if (material.HasProperty(SHADER_PROP_OVERLAY_ON))
+                if (isEnabled)
                 {
-                    material.SetFloat(SHADER_PROP_OVERLAY_ON, 1.0f);
+                    mat.SetFloat(SHADER_PROP_OVERLAY_ON, 1.0f);
+                    mat.EnableKeyword(SHADER_KEYWORD_OVERLAY_ON);
                 }
-                // シェーダーのキーワードを有効化する（これをしないと描画ロジックが動かない）
-                material.EnableKeyword(SHADER_KEYWORD_OVERLAY_ON);
-            }
-            else
-            {
-                // プロパティの数値を0（Off）にする
-                if (material.HasProperty(SHADER_PROP_OVERLAY_ON))
+                else
                 {
-                    material.SetFloat(SHADER_PROP_OVERLAY_ON, 0.0f);
+                    mat.SetFloat(SHADER_PROP_OVERLAY_ON, 0.0f);
+                    mat.DisableKeyword(SHADER_KEYWORD_OVERLAY_ON);
                 }
-                // シェーダーのキーワードを無効化する
-                material.DisableKeyword(SHADER_KEYWORD_OVERLAY_ON);
-            }
-        }
-        else
-        {
-            if (isEnabled)
-            {
-                Debug.LogWarning(
-                    "マテリアルに '"
-                        + SHADER_PROP_OVERLAY_ON
-                        + "' プロパティが存在しません。シェーダーを確認してください。",
-                    this
-                );
             }
         }
     }
@@ -528,6 +528,38 @@ public abstract class CharacterHealth : PoolableObject, IDamageable, IDroppable,
         return false;
     }
 
+    /// <summary>
+    /// 全てのパーツの透明度を、元の透明度を基準にした「割合」で一括設定します。
+    /// </summary>
+    protected void SetAlpha(float alphaRatio)
+    {
+        currentAlpha = Mathf.Clamp01(alphaRatio);
+        for (int i = 0; i < activeRenderers.Length; i++)
+        {
+            if (activeRenderers[i] != null)
+            {
+                Color c = activeRenderers[i].color;
+                // 変更部分：元の透明度(originalColors[i].a) に対して、現在の割合(currentAlpha)を掛け算する
+                c.a = originalColors[i].a * currentAlpha;
+                activeRenderers[i].color = c;
+            }
+        }
+    }
+
+    /// <summary>
+    /// 全てのパーツの色と透明度を初期状態にリセットします。
+    /// </summary>
+    protected void ResetColor()
+    {
+        currentAlpha = 1.0f; // 割合を100%に戻す
+        for (int i = 0; i < activeRenderers.Length; i++)
+        {
+            if (activeRenderers[i] != null)
+            {
+                activeRenderers[i].color = originalColors[i]; // 記憶していた元の色・透明度に完全復元
+            }
+        }
+    }
     #endregion
 
     #region Interface Implementations

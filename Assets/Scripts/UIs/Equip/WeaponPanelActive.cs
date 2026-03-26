@@ -16,16 +16,15 @@ public class WeaponPanelActive : MonoBehaviour, IPanelActive, IPageNavigable
     [SerializeField]
     private List<Button> rightSideButtonList; //右側のアイテム用選択ボタンのリスト
 
-    [Header("武器詳細情報のパネルのGameObject")]
+    [Header("武器詳細情報のパネル")]
     [SerializeField]
-    private GameObject weaponDetailPanel; //武器詳細パネルのオブジェクト
+    private WeaponDetailPanel weaponDetailPanel;
 
     [Header("選択する武器の種類")]
     [SerializeField]
     private InventoryWeaponData.WeaponType weaponType;
     private Enum selectedButtonWeaponID = null;
     private Enum preselectedButtonWeaponID = null;
-    private WeaponDetailPanel weaponDetailPanelScript;
     private int page = 0; //現在のページ番号
     private int rowCount = 1; //UIの行数（例: 5行4列なら rowCount = 5）
     public List<Button> LeftSideButtons => leftSideButtonList;
@@ -71,23 +70,14 @@ public class WeaponPanelActive : MonoBehaviour, IPanelActive, IPageNavigable
             return;
         }
 
-        //武器の詳細パネルの初期化
-        weaponDetailPanelScript = weaponDetailPanel.GetComponent<WeaponDetailPanel>();
-        if (weaponDetailPanelScript != null)
+        switch (weaponType)
         {
-            switch (weaponType)
-            {
-                case InventoryWeaponData.WeaponType.shoot:
-                    weaponDetailPanelScript.weaponType = InventoryWeaponData.WeaponType.shoot;
-                    break;
-                case InventoryWeaponData.WeaponType.blade:
-                    weaponDetailPanelScript.weaponType = InventoryWeaponData.WeaponType.blade;
-                    break;
-            }
-        }
-        else
-        {
-            Debug.LogWarning("武器詳細パネルに適切なスクリプトが設定されていません");
+            case InventoryWeaponData.WeaponType.shoot:
+                weaponDetailPanel.weaponType = InventoryWeaponData.WeaponType.shoot;
+                break;
+            case InventoryWeaponData.WeaponType.blade:
+                weaponDetailPanel.weaponType = InventoryWeaponData.WeaponType.blade;
+                break;
         }
     }
 
@@ -181,10 +171,10 @@ public class WeaponPanelActive : MonoBehaviour, IPanelActive, IPageNavigable
 
                 // 選択が変わったので詳細パネルを更新する処理を呼ぶ
                 selectedButtonWeaponID = equippedWeaponID;
-                if (weaponDetailPanelScript != null)
+                if (weaponDetailPanel != null)
                 {
-                    weaponDetailPanel.SetActive(true);
-                    weaponDetailPanelScript.DisplayNextWeaponDetails(selectedButtonWeaponID);
+                    weaponDetailPanel.gameObject.SetActive(true);
+                    weaponDetailPanel.DisplayNextWeaponDetails(selectedButtonWeaponID);
                 }
                 return; // 無事にフォーカスできたので処理終了
             }
@@ -211,11 +201,11 @@ public class WeaponPanelActive : MonoBehaviour, IPanelActive, IPageNavigable
             if (
                 firstWeapon != null
                 && firstWeapon.AssignedItemID != null
-                && weaponDetailPanelScript != null
+                && weaponDetailPanel != null
             )
             {
-                weaponDetailPanel.SetActive(true);
-                weaponDetailPanelScript.DisplayNextWeaponDetails(firstWeapon.AssignedItemID);
+                weaponDetailPanel.gameObject.SetActive(true);
+                weaponDetailPanel.DisplayNextWeaponDetails(firstWeapon.AssignedItemID);
             }
         }
     }
@@ -281,13 +271,9 @@ public class WeaponPanelActive : MonoBehaviour, IPanelActive, IPageNavigable
             }
 
             //次の装備武器の効果説明パネルを非表示にする
-            if (weaponDetailPanelScript != null)
+            if (weaponDetailPanel != null)
             {
-                weaponDetailPanelScript.DisplayNextWeaponDetails(null);
-            }
-            else
-            {
-                Debug.LogWarning("アイテム効果パネルに適切なスクリプトが設定されていません");
+                weaponDetailPanel.DisplayNextWeaponDetails(null);
             }
 
             return; //所持している武器がない場合は何もしない
@@ -328,20 +314,16 @@ public class WeaponPanelActive : MonoBehaviour, IPanelActive, IPageNavigable
         //効果説明パネルの文章を変更する
         if (preselectedButtonWeaponID != selectedButtonWeaponID)
         {
-            if (!weaponDetailPanel.activeSelf)
+            if (weaponDetailPanel != null)
             {
-                //武器効果パネルを表示する
-                weaponDetailPanel.SetActive(true);
-            }
+                if (!weaponDetailPanel.gameObject.activeSelf)
+                {
+                    //武器効果パネルを表示する
+                    weaponDetailPanel.gameObject.SetActive(true);
+                }
 
-            if (weaponDetailPanelScript != null)
-            {
                 //選択中の武器の詳細を表示する
-                weaponDetailPanelScript.DisplayNextWeaponDetails(selectedButtonWeaponID);
-            }
-            else
-            {
-                Debug.LogWarning("アイテム効果パネルに適切なスクリプトが設定されていません");
+                weaponDetailPanel.DisplayNextWeaponDetails(selectedButtonWeaponID);
             }
         }
 

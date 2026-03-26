@@ -8,7 +8,7 @@ using UnityEngine;
 [RequireComponent(typeof(Rigidbody2D))]
 [RequireComponent(typeof(Animator))]
 [RequireComponent(typeof(CriWare.Assets.CriAtomSePlayer))]
-public class DesertTempleGolemMoveController : MonoBehaviour, IEnemyResettable
+public class DesertTempleGolemFloatMoveController : MonoBehaviour, IEnemyResettable
 {
     private const string SHOOT_POOLTAG = "DesertTempleGolemShoot"; // 弾のプールタグ名
     private const string ATTACK_ANIMATION_CLIP_NAME = "DesertTempleGolem_attack"; // 攻撃アニメーションのクリップ名
@@ -18,7 +18,7 @@ public class DesertTempleGolemMoveController : MonoBehaviour, IEnemyResettable
     private Transform playerTransform = null;
 
     [SerializeField]
-    private EnemyActivator activator = null; // 親のEnemyActivatorコンポーネント
+    private EnemyActivator activator = null;
 
     [Header("横移動の設定")]
     [SerializeField]
