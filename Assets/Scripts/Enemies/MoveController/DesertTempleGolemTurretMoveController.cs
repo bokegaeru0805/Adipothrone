@@ -92,6 +92,14 @@ public class DesertTempleGolemTurretMoveController : MonoBehaviour, IEnemyResett
     [SerializeField]
     private float lineWidth = 0.1f;
 
+    [Tooltip("追尾開始時の照準の最大ブレ角度（度）")]
+    [SerializeField]
+    private float maxAimNoiseAngle = 15.0f;
+
+    [Tooltip("照準がブレる速さ（ノイズの周波数）")]
+    [SerializeField]
+    private float aimNoiseSpeed = 10.0f;
+
     #endregion
 
     #region プライベート変数
@@ -370,7 +378,10 @@ public class DesertTempleGolemTurretMoveController : MonoBehaviour, IEnemyResett
         float timer = 0f;
         while (timer < aimingDuration)
         {
-            TrackPlayerWithAimPivot();
+            // 追尾の進行度（0.0～1.0）を計算してメソッドに渡す
+            float progress = timer / aimingDuration;
+            TrackPlayerWithAimPivot(progress);
+
             DrawPredictionLine();
             AnimatePredictionLine();
 
@@ -438,9 +449,10 @@ public class DesertTempleGolemTurretMoveController : MonoBehaviour, IEnemyResett
     }
 
     /// <summary>
-    /// AimPivotをプレイヤーの方向へ滑らかに回転させる（Head自体は回転させない）
+    /// AimPivotをプレイヤーの方向へ滑らかに回転させる
     /// </summary>
-    private void TrackPlayerWithAimPivot()
+    /// <param name="aimProgress">追尾の進行度（0.0～1.0）。1.0に近づくほどブレが収束して正確になる</param>
+    private void TrackPlayerWithAimPivot(float aimProgress)
     {
         if (playerTransform == null || aimPivot == null)
             return;
@@ -459,6 +471,17 @@ public class DesertTempleGolemTurretMoveController : MonoBehaviour, IEnemyResett
             (Vector2)playerTransform.position - (Vector2)aimPivot.position
         ).normalized;
         float targetAngle = Mathf.Atan2(targetDir.y, targetDir.x) * Mathf.Rad2Deg;
+
+        // 照準のブレ（ノイズ）の計算と加算
+        // 進行度が進むにつれて(1.0に近づくにつれて)減衰率(damping)が0になり、ブレが完全に収束する
+        float damping = 1.0f - aimProgress;
+
+        // Mathf.PerlinNoiseを使って、滑らかで不規則な揺れ(-1.0 ～ 1.0)を作る
+        // 第二引数に自身のX座標を入れることで、画面内に複数の砲台がいても揺れ方が同期しないようにする
+        float noise = Mathf.PerlinNoise(Time.time * aimNoiseSpeed, transform.position.x) * 2f - 1f;
+
+        // ベースの角度に、減衰させたブレ角度を加算
+        targetAngle += noise * maxAimNoiseAngle * damping;
 
         Quaternion targetRotation = Quaternion.Euler(0, 0, targetAngle);
 
