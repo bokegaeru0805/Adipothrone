@@ -85,10 +85,6 @@ public class SEManager : MonoBehaviour
             float seVolume = SaveLoadManager.instance.Settings.seVolume;
             AdjustAllSEVolume(seVolume);
         }
-        else
-        {
-            Debug.LogError("SaveLoadManagerが見つかりません。");
-        }
     }
 
     private void Update()

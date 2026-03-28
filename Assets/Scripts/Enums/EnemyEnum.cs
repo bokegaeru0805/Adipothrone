@@ -19,6 +19,7 @@ public enum EnemyName
     DustDevil_Active = 15018,
     Golem_DesertTemple_Walk = 15019,
     Golem_DesertTemple_Turret = 15020,
+    Golem_DesertTemple_Turret_Boss = 15021,
     DustDevil_Boss = 15025,
     Levias_smoke = 15026,
     Levias = 15027,

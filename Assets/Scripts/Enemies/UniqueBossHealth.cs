@@ -58,12 +58,6 @@ public class UniqueBossHealth : CharacterHealth, IEnemyResettable
         }
     }
 
-    private void Start()
-    {
-        // ゲーム開始時は必ずリセットされた状態から始める
-        ResetState();
-    }
-
     /// <summary>
     /// ボスの状態を戦闘開始前の初期状態に戻します。
     /// オブジェクトプールなどで再利用する際に使用します。
@@ -99,7 +93,7 @@ public class UniqueBossHealth : CharacterHealth, IEnemyResettable
         isBattleActive = true;
 
         // ボスHPバーを表示させ、初期HPを通知
-        GameUIManager.instance.SetGameUIBossData(this.gameObject);
+        GameUIManager.instance?.SetGameUIBossData(this.gameObject);
         InvokeHPChangedEvent(); // HPバーを満タン表示にする
 
         BGMManager.instance?.Crossfade(BGMCategory.Boss_Unique, crossFadeTime);
