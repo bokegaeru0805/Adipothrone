@@ -294,7 +294,7 @@ public class GhostwolfMoveController : MonoBehaviour
             / (2 * (newPos.y - ExistBottom));
         float vy = Mathf.Sqrt(2 * gravity * maxHeightoffset);
         newrbody.AddForce(new Vector2(vx, vy), ForceMode2D.Impulse); //弾の速度を設定
-        _sePlayer.Play(SE_EnemyAction.Shoot2_Enemy); //攻撃の効果音を鳴らす
+        _sePlayer.Play(SE_EnemyAction.Shoot2); //攻撃の効果音を鳴らす
         CameraManager.instance?.PlayCustomShake(1.0f, 3.0f, 0.3f); // カメラシェイクを再生
 
         StartCoroutine(DestroyShoot(newGameObject));
@@ -349,7 +349,7 @@ public class GhostwolfMoveController : MonoBehaviour
                 ) / (2 * (newPos.y - ExistBottom));
             float vy = Mathf.Sqrt(2 * gravity * maxHeightoffset);
             newrbody.AddForce(new Vector2(vx, vy), ForceMode2D.Impulse); //弾の速度を設定
-            _sePlayer.Play(SE_EnemyAction.Shoot2_Enemy); //攻撃の効果音を鳴らす
+            _sePlayer.Play(SE_EnemyAction.Shoot2); //攻撃の効果音を鳴らす
             CameraManager.instance?.PlayCustomShake(1.0f, 3.0f, 0.3f); // カメラシェイクを再生
             StartCoroutine(DestroyShoot(newGameObject));
             yield return new WaitForSeconds(Random.Range(0.5f, 1)); //次の攻撃までの時間を設定
@@ -449,7 +449,7 @@ public class GhostwolfMoveController : MonoBehaviour
                 new Vector2(flatshoot_offsetX - shoot_offsetX, targetHeight - newPos.y).normalized
                 * flatShootSpeed; //弾の速度を計算
             newrbody.AddForce(new Vector2(flatvelocity.x, flatvelocity.y), ForceMode2D.Impulse); //弾の速度を設定
-            _sePlayer.Play(SE_EnemyAction.Shoot1_Enemy); //攻撃の効果音を鳴らす
+            _sePlayer.Play(SE_EnemyAction.Shoot1); //攻撃の効果音を鳴らす
             CameraManager.instance?.PlayCustomShake(1.5f, 2.0f, 0.3f); // カメラシェイクを再生
             StartCoroutine(DestroyFlatShoot(newGameObject, targetHeight));
             yield return new WaitForSeconds(

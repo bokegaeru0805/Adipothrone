@@ -1,5 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
+using CriWare;
+using DG.Tweening;
 using UnityEngine;
 
 /// <summary>
@@ -120,6 +122,9 @@ public class DesertTempleGolemTurretBossMoveController : MonoBehaviour, IEnemyRe
     [SerializeField, Tooltip("連続着弾攻撃の弾速")]
     private float multiShootBulletSpeed = 15.0f;
 
+    [SerializeField, Tooltip("予告マークがターゲット座標へ移動する時間（秒）")]
+    private float multiShootWarningInterval = 0.2f;
+
     [SerializeField, Tooltip("弾を発射する間隔（秒）")]
     private float multiShootInterval = 0.3f;
 
@@ -151,6 +156,11 @@ public class DesertTempleGolemTurretBossMoveController : MonoBehaviour, IEnemyRe
     [SerializeField, Tooltip("攻撃後の時間間隔の最大値（秒）")]
     private float wallShootAttackIntervalMax = 5.0f;
 
+    [Header("分身（クローン）設定")]
+    [SerializeField, Tooltip("予めシーンに配置しておいた分身オブジェクトのリスト")]
+    private List<DesertTempleGolemTurretBossClone> clones =
+        new List<DesertTempleGolemTurretBossClone>();
+
     [Header("顔の向き(スプライト)設定")]
     [SerializeField, Tooltip("顔部分のSpriteRenderer")]
     private SpriteRenderer faceSpriteRenderer;
@@ -164,6 +174,13 @@ public class DesertTempleGolemTurretBossMoveController : MonoBehaviour, IEnemyRe
     [SerializeField, Tooltip("下向き(LookDown)の顔スプライト")]
     private Sprite lookDownFaceSprite;
 
+    [Header("ルーン発光アニメーション設定")]
+    [SerializeField, Tooltip("下部ルーンのAnimator (LuminousRunes_lower)")]
+    private Animator lowerRunesAnimator;
+
+    [SerializeField, Tooltip("上部ルーンのAnimator (LuminousRunes_upper)")]
+    private Animator upperRunesAnimator;
+
     #endregion
 
     #region 内部変数
@@ -172,7 +189,7 @@ public class DesertTempleGolemTurretBossMoveController : MonoBehaviour, IEnemyRe
     private Rigidbody2D rbody;
     private Animator animator;
     private UniqueBossHealth bossHealth;
-    private CriWare.Assets.CriAtomSePlayer sePlayer;
+    private CriWare.Assets.CriAtomSePlayer _sePlayer;
     private Transform playerTransform;
 
     // 状態管理フラグ
@@ -180,6 +197,7 @@ public class DesertTempleGolemTurretBossMoveController : MonoBehaviour, IEnemyRe
     private bool hasTriggeredWakeUp = false; // 起動アニメーションを開始したかどうか
     private bool hasDoneSurpriseLaser = false; // 初回の突飛なレーザーを実行済みかどうか
     private Coroutine bossRoutine; // ボスの行動を管理するコルーチン
+    private string runeSpeedParamName = "RuneSpeed"; // ルーンのアニメーション速度を制御するパラメーター名
 
     // ビーム制御・予測線用の変数
     private LayerMask obstacleLayer; // 障害物のレイヤー（予測線・ビームの貫通防止用）
@@ -197,6 +215,10 @@ public class DesertTempleGolemTurretBossMoveController : MonoBehaviour, IEnemyRe
     }
 
     private FaceType currentFaceType = FaceType.Default;
+
+    // ルーンアニメーション制御用Tween
+    private Tween lowerRuneTween;
+    private Tween upperRuneTween;
     #endregion
 
     #region Unityライフサイクル
@@ -214,7 +236,7 @@ public class DesertTempleGolemTurretBossMoveController : MonoBehaviour, IEnemyRe
         animator = GetComponent<Animator>();
         bossHealth = GetComponent<UniqueBossHealth>();
         bossHealth.SetRigidbodyControl(false); // ボス戦開始前はRigidbodyを制御しない
-        sePlayer = GetComponent<CriWare.Assets.CriAtomSePlayer>();
+        _sePlayer = GetComponent<CriWare.Assets.CriAtomSePlayer>();
 
         // BeamObjectからコンポーネントを取得し、高さを保存する
         if (beamObject != null)
@@ -288,6 +310,9 @@ public class DesertTempleGolemTurretBossMoveController : MonoBehaviour, IEnemyRe
         if (faceSpriteRenderer == null)
             return;
 
+        if (!isMoveStarted)
+            return; // ボス戦開始前は顔の向きを更新しない（起動アニメーションの表情を優先させるため）
+
         // 現在の顔の状態に応じてスプライトを強制適用する
         switch (currentFaceType)
         {
@@ -304,6 +329,48 @@ public class DesertTempleGolemTurretBossMoveController : MonoBehaviour, IEnemyRe
                 if (defaultFaceSprite != null)
                     faceSpriteRenderer.sprite = defaultFaceSprite;
                 break;
+        }
+    }
+
+    /// <summary>
+    /// 毎フレームの入力を検知します。
+    /// デバッグ機能として、キー入力で分身を出現させます。
+    /// </summary>
+    private void Update()
+    {
+        if (TimeManager.instance.isEnemyMovePaused)
+            return;
+
+        // Cキーを押したら分身を出現させる（将来的にはHPによる自動発動に変更）
+        if (Input.GetKeyDown(KeyCode.C))
+        {
+            ActivateClones();
+        }
+    }
+
+    /// <summary>
+    /// リストに登録された分身を初期化して出現させます。
+    /// </summary>
+    private void ActivateClones()
+    {
+        foreach (var clone in clones)
+        {
+            if (clone != null)
+            {
+                // 本体の情報（プレイヤー、行動範囲、顔スプライト）を分身に渡す
+                clone.Setup(
+                    playerTransform,
+                    leftBound,
+                    rightBound,
+                    groundY,
+                    ceilingY,
+                    defaultFaceSprite,
+                    lookUpFaceSprite,
+                    lookDownFaceSprite
+                );
+                // 出現演出を再生
+                clone.Show();
+            }
         }
     }
 
@@ -354,6 +421,9 @@ public class DesertTempleGolemTurretBossMoveController : MonoBehaviour, IEnemyRe
 
         // 顔のスプライトを通常時に戻す
         ResetFaceSprite();
+
+        // ルーンのアニメーション速度を標準に戻す
+        ResetRunesAnimationSpeed();
     }
 
     #endregion
@@ -367,7 +437,9 @@ public class DesertTempleGolemTurretBossMoveController : MonoBehaviour, IEnemyRe
     {
         hasTriggeredWakeUp = true;
         animator.SetTrigger("WakeUpTrigger");
-        Debug.Log("起動アニメーション開始");
+
+        // 起動に合わせてエンジンが掛かるように、2秒かけて待機速度(上1.0 / 下-1.0)へ加速
+        SetRunesAnimationSpeed(-1.0f, 1.0f, 2.0f);
     }
 
     /// <summary>
@@ -379,6 +451,8 @@ public class DesertTempleGolemTurretBossMoveController : MonoBehaviour, IEnemyRe
         // 既に起動済みなら何もしない
         if (isMoveStarted)
             return;
+
+        _sePlayer.Play(SE_EnemyAction.MachineStart1); // 起動音を再生
 
         ActivateBoss();
     }
@@ -417,7 +491,8 @@ public class DesertTempleGolemTurretBossMoveController : MonoBehaviour, IEnemyRe
         // ※将来的にHPで確率を変える場合はここで条件分岐を追加します
         while (true)
         {
-            int nextPattern = Random.Range(0, 3);
+            // int nextPattern = Random.Range(0, 3);
+            int nextPattern = 1; // デバッグ用にパターンCに固定
             float minInterval = 0f;
             float maxInterval = 0f;
 
@@ -458,6 +533,9 @@ public class DesertTempleGolemTurretBossMoveController : MonoBehaviour, IEnemyRe
     {
         Debug.Log("パターンA: 予測線なしの突飛なレーザー開始");
 
+        // 即座に高速回転に切り替える（下-4.0 / 上4.0）
+        SetRunesAnimationSpeed(-4.0f, 4.0f, 0f);
+
         // 発射の瞬間のプレイヤー位置を記録（プレイヤーがいない場合は真下を狙う）
         Vector2 targetPos =
             playerTransform != null
@@ -475,17 +553,13 @@ public class DesertTempleGolemTurretBossMoveController : MonoBehaviour, IEnemyRe
             UpdateFaceSpriteByDirection(dir);
         }
 
-        // 短いチャージ演出（アニメーションとSEの再生）
-        //animator.SetTrigger("ChargeTrigger");
-        // seplayer.Play(SE_EnemyAction.ChargePower1);
         yield return new WaitForSeconds(surpriseLaserChargeTime);
 
         // 障害物に向けてRaycastを飛ばし、ビームの目標長さを計算する
         DrawPredictionLine();
 
         // 即座に発射（予測線なし）
-        //animator.SetTrigger("AttackTrigger");
-        // seplayer.Play(SE_EnemyAction.LaserAttack1);
+        _sePlayer.Play(SE_EnemyAction.Shoot3);
         if (beamObject != null)
             beamObject.SetActive(true);
 
@@ -516,6 +590,9 @@ public class DesertTempleGolemTurretBossMoveController : MonoBehaviour, IEnemyRe
 
         // 顔を元に戻す
         ResetFaceSprite();
+
+        // クールダウン：2秒かけて元の待機速度へ戻す
+        SetRunesAnimationSpeed(-1.0f, 1.0f, 2.0f);
     }
 
     /// <summary>
@@ -526,6 +603,26 @@ public class DesertTempleGolemTurretBossMoveController : MonoBehaviour, IEnemyRe
     {
         Debug.Log("パターンB: 通常の追従レーザー開始");
 
+        // 分身がアクティブなら、同時にレーザー攻撃を実行させる
+        foreach (var clone in clones)
+        {
+            if (clone != null)
+            {
+                clone.ExecutePatternB_Laser(
+                    aimingDuration,
+                    lockOnDuration,
+                    normalLaserBeamExpandSpeed,
+                    normalLaserFiringDuration,
+                    aimColor,
+                    lockOnColor,
+                    lineWidth
+                );
+            }
+        }
+
+        // チャージ：狙いをつける時間(aimingDuration)をかけて、発射に向けて徐々に加速（下-3.0 / 上3.0）
+        SetRunesAnimationSpeed(-3.0f, 3.0f, aimingDuration);
+
         // 予測線を表示し、色を追尾中の色（黄色など）に設定
         if (predictionLine != null)
             predictionLine.gameObject.SetActive(true);
@@ -533,6 +630,7 @@ public class DesertTempleGolemTurretBossMoveController : MonoBehaviour, IEnemyRe
 
         // --- 1. 追尾・予測線照射フェーズ ---
         float timer = 0f;
+        CriAtomExPlayback chargeSePlayback = _sePlayer.Play(SE_EnemyAction.LaserCharge1); // チャージSE再生
         while (timer < aimingDuration)
         {
             // 追尾の進行度（0.0～1.0）を計算してメソッドに渡す
@@ -554,6 +652,8 @@ public class DesertTempleGolemTurretBossMoveController : MonoBehaviour, IEnemyRe
         // --- 2. ロックオン・発射警告フェーズ ---
         SetLineColor(lockOnColor);
         timer = 0f;
+        chargeSePlayback.Stop(); // チャージSE停止
+        CriAtomExPlayback lockOnSePlayback = _sePlayer.Play(SE_EnemyAction.LaserCharge_Full1); // ロックオンSE再生
         while (timer < lockOnDuration)
         {
             // プレイヤーが壁裏に逃げることも考慮し、線の長さだけは継続して計算する
@@ -567,6 +667,7 @@ public class DesertTempleGolemTurretBossMoveController : MonoBehaviour, IEnemyRe
             timer += Time.deltaTime;
             yield return null;
         }
+        lockOnSePlayback.Stop(); // ロックオンSE停止
 
         // --- 3. ビーム発射フェーズ ---
         if (predictionLine != null)
@@ -575,8 +676,7 @@ public class DesertTempleGolemTurretBossMoveController : MonoBehaviour, IEnemyRe
             predictionLine.startWidth = lineWidth; // 太さを元に戻す
         }
 
-        //animator.SetTrigger("AttackTrigger");
-        // seplayer.Play(SE_EnemyAction.LaserAttack1);
+        CriAtomExPlayback laserSePlayback = _sePlayer.Play(SE_EnemyAction.Laser1); // 発射音再生
         if (beamObject != null)
             beamObject.SetActive(true);
 
@@ -596,12 +696,15 @@ public class DesertTempleGolemTurretBossMoveController : MonoBehaviour, IEnemyRe
         yield return new WaitForSeconds(normalLaserFiringDuration);
 
         // 攻撃終了処理
+        laserSePlayback.Stop(); // 発射音停止
         if (beamObject != null)
             beamObject.SetActive(false);
-        // animator.SetTrigger("IdleTrigger");
 
         // 顔を元に戻す
         ResetFaceSprite();
+
+        // クールダウン：2秒かけて元の待機速度へ戻す
+        SetRunesAnimationSpeed(-1.0f, 1.0f, 2.0f);
     }
 
     /// <summary>
@@ -611,6 +714,19 @@ public class DesertTempleGolemTurretBossMoveController : MonoBehaviour, IEnemyRe
     private IEnumerator PatternC_MultiTargetShoot()
     {
         Debug.Log("パターンC: 連続着弾攻撃開始");
+
+        // 分身がアクティブなら、同時に連続着弾攻撃を実行させる
+        foreach (var clone in clones)
+        {
+            if (clone != null)
+            {
+                clone.ExecutePatternC_MultiShoot(
+                    interval: multiShootInterval,
+                    speed: multiShootBulletSpeed,
+                    warningInterval: multiShootWarningInterval
+                );
+            }
+        }
 
         List<Vector2> targetPositions = new List<Vector2>();
         List<GameObject> warningMarks = new List<GameObject>(); // 予告マークを保持するリスト
@@ -624,16 +740,28 @@ public class DesertTempleGolemTurretBossMoveController : MonoBehaviour, IEnemyRe
             Vector2 targetPos = new Vector2(randX, randY);
             targetPositions.Add(targetPos);
 
-            // 予告マークを生成し、リストに保持
+            // 予告マークの出現位置（照準ピボット、なければ自身）
+            Vector2 spawnPos =
+                aimPivot != null ? (Vector2)aimPivot.position : (Vector2)transform.position;
+
+            // 予告マークを aimPivot の位置から生成し、リストに保持
             GameObject mark = ObjectPooler.SceneInstance.SpawnFromPool(
                 LOCKON_MARK_POOLTAG,
-                targetPos,
+                spawnPos,
                 Quaternion.identity
             );
             warningMarks.Add(mark);
 
-            // 予告を出す間隔
-            yield return new WaitForSeconds(0.2f);
+            _sePlayer.Play(SE_EnemyAction.LockOn1); // 予告音を再生
+
+            // DOTweenを用いて、目標座標まで滑らかに移動させる
+            if (mark != null)
+            {
+                mark.transform.DOMove(targetPos, multiShootWarningInterval).SetEase(Ease.OutQuart);
+            }
+
+            // 予告を出す間隔（移動完了まで）待機
+            yield return new WaitForSeconds(multiShootWarningInterval);
         }
 
         // 撃ち始める前のタメ
@@ -642,6 +770,9 @@ public class DesertTempleGolemTurretBossMoveController : MonoBehaviour, IEnemyRe
         // 2. 予告した順番に弾を発射するフェーズ
         for (int i = 0; i < targetPositions.Count; i++)
         {
+            // 脈打ち（パルス）：撃つ瞬間に一瞬だけ速度を跳ね上げる（下-2.5 / 上2.5）
+            SetRunesAnimationSpeed(-2.5f, 2.5f, 0f);
+
             Vector2 target = targetPositions[i];
             GameObject mark = warningMarks[i]; // 対応する予告マークを取得
 
@@ -661,7 +792,7 @@ public class DesertTempleGolemTurretBossMoveController : MonoBehaviour, IEnemyRe
 
             if (bullet != null)
             {
-                // sePlayer.Play(SE_EnemyAction.Shoot_Magic);
+                _sePlayer.Play(SE_EnemyAction.Shoot3); // 発射音を再生
                 // 弾の追従と消去を管理するコルーチンを個別に起動（予告マークも渡す）
                 StartCoroutine(TrackAndDestroyBullet(bullet, target, mark));
             }
@@ -673,6 +804,9 @@ public class DesertTempleGolemTurretBossMoveController : MonoBehaviour, IEnemyRe
                     mark.GetComponent<PoolableObject>()?.ReturnToPool();
                 }
             }
+
+            // 脈打ちの戻り：次の弾を撃つまでの間隔(multiShootInterval)を使って、元の待機速度に戻そうとする
+            SetRunesAnimationSpeed(-1.0f, 1.0f, multiShootInterval);
 
             // 次の弾を発射するまでの間隔
             yield return new WaitForSeconds(multiShootInterval);
@@ -689,6 +823,9 @@ public class DesertTempleGolemTurretBossMoveController : MonoBehaviour, IEnemyRe
     private IEnumerator PatternD_WallShoot()
     {
         Debug.Log("パターンD: 背後からの壁撃ち開始");
+
+        // 配置中の共鳴：弾を並べている間は、あえて速度を落として静けさを演出（下-0.5 / 上0.5）
+        SetRunesAnimationSpeed(-0.5f, 0.5f, 1.0f);
 
         // 1. 基準となるX座標（背後）を決定
         float spawnX = isRightFacing
@@ -752,6 +889,10 @@ public class DesertTempleGolemTurretBossMoveController : MonoBehaviour, IEnemyRe
         // 全ての弾が並んだら少しタメを作る（予備動作）
         // animator.SetTrigger("ArmUpTrigger");
         // seplayer.Play(SE_EnemyAction.MagicWave1);
+
+        // 一斉掃射：一気に高速回転（下-3.0 / 上3.0）
+        SetRunesAnimationSpeed(-3.0f, 3.0f, 0f);
+
         yield return new WaitForSeconds(1.0f);
 
         // 4. 上から順番に発射するフェーズ
@@ -784,6 +925,9 @@ public class DesertTempleGolemTurretBossMoveController : MonoBehaviour, IEnemyRe
 
         // 攻撃終了処理
         // animator.SetTrigger("IdleTrigger");
+
+        // クールダウン：2秒かけて元の待機速度へ戻す
+        SetRunesAnimationSpeed(-1.0f, 1.0f, 2.0f);
     }
 
     #endregion
@@ -1010,6 +1154,83 @@ public class DesertTempleGolemTurretBossMoveController : MonoBehaviour, IEnemyRe
     private void ResetFaceSprite()
     {
         currentFaceType = FaceType.Default;
+    }
+
+    #endregion
+
+    #region ルーンアニメーション制御
+
+    /// <summary>
+    /// 上下のルーンのアニメーション再生速度をDOTweenを用いて変更します。
+    /// 引数に null を渡した部位の速度は変更されません。
+    /// duration が 0 の場合は即座に速度が切り替わります。
+    /// </summary>
+    private void SetRunesAnimationSpeed(
+        float? lowerSpeed = null,
+        float? upperSpeed = null,
+        float duration = 0f
+    )
+    {
+        // --- 下部ルーン (LuminousRunes_lower) ---
+        if (lowerSpeed.HasValue && lowerRunesAnimator != null)
+        {
+            // 実行中のTweenがあれば停止
+            if (lowerRuneTween != null && lowerRuneTween.IsActive())
+                lowerRuneTween.Kill();
+
+            if (duration > 0f)
+            {
+                // 現在のパラメータ値を取得して開始値にする
+                float currentSpeed = lowerRunesAnimator.GetFloat(runeSpeedParamName);
+                lowerRuneTween = DOVirtual
+                    .Float(
+                        currentSpeed,
+                        lowerSpeed.Value,
+                        duration,
+                        value => lowerRunesAnimator.SetFloat(runeSpeedParamName, value)
+                    )
+                    .SetEase(Ease.OutQuad);
+            }
+            else
+            {
+                lowerRunesAnimator.SetFloat(runeSpeedParamName, lowerSpeed.Value);
+            }
+        }
+
+        // --- 上部ルーン (LuminousRunes_upper) ---
+        if (upperSpeed.HasValue && upperRunesAnimator != null)
+        {
+            // 実行中のTweenがあれば停止
+            if (upperRuneTween != null && upperRuneTween.IsActive())
+                upperRuneTween.Kill();
+
+            if (duration > 0f)
+            {
+                // 現在のパラメータ値を取得して開始値にする
+                float currentSpeed = upperRunesAnimator.GetFloat(runeSpeedParamName);
+                upperRuneTween = DOVirtual
+                    .Float(
+                        currentSpeed,
+                        upperSpeed.Value,
+                        duration,
+                        value => upperRunesAnimator.SetFloat(runeSpeedParamName, value)
+                    )
+                    .SetEase(Ease.OutQuad);
+            }
+            else
+            {
+                upperRunesAnimator.SetFloat(runeSpeedParamName, upperSpeed.Value);
+            }
+        }
+    }
+
+    /// <summary>
+    /// 上下のルーンのアニメーション再生速度を初期状態（完全停止: 0f）にリセットします。
+    /// </summary>
+    private void ResetRunesAnimationSpeed()
+    {
+        // 初期状態は停止
+        SetRunesAnimationSpeed(0f, 0f, 0f);
     }
 
     #endregion

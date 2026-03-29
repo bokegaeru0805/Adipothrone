@@ -227,7 +227,7 @@ public class TutorialGolemMoveController : MonoBehaviour, IEnemyResettable
     /// </summary>
     public void ExecuteShootEvent()
     {
-        sePlayer.Play(SE_EnemyAction.Shoot1_Enemy); //効果音を鳴らす
+        sePlayer.Play(SE_EnemyAction.Shoot1); //効果音を鳴らす
 
         float targetHeight = (GroundY + RobotHeight) + flatShootRadius * Random.Range(-1, 1); //弾の高さをランダムに設定(-1か0)
         Vector2 spawnPos = new Vector2(

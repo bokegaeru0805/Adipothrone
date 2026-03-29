@@ -65,8 +65,9 @@ public enum SE_EnemyAction
     Damage2 = 4005,
     FastMove1 = 4010,
     Roar1 = 4015,
-    Shoot1_Enemy = 4020,
-    Shoot2_Enemy = 4021,
+    Shoot1 = 4020,
+    Shoot2 = 4021,
+    Shoot3 = 4022,
     Shoot_Water1 = 4025,
     Impact_iron1 = 4035,
     Attack_slime1 = 4040,
@@ -96,6 +97,11 @@ public enum SE_EnemyAction
     Vanish1 = 4125,
     WaterMagic1 = 4130,
     Disappear1 = 4135,
+    MachineStart1 = 4140,
+    Laser1 = 4145,
+    LaserCharge1 = 4150,
+    LaserCharge_Full1 = 4155,
+    LockOn1 = 4160,
 }
 
 /// <summary>

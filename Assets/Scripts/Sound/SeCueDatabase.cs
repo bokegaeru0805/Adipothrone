@@ -66,8 +66,9 @@ public static class SeCueDatabase
             { SE_EnemyAction.Damage2, "Attack_player1" },
             { SE_EnemyAction.FastMove1, "FastMove1" },
             { SE_EnemyAction.Roar1, "Roar1" },
-            { SE_EnemyAction.Shoot1_Enemy, "Shoot1_Enemy" },
-            { SE_EnemyAction.Shoot2_Enemy, "Shoot2_Enemy" },
+            { SE_EnemyAction.Shoot1, "Shoot1_Enemy" },
+            { SE_EnemyAction.Shoot2, "Shoot2_Enemy" },
+            { SE_EnemyAction.Shoot3, "Shoot3_Enemy" },
             { SE_EnemyAction.Shoot_Water1, "Shoot_Water1" },
             { SE_EnemyAction.Impact_iron1, "Impact_iron1" },
             { SE_EnemyAction.Attack_slime1, "Attack_slime1" },
@@ -97,6 +98,11 @@ public static class SeCueDatabase
             { SE_EnemyAction.Vanish1, "Vanish_Burst1" },
             { SE_EnemyAction.WaterMagic1, "WaterMagic1" },
             { SE_EnemyAction.Disappear1, "Disappear1" },
+            { SE_EnemyAction.MachineStart1, "MachineStart1" },
+            { SE_EnemyAction.Laser1, "Attack_Laser1" },
+            { SE_EnemyAction.LaserCharge1, "LaserCharge1" },
+            { SE_EnemyAction.LaserCharge_Full1, "LaserCharge_Full1" },
+            { SE_EnemyAction.LockOn1, "LockOn1" },
         };
 
     /// <summary>
