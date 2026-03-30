@@ -146,8 +146,8 @@ public class PlayerTestMoveController : MonoBehaviour
 
         if (hitCollider != null)
         {
-            // CharacterHealthコンポーネントを取得（継承したクラスも取得可能）
-            var health = hitCollider.GetComponent<CharacterHealth>();
+            // Collider2Dが見つかった場合、そのオブジェクトにIDamageableがあるかチェックしてダメージを与える
+            var health = hitCollider.GetComponent<IDamageable>();
 
             if (health != null)
             {
@@ -155,11 +155,6 @@ public class PlayerTestMoveController : MonoBehaviour
                 Debug.Log(
                     $"<color=red>Damage Test:</color> {hitCollider.name} に {damageAmount} のダメージを与えました。(CurrentHP: {health.CurrentHP})"
                 );
-            }
-            else
-            {
-                // クリックした対象がCharacterHealthを持っていなかった場合（必要ならコメントアウト解除）
-                // Debug.Log($"クリックした対象 ({hitCollider.name}) には CharacterHealth がありません。");
             }
         }
 

@@ -103,6 +103,7 @@ public static class SeCueDatabase
             { SE_EnemyAction.LaserCharge1, "LaserCharge1" },
             { SE_EnemyAction.LaserCharge_Full1, "LaserCharge_Full1" },
             { SE_EnemyAction.LockOn1, "LockOn1" },
+            { SE_EnemyAction.Launch1, "Launch1" },
         };
 
     /// <summary>

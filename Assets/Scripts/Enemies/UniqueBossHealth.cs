@@ -3,32 +3,36 @@ using System.Collections;
 using System.Linq;
 using UnityEngine;
 
+#region ユニークボスHP管理クラス
 /// <summary>
 /// 特定のイベントで戦闘が開始される、ユニークなボスのHPを管理するクラス。
 /// ActivateBattle()メソッドが呼ばれるまで、ダメージを受け付けないのが特徴です。
+/// 死亡時や戦闘開始時の「演出（アニメーションやBGM）」は、別クラス（UniqueBossPresentation）に委譲しています。
 /// </summary>
 public class UniqueBossHealth : CharacterHealth, IEnemyResettable
 {
+    #region フィールド・プロパティ
     // --- 内部コンポーネント参照 ---
     private Rigidbody2D rbody;
     private Transform dropParent;
-    private float deathAnimationLength = 1.0f; // 死亡アニメーションの長さ（秒）
-    private float crossFadeTime = 1.0f; // BGMのクロスフェード時間（秒）
-    private float returnMusicTime = 2.0f; // 戦闘終了後にBGMを戻すまでの時間（秒）
-    private const string deathAnimParam = "death"; // 死亡アニメーションのパラメータ名
-    private bool shouldControlRigidbody = true; // Rigidbodyの制御を行うかどうか
+
+    // Rigidbodyの制御を行うかどうか
+    private bool shouldControlRigidbody = true;
 
     /// <summary>
     /// ボス戦が開始され、ダメージを受け付けられる状態かどうかを管理するフラグ。
     /// ActivateBattle()が呼ばれるとtrueになります。
     /// </summary>
     private bool isBattleActive = false;
+    #endregion
 
-    /// <summary>
-    /// このボスが倒された瞬間に発行されるイベント。
-    /// </summary>
-    public event Action OnDefeated;
+    #region イベント定義
 
+    public event Action OnBattleActivated; //ボス戦が開始された瞬間に発行されるイベント。
+    public event Action OnReset; //ボスの状態がリセットされた瞬間に発行されるイベント。
+    #endregion
+
+    #region 初期化・ライフサイクル
     /// <summary>
     /// 基本クラスのAwakeを拡張し、コンポーネントの取得や設定を行います。
     /// </summary>
@@ -59,6 +63,19 @@ public class UniqueBossHealth : CharacterHealth, IEnemyResettable
     }
 
     /// <summary>
+    /// オブジェクトが非表示になる際のクリーンアップ処理。
+    /// </summary>
+    private void OnDisable()
+    {
+        // 戦闘状態フラグをリセット
+        isBattleActive = false;
+        // ボスHPバーを非表示にするようUIマネージャーに依頼
+        GameUIManager.instance?.RemoveUIBossData(this.gameObject);
+    }
+    #endregion
+
+    #region 戦闘制御ロジック
+    /// <summary>
     /// ボスの状態を戦闘開始前の初期状態に戻します。
     /// オブジェクトプールなどで再利用する際に使用します。
     /// </summary>
@@ -68,11 +85,6 @@ public class UniqueBossHealth : CharacterHealth, IEnemyResettable
         CurrentHP = MaxHP;
         ResetColor(); // 色と透明度を完全に戻す
 
-        if (animator != null && HasParameter(deathAnimParam))
-        {
-            animator.SetBool(deathAnimParam, false);
-        }
-
         // Rigidbodyの制御が有効な場合のみ、物理挙動を再び有効化
         if (shouldControlRigidbody && rbody != null)
         {
@@ -81,6 +93,9 @@ public class UniqueBossHealth : CharacterHealth, IEnemyResettable
 
         // 戦闘状態フラグをリセット
         isBattleActive = false;
+
+        // リセットされたことを他のスクリプト（演出クラスなど）に通知
+        OnReset?.Invoke();
     }
 
     /// <summary>
@@ -96,8 +111,8 @@ public class UniqueBossHealth : CharacterHealth, IEnemyResettable
         GameUIManager.instance?.SetGameUIBossData(this.gameObject);
         InvokeHPChangedEvent(); // HPバーを満タン表示にする
 
-        BGMManager.instance?.Crossfade(BGMCategory.Boss_Unique, crossFadeTime);
-        //BGMManager.instance?.Crossfade(BGMCategory.Boss_Unique, crossFadeTime);
+        // 戦闘開始を他のスクリプト（演出クラスなど）に通知
+        OnBattleActivated?.Invoke();
     }
 
     /// <summary>
@@ -118,12 +133,10 @@ public class UniqueBossHealth : CharacterHealth, IEnemyResettable
 
     /// <summary>
     /// ユニークボス固有の死亡処理。
+    /// 演出関連の処理は省き、純粋なシステム上の「死亡状態の確定」のみを行います。
     /// </summary>
     protected override void OnDeath()
     {
-        // 自分が倒されたことを、購読している他のスクリプトに通知する
-        OnDefeated?.Invoke();
-
         // Rigidbodyの制御が有効な場合のみ、物理挙動を停止
         if (shouldControlRigidbody && rbody != null)
         {
@@ -133,51 +146,6 @@ public class UniqueBossHealth : CharacterHealth, IEnemyResettable
 
         // 死亡時に色を元に戻す
         ResetColor();
-
-        // 死亡アニメーションの長さを自動で取得
-        if (animator != null && animator.runtimeAnimatorController != null && enemyData != null)
-        {
-            string clipNameToFind = $"{enemyData.name}_death";
-            AnimationClip deathClip =
-                animator.runtimeAnimatorController.animationClips.FirstOrDefault(clip =>
-                    clip.name == clipNameToFind
-                );
-
-            if (deathClip != null)
-            {
-                deathAnimationLength = deathClip.length;
-            }
-            else
-            {
-                Debug.LogWarning(
-                    $"アニメーションクリップ '{clipNameToFind}' が見つかりませんでした。"
-                );
-            }
-        }
-
-        // 死亡アニメーションを再生
-        if (animator != null && HasParameter(deathAnimParam))
-        {
-            animator.SetBool(deathAnimParam, true);
-        }
-
-        // アニメーションの長さだけ待ってからオブジェクトを非アクティブ化
-        StartCoroutine(DeactivateAfterTime(deathAnimationLength));
-    }
-
-    protected override IEnumerator DeactivateAfterTime(float time)
-    {
-        // 1. 死亡アニメーションに合わせて現在のBGMをフェードアウト開始
-        BGMManager.instance?.FadeOut(time);
-
-        // 2. 指定された時間だけ待機する（元の親クラスの処理をここに持ってくる）
-        yield return new WaitForSeconds(time);
-
-        // 3. オブジェクトが消える「前」に、次のエリアBGMを再生する
-        CameraMoveArea.PlayCurrentAreaBgm(returnMusicTime);
-
-        // 4. 最後に自身を非アクティブ化する
-        this.gameObject.SetActive(false);
     }
 
     /// <summary>
@@ -188,15 +156,16 @@ public class UniqueBossHealth : CharacterHealth, IEnemyResettable
     {
         this.shouldControlRigidbody = shouldControl;
     }
+    #endregion
 
     /// <summary>
-    /// オブジェクトが非表示になる際のクリーンアップ処理。
+    /// 親クラス（CharacterHealth）が自動で非アクティブ化するのを防ぐための空のオーバーライド。
+    /// 実際の非アクティブ化は、演出クラス（UniqueBossPresentation）がアニメーション終了時に行います。
     /// </summary>
-    private void OnDisable()
+    protected override IEnumerator DeactivateAfterTime(float time)
     {
-        // 戦闘状態フラグをリセット
-        isBattleActive = false;
-        // ボスHPバーを非表示にするようUIマネージャーに依頼
-        GameUIManager.instance?.RemoveUIBossData(this.gameObject);
+        // 親クラスの処理を完全に無視し、何もしない（ここで勝手に消えるのを防ぐ）
+        yield break;
     }
 }
+#endregion

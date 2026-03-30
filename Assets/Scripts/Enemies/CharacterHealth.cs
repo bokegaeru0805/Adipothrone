@@ -75,6 +75,11 @@ public abstract class CharacterHealth : PoolableObject, IDamageable, IDroppable,
     public event Action<int> OnHPChanged;
 
     /// <summary>
+    /// このキャラクターが倒された（HPが0になり死亡判定が行われた）瞬間に発行されるイベント。
+    /// </summary>
+    public event Action OnDefeated;
+
+    /// <summary>
     /// 派生クラスから安全にOnHPChangedイベントを発火させるためのメソッド。
     /// </summary>
     protected void InvokeHPChangedEvent()
@@ -250,7 +255,6 @@ public abstract class CharacterHealth : PoolableObject, IDamageable, IDroppable,
 
             // （オプション）シールドで0ダメージになった場合の演出分岐などをここに書いても良い
         }
-        //
 
         // --- Step 2: HPの減算 ---
         CurrentHP -= damage;
@@ -299,6 +303,8 @@ public abstract class CharacterHealth : PoolableObject, IDamageable, IDroppable,
         if (IsDefeated)
             return;
         IsDefeated = true;
+
+        OnDefeated?.Invoke();
 
         // 自分がシールドとリンクしている場合、対象のシールドを破壊する
         if (linkToShieldController && targetShieldController != null)
@@ -539,11 +545,13 @@ public abstract class CharacterHealth : PoolableObject, IDamageable, IDroppable,
             if (activeRenderers[i] != null)
             {
                 Color c = activeRenderers[i].color;
-                // 変更部分：元の透明度(originalColors[i].a) に対して、現在の割合(currentAlpha)を掛け算する
+                // 元の透明度(originalColors[i].a) に対して、現在の割合(currentAlpha)を掛け算する
                 c.a = originalColors[i].a * currentAlpha;
                 activeRenderers[i].color = c;
             }
         }
+
+        //Debug.Log($"SetAlpha called with ratio={alphaRatio}, currentAlpha={currentAlpha},Time={Time.time}");
     }
 
     /// <summary>
@@ -559,6 +567,8 @@ public abstract class CharacterHealth : PoolableObject, IDamageable, IDroppable,
                 activeRenderers[i].color = originalColors[i]; // 記憶していた元の色・透明度に完全復元
             }
         }
+
+        // Debug.Log($"ResetColor called, currentAlpha reset to {currentAlpha}, Time={Time.time}");
     }
     #endregion
 

@@ -1,5 +1,6 @@
 using System.Collections;
 using UnityEngine;
+using CriWare;
 
 [RequireComponent(typeof(Rigidbody2D))]
 [RequireComponent(typeof(Animator))]
@@ -16,22 +17,9 @@ public class DesertTempleGolemTurretMoveController : MonoBehaviour, IEnemyResett
     [SerializeField]
     private EnemyActivator activator = null;
 
-    [Header("砲台パーツ設定")]
-    [Tooltip("回転させる頭（砲身）のピボット（中心点）となるオブジェクト")]
+    [Tooltip("攻撃力")]
     [SerializeField]
-    private Transform headPivot;
-
-    [Tooltip("ビームと予測線を実際に回転させるための中心点となる空オブジェクト")]
-    [SerializeField]
-    private Transform aimPivot;
-
-    [Tooltip("実際のビーム攻撃判定を持つ子オブジェクト")]
-    [SerializeField]
-    private GameObject beamObject;
-
-    [Tooltip("予測線を描画するためのLineRenderer")]
-    [SerializeField]
-    private LineRenderer predictionLine;
+    private int attackDamage = 0;
 
     [Header("索敵・待機設定")]
     [Tooltip("この敵がプレイヤーを検知する範囲のX距離")]
@@ -100,14 +88,30 @@ public class DesertTempleGolemTurretMoveController : MonoBehaviour, IEnemyResett
     [SerializeField]
     private float aimNoiseSpeed = 10.0f;
 
+    [Header("砲台パーツ設定")]
+    [Tooltip("回転させる頭（砲身）のピボット（中心点）となるオブジェクト")]
+    [SerializeField]
+    private Transform headPivot;
+
+    [Tooltip("ビームと予測線を実際に回転させるための中心点となる空オブジェクト")]
+    [SerializeField]
+    private Transform aimPivot;
+
+    [Tooltip("実際のビーム攻撃判定を持つ子オブジェクト")]
+    [SerializeField]
+    private GameObject beamObject;
+
+    [Tooltip("予測線を描画するためのLineRenderer")]
+    [SerializeField]
+    private LineRenderer predictionLine;
+
     #endregion
 
     #region プライベート変数
 
     private Rigidbody2D rbody;
-    private Animator animator;
     private EnemyHealth enemyHP;
-    private CriWare.Assets.CriAtomSePlayer sePlayer;
+    private CriWare.Assets.CriAtomSePlayer _sePlayer;
     private LayerMask obstacleLayer;
     private Transform playerTransform = null;
     private float idleTimer = 0f;
@@ -118,6 +122,7 @@ public class DesertTempleGolemTurretMoveController : MonoBehaviour, IEnemyResett
     // ビーム制御用の変数
     private SpriteRenderer beamSpriteRenderer;
     private BoxCollider2D beamCollider;
+    private ContactDamageController beamDamageController;
     private float defaultBeamHeight; // ビームスプライトの元の高さ（太さ）
     private float targetBeamLength; // 予測線で計算された「ビームの目標の長さ」
     #endregion
@@ -152,8 +157,7 @@ public class DesertTempleGolemTurretMoveController : MonoBehaviour, IEnemyResett
             activator = GetComponentInParent<EnemyActivator>();
 
         rbody = GetComponent<Rigidbody2D>();
-        animator = GetComponent<Animator>();
-        sePlayer = GetComponent<CriWare.Assets.CriAtomSePlayer>();
+        _sePlayer = GetComponent<CriWare.Assets.CriAtomSePlayer>();
         enemyHP = GetComponent<EnemyHealth>();
 
         if (aimPivot != null)
@@ -180,6 +184,7 @@ public class DesertTempleGolemTurretMoveController : MonoBehaviour, IEnemyResett
             beamObject.SetActive(false);
             beamSpriteRenderer = beamObject.GetComponent<SpriteRenderer>();
             beamCollider = beamObject.GetComponent<BoxCollider2D>();
+            beamDamageController = beamObject.GetComponent<ContactDamageController>();
 
             if (beamSpriteRenderer != null)
             {
@@ -192,7 +197,7 @@ public class DesertTempleGolemTurretMoveController : MonoBehaviour, IEnemyResett
 
     private void Start()
     {
-        ResetState(); // Debug用に開始時に状態をリセットする（必要に応じて削除してもOK）
+        ResetState(); // Debug用に開始時に状態をリセットする
     }
 
     private void FixedUpdate()
@@ -263,6 +268,8 @@ public class DesertTempleGolemTurretMoveController : MonoBehaviour, IEnemyResett
         }
 
         tag = GameConstants.IMMUNE_ENEMY_TAG_NAME;
+
+        beamDamageController?.SetNormalDamage(attackDamage); // ビームの攻撃力を設定
 
         // 初期向きの設定
         rightFlag = (Random.value > 0.5f);
@@ -376,6 +383,7 @@ public class DesertTempleGolemTurretMoveController : MonoBehaviour, IEnemyResett
         SetLineColor(aimColor);
 
         float timer = 0f;
+        CriAtomExPlayback chargeSePlayback = _sePlayer.Play(SE_EnemyAction.LaserCharge1); // チャージSE再生
         while (timer < aimingDuration)
         {
             // 追尾の進行度（0.0～1.0）を計算してメソッドに渡す
@@ -395,6 +403,8 @@ public class DesertTempleGolemTurretMoveController : MonoBehaviour, IEnemyResett
         SetLineColor(lockOnColor);
 
         timer = 0f;
+        chargeSePlayback.Stop(); // チャージSE停止
+        CriAtomExPlayback lockOnSePlayback = _sePlayer.Play(SE_EnemyAction.LaserCharge_Full1); // ロックオンSE再生
         while (timer < lockOnDuration)
         {
             // プレイヤーが壁裏に逃げることも考慮し、線の長さと貫通チェックだけは続ける
@@ -408,6 +418,7 @@ public class DesertTempleGolemTurretMoveController : MonoBehaviour, IEnemyResett
             timer += Time.deltaTime;
             yield return null;
         }
+        lockOnSePlayback.Stop(); // ロックオンSE停止
 
         // --- 3. ビーム発射 (Firing) ---
         currentState = TurretState.Firing;
@@ -417,8 +428,7 @@ public class DesertTempleGolemTurretMoveController : MonoBehaviour, IEnemyResett
         // ビーム判定をオン
         beamObject.SetActive(true);
 
-        // TODO: SEの設定
-        // sePlayer.Play(SE_EnemyAction.Shoot_Water1);
+        _sePlayer.Play(SE_EnemyAction.Shoot3); // ビーム発射SE再生
 
         // ビームを目標の長さ(targetBeamLength)まで指定速度で伸ばす
         float currentLength = 0f;

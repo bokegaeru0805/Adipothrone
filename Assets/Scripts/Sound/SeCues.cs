@@ -102,6 +102,7 @@ public enum SE_EnemyAction
     LaserCharge1 = 4150,
     LaserCharge_Full1 = 4155,
     LockOn1 = 4160,
+    Launch1 = 4165,
 }
 
 /// <summary>

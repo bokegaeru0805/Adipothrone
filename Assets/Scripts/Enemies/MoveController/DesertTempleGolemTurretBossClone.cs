@@ -24,6 +24,9 @@ public class DesertTempleGolemTurretBossClone : MonoBehaviour
     [SerializeField, Tooltip("照準のピボット（ビームの回転の中心）")]
     private Transform aimPivot;
 
+    [SerializeField, Tooltip("頭のピボット（上下反転の判定用）")]
+    private Transform headPivot;
+
     [SerializeField, Tooltip("ビームの当たり判定を持つオブジェクト")]
     private GameObject beamObject;
 
@@ -63,6 +66,7 @@ public class DesertTempleGolemTurretBossClone : MonoBehaviour
     private CriWare.Assets.CriAtomSePlayer _sePlayer;
     private SpriteRenderer beamSpriteRenderer;
     private BoxCollider2D beamCollider;
+    private ContactDamageController beamDamageController;
     #endregion
 
     #region 状態管理フラグ
@@ -109,6 +113,7 @@ public class DesertTempleGolemTurretBossClone : MonoBehaviour
             beamObject.SetActive(false);
             beamSpriteRenderer = beamObject.GetComponent<SpriteRenderer>();
             beamCollider = beamObject.GetComponent<BoxCollider2D>();
+            beamDamageController = beamObject.GetComponent<ContactDamageController>();
             if (beamSpriteRenderer != null)
                 defaultBeamHeight = beamSpriteRenderer.size.y;
         }
@@ -206,6 +211,7 @@ public class DesertTempleGolemTurretBossClone : MonoBehaviour
         _sePlayer.Play(SE_EnemyAction.Spawn2);
 
         // フェードイン演出 (インスペクターで登録した全てのSpriteRendererが対象)
+        SetAlpha(0f); // まずは完全に透明にしてから
         FadeTo(1f, 0.5f).SetEase(Ease.InQuad);
     }
 
@@ -255,7 +261,8 @@ public class DesertTempleGolemTurretBossClone : MonoBehaviour
         float firingDuration,
         Color aimColor,
         Color lockOnColor,
-        float lineWidth
+        float lineWidth,
+        int damage
     )
     {
         if (!isActiveClone)
@@ -269,7 +276,8 @@ public class DesertTempleGolemTurretBossClone : MonoBehaviour
                 firingDuration,
                 aimColor,
                 lockOnColor,
-                lineWidth
+                lineWidth,
+                damage
             )
         );
     }
@@ -284,7 +292,8 @@ public class DesertTempleGolemTurretBossClone : MonoBehaviour
         float firingDuration,
         Color aimColor,
         Color lockOnColor,
-        float lineWidth
+        float lineWidth,
+        int damage
     )
     {
         // 予測線の初期設定
@@ -363,9 +372,20 @@ public class DesertTempleGolemTurretBossClone : MonoBehaviour
             predictionLine.startWidth = lineWidth;
         }
 
+        // ビームに攻撃力を設定
+        if (beamDamageController != null)
+        {
+            beamDamageController.SetNormalDamage(damage);
+        }
+
         CriAtomExPlayback laserSePlayback = _sePlayer.Play(SE_EnemyAction.Laser1); // 発射音再生
         if (beamObject != null)
             beamObject.SetActive(true);
+        ObjectPooler.SceneInstance.SpawnFromPool(
+            DesertTempleGolemTurretBossMoveController.FLASH_EFFECT_POOLTAG,
+            aimPivot.position,
+            Quaternion.identity
+        ); // 発射フラッシュエフェクト
 
         // ビームを指定速度で目標の長さまで伸ばす
         float currentLength = 0f;
@@ -394,17 +414,27 @@ public class DesertTempleGolemTurretBossClone : MonoBehaviour
     /// <summary>
     /// パターンC（連続着弾）を本体と同期して実行する外部呼び出し用メソッド。
     /// </summary>
-    public void ExecutePatternC_MultiShoot(float interval, float speed, float warningInterval)
+    public void ExecutePatternC_MultiShoot(
+        float interval,
+        float speed,
+        float warningInterval,
+        int damage
+    )
     {
         if (!isActiveClone)
             return;
-        StartCoroutine(MultiShootRoutine(interval, speed, warningInterval));
+        StartCoroutine(MultiShootRoutine(interval, speed, warningInterval, damage));
     }
 
     /// <summary>
     /// パターンCの実際の処理を行うコルーチン。
     /// </summary>
-    private IEnumerator MultiShootRoutine(float interval, float speed, float warningInterval)
+    private IEnumerator MultiShootRoutine(
+        float interval,
+        float speed,
+        float warningInterval,
+        int damage
+    )
     {
         List<Vector2> targetPositions = new List<Vector2>();
         List<GameObject> warningMarks = new List<GameObject>();
@@ -463,6 +493,13 @@ public class DesertTempleGolemTurretBossClone : MonoBehaviour
 
             if (bullet != null)
             {
+                // 弾に攻撃力を設定
+                var damageController = bullet.GetComponent<ContactDamageController>();
+                if (damageController != null)
+                {
+                    damageController.SetNormalDamage(damage);
+                }
+
                 _sePlayer.Play(SE_EnemyAction.Shoot3); // 発射音を再生
                 // 弾の追従と消去を管理するコルーチンを個別に起動
                 StartCoroutine(TrackAndDestroyBullet(bullet, target, mark, speed));
@@ -595,8 +632,29 @@ public class DesertTempleGolemTurretBossClone : MonoBehaviour
     /// <param name="direction">狙っている方向のベクトル</param>
     private void UpdateFaceSpriteByDirection(Vector2 direction)
     {
+        if (faceSpriteRenderer == null)
+            return;
+
         // 左右の向きを無視して、上下の傾き角度を計算
         float angle = Mathf.Atan2(direction.y, Mathf.Abs(direction.x)) * Mathf.Rad2Deg;
+
+        // 自身の上下が反対（逆さま）かどうかを判定
+        bool isUpsideDown = false;
+
+        // headPivotが設定されていればそのZ回転を、なければ自身のZ回転を確認
+        float zAngle = headPivot != null ? headPivot.eulerAngles.z : transform.eulerAngles.z;
+
+        // Z回転が90度〜270度の間（≒180度）であれば逆さまとみなす
+        if (zAngle > 90f && zAngle < 270f)
+        {
+            isUpsideDown = true;
+        }
+
+        // 逆さまの場合は、ワールドでの上下と顔にとっての上下が逆になるため角度を反転
+        if (isUpsideDown)
+        {
+            angle = -angle;
+        }
 
         if (angle > FACE_ANGLE_THRESHOLD)
             currentFaceType = FaceType.LookUp;
