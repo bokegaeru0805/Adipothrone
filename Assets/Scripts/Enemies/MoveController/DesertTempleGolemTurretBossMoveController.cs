@@ -150,6 +150,9 @@ public class DesertTempleGolemTurretBossMoveController : MonoBehaviour, IEnemyRe
     [SerializeField, Tooltip("連続着弾攻撃で狙うターゲットの数")]
     private int multiShootTargetCount = 5;
 
+    [SerializeField, Tooltip("プレイヤー周辺を狙う際の最大のブレ幅（半径）")]
+    private float multiShootTargetPlayerRadius = 4.0f;
+
     [SerializeField, Tooltip("連続着弾攻撃の弾速")]
     private float multiShootBulletSpeed = 15.0f;
 
@@ -176,6 +179,9 @@ public class DesertTempleGolemTurretBossMoveController : MonoBehaviour, IEnemyRe
 
     [SerializeField, Tooltip("背後の配置オフセット（ボス中心からのX軸方向の距離）")]
     private float backSpawnOffsetX = 3.0f;
+
+    [SerializeField, Tooltip("弾を配置してから発射を開始するまでの待機（タメ）時間（秒）")]
+    private float wallShootChargeTime = 2.0f;
 
     [SerializeField, Tooltip("壁撃ちの弾速")]
     private float wallShootBulletSpeed = 10.0f;
@@ -534,6 +540,13 @@ public class DesertTempleGolemTurretBossMoveController : MonoBehaviour, IEnemyRe
             if (coreDamageProxy != null)
                 coreDamageProxy.enabled = false;
         }
+
+        // Animatorを初期化する前に、全パラメーターをリセットする
+        if (animator != null)
+        {
+            animator.Rebind();
+            animator.Update(0f);
+        }
     }
 
     #endregion --- 初期化・リセット処理 ---
@@ -825,6 +838,15 @@ public class DesertTempleGolemTurretBossMoveController : MonoBehaviour, IEnemyRe
         if (beamDamageController != null)
         {
             beamDamageController.SetNormalDamage(surpriseLaserDamage);
+
+            // 向いている方向へ固定ベクトルで飛ばし、力はデフォルトの2倍にする
+            KnockbackData surpriseLaserKbData = new KnockbackData
+            {
+                type = KnockbackType.FixedVector,
+                fixedDirection = isRightFacing ? Vector2.right : Vector2.left,
+                force = GameConstants.PLAYER_DAMAGE_DEFAULT_KNOCKBACK_FORCE * 2f,
+            };
+            beamDamageController.SetKnockbackSettings(surpriseLaserKbData);
         }
 
         // 即座に発射（予測線なし）
@@ -954,6 +976,7 @@ public class DesertTempleGolemTurretBossMoveController : MonoBehaviour, IEnemyRe
         if (beamDamageController != null)
         {
             beamDamageController.SetNormalDamage(normalLaserDamage);
+            beamDamageController.ResetKnockbackSettings();
         }
 
         CriAtomExPlayback laserSePlayback = _sePlayer.Play(SE_EnemyAction.Laser1); // 発射音再生
@@ -1017,13 +1040,41 @@ public class DesertTempleGolemTurretBossMoveController : MonoBehaviour, IEnemyRe
         List<Vector2> targetPositions = new List<Vector2>();
         List<GameObject> warningMarks = new List<GameObject>(); // 予告マークを保持するリスト
 
+        // 現在のHP割合から、狙い撃ち確率を計算する
+        float hpRatio = bossHealth != null ? bossHealth.NormalizedHP : 1.0f;
+
+        // HP30%(0.3) 〜 100%(1.0) の範囲を 0.0 〜 1.0 の割合に変換（0.3以下なら0、1.0なら1になる）
+        float t = Mathf.InverseLerp(0.3f, 1.0f, hpRatio);
+
+        // HP30%以下(t=0)のときは最大確率、HP100%(t=1)のときは確率0% になるように線形補間する
+        float currentTargetProbability = Mathf.Lerp(0.75f, 0.0f, t);
+
         // --- 1. ターゲット座標の決定と予告マークの表示フェーズ ---
         for (int i = 0; i < multiShootTargetCount; i++)
         {
-            // 範囲内からランダムな座標を生成
-            float randX = Random.Range(leftBound, rightBound);
-            float randY = Random.Range(groundY, ceilingY);
-            Vector2 targetPos = new Vector2(randX, randY);
+            Vector2 targetPos;
+
+            // 確率に応じて「プレイヤー周辺」か「完全ランダム」かを分岐する
+            if (playerTransform != null && Random.value < currentTargetProbability)
+            {
+                // プレイヤーの周辺を狙う（円状のランダムなズレを加える）
+                Vector2 randomOffset = Random.insideUnitCircle * multiShootTargetPlayerRadius;
+                targetPos = (Vector2)playerTransform.position + randomOffset;
+
+                // 行動範囲外（壁や地面の中）に出ないように座標を制限（クランプ）する
+                targetPos.x = Mathf.Clamp(targetPos.x, leftBound, rightBound);
+                targetPos.y = Mathf.Clamp(targetPos.y, groundY, ceilingY);
+
+                // Debug.Log($"パターンC: プレイヤー周辺を狙います（現在の確率: {currentTargetProbability:P1}）");
+            }
+            else
+            {
+                // 従来通り、範囲内から完全にランダムな座標を生成
+                float randX = Random.Range(leftBound, rightBound);
+                float randY = Random.Range(groundY, ceilingY);
+                targetPos = new Vector2(randX, randY);
+            }
+
             targetPositions.Add(targetPos);
 
             // 予告マークの出現位置（照準ピボット、なければ自身）
@@ -1186,7 +1237,7 @@ public class DesertTempleGolemTurretBossMoveController : MonoBehaviour, IEnemyRe
         // 一斉掃射：一気に高速回転（下-3.0 / 上3.0）
         SetRunesAnimationSpeed(-3.0f, 3.0f, 0f);
 
-        yield return new WaitForSeconds(1.0f);
+        yield return new WaitForSeconds(wallShootChargeTime);
 
         ObjectPooler.SceneInstance.SpawnFromPool(
             FLASH_EFFECT_POOLTAG,

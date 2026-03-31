@@ -148,6 +148,46 @@ public class ContactDamageController : MonoBehaviour
         currentDamageValue = ratio;
     }
 
+    /// <summary>
+    /// ダメージ設定を初期状態（インスペクターでの設定値、またはデフォルト値）にリセットします。
+    /// 外部スクリプトで変更した設定を元に戻す際に使用します。
+    /// </summary>
+    public void ResetDamageSettings()
+    {
+        if (useInspectorSettings)
+        {
+            currentDamageType = initialDamageType;
+            currentDamageValue = initialDamageValue;
+        }
+        else
+        {
+            // デフォルト: 1ダメージ
+            currentDamageType = DamageType.Normal;
+            currentDamageValue = 1f;
+        }
+    }
+
+    /// <summary>
+    /// ノックバック設定を初期状態（インスペクターでの設定値、またはデフォルト値）にリセットします。
+    /// 外部スクリプトで変更した設定を元に戻す際に使用します。
+    /// </summary>
+    public void ResetKnockbackSettings()
+    {
+        if (useKnockbackSettings)
+        {
+            currentKnockbackForce = initialKnockbackForce;
+            currentKnockbackType = initialKnockbackType;
+            currentFixedDirection = initialFixedDirection;
+        }
+        else
+        {
+            // デフォルト
+            currentKnockbackForce = GameConstants.PLAYER_DAMAGE_DEFAULT_KNOCKBACK_FORCE;
+            currentKnockbackType = KnockbackType.HorizontalFromSource;
+            currentFixedDirection = Vector2.right;
+        }
+    }
+
     #endregion
 
     #region External Setup Methods (Knockback)
