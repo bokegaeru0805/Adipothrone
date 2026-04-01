@@ -38,6 +38,17 @@ public class DustDevilActiveMoveController : MonoBehaviour, IEnemyResettable
     #endregion
 
     #region Inspector Settings
+
+    [Header("敵のタイプ")]
+    [SerializeField]
+    private EnemyVariant variantType = EnemyVariant.None; //敵の種類を設定
+
+    private enum EnemyVariant
+    {
+        None = 0,
+        Desert = 1,
+    }
+
     [Header("設定項目")]
     [SerializeField]
     private EnemyActivator activator = null; // 親のEnemyActivatorコンポーネント
@@ -117,6 +128,16 @@ public class DustDevilActiveMoveController : MonoBehaviour, IEnemyResettable
             GameConstants.PHYSICS_LAYER_NAME_GROUND,
             GameConstants.PHYSICS_LAYER_NAME_OBJECT_GROUND
         );
+
+        switch (variantType)
+        {
+            case EnemyVariant.Desert:
+                damage = 114;
+                break;
+            default:
+                Debug.LogError($"{this.name}のEnemyVariantが設定されていません。", this);
+                break;
+        }
 
         if (activator == null)
         {

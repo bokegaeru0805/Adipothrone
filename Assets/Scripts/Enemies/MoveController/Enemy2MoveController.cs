@@ -81,7 +81,7 @@ public class Enemy2MoveController : MonoBehaviour, IEnemyResettable
         switch (variantType)
         {
             case EnemyVariant.TutorialStage:
-                shootDamage = 14;
+                shootDamage = 11;
                 break;
             default:
                 Debug.LogError($"{this.name}のEnemyVariantが設定されていません。");

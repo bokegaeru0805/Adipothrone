@@ -75,9 +75,9 @@ public class FieldEvent_Chapter1 : BaseFieldEvent
                     flagManager.SetBoolFlag(TutorialEvent.SwordTutorialComplete, true);
                     isEventTriggered = true; // イベントがトリガーされたことを記録
                     GameManager.instance.savedata.WeaponInventoryData.AddWeapon(
-                        BladeName.blade_wood
+                        BladeName.Blade_wood
                     ); //木の剣を入手
-                    WeaponManager.instance.ReplaceEquippedWeapon(BladeName.blade_wood); //木の剣を装備
+                    WeaponManager.instance.ReplaceEquippedWeapon(BladeName.Blade_wood); //木の剣を装備
                     PlayerManager.instance.SetPlayerAttackType(PlayerAttackType.Blade); // プレイヤーの攻撃方法を剣に変更
                     PlayerManager.instance.SetPlayerBoolStatus(
                         PlayerStatusBoolName.isChangeAttackType,

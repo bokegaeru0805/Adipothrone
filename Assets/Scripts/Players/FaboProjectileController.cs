@@ -4,7 +4,7 @@ using System.Linq;
 using UnityEngine;
 
 [RequireComponent(typeof(CriWare.Assets.CriAtomSePlayer))]
-public class Robot_shoot_move : MonoBehaviour
+public class FaboProjectileController : MonoBehaviour
 {
     #region 外部コンポーネント参照
     //================================================================================
@@ -181,7 +181,7 @@ public class Robot_shoot_move : MonoBehaviour
             transform.position,
             Quaternion.identity
         );
-        Robot_shoot_move subBulletScript = subBulletGO.GetComponent<Robot_shoot_move>();
+        FaboProjectileController subBulletScript = subBulletGO.GetComponent<FaboProjectileController>();
 
         // サブ弾として初期化
 

@@ -128,7 +128,7 @@ public class Robot_move : MonoBehaviour
 
     // 外部スクリプトの参照をキャッシュ
     private Robot_blade_move bladeMoveScript;
-    private Robot_shoot_move shootMoveScriptPrefab; // 弾はPrefabから生成するため、Prefabのスクリプトを保持
+    private FaboProjectileController shootMoveScriptPrefab; // 弾はPrefabから生成するため、Prefabのスクリプトを保持
     #endregion
 
     private void Awake()
@@ -149,7 +149,7 @@ public class Robot_move : MonoBehaviour
         }
         if (shoot_prefab != null)
         {
-            shootMoveScriptPrefab = shoot_prefab.GetComponent<Robot_shoot_move>();
+            shootMoveScriptPrefab = shoot_prefab.GetComponent<FaboProjectileController>();
         }
     }
 
@@ -277,7 +277,7 @@ public class Robot_move : MonoBehaviour
         GameObject newGameObject = Instantiate(shoot_prefab) as GameObject; // 弾1のプレハブを生成
         newGameObject.transform.position = newPos; //弾の位置を設定
 
-        var shootMove = newGameObject.GetComponent<Robot_shoot_move>();
+        var shootMove = newGameObject.GetComponent<FaboProjectileController>();
         if (shootMove != null)
         {
             //キャッシュしておいた最新の武器データを渡して初期化
@@ -285,7 +285,7 @@ public class Robot_move : MonoBehaviour
         }
 
         float EnableMove_Sec =
-            newGameObject.GetComponent<Robot_shoot_move>().vanishTime * EnableMoveTimeAcjuctment; //プレイヤーが動けない時間を設定
+            newGameObject.GetComponent<FaboProjectileController>().vanishTime * EnableMoveTimeAcjuctment; //プレイヤーが動けない時間を設定
         StartCoroutine(AttackStart(EnableMove_Sec, currentShootData.shotInterval)); //待機
     }
 

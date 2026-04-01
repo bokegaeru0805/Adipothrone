@@ -10,6 +10,10 @@ public class BabyDrakeMoveController : MonoBehaviour, IEnemyResettable
 {
     private const float MOVE_RANGE = 10.0f; // ランダムに設定する場合の移動幅
 
+    [Header("敵のタイプ")]
+    [SerializeField]
+    private EnemyVariant variantType = EnemyVariant.None; //敵の種類を設定
+
     [Header("設定項目")]
     [SerializeField]
     private Transform playerTransform = null;
@@ -18,9 +22,6 @@ public class BabyDrakeMoveController : MonoBehaviour, IEnemyResettable
     private EnemyActivator activator = null; // 親のEnemyActivatorコンポーネント
 
     [Header("移動・攻撃の基本設定")]
-    [SerializeField, Tooltip("この敵がプレイヤーに与えるダメージ")]
-    private int damage = 0;
-
     [SerializeField]
     private float speedX = 4.0f;
 
@@ -73,6 +74,7 @@ public class BabyDrakeMoveController : MonoBehaviour, IEnemyResettable
     // --- 内部変数 ---
     private float verticalAdjustSpeed = 10f; // 地面から抜け出す速度
     private float vx = 0;
+    private int damage = 0;
     private float groundIgnoreAfterJumpTime = 0.1f;
     private float jumpStartTime;
     private float timeToReverseWhenStuck = 2.0f; //動けないと判断してから反転するまでの時間（秒）
@@ -114,6 +116,13 @@ public class BabyDrakeMoveController : MonoBehaviour, IEnemyResettable
     }
 
     private DrakeState currentState = DrakeState.Idle;
+
+    private enum EnemyVariant
+    {
+        None = 0,
+        Desert = 1,
+    }
+
     private bool rightFlag = false;
     private Vector2 pos = Vector2.zero;
 
@@ -123,6 +132,16 @@ public class BabyDrakeMoveController : MonoBehaviour, IEnemyResettable
             GameConstants.PHYSICS_LAYER_NAME_GROUND,
             GameConstants.PHYSICS_LAYER_NAME_OBJECT_GROUND
         );
+
+        switch (variantType)
+        {
+            case EnemyVariant.Desert:
+                damage = 72;
+                break;
+            default:
+                Debug.LogError($"{this.name}のEnemyVariantが設定されていません。", this);
+                break;
+        }
 
         if (overlapCheckPoint == null)
         {

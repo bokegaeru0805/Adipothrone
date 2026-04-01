@@ -17,7 +17,6 @@ public class PlayerBodyManager : MonoBehaviour
     public int AnimBodyState { get; private set; } = GameConstants.ANIM_BODY_STATE_NORMAL; // プレイヤーのアニメーション体形状態
     public float attackWpScale { get; private set; } = 0; // 攻撃力のWP倍率
     public float defenseWpScale { get; private set; } = 0; // 防御力のWP倍率
-    public float speedWpScale { get; private set; } = 0; // スピードのWP倍率
     public event Action OnChangeBodyState; // 体形状態が変更されたときに発行されるイベント
 
     private void Awake()
@@ -147,7 +146,6 @@ public class PlayerBodyManager : MonoBehaviour
         // WPに応じてスケールを設定
         attackWpScale = 1 + playerCurrentWP * GameConstants.PLAYER_ATTACK_WP_MULTIPLIER;
         defenseWpScale = 1 + playerCurrentWP * GameConstants.PLAYER_DEFENSE_WP_MULTIPLIER;
-        speedWpScale = 1 + playerCurrentWP * GameConstants.PLAYER_MOVE_WP_MULTIPLIER;
     }
 
     private int GetBodyStateFromWP(int currentWP)

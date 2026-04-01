@@ -439,6 +439,7 @@ public class PlayerEffectManager : MonoBehaviour
         return Mathf.Max(1, totalDamage); // ダメージ量は1以上にする
     }
 
+    /// <summary>
     /// 最終的な防御力を計算
     /// </summary>
     public int CalculateFinalDefensePower()
@@ -483,7 +484,7 @@ public class PlayerEffectManager : MonoBehaviour
         float effectDelta = GameConstants.PLAYER_MOVE_SPEED_EFFECT_MULTIPLIER * deltaValue;
 
         // PlayerBodyManagerからWP倍率を取得して反映
-        float finalSpeed = currentBaseSpeed * playerBodyManager.speedWpScale * (1f + effectDelta);
+        float finalSpeed = currentBaseSpeed * (1f + effectDelta);
 
         return Mathf.Min(finalSpeed, GameConstants.PLAYER_MOVE_MAX_SPEED); // 最大速度を超えないようにする
     }
@@ -505,7 +506,7 @@ public class PlayerEffectManager : MonoBehaviour
         float effectDelta = GameConstants.PLAYER_WEAPON_SPEED_EFFECT_MULTIPLIER * deltaValue;
 
         // PlayerBodyManagerからWP倍率を取得して反映
-        float finalSpeed = baseSpeed / (playerBodyManager.speedWpScale * (1f + effectDelta));
+        float finalSpeed = baseSpeed / (1f + effectDelta); // スピードエフェクトは攻撃速度を上げるほど数値が大きくなるが、実際の速度は速くなるように逆数で反映させる
 
         return Mathf.Max(finalSpeed, GameConstants.PLAYER_BLADE_MIN_SPEED); // 最小速度を下回らないようにする
     }

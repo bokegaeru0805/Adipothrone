@@ -14,6 +14,16 @@ public class DesertTempleGolemWalkMoveController : MonoBehaviour, IEnemyResettab
 
     #region Inspector Settings
 
+    [Header("敵のタイプ")]
+    [SerializeField]
+    private EnemyVariant variantType = EnemyVariant.None; //敵の種類を設定
+
+    private enum EnemyVariant
+    {
+        None = 0,
+        Desert = 1,
+    }
+
     [Header("基本設定")]
     [SerializeField]
     private Transform playerTransform = null;
@@ -149,6 +159,16 @@ public class DesertTempleGolemWalkMoveController : MonoBehaviour, IEnemyResettab
             GameConstants.PHYSICS_LAYER_NAME_GROUND,
             GameConstants.PHYSICS_LAYER_NAME_OBJECT_GROUND
         );
+
+        switch (variantType)
+        {
+            case EnemyVariant.Desert:
+                damage = 150;
+                break;
+            default:
+                Debug.LogError($"{this.name}のEnemyVariantが設定されていません。", this);
+                break;
+        }
 
         // コンポーネントの取得
         if (activator == null)

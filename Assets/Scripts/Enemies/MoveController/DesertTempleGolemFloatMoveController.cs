@@ -13,6 +13,10 @@ public class DesertTempleGolemFloatMoveController : MonoBehaviour, IEnemyResetta
     private const string SHOOT_POOLTAG = "DesertTempleGolemShoot"; // 弾のプールタグ名
     private const string ATTACK_ANIMATION_CLIP_NAME = "DesertTempleGolem_attack"; // 攻撃アニメーションのクリップ名
 
+    [Header("敵のタイプ")]
+    [SerializeField]
+    private EnemyVariant variantType = EnemyVariant.None; //敵の種類を設定
+
     [Header("設定項目")]
     [SerializeField]
     private Transform playerTransform = null;
@@ -36,10 +40,6 @@ public class DesertTempleGolemFloatMoveController : MonoBehaviour, IEnemyResetta
     [Tooltip("プレイヤーがこのY距離以内にいると攻撃する")]
     [SerializeField]
     private float attackRangeY = 5.0f;
-
-    [Tooltip("この敵がプレイヤーに与えるダメージ")]
-    [SerializeField]
-    private int damage = 0;
 
     [Tooltip("弾の速度")]
     [SerializeField]
@@ -143,6 +143,7 @@ public class DesertTempleGolemFloatMoveController : MonoBehaviour, IEnemyResetta
     private float rayLength = 20.0f; //地面を探すレイの長さ
     private float attackAnimationTime = 0.5f; // 攻撃アニメーションの時間(秒)、デフォルト値。Awakeでアニメーションクリップから取得して上書きされる
     private bool rightFlag = false;
+    private int damage = 0;
     private float baseY = 0f; // サイン波移動の基準となるY座標
     private SpriteRenderer spriteRenderer;
     private Rigidbody2D rbody;
@@ -160,6 +161,13 @@ public class DesertTempleGolemFloatMoveController : MonoBehaviour, IEnemyResetta
     }
 
     private DesertTempleGolemState currentState = DesertTempleGolemState.Moving;
+
+    private enum EnemyVariant
+    {
+        None = 0,
+        Desert = 1,
+    }
+
     private List<GameObject> spawnedObjects = new List<GameObject>(); //生成したオブジェクトを管理するリスト
 
     private void Awake()
@@ -168,6 +176,16 @@ public class DesertTempleGolemFloatMoveController : MonoBehaviour, IEnemyResetta
             GameConstants.PHYSICS_LAYER_NAME_GROUND,
             GameConstants.PHYSICS_LAYER_NAME_OBJECT_GROUND
         );
+
+        switch (variantType)
+        {
+            case EnemyVariant.Desert:
+                damage = 110;
+                break;
+            default:
+                Debug.LogError($"{this.name}のEnemyVariantが設定されていません。", this);
+                break;
+        }
 
         if (activator == null)
         {

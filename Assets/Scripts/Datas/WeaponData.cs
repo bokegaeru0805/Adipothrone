@@ -7,11 +7,3 @@ public abstract class WeaponData : BaseItemData
 {
     public float wpCost; // WP消費量
 }
-
-
-// [CreateAssetMenu(fileName = "WaveWeapon", menuName = "Weapons/WaveWeapon")]
-// public class WaveWeaponData : WeaponData
-// {
-//     public float vanishTime; //消滅時間(秒)
-//     public float maxRadius; //最大半径
-// }

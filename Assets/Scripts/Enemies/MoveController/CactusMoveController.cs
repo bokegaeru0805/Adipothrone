@@ -7,6 +7,10 @@ using UnityEngine;
 [RequireComponent(typeof(CriWare.Assets.CriAtomSePlayer))]
 public class CactusMoveController : MonoBehaviour, IEnemyResettable
 {
+    [Header("敵のタイプ")]
+    [SerializeField]
+    private EnemyVariant variantType = EnemyVariant.None; //敵の種類を設定
+
     [Header("基本コンポーネント")]
     [SerializeField]
     private GameObject rightArmObject = null;
@@ -35,9 +39,6 @@ public class CactusMoveController : MonoBehaviour, IEnemyResettable
     private bool isFlowerEnabled = false;
 
     [Header("攻撃の設定")]
-    [SerializeField, Tooltip("この敵がプレイヤーに与えるダメージ")]
-    private int damage = 0;
-
     [SerializeField, Tooltip("攻撃を行う確率（0.0～1.0）")]
     [Range(0f, 1f)]
     private float attack_probability = 0.5f;
@@ -98,6 +99,14 @@ public class CactusMoveController : MonoBehaviour, IEnemyResettable
     }
 
     private CactusState currentState = CactusState.Idle;
+
+    private enum EnemyVariant
+    {
+        None = 0,
+        Desert = 1,
+    }
+
+    private int damage = 0;
     private bool rightFlag = false;
     private bool shouldAttack = false;
     private const float BALL_ATTACK_ANIMATION_TIME = 0.800f; // ボール攻撃のアニメーション時間
@@ -107,7 +116,20 @@ public class CactusMoveController : MonoBehaviour, IEnemyResettable
 
     private void Awake()
     {
-        groundLayer = LayerMask.GetMask(GameConstants.PHYSICS_LAYER_NAME_GROUND); // Groundレイヤーを取得
+        groundLayer = LayerMask.GetMask(
+            GameConstants.PHYSICS_LAYER_NAME_GROUND,
+            GameConstants.PHYSICS_LAYER_NAME_OBJECT_GROUND
+        );
+
+        switch (variantType)
+        {
+            case EnemyVariant.Desert:
+                damage = 65;
+                break;
+            default:
+                Debug.LogError($"{this.name}のEnemyVariantが設定されていません。", this);
+                break;
+        }
 
         if (leftArmObject == null || rightArmObject == null || flowerObject == null)
         {
@@ -430,7 +452,7 @@ public class CactusMoveController : MonoBehaviour, IEnemyResettable
                 Vector3 launchDir = (dir.normalized + Vector3.up).normalized;
                 ballRb.velocity = launchDir * ballSpeed;
             }
-            
+
             _sePlayer.Play(SE_EnemyAction.Attack_throw1); // 攻撃音再生
         }
 

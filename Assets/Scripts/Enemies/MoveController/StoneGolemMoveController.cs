@@ -1061,7 +1061,6 @@ public class StoneGolemMoveController : MonoBehaviour
             if (crawlingRock == null || !crawlingRock.activeInHierarchy)
             {
                 rockSePlayback.Stop();
-                Debug.Log("這う岩が消滅したため、SEを停止しました。");
                 yield break;
             }
 

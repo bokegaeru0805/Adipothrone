@@ -47,7 +47,7 @@ public class PlayerStatusLevelManager : MonoBehaviour
 
     /// <summary>
     /// UI表示および内部計算用の「プレイヤー基礎攻撃力」
-    /// 計算式: 現在レベル * (基礎増加値 + 最大レベル * ボーナス係数)
+    /// 計算式: 現在レベル * 基礎増加値 + √(現在レベル * 最大レベル) * ボーナス係数
     /// </summary>
     public int TotalBaseAttackPower
     {
@@ -58,12 +58,15 @@ public class PlayerStatusLevelManager : MonoBehaviour
             );
             int maxAttackLv = playerManager.GetPlayerIntStatus(PlayerStatusIntName.attackMaxLevel);
 
-            float calculated =
-                currentAttackLv
-                * (
-                    GameConstants.STATUS_ATTACK_BASE_INCREASE
-                    + maxAttackLv * GameConstants.STATUS_ATTACK_MAX_LEVEL_BONUS
-                );
+            // 基礎増加分
+            float basePower = currentAttackLv * GameConstants.STATUS_ATTACK_BASE_INCREASE;
+
+            // ボーナス分（平方根を用いることで通常プレイ時は完全な線形成長となる）
+            float bonusPower =
+                Mathf.Sqrt(currentAttackLv * maxAttackLv)
+                * GameConstants.STATUS_ATTACK_MAX_LEVEL_BONUS;
+
+            float calculated = basePower + bonusPower;
             return Mathf.RoundToInt(calculated);
         }
     }

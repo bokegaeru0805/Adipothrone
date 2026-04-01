@@ -8,6 +8,10 @@ public class DustDevilMoveController : MonoBehaviour, IEnemyResettable
 {
     private const string WIND_POOLTAG = "DustDevilWind";
 
+    [Header("敵のタイプ")]
+    [SerializeField]
+    private EnemyVariant variantType = EnemyVariant.None; //敵の種類を設定
+
     [Header("設定項目")]
     [SerializeField]
     private Transform playerTransform = null;
@@ -70,12 +74,28 @@ public class DustDevilMoveController : MonoBehaviour, IEnemyResettable
 
     private DustDevilState currentState = DustDevilState.Idle;
 
+    private enum EnemyVariant
+    {
+        None = 0,
+        Desert = 1,
+    }
+
     private void Awake()
     {
         groundLayer = LayerMask.GetMask(
             GameConstants.PHYSICS_LAYER_NAME_GROUND,
             GameConstants.PHYSICS_LAYER_NAME_OBJECT_GROUND
         );
+
+        switch (variantType)
+        {
+            case EnemyVariant.Desert:
+                damage = 89;
+                break;
+            default:
+                Debug.LogError($"{this.name}のEnemyVariantが設定されていません。", this);
+                break;
+        }
 
         if (activator == null)
         {

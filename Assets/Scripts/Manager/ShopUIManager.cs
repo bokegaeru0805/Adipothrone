@@ -7,64 +7,61 @@ using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
 
+#region ショップUI管理クラス
+/// <summary>
+/// ショップのUI（購入・売却・タブ切り替え・会話など）を総合的に管理するシングルトンクラス。
+/// </summary>
 public class ShopUIManager : MonoBehaviour
 {
-    public static ShopUIManager instance { get; private set; } // ShopUIManagerのインスタンス
-    private PlayerManager playerManager;
-    public static bool isPurchasing = false; // 購入中かどうかのフラグ
+    #region 定義・列挙型・内部クラス
 
-    [Header("ロジック関連の参照")]
-    [SerializeField]
-    private ShopDataBase shopDataBase; // 店のデータベース
+    /// <summary>
+    /// 売却アイテムの種類を定義する列挙型
+    /// </summary>
+    public enum SellItemType
+    {
+        None = 0,
+        ShootWeapon = 10,
+        BladeWeapon = 20,
+        HealItem = 30,
+        MaterialItem = 40,
+    }
 
-    [Header("UI参照のルート")]
-    [SerializeField]
-    private ShopUIRefs uiRefs; // UI参照のルートオブジェクト
+    /// <summary>
+    /// 現在の店の状態（購入モードか売却モードか）を定義する列挙型
+    /// </summary>
+    public enum ShopStatus
+    {
+        None = 0,
+        Buy = 10, // 購入モード
+        Sell = 20, // 売却モード
+    }
 
-    [Header("店の会話ハンドラー")]
-    [SerializeField]
-    private MonoBehaviour conversationHandlerObject;
-    private IShopConversation conversationHandler;
-
-    [HideInInspector]
-    private ShopName currentShopID = ShopName.None; // 現在の店のID
-    public ShopStatus shopStatus { get; private set; } = ShopStatus.None; // 現在の店のステータス（購入モードか売却モードか）
-    private SellItemType sellItemType = SellItemType.None; // 現在の売却アイテムの種類
-    private Enum selectedButtonItemID = null; // 選択されているアイテムのID
-    private Enum preselectedButtonItemID = null; // 前フレームのアイテムID
-    private GameObject lastSelected; //最後に選ばれていたボタンを保存する変数
-    private GameObject lastSelectedPrompt; //最後に選ばれていた購入確認パネルのボタンを保存する変数
-    private GameObject previousSelectedForPageUpdate; // ページナビゲーションの更新用に前フレームの選択を保存する変数
-    private string shopStartBlockName = "StartShopDialogue"; // 店の開始ブロック名
-    private string shopEndBlockName = "EndShopDialogue"; // 店の終了ブロック名
-    private int currentTabIndex = 0; // 選択されているアイテムの種類のインデックス
-    private List<ItemEntry> bladeWeaponList = new List<ItemEntry>(); // ブレード武器のリスト
-    private List<ItemEntry> shootWeaponList = new List<ItemEntry>(); // シュート武器のリスト
-    private List<ItemEntry> healItemList = new List<ItemEntry>(); // 回復アイテムのリスト
-
-    // タブの選択状態を保存するためのデータ構造
+    /// <summary>
+    /// タブの選択状態（ページとフォーカス位置）を保存するためのデータ構造
+    /// </summary>
     private struct TabState
     {
         public int PageIndex;
         public int SelectedButtonIndex;
     }
 
-    // 各アイテムタイプごとの状態を保存する辞書
-    private Dictionary<SellItemType, TabState> sellTabStates =
-        new Dictionary<SellItemType, TabState>();
-
+    /// <summary>
+    /// 売却タブごとのUI要素と更新ロジックを管理するクラス
+    /// </summary>
     [System.Serializable]
     public class SellItemEntry
     {
-        public GameObject itemTab; // アイテムタブのGameObject
+        [Tooltip("アイテムタブのGameObject")]
+        public GameObject itemTab;
 
-        public SellItemType sellItemType; // アイテムの種類
+        [Tooltip("このタブが扱うアイテムの種類")]
+        public SellItemType sellItemType;
 
         /// <summary>
         /// このタブが選択されたかどうかに応じて、UIの表示を更新します。
         /// </summary>
-        /// <param name="isSelected">このタブが選択された場合はtrue。</param>
-
+        /// <param name="isSelected">このタブが選択された場合はtrue</param>
         public void SetTabSelected(bool isSelected)
         {
             if (itemTab != null)
@@ -74,10 +71,9 @@ public class ShopUIManager : MonoBehaviour
                     // 選択中のタブの画像を変更
                     itemTab.GetComponent<Image>().sprite = instance.uiRefs.SelectedTabImage;
 
-                    // アイテムリストの更新
+                    // アイテムリストの取得
                     List<ItemEntry> items;
 
-                    // 表示すべきアイテムリストを取得
                     switch (sellItemType)
                     {
                         case SellItemType.BladeWeapon:
@@ -89,8 +85,11 @@ public class ShopUIManager : MonoBehaviour
                         case SellItemType.HealItem:
                             items = instance.healItemList;
                             break;
+                        case SellItemType.MaterialItem:
+                            items = instance.materialItemList;
+                            break;
                         default:
-                            Debug.LogError("...");
+                            Debug.LogError("未定義の売却アイテムタイプです。");
                             return;
                     }
 
@@ -119,7 +118,7 @@ public class ShopUIManager : MonoBehaviour
                         int targetPage = 0;
                         int targetIndex = 0;
 
-                        //保存された状態データがあれば、それを読み込む
+                        // 保存された状態データがあれば、それを読み込む
                         if (
                             instance.sellTabStates.TryGetValue(
                                 sellItemType,
@@ -131,8 +130,8 @@ public class ShopUIManager : MonoBehaviour
                             targetIndex = savedState.SelectedButtonIndex;
                         }
 
-                        // --- 例外処理 ---
-                        // 1. 保存されたページが現在のアイテム数に対して無効になっていないか検証
+                        // --- 例外処理1: ページの補正 ---
+                        // 保存されたページが現在のアイテム数に対して無効になっていないか検証
                         int maxPage = (items.Count - 1) / instance.uiRefs.ShopButtons.Count;
                         if (targetPage > maxPage)
                         {
@@ -148,8 +147,8 @@ public class ShopUIManager : MonoBehaviour
                             true
                         );
 
-                        // --- 例外処理 ---
-                        // 2. ページに表示されたボタンの数に対して、保存されたインデックスが無効でないか検証
+                        // --- 例外処理2: インデックスの補正 ---
+                        // ページに表示されたボタンの数に対して、保存されたインデックスが無効でないか検証
                         int activeButtons = 0;
                         for (int i = 0; i < instance.uiRefs.ShopButtons.Count; i++)
                         {
@@ -178,26 +177,64 @@ public class ShopUIManager : MonoBehaviour
                 }
                 else
                 {
-                    itemTab.GetComponent<Image>().sprite = instance.uiRefs.UnselectedTabImage; // 選択されていないタブの画像を変更
+                    // 選択されていないタブの画像を変更
+                    itemTab.GetComponent<Image>().sprite = instance.uiRefs.UnselectedTabImage;
                 }
             }
         }
     }
 
-    public enum SellItemType
-    {
-        None = 0,
-        ShootWeapon = 10,
-        BladeWeapon = 20,
-        HealItem = 30,
-    }
+    #endregion
 
-    public enum ShopStatus
-    {
-        None = 0,
-        Buy = 10, // 購入モード
-        Sell = 20, // 売却モード
-    }
+    #region 変数・プロパティ
+
+    public static ShopUIManager instance { get; private set; } // ShopUIManagerのシングルトンインスタンス
+    private PlayerManager playerManager;
+    public static bool isPurchasing = false; // 現在、購入確認パネルを開いて購入処理中かどうかのフラグ
+
+    [Header("ロジック関連の参照")]
+    [SerializeField, Tooltip("全店舗のデータが格納されたデータベース")]
+    private ShopDataBase shopDataBase;
+
+    [Header("UI参照のルート")]
+    [SerializeField, Tooltip("ショップUIの各パーツへの参照をまとめたオブジェクト")]
+    private ShopUIRefs uiRefs;
+
+    [Header("店の会話ハンドラー")]
+    [SerializeField, Tooltip("IShopConversationを実装した会話制御用オブジェクト")]
+    private MonoBehaviour conversationHandlerObject;
+    private IShopConversation conversationHandler;
+
+    [HideInInspector]
+    private ShopName currentShopID = ShopName.None; // 現在開いている店のID
+    public ShopStatus shopStatus { get; private set; } = ShopStatus.None; // 現在の店のステータス（購入/売却）
+    private SellItemType sellItemType = SellItemType.None; // 現在選択中の売却アイテムの種類
+
+    private Enum selectedButtonItemID = null; // 現在カーソルが合っているアイテムのID
+    private Enum preselectedButtonItemID = null; // 1フレーム前にカーソルが合っていたアイテムのID
+
+    private GameObject lastSelected; // 最後に選ばれていたリストのボタンを保存する変数
+    private GameObject lastSelectedPrompt; // 最後に選ばれていた「購入確認パネル」のボタンを保存する変数
+    private GameObject previousSelectedForPageUpdate; // ページナビゲーションの連続入力防止用に前フレームの選択を保存
+
+    private string shopStartBlockName = "StartShopDialogue"; // Fungusの開始ブロック名
+    private string shopEndBlockName = "EndShopDialogue"; // Fungusの終了ブロック名
+
+    private int currentTabIndex = 0; // 現在選択されているタブのインデックス
+
+    // 現在の所持アイテムリストのキャッシュ
+    private List<ItemEntry> bladeWeaponList = new List<ItemEntry>();
+    private List<ItemEntry> shootWeaponList = new List<ItemEntry>();
+    private List<ItemEntry> healItemList = new List<ItemEntry>();
+    private List<ItemEntry> materialItemList = new List<ItemEntry>();
+
+    // 各アイテムタイプごとのタブ状態（ページ番号・カーソル位置）を保存する辞書
+    private Dictionary<SellItemType, TabState> sellTabStates =
+        new Dictionary<SellItemType, TabState>();
+
+    #endregion
+
+    #region 初期化・ライフサイクル
 
     private void Awake()
     {
@@ -209,7 +246,7 @@ public class ShopUIManager : MonoBehaviour
             if (!ValidateReferences())
                 return;
 
-            //iRefs経由でアクセス
+            // UIの初期状態を設定
             lastSelectedPrompt = uiRefs.PurchaseYesButton.gameObject;
             uiRefs.ShopUIPanel.SetActive(false);
             uiRefs.PurchasePromptPanel.SetActive(false);
@@ -222,17 +259,31 @@ public class ShopUIManager : MonoBehaviour
         }
     }
 
+    private void Start()
+    {
+        playerManager = PlayerManager.instance;
+        if (playerManager == null)
+        {
+            Debug.LogError("PlayerManagerが見つかりません。ShopUIManagerの初期化に失敗しました。");
+            return;
+        }
+
+        // 店の会話ハンドラーをインターフェースとして取得
+        conversationHandler = conversationHandlerObject as IShopConversation;
+        if (conversationHandler == null)
+        {
+            Debug.LogError("IShopConversationの実装が不正です。");
+        }
+    }
+
     /// <summary>
-    /// ShopUIManager に必要な参照がすべて設定されているか検証する。
-    /// 1つでも未設定の参照がある場合はエラーを出力し、false を返す。
+    /// ShopUIManager に必要な参照がすべて設定されているか検証します。
+    /// 1つでも未設定の参照がある場合はエラーを出力し、false を返します。
     /// </summary>
     private bool ValidateReferences()
     {
         bool result = true;
 
-        /// <summary>
-        /// 指定したオブジェクトが null かをチェックし、null ならエラーログを出して result を false にする。
-        /// </summary>
         void Check(object obj, string name)
         {
             if (obj == null)
@@ -242,51 +293,33 @@ public class ShopUIManager : MonoBehaviour
             }
         }
 
-        //チェック対象をuiRefsに集約
         Check(shopDataBase, nameof(shopDataBase));
         Check(conversationHandlerObject, nameof(conversationHandlerObject));
         Check(uiRefs, nameof(uiRefs));
+
         if (uiRefs != null)
         {
-            if (uiRefs != null)
-                Check(uiRefs.SellItemTab, "uiRefs.SellItemTab");
+            Check(uiRefs.SellItemTab, "uiRefs.SellItemTab");
         }
 
         return result;
     }
 
-    private void Start()
-    {
-        playerManager = PlayerManager.instance; // PlayerManagerの参照を取得
-        if (playerManager == null)
-        {
-            Debug.LogError("PlayerManagerが見つかりません。ShopUIManagerの初期化に失敗しました。");
-            return;
-        }
+    #endregion
 
-        // 店の会話ハンドラーを初期化
-        conversationHandler = conversationHandlerObject as IShopConversation;
-        if (conversationHandler == null)
-        {
-            Debug.LogError("IShopConversationの実装が不正です。");
-        }
-    }
+    #region 更新処理 (Update)
 
     private void Update()
     {
-        if (uiRefs.ShopUIPanel == null)
-            return;
-        //下記のactiveselfのチェック時にnullである必要がある
-
-        if (!uiRefs.ShopUIPanel.activeSelf)
+        if (uiRefs.ShopUIPanel == null || !uiRefs.ShopUIPanel.activeSelf)
             return;
 
+        // --- 購入確認パネル操作時のフォーカス制御 ---
         if (isPurchasing)
         {
-            //購入中のとき、YesかNoのボタンが選択されていない場合、最後に選択されていたボタンを選択状態にする
+            // 購入中のとき、YesかNoのボタンが選択されていない場合、最後に選択されていたボタンを強制的に選択状態にする
             GameObject selectedObject = EventSystem.current.currentSelectedGameObject;
 
-            // IsPromptButtonはローカル関数。購入確認パネルのボタンかどうかを判定
             if (!IsPromptButton(selectedObject))
             {
                 if (lastSelectedPrompt != null)
@@ -297,6 +330,7 @@ public class ShopUIManager : MonoBehaviour
                 lastSelectedPrompt = selectedObject; // Yes/Noボタンのときのみ更新
             }
 
+            // ローカル関数：オブジェクトが購入確認パネルのボタンかどうかを判定
             bool IsPromptButton(GameObject obj)
             {
                 return obj == uiRefs.PurchaseYesButton.gameObject
@@ -304,9 +338,9 @@ public class ShopUIManager : MonoBehaviour
             }
         }
 
+        // --- 売却モード時のタブ切り替え入力検知 ---
         if (shopStatus == ShopStatus.Sell && !isPurchasing)
         {
-            // 売却モードのとき、タブの切り替えを行う
             if (InputManager.instance.GetTabRight())
             {
                 ChangeTab(1);
@@ -317,43 +351,282 @@ public class ShopUIManager : MonoBehaviour
             }
         }
 
+        // --- キャンセル入力時のショップ終了処理 ---
         if (InputManager.instance.UISelectNo() && !isPurchasing)
         {
-            //購入中でない場合、UIを閉じる
             StartCoroutine(CloseShopCoroutine());
             return;
         }
 
-        //選択されているボタンのアイテムIDを取得し、効果説明パネルの文章を変更する
+        // 選択されているボタンのアイテムIDを取得し、効果説明パネルの内容を更新する
         GetSelectedButtonItemID();
-        //ページナビゲーションの更新
+
+        // ページナビゲーションの入力検知と更新
         UpdatePageNavigationBySelection();
     }
 
+    #endregion
+
+    #region UI開閉・初期設定
+
     /// <summary>
-    /// 現在選択されている UI ボタンに応じて、売却用アイテムリストのページを上下に切り替える処理を行います。
-    /// 下端ボタンが選択されていて下入力があれば次ページへ、
-    /// 上端ボタンが選択されていて上入力があれば前ページへ移動します。
-    /// 各アイテムタイプ（BladeWeapon, ShootWeapon, HealItem）に応じたリストとページ番号を操作します。
+    /// 店のIDを設定し、店の開始会話（Fungus）を実行します。
+    /// </summary>
+    /// <param name="shopID">開く店のID</param>
+    public void SetShopID(ShopName shopID)
+    {
+        currentShopID = shopID;
+        StartShopDialogue();
+    }
+
+    /// <summary>
+    /// 購入モードとしてショップUIを開き、初期化を行います。
+    /// </summary>
+    public void OpenBuyShop()
+    {
+        shopStatus = ShopStatus.Buy;
+        selectedButtonItemID = null;
+        preselectedButtonItemID = null;
+        isPurchasing = false;
+
+        uiRefs.PurchasePromptPanel.SetActive(false);
+
+        // 全ての売却用タブを非表示にする
+        foreach (var entry in uiRefs.SellItemTab)
+        {
+            entry.itemTab.SetActive(false);
+        }
+
+        // 店のデータを取得
+        ShopData shopData = shopDataBase.GetShopByID(currentShopID);
+        if (shopData == null)
+        {
+            Debug.LogError($"ShopID {currentShopID} に対応するデータが見つかりません。");
+            return;
+        }
+
+        uiRefs.ShopUIPanel.SetActive(true);
+
+        // 一旦全てのボタンを非表示にする
+        foreach (var button in uiRefs.ShopButtons)
+        {
+            button.gameObject.SetActive(false);
+        }
+
+        // ショップデータに基づいてボタンをセットアップ
+        for (int i = 0; i < shopData.shopItems.Length; i++)
+        {
+            Button button = uiRefs.ShopButtons[i];
+            var script = button.GetComponent<PurchaseSelectButton>();
+
+            if (script == null)
+            {
+                Debug.LogError(
+                    $"Button {button.name} に PurchaseSelectButton スクリプトがアサインされていません。"
+                );
+                continue;
+            }
+
+            Enum itemID = shopData.shopItems[i].GetItemID();
+            if (itemID == null)
+            {
+                Debug.LogWarning($"ShopItem {i} のアイテムIDがnullです。");
+                continue;
+            }
+
+            // 購入選択ボタンを初期化して表示
+            script.InitializePurchaseSelectButton(shopData.shopItems[i]);
+            button.gameObject.SetActive(true);
+        }
+
+        // 最初のボタンを選択状態にする
+        EventSystem.current.SetSelectedGameObject(uiRefs.ShopButtons[0].gameObject);
+
+        // イベントの登録
+        GameManager.instance.OnAnyItemAddedToInventory += UpdateSelectedItemDetails;
+        GameManager.instance.OnAnyItemRemovedFromInventory += HandleInventoryChanged;
+        playerManager.OnChangePlayerMoney += SetCoinText;
+
+        SetCoinText(); // 現在の所持金を表示
+    }
+
+    /// <summary>
+    /// 売却モードとしてショップUIを開き、プレイヤーの所持品を読み込んで初期化を行います。
+    /// </summary>
+    public void OpenSellShop()
+    {
+        shopStatus = ShopStatus.Sell;
+        selectedButtonItemID = null;
+        preselectedButtonItemID = null;
+        isPurchasing = false;
+
+        uiRefs.PurchasePromptPanel.SetActive(false);
+
+        // 全ての売却用タブを表示する
+        foreach (var entry in uiRefs.SellItemTab)
+        {
+            entry.itemTab.SetActive(true);
+        }
+
+        uiRefs.ShopUIPanel.SetActive(true);
+
+        var savedata = GameManager.instance.savedata;
+        if (savedata == null)
+        {
+            Debug.LogError("GameManagerのsavedataがnullです。");
+            return;
+        }
+
+        // --- 所持アイテムのフィルタリング ---
+        // 各リストから所持数が1以上、かつ「売却可能」なアイテムのみを抽出する
+        bladeWeaponList = savedata
+            .WeaponInventoryData?.GetAllItemByType(InventoryWeaponData.WeaponType.blade)
+            .Where(item =>
+                item.count > 0
+                && ItemDataManager.instance.IsItemSellable(EnumIDUtility.FromID(item.itemID))
+            )
+            .ToList();
+
+        shootWeaponList = savedata
+            .WeaponInventoryData?.GetAllItemByType(InventoryWeaponData.WeaponType.shoot)
+            .Where(item =>
+                item.count > 0
+                && ItemDataManager.instance.IsItemSellable(EnumIDUtility.FromID(item.itemID))
+            )
+            .ToList();
+
+        healItemList = savedata
+            .ItemInventoryData?.GetAllItemByType(InventoryItemData.ItemType.HealItem)
+            .Where(item =>
+                item.count > 0
+                && ItemDataManager.instance.IsItemSellable(EnumIDUtility.FromID(item.itemID))
+            )
+            .ToList();
+
+        materialItemList = savedata
+            .ItemInventoryData?.GetAllItemByType(InventoryItemData.ItemType.MaterialItem)
+            .Where(item =>
+                item.count > 0
+                && ItemDataManager.instance.IsItemSellable(EnumIDUtility.FromID(item.itemID))
+            )
+            .ToList();
+
+        // 過去のタブ状態をクリア
+        sellTabStates.Clear();
+
+        // 最初は一番左（インデックス0）のタブを選択状態にする
+        SetTab(0);
+
+        // イベントの登録
+        GameManager.instance.OnAnyItemAddedToInventory += UpdateSelectedItemDetails;
+        GameManager.instance.OnAnyItemRemovedFromInventory += HandleInventoryChanged;
+        playerManager.OnChangePlayerMoney += SetCoinText;
+
+        SetCoinText(); // 現在の所持金を表示
+    }
+
+    /// <summary>
+    /// 店のUIを閉じ、関連するイベントの解除や終了会話の実行を行います。
+    /// </summary>
+    private IEnumerator CloseShopCoroutine()
+    {
+        // 1フレーム待機して、時間の再開を全システムに安全に反映させる
+        yield return null;
+
+        uiRefs.ShopUIPanel.SetActive(false);
+        uiRefs.PurchasePromptPanel.SetActive(false);
+        uiRefs.ItemDetailPanel.SetActive(false);
+        uiRefs.WeaponDetailPanel.SetActive(false);
+
+        isPurchasing = false;
+        selectedButtonItemID = null;
+        preselectedButtonItemID = null;
+        lastSelected = null;
+
+        // イベントの登録を解除
+        GameManager.instance.OnAnyItemAddedToInventory -= UpdateSelectedItemDetails;
+        GameManager.instance.OnAnyItemRemovedFromInventory -= HandleInventoryChanged;
+        playerManager.OnChangePlayerMoney -= SetCoinText;
+
+        // 終了の会話ブロックを取得して実行
+        Block block = GlobalFlowchartController.instance?.globalFlowchart?.FindBlock(
+            shopEndBlockName
+        );
+        if (block == null)
+        {
+            Debug.LogWarning($"Block '{shopEndBlockName}' が見つかりません");
+            yield break;
+        }
+        GlobalFlowchartController.instance?.globalFlowchart?.ExecuteBlock(block);
+    }
+
+    /// <summary>
+    /// アイテム購入確認のポップアップパネルを表示します。
+    /// </summary>
+    /// <param name="itemID">対象のアイテムID</param>
+    /// <param name="itemPrice">アイテムの価格</param>
+    /// <param name="selectButtonPosition">パネルを表示する基準位置</param>
+    public void SetPromptPanel(Enum itemID, int itemPrice, Vector2 selectButtonPosition)
+    {
+        // 確認パネルが開く直前のアイテムボタンを記憶しておく
+        lastSelected = EventSystem.current.currentSelectedGameObject;
+
+        if (uiRefs.PurchasePromptPanel == null)
+        {
+            Debug.LogWarning("UIManagerもしくはアイテム購入確認パネルが存在しません");
+            return;
+        }
+
+        var script = uiRefs.PurchaseYesButton.GetComponent<PurchasePromptButton>();
+        if (script != null)
+        {
+            script.SetItemID(itemID);
+            script.SetBuyPrice(itemPrice);
+        }
+        else
+        {
+            Debug.LogWarning("PurchasePromptButtonスクリプトが入手できませんでした");
+            return;
+        }
+
+        uiRefs.PurchasePromptPanel.SetActive(true);
+        EventSystem.current.SetSelectedGameObject(uiRefs.PurchaseYesButton.gameObject);
+        isPurchasing = true; // 購入中フラグをオン
+    }
+
+    /// <summary>
+    /// 購入確認パネルを閉じ、元のアイテムリストにフォーカスを戻します。
+    /// </summary>
+    public void ClosePromptPanel()
+    {
+        isPurchasing = false;
+        uiRefs.PurchasePromptPanel.SetActive(false);
+        EventSystem.current.SetSelectedGameObject(lastSelected);
+    }
+
+    #endregion
+
+    #region タブ・ページ遷移処理
+
+    /// <summary>
+    /// 現在選択されている UI ボタンに応じて、売却用アイテムリストのページを上下に切り替えます。
     /// </summary>
     private void UpdatePageNavigationBySelection()
     {
-        // EventSystem が null の場合は処理しない
         if (EventSystem.current == null)
             return;
 
-        // 現在選択されている UI 要素を取得
         GameObject selected = EventSystem.current?.currentSelectedGameObject;
         if (selected == null)
             return;
 
+        // ページナビゲーションの連続入力を防ぐためのチェック
         if (selected != previousSelectedForPageUpdate)
         {
             previousSelectedForPageUpdate = selected;
-            return; // ページナビゲーションの連続入力防止
+            return;
         }
 
-        // 現在選択されているオブジェクトが Button でなければ処理しない
         Button selectedButton = selected.GetComponent<Button>();
         if (selectedButton == null)
             return;
@@ -371,20 +644,19 @@ public class ShopUIManager : MonoBehaviour
     }
 
     /// <summary>
-    /// ページを更新する共通処理
+    /// 指定された方向へリストのページを更新します。
     /// </summary>
-    /// <param name="direction">1なら次へ, -1なら前へ</param>
+    /// <param name="direction">1なら次ページへ, -1なら前ページへ</param>
     private void UpdatePage(int direction)
     {
-        // 購入モードの場合は何もしない（ページめくりは売却モードのみ）
+        // 購入モードの場合はページめくりを行わない
         if (shopStatus == ShopStatus.Buy)
             return;
 
-        // GetCurrentSellListAndPage()はDictionaryを参照するようになる
         // 現在のタブに応じたアイテムリストとページ番号を取得
         var (items, currentPage) = GetCurrentSellListAndPage();
 
-        // 前のページに行こうとしているが、既に最初のページの場合は何もしない
+        // 既に最初のページにいる状態で前へ行こうとした場合は無視
         if (direction < 0 && currentPage <= 0)
             return;
 
@@ -399,27 +671,26 @@ public class ShopUIManager : MonoBehaviour
             )
         )
         {
-            // Dictionary内のページ番号を直接更新する
-            sellTabStates.TryGetValue(sellItemType, out TabState currentState); // 既存のStateを取得（なければデフォルト）
-            currentState.PageIndex = newPage; // ページ番号だけを更新
-            currentState.SelectedButtonIndex = 0; // ページをめくったら選択は先頭に戻す
-            sellTabStates[sellItemType] = currentState; // 更新したStateを辞書に保存
+            // 状態辞書のページ番号を更新し、選択位置をリセット
+            sellTabStates.TryGetValue(sellItemType, out TabState currentState);
+            currentState.PageIndex = newPage;
+            currentState.SelectedButtonIndex = 0;
+            sellTabStates[sellItemType] = currentState;
 
-            // フォーカスも先頭のボタンに移動
+            // フォーカスを先頭のボタンに移動
             if (uiRefs.ShopButtons.Count > 0 && uiRefs.ShopButtons[0].gameObject.activeSelf)
             {
                 EventSystem.current.SetSelectedGameObject(uiRefs.ShopButtons[0].gameObject);
-                UpdateSelectedItemDetails(); // 選択されているアイテムの詳細を更新
+                UpdateSelectedItemDetails();
             }
         }
     }
 
     /// <summary>
-    /// 現在選択中の売却タブに応じたアイテムリストとページ番号を返す
+    /// 現在選択中の売却タブに応じたアイテムリストとページ番号を返します。
     /// </summary>
     private (List<ItemEntry> items, int page) GetCurrentSellListAndPage()
     {
-        //Dictionaryから現在のタブのページ番号を取得。なければ0を返す。
         int page = 0;
         if (sellTabStates.TryGetValue(sellItemType, out TabState state))
         {
@@ -434,6 +705,8 @@ public class ShopUIManager : MonoBehaviour
                 return (shootWeaponList, page);
             case SellItemType.HealItem:
                 return (healItemList, page);
+            case SellItemType.MaterialItem:
+                return (materialItemList, page);
             default:
                 Debug.LogError("売却アイテムの種類が設定されていません。");
                 return (new List<ItemEntry>(), 0);
@@ -441,17 +714,15 @@ public class ShopUIManager : MonoBehaviour
     }
 
     /// <summary>
-    /// 指定された方向（-1 or 1）にタブを切り替えます。リストの端に達するとループします。
+    /// 指定された方向（-1で左、1で右）にタブを切り替えます。リストの端に達するとループします。
     /// </summary>
-    /// <param name="direction">移動方向（-1で左、1で右）</param>
     private void ChangeTab(int direction)
     {
-        // タブを切り替える前に、現在の選択状態を保存する
-        SaveCurrentTabState();
+        SaveCurrentTabState(); // 切り替え前に状態を保存
 
         int newIndex = currentTabIndex + direction;
 
-        // 範囲外をループさせる（必要ならClampでも可）
+        // 範囲外に出た場合はループさせる
         if (newIndex < 0)
         {
             newIndex = uiRefs.SellItemTab.Count - 1;
@@ -468,304 +739,70 @@ public class ShopUIManager : MonoBehaviour
     /// <summary>
     /// 指定されたインデックスのタブを直接選択します。
     /// </summary>
-    /// <param name="index">選択したいタブのインデックス</param>
     private void SetTab(int index)
     {
-        // タブを切り替える前に、現在の選択状態を保存する
         SaveCurrentTabState();
 
         if (index < 0)
-        {
-            index = 0; // 最小値を0に設定
-        }
+            index = 0;
         else if (index >= uiRefs.SellItemTab.Count)
-        {
-            index = uiRefs.SellItemTab.Count - 1; // 最大値を最終インデックスに設定
-        }
+            index = uiRefs.SellItemTab.Count - 1;
 
         currentTabIndex = index;
         UpdateTabPanelVisibility();
     }
 
     /// <summary>
-    /// 現在の`currentTabIndex`に基づいて、すべてのタブの表示状態（選択/非選択のスプライト）を更新します。
+    /// 現在の `currentTabIndex` に基づいて、すべてのタブの見た目（選択/非選択）とリストを更新します。
     /// </summary>
     private void UpdateTabPanelVisibility()
     {
         for (int i = 0; i < uiRefs.SellItemTab.Count; i++)
         {
-            if (i == currentTabIndex)
-            {
-                uiRefs.SellItemTab[i].SetTabSelected(true); // 選択中のタブのパネルの画像を変更
-            }
-            else
-            {
-                uiRefs.SellItemTab[i].SetTabSelected(false); // 選択されていないタブの画像を変更
-            }
+            bool isSelected = (i == currentTabIndex);
+            uiRefs.SellItemTab[i].SetTabSelected(isSelected);
         }
     }
 
-    // 店のIDを設定して、店の開始会話を実行するメソッド
     /// <summary>
-    public void SetShopID(ShopName shopID)
-    {
-        // 店のIDを設定
-        currentShopID = shopID;
-
-        // 店の開始会話を実行
-        StartShopDialogue();
-    }
-
-    //購入時の店のUIを開くメソッド
-    /// <summary>
-    public void OpenBuyShop()
-    {
-        // 購入モードに設定
-        shopStatus = ShopStatus.Buy;
-        //選択されているボタンのIDをリセットする
-        selectedButtonItemID = null;
-        preselectedButtonItemID = null;
-        // 購入中フラグをリセット
-        isPurchasing = false;
-        //購入確認パネルを非表示にする
-        uiRefs.PurchasePromptPanel.SetActive(false);
-        //全てのタブを非表示にする
-        foreach (var entry in uiRefs.SellItemTab)
-        {
-            entry.itemTab.SetActive(false);
-        }
-
-        // 店のデータを取得
-        ShopData shopData = shopDataBase.GetShopByID(currentShopID);
-        if (shopData == null)
-        {
-            Debug.LogError($"ShopID {currentShopID} に対応するデータが見つかりません。");
-            return;
-        }
-
-        // 店のUIを表示
-        uiRefs.ShopUIPanel.SetActive(true);
-
-        //一旦全てのボタンを非表示にする
-        foreach (var button in uiRefs.ShopButtons)
-        {
-            button.gameObject.SetActive(false);
-        }
-
-        for (int i = 0; i < shopData.shopItems.Length; i++)
-        {
-            // ボタンを取得
-            Button button = uiRefs.ShopButtons[i];
-
-            var script = button.GetComponent<PurchaseSelectButton>();
-            if (script == null)
-            {
-                Debug.LogError(
-                    $"Button {button.name} に PurchaseSelectButton スクリプトがアサインされていません。"
-                );
-                continue;
-            }
-
-            //アイテムのIDを取得
-            Enum itemID = shopData.shopItems[i].GetItemID();
-            // アイテムのIDがnullの場合はスキップ
-            if (itemID == null)
-            {
-                Debug.LogWarning($"ShopItem {i} のアイテムIDがnullです。");
-                continue;
-            }
-            // 購入選択ボタンを初期化
-            script.InitializePurchaseSelectButton(shopData.shopItems[i]);
-            //ボタンを表示
-            button.gameObject.SetActive(true);
-        }
-
-        // 最初のボタンを選択状態にする
-        EventSystem.current.SetSelectedGameObject(uiRefs.ShopButtons[0].gameObject);
-        //選択されているアイテムの詳細を更新するメソッドを登録
-        GameManager.instance.OnAnyItemAddedToInventory += UpdateSelectedItemDetails;
-        GameManager.instance.OnAnyItemRemovedFromInventory += HandleInventoryChanged;
-        playerManager.OnChangePlayerMoney += SetCoinText; // 所持金の変更イベントを登録
-        SetCoinText(); // 現在の所持金を表示
-    }
-
-    //販売時の店のUIを開くメソッド
-    /// <summary>
-    public void OpenSellShop()
-    {
-        // 売却モードに設定
-        shopStatus = ShopStatus.Sell;
-        //選択されているボタンのIDをリセットする
-        selectedButtonItemID = null;
-        preselectedButtonItemID = null;
-        // 購入中フラグをリセット
-        isPurchasing = false;
-        //購入確認パネルを非表示にする
-        uiRefs.PurchasePromptPanel.SetActive(false);
-        //全てのタブを表示する
-        foreach (var entry in uiRefs.SellItemTab)
-        {
-            entry.itemTab.SetActive(true);
-        }
-
-        // 店のUIを表示
-        uiRefs.ShopUIPanel.SetActive(true);
-
-        var savedata = GameManager.instance.savedata;
-        if (savedata == null)
-        {
-            Debug.LogError("GameManagerのsavedataがnullです。");
-            return;
-        }
-
-        //それぞれのアイテムリストを取得
-        bladeWeaponList = savedata?.WeaponInventoryData?.GetAllItemByType(
-            InventoryWeaponData.WeaponType.blade
-        );
-        shootWeaponList = savedata?.WeaponInventoryData?.GetAllItemByType(
-            InventoryWeaponData.WeaponType.shoot
-        );
-        healItemList = savedata?.ItemInventoryData?.GetAllItemByType(
-            InventoryItemData.ItemType.HealItem
-        );
-
-        // それぞれのアイテムリストを取得し、フィルタリングする
-        // 各リストから所持数が0以下のアイテムを除外する
-        // 売却不可のアイテムも除外する
-        bladeWeaponList = savedata
-            ?.WeaponInventoryData?.GetAllItemByType(InventoryWeaponData.WeaponType.blade)
-            .Where(item =>
-                item.count > 0
-                && ItemDataManager.instance.IsItemSellable(EnumIDUtility.FromID(item.itemID))
-            )
-            .ToList();
-
-        shootWeaponList = savedata
-            ?.WeaponInventoryData?.GetAllItemByType(InventoryWeaponData.WeaponType.shoot)
-            .Where(item =>
-                item.count > 0
-                && ItemDataManager.instance.IsItemSellable(EnumIDUtility.FromID(item.itemID))
-            )
-            .ToList();
-
-        healItemList = savedata
-            ?.ItemInventoryData?.GetAllItemByType(InventoryItemData.ItemType.HealItem)
-            .Where(item =>
-                item.count > 0
-                && ItemDataManager.instance.IsItemSellable(EnumIDUtility.FromID(item.itemID))
-            )
-            .ToList();
-
-        // 個別のページ変数のリセットの代わりに、辞書をクリアする
-        sellTabStates.Clear();
-
-        //最初はブレード武器のタブを選択状態にする
-        SetTab(0);
-        //選択されているアイテムの詳細を更新するメソッドを登録
-        GameManager.instance.OnAnyItemAddedToInventory += UpdateSelectedItemDetails;
-        GameManager.instance.OnAnyItemRemovedFromInventory += HandleInventoryChanged;
-        // 所持金の変更イベントを登録
-        playerManager.OnChangePlayerMoney += SetCoinText;
-        // 現在の所持金を表示
-        SetCoinText();
-    }
-
-    /// <summary>
-    /// 店を閉じる処理を行います。
+    /// 現在のタブの選択状態（ページ番号とボタン位置）を辞書に保存します。タブが切り替わる直前に呼ばれます。
     /// </summary>
-    private IEnumerator CloseShopCoroutine()
+    private void SaveCurrentTabState()
     {
-        // 1フレーム待機して、時間の再開を全システムに反映させる
-        yield return null;
-
-        // 店のUIを非表示
-        uiRefs.ShopUIPanel.SetActive(false);
-
-        // 購入確認パネルを非表示
-        uiRefs.PurchasePromptPanel.SetActive(false);
-
-        // アイテム詳細パネルを非表示
-        uiRefs.ItemDetailPanel.SetActive(false);
-
-        // 武器詳細パネルを非表示
-        uiRefs.WeaponDetailPanel.SetActive(false);
-
-        isPurchasing = false; // 購入中フラグをリセット
-        selectedButtonItemID = null; // 選択されているアイテムのIDをリセット
-        preselectedButtonItemID = null; // 前フレームのアイテムIDをリセット
-        lastSelected = null; // 最後に選択されていたボタンをリセット
-        // イベントの登録を解除
-        GameManager.instance.OnAnyItemAddedToInventory -= UpdateSelectedItemDetails;
-        GameManager.instance.OnAnyItemRemovedFromInventory -= HandleInventoryChanged;
-        playerManager.OnChangePlayerMoney -= SetCoinText;
-
-        // 店の終わりの会話のBlockを取得
-        Block block = GlobalFlowchartController.instance?.globalFlowchart?.FindBlock(
-            shopEndBlockName
-        );
-        if (block == null)
-        {
-            Debug.LogWarning($"Block '{shopEndBlockName}' が見つかりません");
-            yield break;
-        }
-        // 店の終わりの会話を実行
-        GlobalFlowchartController.instance?.globalFlowchart?.ExecuteBlock(block);
-    }
-
-    //購入確認パネルを表示するメソッド
-    /// <summary>
-    public void SetPromptPanel(Enum itemID, int itemPrice, Vector2 selectButtonPosition)
-    {
-        //最後に選択されているアイテムボタンを取得(確認パネルが開く前に行う)
-        lastSelected = EventSystem.current.currentSelectedGameObject;
-
-        if (uiRefs.PurchasePromptPanel != null)
-        {
-            // 購入確認パネルの位置を設定
-            // RectTransform rect = purchasePromptPanel.GetComponent<RectTransform>();
-            // rect.anchoredPosition = selectButtonPosition + offset;
-        }
-        else
-        {
-            Debug.LogWarning("UIManagerもしくはアイテム購入確認パネルが存在しません");
-            return;
-        }
-
-        //購入確認パネルのYesボタンにアイテムIDを設定
-        var script = uiRefs.PurchaseYesButton.GetComponent<PurchasePromptButton>();
-        if (script != null)
-        {
-            //購入確認パネルのYesボタンにアイテムIDを設定
-            script.SetItemID(itemID);
-            //購入確認パネルのYesボタンに購入価格を設定
-            script.SetBuyPrice(itemPrice);
-        }
-        else
-        {
-            Debug.LogWarning("PurchasePromptButtonスクリプトが入手できませんでした");
-            return;
-        }
-
-        //購入確認パネルを表示
-        uiRefs.PurchasePromptPanel.SetActive(true);
-        //購入確認パネルのYesボタンを選択状態にする
-        EventSystem.current.SetSelectedGameObject(uiRefs.PurchaseYesButton.gameObject);
-        // 購入中フラグを立てる
-        isPurchasing = true;
-    }
-
-    /// <summary>
-    /// 現在EventSystemで選択されているボタンからアイテムIDを取得し、必要であれば詳細パネルを更新します。
-    /// </summary>
-    public void GetSelectedButtonItemID()
-    {
-        //現在選択されているボタンのゲームオブジェクトを取得
         GameObject selectedObj = EventSystem.current.currentSelectedGameObject;
-        //選択されているボタンがないなら飛ばす
         if (selectedObj == null)
             return;
 
-        //現在選択しているパネルのアイテムのIDを取得する
+        int buttonIndex = uiRefs.ShopButtons.FindIndex(button => button.gameObject == selectedObj);
+
+        if (buttonIndex != -1)
+        {
+            var (_, currentPage) = GetCurrentSellListAndPage();
+
+            TabState newState = new TabState
+            {
+                PageIndex = currentPage,
+                SelectedButtonIndex = buttonIndex,
+            };
+
+            sellTabStates[sellItemType] = newState;
+        }
+    }
+
+    #endregion
+
+    #region アイテム詳細・UI更新
+
+    /// <summary>
+    /// 現在EventSystemで選択されているボタンからアイテムIDを取得し、必要に応じて詳細パネルを更新します。
+    /// </summary>
+    public void GetSelectedButtonItemID()
+    {
+        GameObject selectedObj = EventSystem.current.currentSelectedGameObject;
+        if (selectedObj == null)
+            return;
+
+        // 選択中のボタンから該当するアイテムIDを取得する
         for (int i = 0; i < uiRefs.ShopButtons.Count; i++)
         {
             if (uiRefs.ShopButtons[i].gameObject == selectedObj)
@@ -777,9 +814,7 @@ public class ShopUIManager : MonoBehaviour
                 {
                     if (shopStatus == ShopStatus.Buy)
                     {
-                        //購入モードのとき、選択されているアイテムのデータを取得
                         BaseItemData selectedButtonItemData = info.baseItemData;
-                        //選択されているアイテムのIDを取得
                         if (selectedButtonItemData != null)
                         {
                             selectedButtonItemID = selectedButtonItemData.GetItemID();
@@ -787,7 +822,6 @@ public class ShopUIManager : MonoBehaviour
                     }
                     else if (shopStatus == ShopStatus.Sell)
                     {
-                        //売却モードのとき、選択されているアイテムのIDを取得
                         selectedButtonItemID = info.AssignedItemID;
                     }
                     else
@@ -798,17 +832,16 @@ public class ShopUIManager : MonoBehaviour
                 }
                 else
                 {
-                    selectedButtonItemID = null; //選択されているアイテムのIDを初期化する
-                    preselectedButtonItemID = selectedButtonItemID; //前フレームのアイテムIDを設定する
-                    Debug.LogWarning("ItemSelectButton スクリプトが見つかりませんでした");
+                    selectedButtonItemID = null;
+                    preselectedButtonItemID = selectedButtonItemID;
+                    Debug.LogWarning("PurchaseSelectButton スクリプトが見つかりませんでした");
                 }
             }
         }
 
-        //効果説明パネルの文章を変更する
+        // カーソルが別のアイテムに移動した時のみ詳細パネルを更新する
         if (!object.Equals(preselectedButtonItemID, selectedButtonItemID))
         {
-            //選択されているアイテムの詳細を更新する
             if (selectedButtonItemID == null)
             {
                 Debug.LogWarning("選択されているアイテムのIDがnullです");
@@ -817,17 +850,18 @@ public class ShopUIManager : MonoBehaviour
             UpdateSelectedItemDetails();
         }
 
-        preselectedButtonItemID = selectedButtonItemID; //前フレームのアイテムIDを設定する
+        preselectedButtonItemID = selectedButtonItemID;
     }
 
-    //選択されているアイテムの詳細を更新するメソッド
+    /// <summary>
+    /// 選択されているアイテムの種類を判別し、適切な詳細パネル（武器用・アイテム用）に情報を表示します。
+    /// </summary>
     private void UpdateSelectedItemDetails()
     {
-        // パネルを非表示にする
         uiRefs.ItemDetailPanel.SetActive(false);
         uiRefs.WeaponDetailPanel.SetActive(false);
 
-        //Enumから、タイプを判別する数に変更
+        // Enumからアイテムの種類を表す数値を抽出
         int typeNumber = EnumIDUtility.ExtractTypeID(EnumIDUtility.ToID(selectedButtonItemID));
 
         switch (typeNumber)
@@ -840,20 +874,18 @@ public class ShopUIManager : MonoBehaviour
 
                 if (weaponScript != null)
                 {
-                    // 選択されたアイテムの武器タイプを決定
                     var selectedWeaponType =
                         (typeNumber == (int)TypeID.Blade)
                             ? InventoryWeaponData.WeaponType.blade
                             : InventoryWeaponData.WeaponType.shoot;
 
-                    // パネルの現在のタイプと異なれば、パネルのタイプを更新して再表示
+                    // 武器タイプが変わっていれば再設定・リフレッシュ
                     if (weaponScript.weaponType != selectedWeaponType)
                     {
                         weaponScript.weaponType = selectedWeaponType;
                         weaponScript.RefreshEquippedWeaponDisplay();
                     }
 
-                    // 選択中（カーソルが合っている）アイテムの詳細を表示
                     weaponScript.DisplayNextWeaponDetails(selectedButtonItemID);
                 }
                 else
@@ -861,54 +893,63 @@ public class ShopUIManager : MonoBehaviour
                     Debug.LogWarning("武器詳細パネルに適切なスクリプトが設定されていません");
                 }
                 break;
+
             case (int)TypeID.HealItem:
-                uiRefs.ItemDetailPanel.SetActive(true); // アイテム詳細パネルを表示
+                uiRefs.ItemDetailPanel.SetActive(true);
                 ItemDetailPanel itemScript = uiRefs.ItemDetailPanel.GetComponent<ItemDetailPanel>();
                 if (itemScript != null)
                 {
                     itemScript.DisplayItemDetails(selectedButtonItemID);
                 }
-                else
+                break;
+
+            case (int)TypeID.MaterialItem:
+                uiRefs.ItemDetailPanel.SetActive(true);
+                ItemDetailPanel materialScript =
+                    uiRefs.ItemDetailPanel.GetComponent<ItemDetailPanel>();
+                if (materialScript != null)
                 {
-                    Debug.LogWarning("アイテム詳細パネルに適切なスクリプトが設定されていません");
+                    materialScript.DisplayItemDetails(selectedButtonItemID);
                 }
                 break;
+
             default:
                 Debug.LogWarning($"選択されたアイテムのIDが不正です: {selectedButtonItemID}");
                 return;
         }
 
-        //選択されているアイテムの所持数を取得
+        // プレイヤーが現在所持している数を取得して表示
         int itemAmount = GameManager.instance?.GetAllTypeIDToAmount(selectedButtonItemID) ?? 0;
-        //選択されているアイテムの所持数を表示する
         uiRefs.SelectedItemAmountText.text = itemAmount.ToString();
     }
 
     /// <summary>
-    /// GameManagerのアイテム増減イベントを受け取るための中継メソッド。
-    /// 受け取ったIDは使わず、単にUI更新メソッドを呼び出す。
+    /// GameManagerのインベントリ変動イベントを受け取ってUIを更新する中継メソッド。
     /// </summary>
+    /// <param name="itemID">変動があったアイテムID</param>
     private void HandleInventoryChanged(Enum itemID)
     {
         UpdateSelectedItemDetails();
     }
 
-    //購入確認パネルを閉じるメソッド
-    public void ClosePromptPanel()
+    /// <summary>
+    /// 現在の所持金を取得し、UIのテキストに反映します。
+    /// </summary>
+    private void SetCoinText()
     {
-        // 購入中フラグをリセット
-        isPurchasing = false;
-        //購入確認パネルを非表示
-        uiRefs.PurchasePromptPanel.SetActive(false);
-        //最後に選択されていたボタンを再選択
-        EventSystem.current.SetSelectedGameObject(lastSelected);
+        int currentMoney = playerManager.GetPlayerIntStatus(PlayerStatusIntName.playerMoney);
+        uiRefs.CurrentMoneyText.text = $"<color=#C6A34C>{currentMoney}</color>";
     }
 
-    // 店の開始会話を実行するメソッド
+    #endregion
+
+    #region ダイアログ・会話処理
+
     /// <summary>
+    /// Fungusを使用して、店の開始時のダイアログ（会話）を実行します。
+    /// </summary>
     public void StartShopDialogue()
     {
-        // 店のデータを取得
         ShopData shopData = shopDataBase.GetShopByID(currentShopID);
         if (shopData == null)
         {
@@ -916,12 +957,10 @@ public class ShopUIManager : MonoBehaviour
             return;
         }
 
-        //店の始めの会話を設定
+        // データベースから取得したセリフでFungusのテキストを上書き
         SetShopDialogue(shopStartBlockName, shopData.GetStartingDialogue());
-        //店の終わりの会話を設定
         SetShopDialogue(shopEndBlockName, shopData.GetEndingDialogue());
 
-        // 店の始めの会話のBlockを取得
         Block block = GlobalFlowchartController.instance?.globalFlowchart?.FindBlock(
             shopStartBlockName
         );
@@ -931,38 +970,12 @@ public class ShopUIManager : MonoBehaviour
             return;
         }
 
-        // 店の始めの会話を実行
         GlobalFlowchartController.instance?.globalFlowchart?.ExecuteBlock(block);
     }
 
     /// <summary>
-    /// FungusのBlock内にある最初のSayコマンドのテキストを指定された文字列で上書きします。
+    /// IShopConversationを利用して、店舗固有の複雑な会話フローを開始します。
     /// </summary>
-    /// <param name="blockName">対象のBlock名</param>
-    /// <param name="newText">新しいテキスト</param>
-    private void SetShopDialogue(string blockName, string newText)
-    {
-        // Blockを取得
-        Block block = GlobalFlowchartController.instance?.globalFlowchart?.FindBlock(blockName);
-        if (block == null)
-        {
-            Debug.LogWarning($"Block '{blockName}' が見つかりません");
-            return;
-        }
-
-        // Block の中の最初の Say を見つけて変更
-        foreach (var command in block.CommandList)
-        {
-            if (command is Say sayCommand)
-            {
-                sayCommand.SetStandardText(newText);
-                break; // 最初のSayのみ変更
-            }
-        }
-    }
-
-    //店の会話を開始するメソッド
-    /// <summary>
     public void StartShopConversation()
     {
         if (conversationHandler == null)
@@ -970,48 +983,38 @@ public class ShopUIManager : MonoBehaviour
             Debug.LogError("IShopConversationの実装が見つかりません。");
             return;
         }
-        // 店の会話を開始
         conversationHandler?.StartShopConversation(currentShopID);
     }
 
-    //現在の所持金を表示するメソッド
-    /// <summary>
-    private void SetCoinText()
-    {
-        // 現在の所持金を取得
-        int currentMoney = playerManager.GetPlayerIntStatus(PlayerStatusIntName.playerMoney);
-        // 所持金をテキストに設定(金色で表示)
-        uiRefs.CurrentMoneyText.text = $"<color=#C6A34C>{currentMoney}</color>";
-    }
+    #endregion
+
+    #region ヘルパーメソッド
 
     /// <summary>
-    /// 現在のタブの選択状態（ページとボタンのインデックス）を保存します。タブが切り替わる直前に呼び出されます。
+    /// FungusのBlock内にある最初のSayコマンドのテキストを、指定された文字列で上書きします。
     /// </summary>
-    private void SaveCurrentTabState()
+    /// <param name="blockName">対象となるFungusのBlock名</param>
+    /// <param name="newText">上書きする新しいセリフ</param>
+    private void SetShopDialogue(string blockName, string newText)
     {
-        // 現在選択されているボタンのGameObjectを取得
-        GameObject selectedObj = EventSystem.current.currentSelectedGameObject;
-        if (selectedObj == null)
-            return;
-
-        // 選択されているボタンがショップのボタンリストの何番目かを探す
-        int buttonIndex = uiRefs.ShopButtons.FindIndex(button => button.gameObject == selectedObj);
-
-        // ボタンが見つかった場合のみ状態を保存
-        if (buttonIndex != -1)
+        Block block = GlobalFlowchartController.instance?.globalFlowchart?.FindBlock(blockName);
+        if (block == null)
         {
-            // 現在のページ番号を取得
-            var (_, currentPage) = GetCurrentSellListAndPage();
+            Debug.LogWarning($"Block '{blockName}' が見つかりません");
+            return;
+        }
 
-            // 新しい状態を作成
-            TabState newState = new TabState
+        // Block内のコマンドリストから最初のSayコマンドを探し、テキストを差し替える
+        foreach (var command in block.CommandList)
+        {
+            if (command is Say sayCommand)
             {
-                PageIndex = currentPage,
-                SelectedButtonIndex = buttonIndex,
-            };
-
-            // 現在のタブの種類をキーとして、辞書に状態を保存（または上書き）
-            sellTabStates[sellItemType] = newState;
+                sayCommand.SetStandardText(newText);
+                break;
+            }
         }
     }
+
+    #endregion
 }
+#endregion

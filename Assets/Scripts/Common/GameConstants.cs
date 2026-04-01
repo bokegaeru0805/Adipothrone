@@ -131,8 +131,8 @@ public static class GameConstants
     public const float STATUS_HP_MAX_LEVEL_BONUS = 0.4f; // HPの最大レベルボーナス係数
 
     // 攻撃力計算用の定数
-    public const float STATUS_ATTACK_BASE_INCREASE = 2.0f; // 攻撃力の基礎増加値
-    public const float STATUS_ATTACK_MAX_LEVEL_BONUS = 0.5f; // 攻撃力の最大レベルボーナス係数
+    public const float STATUS_ATTACK_BASE_INCREASE = 1.0f; // 攻撃力の基礎増加値
+    public const float STATUS_ATTACK_MAX_LEVEL_BONUS = 1.0f; // 攻撃力の最大レベルボーナス係数
     public const float PLAYER_ATTACK_TO_MULTIPLIER_RATE = 100f; // プレイヤー基礎攻撃力を倍率に変換する際の割る数
 
     // 防御力計算用の定数
@@ -168,9 +168,8 @@ public static class GameConstants
     public const float PLAYER_WEAPON_SPEED_EFFECT_MULTIPLIER = 0.01f; // プレイヤーの武器速度バフの倍率
 
     // WPによるステータス影響倍率
-    public const float PLAYER_ATTACK_WP_MULTIPLIER = 0.1f / 15; // プレイヤーの攻撃力WP倍率
-    public const float PLAYER_DEFENSE_WP_MULTIPLIER = 0.1f / 15; // プレイヤーの防御力WP倍率
-    public const float PLAYER_MOVE_WP_MULTIPLIER = 0.1f / 15; // プレイヤーの移動速度WP倍率
+    public const float PLAYER_ATTACK_WP_MULTIPLIER = 0.1f / 50; // プレイヤーの攻撃力WP倍率
+    public const float PLAYER_DEFENSE_WP_MULTIPLIER = 0.1f / 50; // プレイヤーの防御力WP倍率
     public const float PLAYER_WEAPON_SPEED_WP_MULTIPLIER = 0.005f; // プレイヤーの武器速度WP倍率
 
     // その他の効果閾値

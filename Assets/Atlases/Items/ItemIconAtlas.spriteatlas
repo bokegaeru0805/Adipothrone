@@ -44,10 +44,14 @@ SpriteAtlas:
     - 96259aa7da2d9b84fa11796214e34a9f: -1197484545
     - 3af3a498d5a15c1419cab6eb446ad826: 21300000
     - 90428b98cd0c8a048937eb4baead7343: 21300000
+    - 9d42c92a0d34cea42be0cc0a6c28d185: 21300000
     - 3f54beea224e6ae4ebb6eb85c4a69631: 21300000
     - 79c5391c3fbde0643972416f8af7db6f: 21300000
     - f1e8c5cc28637724a97b8505f4b31c4b: 21300000
     - 0303cecc493ad884a9093109e0a03d9e: 21300000
+    - 3e89aa0d305bdd74d89b8f5a467d1fdd: 21300000
+    - 77f6c01e57f54af4d9d4eec85ca61fa7: 21300000
+    - 97fa100f3cb507d469cc050f57dc6bed: 21300000
     - 1e8eef1f3a56fe1479b534abf7d6208a: 1143998925
     - 1e8eef1f3a56fe1479b534abf7d6208a: -1306512704
     - 1e8eef1f3a56fe1479b534abf7d6208a: 387697142
@@ -60,10 +64,14 @@ SpriteAtlas:
   - {fileID: -1197484545, guid: 96259aa7da2d9b84fa11796214e34a9f, type: 3}
   - {fileID: 21300000, guid: 3af3a498d5a15c1419cab6eb446ad826, type: 3}
   - {fileID: 21300000, guid: 90428b98cd0c8a048937eb4baead7343, type: 3}
+  - {fileID: 21300000, guid: 9d42c92a0d34cea42be0cc0a6c28d185, type: 3}
   - {fileID: 21300000, guid: 3f54beea224e6ae4ebb6eb85c4a69631, type: 3}
   - {fileID: 21300000, guid: 79c5391c3fbde0643972416f8af7db6f, type: 3}
   - {fileID: 21300000, guid: f1e8c5cc28637724a97b8505f4b31c4b, type: 3}
   - {fileID: 21300000, guid: 0303cecc493ad884a9093109e0a03d9e, type: 3}
+  - {fileID: 21300000, guid: 3e89aa0d305bdd74d89b8f5a467d1fdd, type: 3}
+  - {fileID: 21300000, guid: 77f6c01e57f54af4d9d4eec85ca61fa7, type: 3}
+  - {fileID: 21300000, guid: 97fa100f3cb507d469cc050f57dc6bed, type: 3}
   - {fileID: 1143998925, guid: 1e8eef1f3a56fe1479b534abf7d6208a, type: 3}
   - {fileID: -1306512704, guid: 1e8eef1f3a56fe1479b534abf7d6208a, type: 3}
   - {fileID: 387697142, guid: 1e8eef1f3a56fe1479b534abf7d6208a, type: 3}
@@ -75,10 +83,14 @@ SpriteAtlas:
   - Berry
   - CactusEnemy_Arm
   - donut_choco
+  - DesertTempleGolem_GolemCore
   - CactusEnemy_Flower
   - Bottle_OasisWater
   - SeleYam
   - Teal-Jasper-Elixir
+  - DesertTempleGolem_Float_Brick
+  - DesertTempleGolem_Walk_Armor Shard
+  - DesertTempleGolem_Turret_Boss_AncientHoveringRing
   - StarHerb
   - FlameHerb
   - StoneHerb

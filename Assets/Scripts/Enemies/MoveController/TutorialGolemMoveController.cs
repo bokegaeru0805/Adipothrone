@@ -59,7 +59,7 @@ public class TutorialGolemMoveController : MonoBehaviour, IEnemyResettable
     [SerializeField]
     private Sprite DeathSprite; //死亡判定時のスプライト
     private float flatvelocity;
-    private int ShootDamage = 16; //弾のダメージ量
+    private int ShootDamage = 14; //弾のダメージ量
     private bool isAttacking = false; //攻撃コルーチンが起こっているかどうかのフラグ
     private bool isDead = false; //死亡しているかどうかのフラグ
     private Vector3 PlayerPosition;

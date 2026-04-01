@@ -2,15 +2,16 @@ public enum BladeName
 {
     None = 0, //何も装備していない状態
 
-    blade_wood = 1001,
-
-    knife_stone = 1003,
-    blade_iron = 1004,
-    blade_NightBorne = 1005,
-    hammer_StoneGolem = 1006,
-    blade_FlareSeraphim = 1010,
-    blade_IronWood = 1011,
-    blade_Debug = 1999,
+    Blade_wood = 1001,
+    Knife_stone = 1003,
+    Blade_iron = 1004,
+    Blade_NightBorne = 1005,
+    Hammer_StoneGolem = 1006,
+    Blade_FlareSeraphim = 1010,
+    Blade_IronWood = 1011,
+    Blade_DesertTemple = 1012,
+    Gratesword_DesertTemple = 1013,
+    Blade_Debug = 1999,
 }
 
 public enum ShootName

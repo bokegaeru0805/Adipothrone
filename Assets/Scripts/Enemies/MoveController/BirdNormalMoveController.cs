@@ -131,7 +131,7 @@ public class BirdNormalMoveController : MonoBehaviour, IEnemyResettable
         switch (variantType)
         {
             case EnemyVariant.Chapter1:
-                damage = 34;
+                damage = 32;
                 break;
             default:
                 Debug.LogError($"{this.name}のEnemyVariantが設定されていません。");

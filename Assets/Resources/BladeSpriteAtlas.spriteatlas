@@ -42,7 +42,9 @@ SpriteAtlas:
     - 23fc39a19a05e57459e9b61831834921: 21300000
     - 385d0d92f0a8ca6419333255c5458261: 21300000
     - d6add7633f1d8604f8c46648ab566e2a: 21300000
+    - b5d0ec69c22a3d145a4f0837f721367a: 21300000
     - a40db7adcd637c340abe648cdca287e1: 21300000
+    - 16ca091e498efce48ac926dddfc96f20: 21300000
     - ba4c935fa5fe8934a8e1d019ff86bfdd: 21300000
     - 4eab317f186e6c748bfca2c51295e6bf: 21300000
   m_MasterAtlas: {fileID: 0}
@@ -52,7 +54,9 @@ SpriteAtlas:
   - {fileID: 21300000, guid: 23fc39a19a05e57459e9b61831834921, type: 3}
   - {fileID: 21300000, guid: 385d0d92f0a8ca6419333255c5458261, type: 3}
   - {fileID: 21300000, guid: d6add7633f1d8604f8c46648ab566e2a, type: 3}
+  - {fileID: 21300000, guid: b5d0ec69c22a3d145a4f0837f721367a, type: 3}
   - {fileID: 21300000, guid: a40db7adcd637c340abe648cdca287e1, type: 3}
+  - {fileID: 21300000, guid: 16ca091e498efce48ac926dddfc96f20, type: 3}
   - {fileID: 21300000, guid: ba4c935fa5fe8934a8e1d019ff86bfdd, type: 3}
   - {fileID: 21300000, guid: 4eab317f186e6c748bfca2c51295e6bf, type: 3}
   m_PackedSpriteNamesToIndex:
@@ -61,7 +65,9 @@ SpriteAtlas:
   - Knife_Stone
   - Blade_Ironwood
   - Blade_NightBorne
+  - Greatsword_DesertTemple
   - Blade_FlareSeraphim
+  - Blade_DesertTemple
   - Blade_Debug
   - Blade_Wood
   m_RenderDataMap: {}
