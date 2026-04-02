@@ -6,5 +6,6 @@ public enum MaterialItemName
     DesertTempleGolem_Float_Brick = 10003, // 砂漠の神殿ゴーレムのレンガ
     DesertTempleGolem_Walk_ArmorShard = 10004, // 砂漠の神殿ゴーレムのアーマー破片
     DesertTempleGolem_GolemCore = 10005, // 砂漠の神殿ゴーレムのコア
-    DesertTempleGolem_Turret_Boss_AncientHoveringRing = 10006 // 砂漠の神殿ゴーレムの浮遊輪環
+    DesertTempleGolem_Turret_Boss_AncientHoveringRing = 10006, // 砂漠の神殿ゴーレムの浮遊輪環
+    BabyDrake_Tail = 10007, // ベビードレイクの尻尾
 }

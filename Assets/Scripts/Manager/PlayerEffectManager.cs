@@ -468,9 +468,11 @@ public class PlayerEffectManager : MonoBehaviour
     /// </summary>
     public float CalculateFinalPlayerMoveSpeed(float baseSpeed)
     {
-        // ステータスレベルによる素早さの固定値ボーナスを加算
-        float statusSpeedBonus = playerManager.StatusLevelManager.SpeedBonus;
-        float currentBaseSpeed = baseSpeed + statusSpeedBonus;
+        // ステータスレベルによる素早さボーナスを「倍率」として扱う (1.0 = +100%)
+        float statusSpeedMultiplier = 1.0f + playerManager.StatusLevelManager.SpeedBonus;
+
+        // 加算から乗算に変更
+        float currentBaseSpeed = baseSpeed * statusSpeedMultiplier;
 
         // スピードエフェクトの変化量を取得
         float deltaValue = GetDeltaValue(StatusEffectType.Speed);

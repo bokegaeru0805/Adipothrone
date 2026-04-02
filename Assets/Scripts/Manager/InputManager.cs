@@ -184,6 +184,11 @@ public class InputManager : MonoBehaviour
         return InputAllowed() && Input.GetKeyDown(inputSettings.QuickItemSelect);
     }
 
+    public bool GetQuickItemSelectHold()
+    {
+        return InputAllowed() && Input.GetKey(inputSettings.QuickItemSelect);
+    }
+
     public bool GetTabRight()
     {
         return InputAllowed() && Input.GetKeyDown(inputSettings.TabRight);

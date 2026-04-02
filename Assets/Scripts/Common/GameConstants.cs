@@ -24,7 +24,7 @@ public static class GameConstants
     #endregion
 
     #region プレイヤーレベル・経験値設定
-    public const int PLAYER_MAX_LEVEL = 10; // 上限レベル
+    public static int PLAYER_MAX_LEVEL => LevelExpRequirements.Count;
     public static readonly Dictionary<int, int> LevelExpRequirements = new Dictionary<int, int>
     {
         { 1, 0 }, // Lv1 -> 初期値
@@ -140,12 +140,12 @@ public static class GameConstants
     public const float STATUS_DEFENSE_MAX_LEVEL_BONUS = 0.5f; // 防御力の最大レベルボーナス係数
 
     // 素早さ計算用の定数
-    public const float STATUS_SPEED_BASE_INCREASE = 0.1f; // 素早さの基礎増加値
-    public const float STATUS_SPEED_MAX_LEVEL_BONUS = 0.02f; // 素早さの最大レベルボーナス係数
+    public const float STATUS_SPEED_BASE_INCREASE = 0.01f; // 素早さの基礎増加値 (Lv100で3倍にするための調整)
+    public const float STATUS_SPEED_MAX_LEVEL_BONUS = 0.01f; // 素早さの最大レベルボーナス係数
 
     // 幸運計算用の定数
     public const float STATUS_LUCK_BASE_INCREASE = 1.0f; // 幸運の基礎増加値
-    public const float STATUS_LUCK_MAX_LEVEL_BONUS = 0.2f; // 幸運の最大レベルボーナス係数
+    public const float STATUS_LUCK_MAX_LEVEL_BONUS = 1.0f; // 幸運の最大レベルボーナス係数
 
     public const float MIN_ATTACK_POWER_MULTIPLIER = 0.01f; // 攻撃力の倍率が0以下にならないようにする最小値
 
@@ -230,6 +230,7 @@ public static class GameConstants
 
     // --- 描画順(Sorting Layer)レイヤー名 ---
     public const string SORTING_LAYER_NAME_GROUND = "Ground"; // 描画順(Sorting Layer)用の名前
+    public const string SORTING_LAYER_NAME_CHARACTER = "Character"; // 描画順(Sorting Layer)用の名前
 
     // --- シーン名 ---
     // 追加したら、SceneChangeCommand.csのSceneType Enumも変更すること

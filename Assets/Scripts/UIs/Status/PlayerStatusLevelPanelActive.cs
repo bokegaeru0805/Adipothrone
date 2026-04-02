@@ -137,8 +137,8 @@ public class PlayerStatusLevelPanelActive : MonoBehaviour, IPanelActive
             defenseSlider.onValueChanged.AddListener(val =>
                 OnSliderValueChanged(
                     defenseSlider,
-                    PlayerStatusIntName.defenceMaxLevel,
-                    PlayerStatusIntName.defenceCurrentLevel,
+                    PlayerStatusIntName.defenseMaxLevel,
+                    PlayerStatusIntName.defenseCurrentLevel,
                     val
                 )
             );
@@ -286,8 +286,8 @@ public class PlayerStatusLevelPanelActive : MonoBehaviour, IPanelActive
             defenseSlider,
             defenseLevelText,
             defenseStatText,
-            PlayerStatusIntName.defenceMaxLevel,
-            PlayerStatusIntName.defenceCurrentLevel,
+            PlayerStatusIntName.defenseMaxLevel,
+            PlayerStatusIntName.defenseCurrentLevel,
             expLevel
         );
         UpdateSliderState(
@@ -357,24 +357,29 @@ public class PlayerStatusLevelPanelActive : MonoBehaviour, IPanelActive
             {
                 case PlayerStatusIntName.hpMaxLevel:
                     statText.text =
-                        $"最大HP　 : {PlayerManager.instance.StatusLevelManager.TotalBaseHP}";
+                        $"最大HP　　: {PlayerManager.instance.StatusLevelManager.TotalBaseHP}";
                     break;
+
                 case PlayerStatusIntName.attackMaxLevel:
                     statText.text =
                         $"基礎攻撃力: {PlayerManager.instance.StatusLevelManager.TotalBaseAttackPower}";
                     break;
-                case PlayerStatusIntName.defenceMaxLevel:
+
+                case PlayerStatusIntName.defenseMaxLevel:
                     statText.text =
                         $"防御力　　: {PlayerManager.instance.StatusLevelManager.TotalBaseDefensePower}";
                     break;
+
                 case PlayerStatusIntName.speedMaxLevel:
-                    // 小数点(0.1など)を100倍してパーセント表記(10%など)にする
+                    // SpeedBonusは 0.02 などの「倍率」なので、100倍してパーセントにする
                     statText.text =
-                        $"素早さ補正: +{PlayerManager.instance.StatusLevelManager.SpeedBonus * 100:F0}%";
+                        $"移動速度等: +{PlayerManager.instance.StatusLevelManager.SpeedBonus * 100:F0}%";
                     break;
+
                 case PlayerStatusIntName.luckMaxLevel:
+                    // LuckBonusは 2.0 などの「パーセント整数値」なので、そのまま表示する
                     statText.text =
-                        $"幸運補正　: +{PlayerManager.instance.StatusLevelManager.LuckBonus * 100:F0}%";
+                        $"ドロップ率: +{PlayerManager.instance.StatusLevelManager.LuckBonus:F0}%";
                     break;
             }
         }

@@ -1,97 +1,85 @@
 #if UNITY_EDITOR
 using System.Collections.Generic;
+using System.IO;
 using UnityEditor;
 using UnityEngine;
 
-// このファイルはエディタ拡張のため、Editorフォルダ内に配置してください。
-
-public class ProgressLogDataImporter : EditorWindow
+/// <summary>
+/// 進行度ログデータ(CSV)の更新を検知し、
+/// 既存のProgressLogInfoDataを自動で更新・上書きするエディタ拡張。
+/// フラグ条件(conditions)を保持したまま、テキストのみを安全に上書きします。
+/// </summary>
+public class ProgressLogDataUpdater : AssetPostprocessor
 {
+    #region ▼ 定数・パス・列番号の設定
+
+    // =================================================================
+    // 監視対象のCSVファイル名
+    // =================================================================
+    private const string TargetCsvFileName = "ゲームシステム会話 - ProgressLog.csv";
+
     // =================================================================
     // スプレッドシート（CSV）の列番号定義
-    // ※ 0始まりで列番号を指定します。スプレッドシートの構成が変わった場合はここを変更してください。
+    // ※ 0始まりで列番号を指定します。構成が変わった場合はここを変更してください。
     // =================================================================
     private const int ColumnIndex_ProgressID = 0; // 進行度ID（int値、例: 16001）
     private const int ColumnIndex_TextType = 2; // テキストの種類（"Base" または "Additional"）
     private const int ColumnIndex_SectionIndex = 3; // セクション番号（Additionalの場合のみ使用）
     private const int ColumnIndex_LogIndex = 4; // ログ番号（Additionalの場合のみ使用）
 
-    // private const int ColumnIndex_Memo = 4; // 管理用メモ（読み飛ばす用）
+    // private const int ColumnIndex_Memo = 4;      // 管理用メモ（読み飛ばす用）
     private const int ColumnIndex_Text = 5; // 実際にゲームで表示・追記されるテキスト
+    #endregion
 
-    private TextAsset csvFile;
-    private const string SaveKey_CsvGuid = "ProgressLogImporter_CsvGuid"; //EditorPrefsに保存するためのキー
+    #region ▼ 自動検知処理 (AssetPostprocessor)
 
-    [MenuItem("Tools/進行度ログインポーター")]
-    public static void ShowWindow()
+    /// <summary>
+    /// プロジェクト内のアセットが更新・追加された際に自動的に呼ばれるコールバック
+    /// </summary>
+    static void OnPostprocessAllAssets(
+        string[] importedAssets,
+        string[] deletedAssets,
+        string[] movedAssets,
+        string[] movedFromAssetPaths
+    )
     {
-        // カスタムウィンドウを表示する
-        GetWindow<ProgressLogDataImporter>("進行度ログインポーター");
-    }
-
-    private void OnEnable()
-    {
-        // 保存されているGUID（アセットの固有ID）を読み込む
-        string savedGuid = EditorPrefs.GetString(SaveKey_CsvGuid, "");
-        if (!string.IsNullOrEmpty(savedGuid))
+        foreach (string assetPath in importedAssets)
         {
-            // GUIDからアセットのパスを取得し、TextAssetとしてロードする
-            string path = AssetDatabase.GUIDToAssetPath(savedGuid);
-            if (!string.IsNullOrEmpty(path))
+            if (Path.GetFileName(assetPath) == TargetCsvFileName)
             {
-                csvFile = AssetDatabase.LoadAssetAtPath<TextAsset>(path);
+                Debug.Log(
+                    $"<color=#00FFFF>[{TargetCsvFileName}] の更新を検知しました。進行度ログの自動更新を開始します...</color>"
+                );
+                UpdateProgressLogDataFromCsv(assetPath);
+                break; // 1度実行すれば全行処理されるため抜ける
             }
         }
     }
 
-    private void OnGUI()
-    {
-        GUILayout.Label("進行度ログデータ(CSV)の読み込み", EditorStyles.boldLabel);
+    #endregion
 
-        EditorGUI.BeginChangeCheck(); // 変更監視の開始
-
-        // CSVファイルをインスペクターからドラッグ＆ドロップでセットできるようにする
-        csvFile = (TextAsset)
-            EditorGUILayout.ObjectField("CSVファイル", csvFile, typeof(TextAsset), false);
-
-        if (EditorGUI.EndChangeCheck()) // ファイルのセット状況に変更があった場合
-        {
-            if (csvFile != null)
-            {
-                // アセットのパスを取得し、GUIDに変換してEditorPrefsに保存する
-                string path = AssetDatabase.GetAssetPath(csvFile);
-                string guid = AssetDatabase.AssetPathToGUID(path);
-                EditorPrefs.SetString(SaveKey_CsvGuid, guid);
-            }
-            else
-            {
-                // 空になった場合は保存データを消去する
-                EditorPrefs.DeleteKey(SaveKey_CsvGuid);
-            }
-        }
-        if (GUILayout.Button("データを更新する"))
-        {
-            if (csvFile == null)
-            {
-                Debug.LogWarning("CSVファイルが選択されていません。");
-                return;
-            }
-
-            ImportCsvData(csvFile.text);
-        }
-    }
+    #region ▼ データ更新ロジック
 
     /// <summary>
     /// CSVのテキストデータを受け取り、プロジェクト内のアセットを更新します。
     /// </summary>
-    private void ImportCsvData(string csvText)
+    private static void UpdateProgressLogDataFromCsv(string csvPath)
     {
-        // CSVのパース（ダブルクォーテーション内のカンマや改行に対応した自作パーサー）
+        string csvText = File.ReadAllText(csvPath);
         List<string[]> rows = ParseCsv(csvText);
 
-        // プロジェクト内のすべての ProgressLogInfoData を取得
+        if (rows.Count <= 1)
+        {
+            Debug.LogWarning(
+                $"<color=yellow>進行度ログのCSVデータが空か、ヘッダーしかありません。</color>"
+            );
+            return;
+        }
+
+        // プロジェクト内のすべての ProgressLogInfoData を取得し、IDで検索しやすいよう辞書化
         string[] guids = AssetDatabase.FindAssets("t:ProgressLogInfoData");
-        List<ProgressLogInfoData> allLogData = new List<ProgressLogInfoData>();
+        Dictionary<int, ProgressLogInfoData> allLogDataDict =
+            new Dictionary<int, ProgressLogInfoData>();
 
         foreach (string guid in guids)
         {
@@ -99,14 +87,21 @@ public class ProgressLogDataImporter : EditorWindow
             ProgressLogInfoData data = AssetDatabase.LoadAssetAtPath<ProgressLogInfoData>(path);
             if (data != null)
             {
-                allLogData.Add(data);
+                int id = (int)data.logName;
+                if (!allLogDataDict.ContainsKey(id))
+                {
+                    allLogDataDict.Add(id, data);
+                }
             }
         }
 
         int updateCount = 0;
         int notFoundCount = 0;
 
-        // 見出し行をスキップするため i = 1 から開始（スプレッドシートの1行目はヘッダー前提）
+        // 差分チェックのため、更新されたアセットを記録するハッシュセット
+        HashSet<ProgressLogInfoData> modifiedAssets = new HashSet<ProgressLogInfoData>();
+
+        // 見出し行をスキップするため i = 1 から開始
         for (int i = 1; i < rows.Count; i++)
         {
             string[] columns = rows[i];
@@ -119,48 +114,65 @@ public class ProgressLogDataImporter : EditorWindow
             string progressIdStr = columns[ColumnIndex_ProgressID].Trim();
             if (int.TryParse(progressIdStr, out int progressID))
             {
-                // 該当するID（enumをintにキャストした値）のアセットを探す
-                ProgressLogInfoData targetData = allLogData.Find(x => (int)x.logName == progressID);
-
-                if (targetData != null)
+                if (allLogDataDict.TryGetValue(progressID, out ProgressLogInfoData targetData))
                 {
-                    // Trim() を追加して見えない空白を除去
+                    // --- 差分比較用のJSON化(更新前) ---
+                    // ※複数行にわたって同一アセットを更新する可能性があるため、
+                    // 最初の1回目の更新前状態だけを比較対象にする工夫も可能ですが、
+                    // ここではシンプルに毎行ごとの変更を検知してHashSetに放り込みます。
+                    string beforeJson = EditorJsonUtility.ToJson(targetData);
+
+                    // テキストのパース
                     string textType = columns[ColumnIndex_TextType].Trim();
                     string textContent = columns[ColumnIndex_Text]; // 本文は意図的な空白の可能性があるのでTrimしない
+                    textContent = textContent.Replace("\\n", "\n"); // "\n" を実際の改行に変換
 
-                    // テキスト内の "\n" という文字列を実際の改行に変換
-                    textContent = textContent.Replace("\\n", "\n");
-
+                    // 実際のデータ書き換え
                     UpdateLogData(targetData, textType, columns, textContent);
 
-                    // アセットが変更されたことをUnityに通知
-                    EditorUtility.SetDirty(targetData);
-                    updateCount++;
+                    // --- 差分比較用のJSON化(更新後) ---
+                    string afterJson = EditorJsonUtility.ToJson(targetData);
+
+                    if (beforeJson != afterJson)
+                    {
+                        modifiedAssets.Add(targetData);
+                    }
                 }
                 else
                 {
                     notFoundCount++;
                     Debug.LogWarning(
-                        $"行 {i + 1}: 進行度ID [{progressID}] のアセットが見つかりません。事前にCreateメニューから作成し、Enumを設定してください。"
+                        $"<color=orange>行 {i + 1}: 進行度ID [{progressID}] のアセットが見つかりません。事前にCreateメニューから作成し、Enumを設定してください。</color>"
                     );
                 }
             }
-            else
+            else if (!string.IsNullOrEmpty(progressIdStr))
             {
-                // 空行やパース失敗の場合は無視
-                if (!string.IsNullOrEmpty(progressIdStr))
-                {
-                    Debug.LogWarning(
-                        $"行 {i + 1}: 進行度IDの読み込みに失敗しました。数値ではありません: {progressIdStr}"
-                    );
-                }
+                Debug.LogWarning(
+                    $"<color=yellow>行 {i + 1}: 進行度IDの読み込みに失敗しました。数値ではありません: {progressIdStr}</color>"
+                );
             }
         }
 
-        // 変更をディスクに保存
-        AssetDatabase.SaveAssets();
-        AssetDatabase.Refresh();
-        Debug.Log($"進行度ログの更新が完了しました。更新されたアセットの数: {updateCount}");
+        // 変更があったアセットを一括でDirty設定して保存
+        foreach (var asset in modifiedAssets)
+        {
+            EditorUtility.SetDirty(asset);
+            updateCount++;
+        }
+
+        if (updateCount > 0)
+        {
+            AssetDatabase.SaveAssets();
+            AssetDatabase.Refresh();
+            Debug.Log(
+                $"<color=#00FF00>✓ 進行度ログの自動更新が完了しました！ ({updateCount} 件のアセットを上書きしました)</color>"
+            );
+        }
+        else
+        {
+            Debug.Log("変更された進行度ログアセットはありませんでした。");
+        }
     }
 
     /// <summary>
@@ -168,7 +180,7 @@ public class ProgressLogDataImporter : EditorWindow
     /// 指定されたインデックスの枠が無ければ自動で生成し、テキストのみを上書きします。
     /// （conditionsなどのフラグ設定は絶対に保持します）
     /// </summary>
-    private void UpdateLogData(
+    private static void UpdateLogData(
         ProgressLogInfoData logData,
         string textType,
         string[] columns,
@@ -232,17 +244,21 @@ public class ProgressLogDataImporter : EditorWindow
             else
             {
                 Debug.LogWarning(
-                    $"Additionalデータのインデックス解析に失敗しました。ProgressID: {(int)logData.logName}"
+                    $"<color=yellow>Additionalデータのインデックス解析に失敗しました。ProgressID: {(int)logData.logName}</color>"
                 );
             }
         }
     }
 
+    #endregion
+
+    #region ▼ ユーティリティ (CSVパース)
+
     /// <summary>
     /// CSV形式の文字列をパースして2次元の文字列リストに変換します。
     /// セル内の改行やダブルクォーテーションで囲まれたカンマに対応する堅牢なパーサーです。
     /// </summary>
-    private List<string[]> ParseCsv(string csvText)
+    private static List<string[]> ParseCsv(string csvText)
     {
         List<string[]> rows = new List<string[]>();
         List<string> currentRow = new List<string>();
@@ -257,11 +273,10 @@ public class ProgressLogDataImporter : EditorWindow
             {
                 if (c == '\"')
                 {
-                    // エスケープされたダブルクォートか、クォートの終わりか
                     if (i + 1 < csvText.Length && csvText[i + 1] == '\"')
                     {
                         currentValue += '\"';
-                        i++; // 次のクォートをスキップ
+                        i++;
                     }
                     else
                     {
@@ -281,13 +296,11 @@ public class ProgressLogDataImporter : EditorWindow
                 }
                 else if (c == ',')
                 {
-                    // カンマで列を区切る
                     currentRow.Add(currentValue);
                     currentValue = "";
                 }
                 else if (c == '\n' || c == '\r')
                 {
-                    // CRLF対応の行区切り
                     if (c == '\r' && i + 1 < csvText.Length && csvText[i + 1] == '\n')
                     {
                         i++;
@@ -306,7 +319,6 @@ public class ProgressLogDataImporter : EditorWindow
             }
         }
 
-        // 最後の要素を追加
         if (!string.IsNullOrEmpty(currentValue) || csvText.EndsWith(","))
         {
             currentRow.Add(currentValue);
@@ -319,5 +331,7 @@ public class ProgressLogDataImporter : EditorWindow
 
         return rows;
     }
+
+    #endregion
 }
 #endif

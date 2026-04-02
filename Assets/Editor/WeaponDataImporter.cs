@@ -1,22 +1,27 @@
 #if UNITY_EDITOR
 using System;
 using System.Collections.Generic;
+using System.IO;
 using UnityEditor;
 using UnityEngine;
-using System.IO;
 
-#region 武器データインポーター
 /// <summary>
-/// 剣（Blade）と弾（Shoot）のCSVデータを読み込み、既存のScriptableObjectを更新するエディタ拡張。
-/// 新規作成は行わず、データが見つからない場合はエラーを出力します。
-/// 実際のデータに変更があったものだけを上書きし、更新件数をコンソールに表示します。
+/// 剣（Blade）と弾（Shoot）のCSVファイルの更新を検知し、
+/// 既存のScriptableObjectを自動で更新・上書きするエディタ拡張。
+/// 堅牢なCSVパーサーとJSON比較による差分更新機能を備えています。
 /// </summary>
-public class WeaponDataImporter : EditorWindow
+public class WeaponDataUpdater : AssetPostprocessor
 {
-    #region パスと列番号の定義
+    #region ▼ 定数・パス・列番号の設定
 
     // =================================================================
-    // フォルダパスの定義
+    // 監視対象のCSVファイル名
+    // =================================================================
+    private const string TargetBladeCsvFileName = "武器データ(剣) - 剣のデータ.csv";
+    private const string TargetShootCsvFileName = "武器データ(弾) - 弾のデータ.csv";
+
+    // =================================================================
+    // アセットの保存先フォルダパス
     // =================================================================
     private const string BladeDataPath = "Assets/WeaponData/blade/";
     private const string BladeAttackDataPath = "Assets/WeaponData/BladeAttackData/";
@@ -61,141 +66,55 @@ public class WeaponDataImporter : EditorWindow
     private const int ShootCol_Rank = 16; // レア度
     #endregion
 
-    #region GUI描画用変数
-
-    private TextAsset bladeCsvFile;
-    private TextAsset shootCsvFile;
-
-    private const string SaveKey_BladeCsvGuid = "WeaponImporter_BladeCsvGuid";
-    private const string SaveKey_ShootCsvGuid = "WeaponImporter_ShootCsvGuid";
-
-    #endregion
-
-    #region ウィンドウ初期化・描画
-
-    [MenuItem("Tools/武器データインポーター (CSV)")]
-    public static void ShowWindow()
-    {
-        GetWindow<WeaponDataImporter>("武器インポーター");
-    }
-
-    private void OnEnable()
-    {
-        // 以前設定したCSVファイルのGUIDをロードして復元
-        string bladeGuid = EditorPrefs.GetString(SaveKey_BladeCsvGuid, "");
-        if (!string.IsNullOrEmpty(bladeGuid))
-        {
-            string path = AssetDatabase.GUIDToAssetPath(bladeGuid);
-            bladeCsvFile = AssetDatabase.LoadAssetAtPath<TextAsset>(path);
-        }
-
-        string shootGuid = EditorPrefs.GetString(SaveKey_ShootCsvGuid, "");
-        if (!string.IsNullOrEmpty(shootGuid))
-        {
-            string path = AssetDatabase.GUIDToAssetPath(shootGuid);
-            shootCsvFile = AssetDatabase.LoadAssetAtPath<TextAsset>(path);
-        }
-    }
-
-    private void OnGUI()
-    {
-        GUILayout.Label("剣（Blade）データのインポート", EditorStyles.boldLabel);
-        bladeCsvFile = (TextAsset)
-            EditorGUILayout.ObjectField("剣のCSVファイル", bladeCsvFile, typeof(TextAsset), false);
-
-        if (GUILayout.Button("剣のデータを更新"))
-        {
-            if (bladeCsvFile != null)
-            {
-                SavePrefs(SaveKey_BladeCsvGuid, bladeCsvFile);
-                ImportBladeData();
-            }
-            else
-            {
-                Debug.LogWarning("剣のCSVファイルを選択してください。");
-            }
-        }
-
-        GUILayout.Space(20);
-
-        GUILayout.Label("弾（Shoot）データのインポート", EditorStyles.boldLabel);
-        shootCsvFile = (TextAsset)
-            EditorGUILayout.ObjectField("弾のCSVファイル", shootCsvFile, typeof(TextAsset), false);
-
-        if (GUILayout.Button("弾のデータを更新"))
-        {
-            if (shootCsvFile != null)
-            {
-                SavePrefs(SaveKey_ShootCsvGuid, shootCsvFile);
-                ImportShootData();
-            }
-            else
-            {
-                Debug.LogWarning("弾のCSVファイルを選択してください。");
-            }
-        }
-
-        GUILayout.Space(30);
-
-        // --- 両方一括更新ボタン ---
-        if (GUILayout.Button("剣と弾のデータを両方とも更新", GUILayout.Height(30)))
-        {
-            bool hasBlade = bladeCsvFile != null;
-            bool hasShoot = shootCsvFile != null;
-
-            if (!hasBlade && !hasShoot)
-            {
-                Debug.LogWarning("更新するCSVファイルが選択されていません。");
-                return;
-            }
-
-            if (hasBlade)
-            {
-                SavePrefs(SaveKey_BladeCsvGuid, bladeCsvFile);
-                ImportBladeData();
-            }
-            else
-            {
-                Debug.LogWarning(
-                    "剣のCSVファイルが選択されていないため、剣のインポートはスキップされました。"
-                );
-            }
-
-            if (hasShoot)
-            {
-                SavePrefs(SaveKey_ShootCsvGuid, shootCsvFile);
-                ImportShootData();
-            }
-            else
-            {
-                Debug.LogWarning(
-                    "弾のCSVファイルが選択されていないため、弾のインポートはスキップされました。"
-                );
-            }
-        }
-    }
-
-    private void SavePrefs(string key, TextAsset asset)
-    {
-        string path = AssetDatabase.GetAssetPath(asset);
-        string guid = AssetDatabase.AssetPathToGUID(path);
-        EditorPrefs.SetString(key, guid);
-    }
-
-    #endregion
-
-    #region インポート処理（Blade）
+    #region ▼ 自動検知処理 (AssetPostprocessor)
 
     /// <summary>
-    /// 剣のCSVデータを読み込み、既存のBladeWeaponDataを更新します。
-    /// 変更があったデータのみを更新対象とします。
+    /// プロジェクト内のアセットが更新・追加された際に自動的に呼ばれるコールバック
     /// </summary>
-    private void ImportBladeData()
+    static void OnPostprocessAllAssets(
+        string[] importedAssets,
+        string[] deletedAssets,
+        string[] movedAssets,
+        string[] movedFromAssetPaths
+    )
     {
-        List<string[]> rows = ParseCSV(bladeCsvFile.text);
+        foreach (string assetPath in importedAssets)
+        {
+            string fileName = Path.GetFileName(assetPath);
+
+            // 剣のCSV更新検知
+            if (fileName == TargetBladeCsvFileName)
+            {
+                Debug.Log(
+                    $"<color=#00FFFF>[{TargetBladeCsvFileName}] の更新を検知しました。剣データの自動更新を開始します...</color>"
+                );
+                UpdateBladeDataFromCsv(assetPath);
+            }
+            // 弾のCSV更新検知
+            else if (fileName == TargetShootCsvFileName)
+            {
+                Debug.Log(
+                    $"<color=#00FFFF>[{TargetShootCsvFileName}] の更新を検知しました。弾データの自動更新を開始します...</color>"
+                );
+                UpdateShootDataFromCsv(assetPath);
+            }
+        }
+    }
+
+    #endregion
+
+    #region ▼ 剣(Blade)データ更新ロジック
+
+    private static void UpdateBladeDataFromCsv(string csvPath)
+    {
+        string csvText = File.ReadAllText(csvPath);
+        List<string[]> rows = ParseCSV(csvText);
+
         if (rows.Count <= 1)
         {
-            Debug.LogWarning("剣のCSVデータが空か、ヘッダーしかありません。");
+            Debug.LogWarning(
+                $"<color=yellow>剣のCSVデータが空か、ヘッダーしかありません。</color>"
+            );
             return;
         }
 
@@ -205,13 +124,15 @@ public class WeaponDataImporter : EditorWindow
         for (int i = 1; i < rows.Count; i++)
         {
             string[] row = rows[i];
+
+            // 列数不足の行はスキップ
             if (row.Length <= BladeCol_MotionData)
                 continue;
 
             if (!int.TryParse(row[BladeCol_ID], out int id))
             {
                 Debug.LogWarning(
-                    $"[剣 CSV行 {i + 1}] IDが数値に変換できませんでした: {row[BladeCol_ID]}"
+                    $"<color=yellow>[剣 CSV行 {i + 1}] IDが数値に変換できませんでした: {row[BladeCol_ID]}</color>"
                 );
                 continue;
             }
@@ -219,15 +140,15 @@ public class WeaponDataImporter : EditorWindow
             if (!existingDataDict.TryGetValue(id, out BladeWeaponData data))
             {
                 Debug.LogWarning(
-                    $"[剣インポートエラー] ID: {id} ({row[BladeCol_Name]}) のアセットが '{BladeDataPath}' に見つかりません。新規作成はスキップされました。"
+                    $"<color=orange>[剣 スキップ] ID: {id} ({row[BladeCol_Name]}) のアセットが見つかりません。新規作成は行いません。</color>"
                 );
                 continue;
             }
 
-            // --- 更新前の状態をJSON化して記憶 ---
+            // --- 差分比較用のJSON化(更新前) ---
             string beforeJson = EditorJsonUtility.ToJson(data);
 
-            // データの代入
+            // データの適用
             data.itemName = row[BladeCol_Name];
 
             if (int.TryParse(row[BladeCol_Power], out int power))
@@ -257,6 +178,7 @@ public class WeaponDataImporter : EditorWindow
             if (Enum.TryParse(row[BladeCol_Rank], out ItemRank rank))
                 data.itemRank = rank;
 
+            // モーションデータの適用
             string motionKeyword = row[BladeCol_MotionData].Trim();
             if (!string.IsNullOrEmpty(motionKeyword))
             {
@@ -268,92 +190,50 @@ public class WeaponDataImporter : EditorWindow
                 else
                 {
                     Debug.LogWarning(
-                        $"[剣インポート警告] 武器 '{data.itemName}' に指定されたモーションデータ '{motionKeyword}' が '{BladeAttackDataPath}' に見つかりません。"
+                        $"<color=yellow>[剣 警告] 武器 '{data.itemName}' に指定されたモーションデータ '{motionKeyword}' が見つかりません。</color>"
                     );
                 }
             }
 
-            // --- 更新後の状態をJSON化して比較 ---
+            // --- 差分比較用のJSON化(更新後) ---
             string afterJson = EditorJsonUtility.ToJson(data);
 
-            // 値に変化があった場合のみアセットを更新（SetDirty）してカウント
+            // 変更があった場合のみアセットを更新対象にする
             if (beforeJson != afterJson)
             {
                 EditorUtility.SetDirty(data);
                 updateCount++;
-                // Debug.Log($"[剣データ更新] ID:{id} '{data.itemName}' のデータが変更されました。");
             }
         }
 
-        AssetDatabase.SaveAssets();
-
-        // 完了結果をDebug.Logで出力
+        // 保存と結果ログ出力
         if (updateCount > 0)
         {
+            AssetDatabase.SaveAssets();
             Debug.Log(
-                $"剣（Blade）データのインポートが完了しました。実際に変更・上書きされたアセット数: {updateCount} 件"
+                $"<color=#00FF00>✓ 剣（Blade）データの自動更新が完了しました！ ({updateCount} 件のアセットを上書きしました)</color>"
             );
         }
         else
         {
-            Debug.Log(
-                "剣（Blade）データのインポートを完了しましたが、変更されたアセットはありませんでした。"
-            );
+            Debug.Log("変更された剣（Blade）アセットはありませんでした。");
         }
-    }
-
-    private Dictionary<int, BladeWeaponData> LoadAllExistingBladeData()
-    {
-        var dict = new Dictionary<int, BladeWeaponData>();
-        string[] guids = AssetDatabase.FindAssets("t:BladeWeaponData", new[] { BladeDataPath });
-
-        foreach (var guid in guids)
-        {
-            string path = AssetDatabase.GUIDToAssetPath(guid);
-            var asset = AssetDatabase.LoadAssetAtPath<BladeWeaponData>(path);
-            if (asset != null)
-            {
-                int id = Convert.ToInt32(asset.weaponID);
-                if (!dict.ContainsKey(id))
-                {
-                    dict.Add(id, asset);
-                }
-            }
-        }
-        return dict;
-    }
-
-    private BladeAttackActionData FindBladeAttackActionData(string keyword)
-    {
-        string[] guids = AssetDatabase.FindAssets(
-            "t:BladeAttackActionData",
-            new[] { BladeAttackDataPath }
-        );
-        foreach (var guid in guids)
-        {
-            string path = AssetDatabase.GUIDToAssetPath(guid);
-            if (path.Contains(keyword))
-            {
-                return AssetDatabase.LoadAssetAtPath<BladeAttackActionData>(path);
-            }
-        }
-        return null;
     }
 
     #endregion
 
-    #region インポート処理（Shoot）
+    #region ▼ 弾(Shoot)データ更新ロジック
 
-    /// <summary>
-    /// 弾のCSVデータを読み込み、既存のShootWeaponDataを更新します。
-    /// 変更があったデータのみを更新対象とします。
-    /// </summary>
-    private void ImportShootData()
+    private static void UpdateShootDataFromCsv(string csvPath)
     {
-        List<string[]> rows = ParseCSV(shootCsvFile.text);
+        string csvText = File.ReadAllText(csvPath);
+        List<string[]> rows = ParseCSV(csvText);
+
         if (rows.Count <= 1)
         {
-            Debug.LogWarning("弾のCSVデータが空か、ヘッダーしかありません。");
+            Debug.LogWarning(
+                $"<color=yellow>弾のCSVデータが空か、ヘッダーしかありません。</color>"
+            );
             return;
         }
 
@@ -363,13 +243,15 @@ public class WeaponDataImporter : EditorWindow
         for (int i = 1; i < rows.Count; i++)
         {
             string[] row = rows[i];
+
+            // 列数不足の行はスキップ
             if (row.Length <= ShootCol_Rank)
                 continue;
 
             if (!int.TryParse(row[ShootCol_ID], out int id))
             {
                 Debug.LogWarning(
-                    $"[弾 CSV行 {i + 1}] IDが数値に変換できませんでした: {row[ShootCol_ID]}"
+                    $"<color=yellow>[弾 CSV行 {i + 1}] IDが数値に変換できませんでした: {row[ShootCol_ID]}</color>"
                 );
                 continue;
             }
@@ -377,15 +259,15 @@ public class WeaponDataImporter : EditorWindow
             if (!existingDataDict.TryGetValue(id, out ShootWeaponData data))
             {
                 Debug.LogWarning(
-                    $"[弾インポートエラー] ID: {id} ({row[ShootCol_Name]}) のアセットが '{ShootDataPath}' に見つかりません。新規作成はスキップされました。"
+                    $"<color=orange>[弾 スキップ] ID: {id} ({row[ShootCol_Name]}) のアセットが見つかりません。新規作成は行いません。</color>"
                 );
                 continue;
             }
 
-            // --- 更新前の状態をJSON化して記憶 ---
+            // --- 差分比較用のJSON化(更新前) ---
             string beforeJson = EditorJsonUtility.ToJson(data);
 
-            // データの代入
+            // データの適用
             data.itemName = row[ShootCol_Name];
 
             if (int.TryParse(row[ShootCol_Power], out int power))
@@ -399,7 +281,7 @@ public class WeaponDataImporter : EditorWindow
             if (float.TryParse(row[ShootCol_VanishTime], out float vt))
                 data.vanishTime = vt;
 
-            // 7列目「距離」は要件通り使用しないため無視します
+            // ※7列目(Distance)は無視する仕様
 
             if (float.TryParse(row[ShootCol_Interval], out float interval))
                 data.shotInterval = interval;
@@ -411,6 +293,7 @@ public class WeaponDataImporter : EditorWindow
 
             if (float.TryParse(row[ShootCol_Radius], out float radius))
                 data.colliderRadius = radius;
+
             if (
                 float.TryParse(row[ShootCol_OffsetX], out float ox)
                 && float.TryParse(row[ShootCol_OffsetY], out float oy)
@@ -425,64 +308,39 @@ public class WeaponDataImporter : EditorWindow
             if (Enum.TryParse(row[ShootCol_Rank], out ItemRank rank))
                 data.itemRank = rank;
 
-            // --- 更新後の状態をJSON化して比較 ---
+            // --- 差分比較用のJSON化(更新後) ---
             string afterJson = EditorJsonUtility.ToJson(data);
 
-            // 値に変化があった場合のみアセットを更新（SetDirty）してカウント
+            // 変更があった場合のみアセットを更新対象にする
             if (beforeJson != afterJson)
             {
                 EditorUtility.SetDirty(data);
                 updateCount++;
-                // Debug.Log($"[弾データ更新] ID:{id} '{data.itemName}' のデータが変更されました。");
             }
         }
 
-        AssetDatabase.SaveAssets();
-
-        // 完了結果をDebug.Logで出力
+        // 保存と結果ログ出力
         if (updateCount > 0)
         {
+            AssetDatabase.SaveAssets();
             Debug.Log(
-                $"弾（Shoot）データのインポートが完了しました。実際に変更・上書きされたアセット数: {updateCount} 件"
+                $"<color=#00FF00>✓ 弾（Shoot）データの自動更新が完了しました！ ({updateCount} 件のアセットを上書きしました)</color>"
             );
         }
         else
         {
-            Debug.Log(
-                "弾（Shoot）データのインポートを完了しましたが、変更されたアセットはありませんでした。"
-            );
+            Debug.Log("変更された弾（Shoot）アセットはありませんでした。");
         }
-    }
-
-    private Dictionary<int, ShootWeaponData> LoadAllExistingShootData()
-    {
-        var dict = new Dictionary<int, ShootWeaponData>();
-        string[] guids = AssetDatabase.FindAssets("t:ShootWeaponData", new[] { ShootDataPath });
-
-        foreach (var guid in guids)
-        {
-            string path = AssetDatabase.GUIDToAssetPath(guid);
-            var asset = AssetDatabase.LoadAssetAtPath<ShootWeaponData>(path);
-            if (asset != null)
-            {
-                int id = Convert.ToInt32(asset.weaponID);
-                if (!dict.ContainsKey(id))
-                {
-                    dict.Add(id, asset);
-                }
-            }
-        }
-        return dict;
     }
 
     #endregion
 
-    #region CSVパーサー（共通機能）
+    #region ▼ ユーティリティ (CSVパース・データ検索)
 
     /// <summary>
     /// ダブルクォーテーションやセル内の改行に対応した堅牢なCSVパース処理。
     /// </summary>
-    private List<string[]> ParseCSV(string csvText)
+    private static List<string[]> ParseCSV(string csvText)
     {
         List<string[]> rows = new List<string[]>();
         List<string> currentRow = new List<string>();
@@ -556,7 +414,67 @@ public class WeaponDataImporter : EditorWindow
         return rows;
     }
 
+    // --- 以下、既存のデータロード・検索用メソッド ---
+
+    private static Dictionary<int, BladeWeaponData> LoadAllExistingBladeData()
+    {
+        var dict = new Dictionary<int, BladeWeaponData>();
+        string[] guids = AssetDatabase.FindAssets("t:BladeWeaponData", new[] { BladeDataPath });
+
+        foreach (var guid in guids)
+        {
+            string path = AssetDatabase.GUIDToAssetPath(guid);
+            var asset = AssetDatabase.LoadAssetAtPath<BladeWeaponData>(path);
+            if (asset != null)
+            {
+                int id = Convert.ToInt32(asset.weaponID);
+                if (!dict.ContainsKey(id))
+                {
+                    dict.Add(id, asset);
+                }
+            }
+        }
+        return dict;
+    }
+
+    private static Dictionary<int, ShootWeaponData> LoadAllExistingShootData()
+    {
+        var dict = new Dictionary<int, ShootWeaponData>();
+        string[] guids = AssetDatabase.FindAssets("t:ShootWeaponData", new[] { ShootDataPath });
+
+        foreach (var guid in guids)
+        {
+            string path = AssetDatabase.GUIDToAssetPath(guid);
+            var asset = AssetDatabase.LoadAssetAtPath<ShootWeaponData>(path);
+            if (asset != null)
+            {
+                int id = Convert.ToInt32(asset.weaponID);
+                if (!dict.ContainsKey(id))
+                {
+                    dict.Add(id, asset);
+                }
+            }
+        }
+        return dict;
+    }
+
+    private static BladeAttackActionData FindBladeAttackActionData(string keyword)
+    {
+        string[] guids = AssetDatabase.FindAssets(
+            "t:BladeAttackActionData",
+            new[] { BladeAttackDataPath }
+        );
+        foreach (var guid in guids)
+        {
+            string path = AssetDatabase.GUIDToAssetPath(guid);
+            if (path.Contains(keyword))
+            {
+                return AssetDatabase.LoadAssetAtPath<BladeAttackActionData>(path);
+            }
+        }
+        return null;
+    }
+
     #endregion
 }
-#endregion
 #endif

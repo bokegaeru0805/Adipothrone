@@ -39,8 +39,6 @@ public static class DropOnDeathHandler
             DropCoins(10, coin10);
             DropCoins(1, coin1);
         }
-        // 幸運の効果を取得
-        float luckEffectDelta = PlayerEffectManager.instance.GetDeltaValue(StatusEffectType.Luck);
 
         // 現在の討伐数を取得（CharacterHealth.HandleDeathFlowで加算済みと仮定）
         // Entryから直接値を取るので高速
@@ -49,6 +47,17 @@ public static class DropOnDeathHandler
         //プレイヤーレベルを取得（PlayerLevelManagerが存在すると仮定）
         int currentPlayerLevel =
             PlayerLevelManager.instance != null ? PlayerLevelManager.instance.playerLv : 1;
+
+        // プレイヤーの幸運（LuckBonus）を取得
+        float luckBonus = 0f;
+        if (PlayerManager.instance != null)
+        {
+            var statusManager = PlayerManager.instance.GetComponent<PlayerStatusLevelManager>();
+            if (statusManager != null)
+            {
+                luckBonus = statusManager.LuckBonus;
+            }
+        }
 
         // ノーダメージフラグを取得
         // ※現状のコードには判定ロジックがないため、仮の実装としています。
@@ -119,14 +128,18 @@ public static class DropOnDeathHandler
                 }
             }
 
-            //実際のドロップ率への加算数値を計算
-            float luckBonusRate = luckEffectDelta * drop.luckBonusMultiplier;
-
             if (drop.isUnique)
             {
+                // 幸運ボーナスを加味した最終ドロップ率を計算（上限100%）
+                float finalDropChance = Mathf.Clamp(
+                    drop.dropChance * (1f + (luckBonus / 100f)),
+                    0f,
+                    100f
+                );
+
                 // 確率判定
-                bool isDropped =
-                    UnityEngine.Random.Range(0f, 100f) <= drop.dropChance + luckBonusRate;
+                bool isDropped = UnityEngine.Random.Range(0f, 100f) <= finalDropChance;
+
                 if (!isDropped)
                     continue; // 外れたら終了
 
@@ -139,8 +152,15 @@ public static class DropOnDeathHandler
                 // 通常アイテムの場合は個別に確率判定
                 if (!drop.isUnique)
                 {
-                    bool isDropped =
-                        UnityEngine.Random.Range(0f, 100f) <= drop.dropChance + luckBonusRate;
+                    // 幸運ボーナスを加味した最終ドロップ率を計算（上限100%）
+                    float finalDropChance = Mathf.Clamp(
+                        drop.dropChance * (1f + (luckBonus / 100f)),
+                        0f,
+                        100f
+                    );
+
+                    bool isDropped = UnityEngine.Random.Range(0f, 100f) <= finalDropChance;
+
                     if (!isDropped)
                         continue;
                 }

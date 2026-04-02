@@ -90,6 +90,18 @@ public class QuickItemPanel : MonoBehaviour
         public Image barFillImage;
     }
 
+    [Header("長押し（連続使用）設定")]
+    [Tooltip("キーを押し続けてから連続使用が始まるまでの待機時間（秒）")]
+    [SerializeField]
+    private float repeatDelay = 0.4f;
+
+    [Tooltip("連続使用中の1回あたりの消費間隔（秒）")]
+    [SerializeField]
+    private float repeatRate = 0.1f;
+
+    private float nextActionTime = 0f; // 次にアイテムを連続使用する時間
+    private bool isHoldingSelect = false; // 長押し状態の追跡用フラグ
+
     public int currentIndex { get; private set; } = 0; // 現在選択されているクイックスロットのインデックス。
 
     private Dictionary<GameObject, (GameObject, Image)> buffUIs;
@@ -398,17 +410,56 @@ public class QuickItemPanel : MonoBehaviour
         // 3. クィックアイテムリストがハイライト中でない場合、以降の入力処理を行わない
         if (!spotlightController.IsHighlighting)
         {
+            isHoldingSelect = false; // ハイライトが外れたら長押し状態をリセット
             return;
         }
 
+        bool moved = false; // カーソルが移動したかどうかのフラグ
+
         if (InputManager.instance.GetQuickItemLeft())
+        {
             Move(-1);
+            moved = true;
+        }
         if (InputManager.instance.GetQuickItemRight())
+        {
             Move(1);
+            moved = true;
+        }
         if (InputManager.instance.GetQuickItemUpDown())
+        {
             MoveVertical();
+            moved = true;
+        }
+
+        // カーソルを移動した場合は、意図しない連続使用を防ぐために長押し状態をリセットする
+        if (moved)
+        {
+            isHoldingSelect = false;
+        }
+
+        // 決定ボタンの長押し（連続使用）判定ロジック
         if (InputManager.instance.GetQuickItemSelect())
+        {
+            // 押した瞬間: 1回実行し、長押しの待機タイマーをセット
             PressCurrentButton();
+            isHoldingSelect = true;
+            nextActionTime = Time.unscaledTime + repeatDelay;
+        }
+        else if (InputManager.instance.GetQuickItemSelectHold())
+        {
+            // 押しっぱなし: 待機時間を超えたら連続実行
+            if (isHoldingSelect && Time.unscaledTime >= nextActionTime)
+            {
+                PressCurrentButton();
+                nextActionTime = Time.unscaledTime + repeatRate; // 次の連続入力までの間隔をセット
+            }
+        }
+        else
+        {
+            // キーを離した場合は状態をリセット
+            isHoldingSelect = false;
+        }
     }
 
     /// <summary>

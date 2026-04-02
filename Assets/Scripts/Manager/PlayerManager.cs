@@ -463,6 +463,8 @@ public class PlayerManager : MonoBehaviour
                 StartDeathProcess();
             }
         }
+
+        // Debug.Log($"プレイヤーは {damage} ダメージを受けました。HP: {hpBeforeDamage} -> {hpAfterDamage}");
     }
 
     /// <summary>

@@ -14,8 +14,12 @@ public class Heroin_move : MonoBehaviour
     [SerializeField]
     private Sprite deathSprite; // 死亡時に表示するスプライト
 
+    [Header("調整用パラメータ")]
     [SerializeField]
-    private float Bound2EffecIntervalTime = 0.2f; //揺れる効果音の間隔の時間
+    private float bound1SoundIntervalTime = 5.0f; //体形1のときの揺れる効果音の間隔の時間
+
+    [SerializeField]
+    private float bound2SoundIntervalTime = 0.2f; //体形2のときの揺れる効果音の間隔の時間
 
     [SerializeField]
     private Transform groundCheck; // プレイヤーの足元のTransform
@@ -43,7 +47,8 @@ public class Heroin_move : MonoBehaviour
     #region Constants & Internal Parameters
 
     // --- 調整用パラメータ ---
-    private const float BOUND2EFFECT_LENGHT = 1.384f; //揺れる効果音の長さ
+    private const float BOUND1_SOUND_LENGHT = 3.395f; //体形1のときの揺れる効果音の長さ
+    private const float BOUND2_SOUND_LENGHT = 1.384f; //体形2のときの揺れる効果音の長さ
     private const float DEFAULT_WALK_ANIMATION_DURATION = 0.500f; //元の一回の歩行アニメーションの秒数
     private float m_dashDefaultSpeed = 8.0f; //通常のダッシュ速度
     private float jumpHeight = 3.5f; // ジャンプで到達したい高さ
@@ -426,14 +431,17 @@ public class Heroin_move : MonoBehaviour
         BoundIntervalTime += isDashing ? 2 * Time.deltaTime : Time.deltaTime;
 
         if (
-            BoundIntervalTime >= BOUND2EFFECT_LENGHT + Bound2EffecIntervalTime
+            BoundIntervalTime >= BOUND2_SOUND_LENGHT + bound2SoundIntervalTime
             && BodyState == GameConstants.BODY_STATE_ARMED_2
         )
         {
             sePlayer.Play(SE_PlayerAction.Bound2);
             BoundIntervalTime = 0f;
         }
-        else if (BoundIntervalTime >= 3.448f && BodyState == GameConstants.BODY_STATE_ARMED_1)
+        else if (
+            BoundIntervalTime >= BOUND1_SOUND_LENGHT + bound1SoundIntervalTime
+            && BodyState == GameConstants.BODY_STATE_ARMED_1
+        )
         {
             sePlayer.Play(SE_PlayerAction.GichiGichi1);
             BoundIntervalTime = 0f;

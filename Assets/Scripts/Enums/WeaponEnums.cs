@@ -18,9 +18,10 @@ public enum ShootName
 {
     None = 0, //何も装備していない状態
 
-    normal = 2001,
-    big = 2002,
-    fireball1 = 2005,
+    Normal = 2001,
+    Big = 2002,
+    Fireball1 = 2005,
     CactusBall = 2006,
-    shoot_Debug = 2999,
+    Normal_v2 = 2007,
+    Shoot_Debug = 2999,
 }

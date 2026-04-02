@@ -43,4 +43,22 @@ public class RecipeItemData : BaseItemData
     {
         return maxCraftCount <= 0;
     }
+
+#if UNITY_EDITOR
+    /// <summary>
+    /// インスペクターで値が変更されたときに自動で呼ばれるメソッド
+    /// </summary>
+    private void OnValidate()
+    {
+        // craftedItemがセットされていれば、そのアイテム名に自動更新する
+        if (craftedItem != null && !string.IsNullOrEmpty(craftedItem.itemName))
+        {
+            // 完全に同じ名前にする場合
+            itemName = craftedItem.itemName;
+
+            // 「〜のレシピ」のように少しアレンジを加えたい場合はこちら
+            // itemName = $"{craftedItem.itemName}のレシピ";
+        }
+    }
+#endif
 }

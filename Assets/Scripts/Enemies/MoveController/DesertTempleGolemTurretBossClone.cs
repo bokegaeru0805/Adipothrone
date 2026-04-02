@@ -11,6 +11,8 @@ using UnityEngine;
 [RequireComponent(typeof(CriWare.Assets.CriAtomSePlayer))]
 public class DesertTempleGolemTurretBossClone : MonoBehaviour
 {
+    private const string CLONE_LOCKON_MARK_POOLTAG = "CloneLockOnMarkEffect";
+
     #region --- インスペクター設定 ---
 
     #region 基本設定
@@ -454,7 +456,7 @@ public class DesertTempleGolemTurretBossClone : MonoBehaviour
 
             // 予告マークを aimPivot の位置から生成
             GameObject mark = ObjectPooler.SceneInstance.SpawnFromPool(
-                DesertTempleGolemTurretBossMoveController.LOCKON_MARK_POOLTAG,
+                CLONE_LOCKON_MARK_POOLTAG,
                 spawnPos,
                 Quaternion.identity
             );

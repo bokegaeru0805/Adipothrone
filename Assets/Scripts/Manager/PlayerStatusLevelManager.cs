@@ -22,6 +22,30 @@ public class PlayerStatusLevelManager : MonoBehaviour
         }
     }
 
+    private void Start()
+    {
+        // ゲーム開始時に、セーブデータから読み込んだステータスレベルを実際のプレイヤーのステータスに反映する
+        ApplyHPLevelChange();
+    }
+
+    private void OnEnable()
+    {
+        // PlayerLevelManagerのイベントを購読し、経験値によるレベルアップを検知する
+        if (playerLevelManager != null)
+        {
+            playerLevelManager.OnLeveledUp += ApplyLevelUpBonus;
+        }
+    }
+
+    private void OnDisable()
+    {
+        // オブジェクトが無効化・破棄される際にイベントの購読を解除（メモリリーク防止）
+        if (playerLevelManager != null)
+        {
+            playerLevelManager.OnLeveledUp -= ApplyLevelUpBonus;
+        }
+    }
+
     #region 基礎ステータス算出プロパティ
 
     /// <summary>
@@ -80,9 +104,9 @@ public class PlayerStatusLevelManager : MonoBehaviour
         get
         {
             int currentDefLv = playerManager.GetPlayerIntStatus(
-                PlayerStatusIntName.defenceCurrentLevel
+                PlayerStatusIntName.defenseCurrentLevel
             );
-            int maxDefLv = playerManager.GetPlayerIntStatus(PlayerStatusIntName.defenceMaxLevel);
+            int maxDefLv = playerManager.GetPlayerIntStatus(PlayerStatusIntName.defenseMaxLevel);
 
             float calculated =
                 currentDefLv
@@ -95,8 +119,8 @@ public class PlayerStatusLevelManager : MonoBehaviour
     }
 
     /// <summary>
-    /// 基礎素早さの追加ボーナス
-    /// 計算式: 現在レベル * (基礎増加値 + 最大レベル * ボーナス係数)
+    /// 基礎素早さの追加ボーナス（倍率として扱います）
+    /// 計算式: 現在レベル * 基礎増加値 + √(現在レベル * 最大レベル) * ボーナス係数
     /// </summary>
     public float SpeedBonus
     {
@@ -107,17 +131,19 @@ public class PlayerStatusLevelManager : MonoBehaviour
             );
             int maxSpeedLv = playerManager.GetPlayerIntStatus(PlayerStatusIntName.speedMaxLevel);
 
-            return currentSpeedLv
-                * (
-                    GameConstants.STATUS_SPEED_BASE_INCREASE
-                    + maxSpeedLv * GameConstants.STATUS_SPEED_MAX_LEVEL_BONUS
-                );
+            // 攻撃力や幸運と同じく平方根を用いて二次関数的な爆発を防ぐ
+            float baseSpeedBonus = currentSpeedLv * GameConstants.STATUS_SPEED_BASE_INCREASE;
+            float maxLevelBonus =
+                Mathf.Sqrt(currentSpeedLv * maxSpeedLv)
+                * GameConstants.STATUS_SPEED_MAX_LEVEL_BONUS;
+
+            return baseSpeedBonus + maxLevelBonus;
         }
     }
 
     /// <summary>
     /// 基礎幸運の追加ボーナス
-    /// 計算式: 現在レベル * (基礎増加値 + 最大レベル * ボーナス係数)
+    /// 計算式: 現在レベル * 基礎増加値 + √(現在レベル * 最大レベル) * ボーナス係数
     /// </summary>
     public float LuckBonus
     {
@@ -128,11 +154,11 @@ public class PlayerStatusLevelManager : MonoBehaviour
             );
             int maxLuckLv = playerManager.GetPlayerIntStatus(PlayerStatusIntName.luckMaxLevel);
 
-            return currentLuckLv
-                * (
-                    GameConstants.STATUS_LUCK_BASE_INCREASE
-                    + maxLuckLv * GameConstants.STATUS_LUCK_MAX_LEVEL_BONUS
-                );
+            float baseLuck = currentLuckLv * GameConstants.STATUS_LUCK_BASE_INCREASE;
+            float bonusLuck =
+                Mathf.Sqrt(currentLuckLv * maxLuckLv) * GameConstants.STATUS_LUCK_MAX_LEVEL_BONUS;
+
+            return baseLuck + bonusLuck;
         }
     }
 
@@ -153,7 +179,7 @@ public class PlayerStatusLevelManager : MonoBehaviour
                 PlayerStatusIntName.attackCurrentLevel
             );
             int defenseLevel = playerManager.GetPlayerIntStatus(
-                PlayerStatusIntName.defenceCurrentLevel
+                PlayerStatusIntName.defenseCurrentLevel
             );
 
             // 1. 平均値を算出
@@ -258,8 +284,8 @@ public class PlayerStatusLevelManager : MonoBehaviour
                 currentEnum = PlayerStatusIntName.attackCurrentLevel;
                 break;
             case EnhanceTargetStatus.Defense:
-                maxEnum = PlayerStatusIntName.defenceMaxLevel;
-                currentEnum = PlayerStatusIntName.defenceCurrentLevel;
+                maxEnum = PlayerStatusIntName.defenseMaxLevel;
+                currentEnum = PlayerStatusIntName.defenseCurrentLevel;
                 break;
             case EnhanceTargetStatus.Speed:
                 maxEnum = PlayerStatusIntName.speedMaxLevel;
@@ -291,6 +317,43 @@ public class PlayerStatusLevelManager : MonoBehaviour
 
             // Debug.Log($"{targetStatus} の上限レベルが {targetLevel} に引き上げられました。");
         }
+    }
+
+    /// <summary>
+    /// PlayerLevelManagerからレベルアップイベントを受け取った際に、
+    /// HP、攻撃力、防御力のステータスレベルを上昇レベル分だけ一気に引き上げます。
+    /// </summary>
+    /// <param name="levelIncreased">上昇したレベル数</param>
+    private void ApplyLevelUpBonus(int levelIncreased)
+    {
+        // レベル上昇がない場合は処理を抜ける
+        if (levelIncreased <= 0)
+            return;
+
+        // HPレベルを上昇
+        IncreaseMaxStatusLevelAmount(
+            PlayerStatusIntName.hpMaxLevel,
+            PlayerStatusIntName.hpCurrentLevel,
+            levelIncreased
+        );
+
+        // 攻撃力レベルを上昇
+        IncreaseMaxStatusLevelAmount(
+            PlayerStatusIntName.attackMaxLevel,
+            PlayerStatusIntName.attackCurrentLevel,
+            levelIncreased
+        );
+
+        // 防御力レベルを上昇
+        IncreaseMaxStatusLevelAmount(
+            PlayerStatusIntName.defenseMaxLevel,
+            PlayerStatusIntName.defenseCurrentLevel,
+            levelIncreased
+        );
+
+        Debug.Log(
+            $"プレイヤーが {levelIncreased} レベルアップしたため、HP・攻撃力・防御力のステータスレベルを {levelIncreased} ずつ上昇させました。"
+        );
     }
 
     #endregion
@@ -335,8 +398,8 @@ public class PlayerStatusLevelManager : MonoBehaviour
                 currentEnum = PlayerStatusIntName.attackCurrentLevel;
                 break;
             case EnhanceTargetStatus.Defense:
-                maxEnum = PlayerStatusIntName.defenceMaxLevel;
-                currentEnum = PlayerStatusIntName.defenceCurrentLevel;
+                maxEnum = PlayerStatusIntName.defenseMaxLevel;
+                currentEnum = PlayerStatusIntName.defenseCurrentLevel;
                 break;
             case EnhanceTargetStatus.Speed:
                 maxEnum = PlayerStatusIntName.speedMaxLevel;
@@ -381,7 +444,13 @@ public class PlayerStatusLevelManager : MonoBehaviour
         playerManager.SetPlayerIntStatus(maxLevelName, newMax);
         playerManager.SetPlayerIntStatus(currentLevelName, newMax); // 現在レベルも最大値に合わせる
 
-        // Debug.Log($"{maxLevelName} の上限が {amount} 上がり、{newMax} になりました。");
+        // HPレベルが変更された場合、PlayerManagerの最大HPを即座に更新する
+        if (currentLevelName == PlayerStatusIntName.hpCurrentLevel)
+        {
+            ApplyHPLevelChange();
+        }
+
+        Debug.Log($"{maxLevelName} の上限が {amount} 上がり、{newMax} になりました。");
     }
 
     #endregion

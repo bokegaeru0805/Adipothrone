@@ -455,7 +455,7 @@ public class SaveLoadManager : MonoBehaviour
             {
                 if (GameManager.instance?.savedata?.WeaponInventoryData != null)
                 {
-                    GameManager.instance.savedata.WeaponInventoryData.AddWeapon(ShootName.normal); //初期shoot
+                    GameManager.instance.savedata.WeaponInventoryData.AddWeapon(ShootName.Normal); //初期shoot
                 }
                 else
                 {
@@ -464,7 +464,7 @@ public class SaveLoadManager : MonoBehaviour
 
                 if (WeaponManager.instance != null)
                 {
-                    WeaponManager.instance.ReplaceEquippedWeapon(ShootName.normal); //初期shootを装備に追加
+                    WeaponManager.instance.ReplaceEquippedWeapon(ShootName.Normal); //初期shootを装備に追加
                 }
                 else
                 {
@@ -1053,10 +1053,10 @@ public class SaveLoadManager : MonoBehaviour
         }
 
         // 防御力の最大レベルがプレイヤーレベル未満なら引き上げ、現在レベルも同期する
-        if (saveData.PlayerStatus.defenceMaxLevel < playerLevel)
+        if (saveData.PlayerStatus.defenseMaxLevel < playerLevel)
         {
-            saveData.PlayerStatus.defenceMaxLevel = playerLevel;
-            saveData.PlayerStatus.defenceCurrentLevel = playerLevel;
+            saveData.PlayerStatus.defenseMaxLevel = playerLevel;
+            saveData.PlayerStatus.defenseCurrentLevel = playerLevel;
         }
     }
 

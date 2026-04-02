@@ -78,6 +78,13 @@ public class ContactDamageController : MonoBehaviour
 
     #endregion
 
+    [Header("ライフサイクル設定")]
+    [SerializeField]
+    [Tooltip(
+        "有効な場合、オブジェクトがアクティブになる度（OnEnable時）に設定を初期値にリセットします。\nオブジェクトプールを使用して使い回す場合は必ずtrueにしてください。"
+    )]
+    private bool autoResetOnEnable = true;
+
     [Header("判定設定")]
     [SerializeField]
     [Tooltip(
@@ -90,6 +97,10 @@ public class ContactDamageController : MonoBehaviour
     /// </summary>
     private void OnEnable()
     {
+        // 自動リセットが無効な場合は、現在のダメージ設定などを保持したまま処理を抜ける
+        if (!autoResetOnEnable)
+            return;
+        
         // --- ダメージ設定の初期化 ---
         if (useInspectorSettings)
         {

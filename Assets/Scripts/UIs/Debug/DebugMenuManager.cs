@@ -1,6 +1,7 @@
 using TMPro;
 using UnityEngine;
 using UnityEngine.EventSystems;
+using UnityEngine.UI;
 
 /// <summary>
 /// デバッグ用のステータス変更・アイテム入手機能を提供するマネージャー。
@@ -36,14 +37,26 @@ public class DebugMenuManager : MonoBehaviour
     [SerializeField]
     private TMP_InputField timeScaleInput; // ゲームスピード変更用入力欄
 
-    public static bool isDebugModeUnlocked = false; // デバッグモードが解放されているか
+    [Header("デバッグ表示設定")]
+    [SerializeField]
+    private Toggle eventAreaToggle; // イベントエリアの表示・非表示を切り替えるトグル
 
-    private void Start()
+    public static bool isDebugModeUnlocked = false; // デバッグモードが解放されているか
+    public static bool isShowEventArea { get; private set; } = false; // イベントエリアの表示・非表示状態
+    public static System.Action<bool> OnEventAreaDisplayToggled; // イベントエリアの表示・非表示が切り替わったときに呼び出されるイベント
+
+    private void Awake()
     {
+        // 他のスクリプトのStart()よりも先に実行させるため、Awakeで読み込む
+
         // PlayerPrefsからデバッグモードの解放状態を読み込む（1なら解放、0なら未解放）
         // エディタ上でもビルド後でも状態が保存・復元されるようになります
         isDebugModeUnlocked = PlayerPrefs.GetInt("DebugModeUnlocked", 0) == 1;
+        isShowEventArea = PlayerPrefs.GetInt("ShowEventArea", 0) == 1;
+    }
 
+    private void Start()
+    {
         if (debugCanvas != null)
         {
             debugCanvas.gameObject.SetActive(false);
@@ -66,6 +79,15 @@ public class DebugMenuManager : MonoBehaviour
         if (timeScaleInput != null)
         {
             timeScaleInput.onSubmit.AddListener(ApplyTimeScale);
+        }
+
+        // トグルの初期化とイベント登録
+        if (eventAreaToggle != null)
+        {
+            // セーブデータや初期状態に合わせてトグルの見た目を同期
+            eventAreaToggle.isOn = isShowEventArea;
+            // トグルの値が変更された時に実行するメソッドを登録
+            eventAreaToggle.onValueChanged.AddListener(OnToggleEventArea);
         }
 
         // 初期値のセットアップ
@@ -380,5 +402,19 @@ public class DebugMenuManager : MonoBehaviour
         {
             timeScaleInput.text = TimeManager.instance.DebugBaseTimeScale.ToString("F1");
         }
+    }
+
+    /// <summary>
+    /// イベントエリアの表示・非表示を切り替え、各イベントに通知します。
+    /// </summary>
+    private void OnToggleEventArea(bool value)
+    {
+        isShowEventArea = value;
+        // 状態をセーブデータに保存
+        PlayerPrefs.SetInt("ShowEventArea", value ? 1 : 0);
+        PlayerPrefs.Save();
+
+        OnEventAreaDisplayToggled?.Invoke(value);
+        Debug.Log($"イベントエリア表示を {(value ? "ON" : "OFF")} に切り替え、保存しました。");
     }
 }

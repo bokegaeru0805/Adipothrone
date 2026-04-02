@@ -17,6 +17,9 @@ public class EnemyData : ScriptableObject, IItemIDProvider
 {
     public EnemyName enemyID; // 敵のID
     public string enemyName; // 敵の名前
+
+    [ShowAssetPreview]
+    [AllowNesting]
     public Sprite encyclopediaSprite; // 図鑑用のスプライト
 
     [TextArea]

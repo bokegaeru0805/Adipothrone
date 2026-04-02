@@ -366,34 +366,26 @@ public class DesertTempleGolemTurretBossMoveController : MonoBehaviour, IEnemyRe
         }
     }
 
-    // /// <summary>
-    // /// ゲーム開始時の処理を行います。
-    // /// </summary>
-    // private void Start()
-    // {
-    //     ResetState();
-    // }
-
 #if UNITY_EDITOR
     /// <summary>
     /// 毎フレームの入力を検知します。
     /// デバッグ機能として、キー入力で分身を出現させます。
     /// </summary>
-    private void Update()
-    {
-        if (TimeManager.instance.isEnemyMovePaused)
-            return;
+    // private void Update()
+    // {
+    //     if (TimeManager.instance.isEnemyMovePaused)
+    //         return;
 
-        // Cキーを押したら分身を出現させる（デバッグ用）
-        if (Input.GetKeyDown(KeyCode.C))
-        {
-            if (!hasSpawnedClones)
-            {
-                hasSpawnedClones = true;
-                ActivateClones();
-            }
-        }
-    }
+    //     // Cキーを押したら分身を出現させる（デバッグ用）
+    //     if (Input.GetKeyDown(KeyCode.C))
+    //     {
+    //         if (!hasSpawnedClones)
+    //         {
+    //             hasSpawnedClones = true;
+    //             ActivateClones();
+    //         }
+    //     }
+    // }
 #endif
 
     /// <summary>

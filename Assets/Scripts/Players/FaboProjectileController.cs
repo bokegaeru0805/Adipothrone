@@ -3,187 +3,186 @@ using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 
+/// <summary>
+/// ロボット（Fabo）が発射する弾の挙動、当たり判定、エフェクト生成を管理するコントローラークラス。
+/// 武器データ（ShootWeaponData）を元に初期化され、直線・放物線・3-Wayなどの軌道を描きます。
+/// </summary>
 [RequireComponent(typeof(CriWare.Assets.CriAtomSePlayer))]
 public class FaboProjectileController : MonoBehaviour
 {
-    #region 外部コンポーネント参照
-    //================================================================================
-    // 他のスクリプトやエフェクトなど、外部のアセットへの参照
-    //================================================================================
+    #region キャッシュ・外部参照
     private PlayerEffectManager playerEffectManager;
     private CriWare.Assets.CriAtomSePlayer sePlayer;
     #endregion
 
-
-    #region 弾の基本パラメータ
-    //================================================================================
-    // 武器データ(ShootWeaponData)から初期化される、弾の基本的な性能値
-    //================================================================================
+    #region インスペクター設定
+    [Header("エフェクト設定")]
     [SerializeField, Tooltip("非ボスヒット時に追加再生するエフェクトの数")]
     private int subHitEffectCount = 3;
 
     [SerializeField, Tooltip("非ボスヒット時の追加エフェクトが散らばる半径")]
     private float subHitEffectSpawnRadius = 1.5f;
-    ShootWeaponData currentShootData = null; // 現在の武器データ
-    private int shootPower = 0; // 弾そのものの攻撃力
-    private float shootSpeed = 0; // 弾の速度
-    public float vanishTime { get; private set; } = 0; // 弾が消滅するまでの時間
-    private float cooldownTime = 1.0f; // 同一の敵に再度ダメージを与えるまでのクールタイム
-    private float wpCost = 0f; // 消費WP
-    private int penetrationLimitCount = 0; // 最大貫通数
-    private ShootWeaponData.ShootMoveType moveType = ShootWeaponData.ShootMoveType.None; // 弾の移動タイプ
-    #endregion
 
-
-    #region 特殊な移動タイプ用のパラメータ
-    //================================================================================
-    // 特定のmoveTypeでのみ使用される設定値
-    //================================================================================
-    [Header("3-Way弾用の設定")]
-    [SerializeField, Tooltip("上下の弾が広がる高さ")]
+    [Header("3-Way弾設定")]
+    [SerializeField, Tooltip("上下の弾が広がる高さ（Parallel3Way時のみ適用）")]
     private float height = 1.5f;
-    private string hitEffectPoolTag = "HitEffect1"; // ヒットエフェクトのプールタグ
-    private string subHitEffectPoolTag = "HitEffect2"; // サブ弾ヒットエフェクトのプールタグ
+
+    // オブジェクトプールのタグ指定
+    private string hitEffectPoolTag = "HitEffect1";
+    private string subHitEffectPoolTag = "HitEffect2";
     #endregion
 
-
-    #region 実行中の状態管理
-    //================================================================================
-    // 弾が発射されてから消えるまでの間に変化する、内部的な状態変数
-    //================================================================================
-    public bool isStarted { get; private set; } = false; // 生成と初期化が完了したか
-    private Dictionary<GameObject, float> enemyCooldowns = new Dictionary<GameObject, float>(); // ヒットした敵ごとのクールダウンタイマー
-    private int currentPenetrationCount = 0; // 現在の貫通数
-    private bool isMoveRight = true; // 弾の移動方向（true: 右, false: 左）
-    private Vector2 initialPosition; // 弾が発射された初期位置
-    private bool isSubBullet = false; // 自身が複製された弾（サブ弾）かどうかのフラグ
-    private bool _isInBossBattle = false; // ボス戦闘中かどうか
+    #region 動的パラメータ（ShootWeaponDataから適用）
+    private ShootWeaponData currentShootData = null;
+    private int shootPower = 0;
+    private float shootSpeed = 0;
+    public float vanishTime { get; private set; } = 0;
+    private float cooldownTime = 1.0f;
+    private float wpCost = 0f;
+    private int penetrationLimitCount = 0;
+    private ShootWeaponData.ShootMoveType moveType = ShootWeaponData.ShootMoveType.None;
     #endregion
+
+    #region 状態管理
+    public bool isStarted { get; private set; } = false; // 生成・初期化が完了したかどうか
+    private Dictionary<GameObject, float> enemyCooldowns = new Dictionary<GameObject, float>(); // 敵ごとの連続ヒット防止用タイマー
+    private int currentPenetrationCount = 0; // 現在の貫通ヒット数
+    private bool isMoveRight = true; // 弾の進行方向（true: 右, false: 左）
+    private Vector2 initialPosition; // 発射時の初期座標
+    private bool isSubBullet = false; // 3-Wayなどで複製されたサブ弾かどうかのフラグ
+    private bool _isInBossBattle = false; // ボス戦闘中かどうかのフラグ
+    #endregion
+    #region 初期化設定
 
     /// <summary>
-    /// Robot_moveから武器データを受け取り、自身のパラメータを設定する
+    /// 武器データを受け取り、弾の性能やコンポーネントを初期化します。
+    /// 実際の軌道計算と発射は ExecuteFire メソッドに委譲します。
     /// </summary>
+    /// <param name="data">弾の性能を定義したデータ</param>
+    /// <param name="moveRight">右方向に発射する場合は true</param>
     public void InitializeBullet(ShootWeaponData data, bool moveRight)
     {
         this.isMoveRight = moveRight;
 
-        if (data != null)
+        if (data == null)
         {
-            currentShootData = data;
-            this.GetComponent<SpriteRenderer>().sprite = data.itemSprite; // スプライトを設定
-            shootPower = data.power;
-            wpCost = data.wpCost;
-            vanishTime = data.vanishTime;
-            shootSpeed = data.shootSpeed;
-            cooldownTime = data.cooldownTime;
-            penetrationLimitCount = data.penetrationLimitCount;
-            moveType = data.moveType;
-
-            // SEプレイヤーの設定
-            sePlayer = this.GetComponent<CriWare.Assets.CriAtomSePlayer>();
-
-            // Colliderの設定
-            CircleCollider2D collider = this.GetComponent<CircleCollider2D>();
-            if (collider != null)
-            {
-                collider.offset = data.colliderOffset;
-                collider.radius = data.colliderRadius;
-            }
-
-            // アニメーションの設定
-            if (data.shootAnimation != null)
-            {
-                Animator animator = this.GetComponent<Animator>();
-                animator.enabled = true; // アニメーションを有効化
-                animator.Play(data.shootAnimation.name);
-            }
-
-            //ボス戦闘中かどうかを取得
-            _isInBossBattle = GameUIManager.instance?.IsInBossBattle ?? false;
-        }
-        else
-        {
-            Debug.LogWarning("Shootデータがnullのため、弾を初期化できません。");
+            Debug.LogWarning("ShootWeaponDataがnullのため、弾を初期化できません。");
             Destroy(gameObject);
             return;
         }
 
-        Rigidbody2D newrbody = this.gameObject.GetComponent<Rigidbody2D>();
-        this.gameObject.GetComponent<SpriteRenderer>().flipX = !moveRight; //弾の画像の向きを決定
-        currentPenetrationCount = 0; //貫通数を初期化
-        Destroy(this.gameObject, vanishTime); //指定した時間後に弾を消す
+        // --- 1. データの適用 ---
+        currentShootData = data;
+        this.GetComponent<SpriteRenderer>().sprite = data.itemSprite;
+        shootPower = data.power;
+        wpCost = data.wpCost;
+        vanishTime = data.vanishTime;
+        shootSpeed = data.shootSpeed;
+        cooldownTime = data.cooldownTime;
+        penetrationLimitCount = data.penetrationLimitCount;
+        moveType = data.moveType;
 
-        // 重力の初期化（山なり軌道以外は重力を0にして真っ直ぐ飛ばす）
-        if (moveType != ShootWeaponData.ShootMoveType.Parabola)
+        // --- 2. コンポーネントの設定 ---
+        sePlayer = this.GetComponent<CriWare.Assets.CriAtomSePlayer>();
+
+        CircleCollider2D collider = this.GetComponent<CircleCollider2D>();
+        if (collider != null)
         {
-            newrbody.gravityScale = 0f;
+            collider.offset = data.colliderOffset;
+            collider.radius = data.colliderRadius;
         }
 
-        // 自身がメイン弾であり、タイプがParallel3Wayの場合のみ複製処理を行う
+        if (data.shootAnimation != null)
+        {
+            Animator animator = this.GetComponent<Animator>();
+            animator.enabled = true;
+            animator.Play(data.shootAnimation.name);
+        }
+
+        _isInBossBattle = GameUIManager.instance?.IsInBossBattle ?? false;
+
+        // --- 3. 寿命と向きの初期化 ---
+        this.gameObject.GetComponent<SpriteRenderer>().flipX = !moveRight;
+        currentPenetrationCount = 0;
+        Destroy(this.gameObject, vanishTime);
+
+        // --- 4. 発射処理の呼び出し ---
+        Rigidbody2D rb = this.gameObject.GetComponent<Rigidbody2D>();
+        ExecuteFire(rb);
+    }
+
+    #endregion
+
+    #region 発射・軌道制御
+
+    /// <summary>
+    /// 移動タイプ（moveType）に応じて物理的な力を加え、弾を発射します。
+    /// </summary>
+    /// <param name="rb">弾のRigidbody2D</param>
+    private void ExecuteFire(Rigidbody2D rb)
+    {
+        // 放物線軌道以外は重力の影響を無効化
+        if (moveType != ShootWeaponData.ShootMoveType.Parabola)
+        {
+            rb.gravityScale = 0f;
+        }
+
+        // 移動タイプに応じた発射処理
         if (!isSubBullet && moveType == ShootWeaponData.ShootMoveType.Parallel3Way)
         {
-            // 上方向の弾を複製
+            // 3-Way（メイン弾）の場合、上下にサブ弾を複製して自身は直進する
             CreateSubBullet(1f);
-            // 下方向の弾を複製
             CreateSubBullet(-1f);
-            newrbody.AddForce(
-                new Vector2((isMoveRight ? 1 : -1) * shootSpeed, 0),
-                ForceMode2D.Impulse
-            ); //弾の速度を設定
-            isStarted = true; //生成が完了した
+            rb.AddForce(new Vector2((isMoveRight ? 1 : -1) * shootSpeed, 0), ForceMode2D.Impulse);
+            isStarted = true;
         }
         else if (moveType == ShootWeaponData.ShootMoveType.Straight)
         {
-            // 直線移動の場合は、初速を設定してすぐに発射
-            newrbody.AddForce(
-                new Vector2((isMoveRight ? 1 : -1) * shootSpeed, 0),
-                ForceMode2D.Impulse
-            ); //弾の速度を設定
-            isStarted = true; //生成が完了した
+            // 直線移動の場合
+            rb.AddForce(new Vector2((isMoveRight ? 1 : -1) * shootSpeed, 0), ForceMode2D.Impulse);
+            isStarted = true;
         }
         else if (moveType == ShootWeaponData.ShootMoveType.Parabola)
         {
-            // 1. 重力を有効にする（ShootWeaponDataで設定した値を使用）
-            newrbody.gravityScale = currentShootData.gravityScale;
+            // 放物線移動の場合
+            rb.gravityScale = currentShootData.gravityScale;
 
-            // 2. 角度の計算
-            // 右向きなら設定された角度そのまま、左向きなら180度から引くことで左斜め上にする
+            // 進行方向の角度を計算（左向きの場合は180度反転）
             float angle = isMoveRight
                 ? currentShootData.upwardAngle
                 : 180f - currentShootData.upwardAngle;
-
-            // 角度から進行方向のベクトルを作成
             Vector2 launchDirection = new Vector2(
                 Mathf.Cos(angle * Mathf.Deg2Rad),
                 Mathf.Sin(angle * Mathf.Deg2Rad)
             ).normalized;
 
-            // 3. 斜め上方向に向かって初速を与える
-            newrbody.AddForce(launchDirection * shootSpeed, ForceMode2D.Impulse);
-
-            isStarted = true; //生成が完了した
+            rb.AddForce(launchDirection * shootSpeed, ForceMode2D.Impulse);
+            isStarted = true;
         }
         else
         {
-            Debug.LogWarning("不明な弾の移動タイプ: " + moveType);
+            Debug.LogWarning("不明な弾の移動タイプが指定されました: " + moveType);
             Destroy(gameObject);
         }
     }
 
+    #endregion
+
+    #region 特殊軌道（サブ弾）処理
+
     /// <summary>
-    /// 上下斜めに動くサブ弾を生成し、初期化する
+    /// 3-Way用に自身を複製し、上下に広がるサブ弾を生成します。
     /// </summary>
+    /// <param name="yDirection">Y軸方向の向き（1f または -1f）</param>
     private void CreateSubBullet(float yDirection)
     {
-        // 自身を複製してサブ弾を生成
         GameObject subBulletGO = Instantiate(
             this.gameObject,
             transform.position,
             Quaternion.identity
         );
-        FaboProjectileController subBulletScript = subBulletGO.GetComponent<FaboProjectileController>();
-
-        // サブ弾として初期化
+        FaboProjectileController subBulletScript =
+            subBulletGO.GetComponent<FaboProjectileController>();
 
         subBulletScript.isSubBullet = true;
         subBulletScript.InitializeBullet(currentShootData, isMoveRight);
@@ -191,138 +190,110 @@ public class FaboProjectileController : MonoBehaviour
     }
 
     /// <summary>
-    /// サブ弾の特殊な動き（斜め→平行）を制御するコルーチン
+    /// サブ弾固有の移動軌道（斜めに広がった後、平行に飛ぶ）を制御します。
     /// </summary>
     private IEnumerator SubBulletMovement(float yDirection)
     {
-        initialPosition = this.transform.position; // 初期位置を記録
-
+        initialPosition = this.transform.position;
         Rigidbody2D rb = GetComponent<Rigidbody2D>();
+
         if (rb == null)
             yield break;
 
-        // 1. 初速を斜め方向に設定
+        // 指定方向へ斜めに撃ち出す
         float horizontalVelocity = (isMoveRight ? 1 : -1) * shootSpeed;
         rb.velocity = new Vector2(horizontalVelocity, yDirection * shootSpeed / 2);
-        Debug.Log($"SubBulletMovement: Initial velocity set to {rb.velocity}");
 
-        // 2. 指定した高さに到達するまで待機
+        // 指定された高さ（height）に到達するまで待機
         while (Mathf.Abs(transform.position.y - initialPosition.y) < height)
         {
-            yield return null; // 1フレーム待つ
+            yield return null;
         }
 
-        // 3. 指定の高さに到達したら、垂直方向の速度を0にして平行移動に切り替える
+        // 高さに到達後、垂直方向の速度をなくし水平移動に切り替える
         rb.velocity = new Vector2(rb.velocity.x, 0);
     }
 
-    private void Start()
-    {
-        playerEffectManager = PlayerEffectManager.instance;
-        if (playerEffectManager == null)
-        {
-            Debug.LogWarning("PlayerEffectManagerが見つかりません。ロボットの弾を生成できません。");
-            Destroy(this.gameObject);
-            return;
-        }
-    }
+    #endregion
 
-    private void FixedUpdate()
-    {
-        foreach (var key in enemyCooldowns.Keys.ToList())
-        {
-            enemyCooldowns[key] -= Time.fixedDeltaTime;
-            if (enemyCooldowns[key] <= 0f)
-            {
-                enemyCooldowns.Remove(key);
-            }
-        }
-    }
+    #region 当たり判定
 
     private void OnTriggerStay2D(Collider2D collision)
     {
         IDamageable hpScript = collision.GetComponent<IDamageable>();
-        // IDamageableがない場合は何もしない
+
+        // --- 敵や破壊可能オブジェクトへのヒット処理 ---
         if (hpScript != null)
         {
             MonoBehaviour mb = hpScript as MonoBehaviour;
             if (mb.enabled == false)
-            {
-                return; // IDamageableが無効化されている場合は何もしない
-            }
+                return;
 
-            //接触した敵オブジェクトを取得
             GameObject enemy = collision.gameObject;
 
-            // まだその敵オブジェクトがクールタイム中なら何もしない
+            // クールタイム中の敵には連続ヒットさせない
             if (enemyCooldowns.ContainsKey(enemy))
                 return;
 
-            enemyCooldowns[enemy] = cooldownTime; // クールタイム開始
-            currentPenetrationCount++; //貫通数を増やす
+            enemyCooldowns[enemy] = cooldownTime;
+            currentPenetrationCount++;
 
-            // ヒットエフェクトの再生
-            // 永続プール(PersistentInstance)がnullでないか確認
+            // エフェクトの生成処理
             if (ObjectPooler.PersistentInstance != null && !string.IsNullOrEmpty(hitEffectPoolTag))
             {
-                // 衝突点（弾の位置）を取得
                 Vector2 hitPosition = this.transform.position;
-
-                // ObjectPooler の永続インスタンスから、指定した「タグ」のエフェクトを呼び出す
                 ObjectPooler.PersistentInstance.SpawnFromPool(
-                    hitEffectPoolTag, // プレハブの代わりに「タグ」を渡す
-                    hitPosition, // 座標
-                    Quaternion.identity // 回転
+                    hitEffectPoolTag,
+                    hitPosition,
+                    Quaternion.identity
                 );
 
+                // ボス戦以外なら、周囲に散らばるサブエフェクトを追加生成
                 if (!_isInBossBattle && !string.IsNullOrEmpty(subHitEffectPoolTag))
                 {
-                    // ボス戦闘中でなければ、指定した回数だけサブエフェクトをランダムな位置に再生
                     for (int i = 0; i < subHitEffectCount; i++)
                     {
-                        // hitPosition の周囲（半径 subHitEffectSpawnRadius 内）にランダムな座標を生成
-                        // (Random.insideUnitCircle は Vector2(x, y) を返す)
                         Vector2 randomOffset = Random.insideUnitCircle * subHitEffectSpawnRadius;
-                        Vector2 spawnPosition = hitPosition + randomOffset;
-
-                        // プールからサブエフェクトを再生
                         ObjectPooler.PersistentInstance.SpawnFromPool(
                             subHitEffectPoolTag,
-                            spawnPosition, // ランダム化された座標
+                            hitPosition + randomOffset,
                             Quaternion.identity
                         );
                     }
                 }
             }
 
-            // ヒット処理
+            // ダメージ計算と適用
             int damageSumAmount = playerEffectManager.CalculateFinalAttackPower(shootPower);
+            hpScript.Damage(damageSumAmount);
+            sePlayer.Play(SE_EnemyAction.Damage2);
 
-            hpScript.Damage(damageSumAmount); // ダメージ量を指定
-            sePlayer.Play(SE_EnemyAction.Damage2); //敵ダメージSEを再生
-
+            // WP消費
             if (wpCost > 0)
             {
-                // WPを消費
                 PlayerManager.instance?.AddWpConsumptionBuffer(wpCost);
             }
 
-            if (currentPenetrationCount >= penetrationLimitCount) //貫通数が上限に達したら消える
+            // 貫通上限に達した場合は弾を破棄
+            if (currentPenetrationCount >= penetrationLimitCount)
             {
-                Destroy(this.gameObject, 0);
+                Destroy(this.gameObject);
             }
 
-            return; //処理を終了
+            return;
         }
 
+        // --- 壁や障害物へのヒット処理 ---
         if (!collision.isTrigger)
         {
+            // プレイヤー自身には干渉しない
             if (collision.CompareTag(GameConstants.PLAYER_TAG_NAME))
-            {
-                //プレイヤーに当たった場合は何もしない
                 return;
-            }
-            Destroy(this.gameObject, 0); //弾が壁(敵以外)に当たったら消える
+
+            // 物理的な壁（isTriggerがfalseのコライダー）に当たった場合は弾を破棄
+            Destroy(this.gameObject);
         }
     }
+
+    #endregion
 }

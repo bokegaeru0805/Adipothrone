@@ -38,8 +38,8 @@ public class PlayerStatusData
     public int attackCurrentLevel; // プレイヤーが任意に設定（下降）している攻撃力の現在レベル
 
     // 防御力
-    public int defenceMaxLevel; // アイテム消費で到達した防御力の最大レベル
-    public int defenceCurrentLevel; // プレイヤーが任意に設定（下降）している防御力の現在レベル
+    public int defenseMaxLevel; // アイテム消費で到達した防御力の最大レベル
+    public int defenseCurrentLevel; // プレイヤーが任意に設定（下降）している防御力の現在レベル
 
     // 素早さ
     public int speedMaxLevel; // アイテム消費で到達した素早さの最大レベル
@@ -92,8 +92,8 @@ public class PlayerStatusData
         hpCurrentLevel = 1;
         attackMaxLevel = 1;
         attackCurrentLevel = 1;
-        defenceMaxLevel = 1;
-        defenceCurrentLevel = 1;
+        defenseMaxLevel = 1;
+        defenseCurrentLevel = 1;
         speedMaxLevel = 1;
         speedCurrentLevel = 1;
         luckMaxLevel = 1;
@@ -186,8 +186,8 @@ public enum PlayerStatusIntName
     hpCurrentLevel = 711, // HPの現在レベル
     attackMaxLevel = 720, // 攻撃力の最大レベル
     attackCurrentLevel = 721, // 攻撃力の現在レベル
-    defenceMaxLevel = 7230, // 防御力の最大レベル
-    defenceCurrentLevel = 731, // 防御力の現在レベル
+    defenseMaxLevel = 7230, // 防御力の最大レベル
+    defenseCurrentLevel = 731, // 防御力の現在レベル
     speedMaxLevel = 740, // 素早さの最大レベル
     speedCurrentLevel = 741, // 素早さの現在レベル
     luckMaxLevel = 750, // 幸運の最大レベル
