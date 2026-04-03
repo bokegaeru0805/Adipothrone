@@ -154,10 +154,4 @@ public class InventoryWeaponData
             .Select(w => new ItemEntry(w.WeaponID, w.Stock)) // WeaponSaveData → ItemEntry に変換
             .ToList(); // リストに変換して返す
     }
-
-    // ID順にソート
-    public void SortWeaponsByID()
-    {
-        ownedWeapons = ownedWeapons.OrderBy(w => w.WeaponID).ToList();
-    }
 }

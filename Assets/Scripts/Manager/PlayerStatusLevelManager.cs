@@ -50,7 +50,7 @@ public class PlayerStatusLevelManager : MonoBehaviour
 
     /// <summary>
     /// UI表示および内部計算用の「プレイヤー最大HP」
-    /// 計算式: 初期ベース値 + 現在レベル * (基礎増加値 + 最大レベル * ボーナス係数)
+    /// 計算式: 初期ベース値 + 現在レベル * 基礎増加値 + √(現在レベル * 最大レベル) * ボーナス係数
     /// </summary>
     public int TotalBaseHP
     {
@@ -59,12 +59,11 @@ public class PlayerStatusLevelManager : MonoBehaviour
             int currentHpLv = playerManager.GetPlayerIntStatus(PlayerStatusIntName.hpCurrentLevel);
             int maxHpLv = playerManager.GetPlayerIntStatus(PlayerStatusIntName.hpMaxLevel);
 
-            float calculated =
-                currentHpLv
-                * (
-                    GameConstants.STATUS_HP_BASE_INCREASE
-                    + maxHpLv * GameConstants.STATUS_HP_MAX_LEVEL_BONUS
-                );
+            float baseHpBonus = currentHpLv * GameConstants.STATUS_HP_BASE_INCREASE;
+            float maxLevelBonus =
+                Mathf.Sqrt(currentHpLv * maxHpLv) * GameConstants.STATUS_HP_MAX_LEVEL_BONUS;
+
+            float calculated = baseHpBonus + maxLevelBonus;
             return GameConstants.STATUS_HP_INITIAL_BASE + Mathf.RoundToInt(calculated);
         }
     }
@@ -97,7 +96,7 @@ public class PlayerStatusLevelManager : MonoBehaviour
 
     /// <summary>
     /// UI表示および内部計算用の「プレイヤー基礎防御力」
-    /// 計算式: 現在レベル * (基礎増加値 + 最大レベル * ボーナス係数)
+    /// 計算式: 現在レベル * 基礎増加値 + √(現在レベル * 最大レベル) * ボーナス係数
     /// </summary>
     public int TotalBaseDefensePower
     {
@@ -108,12 +107,11 @@ public class PlayerStatusLevelManager : MonoBehaviour
             );
             int maxDefLv = playerManager.GetPlayerIntStatus(PlayerStatusIntName.defenseMaxLevel);
 
-            float calculated =
-                currentDefLv
-                * (
-                    GameConstants.STATUS_DEFENSE_BASE_INCREASE
-                    + maxDefLv * GameConstants.STATUS_DEFENSE_MAX_LEVEL_BONUS
-                );
+            float baseDefense = currentDefLv * GameConstants.STATUS_DEFENSE_BASE_INCREASE;
+            float bonusDefense =
+                Mathf.Sqrt(currentDefLv * maxDefLv) * GameConstants.STATUS_DEFENSE_MAX_LEVEL_BONUS;
+
+            float calculated = baseDefense + bonusDefense;
             return Mathf.RoundToInt(calculated);
         }
     }
@@ -131,7 +129,6 @@ public class PlayerStatusLevelManager : MonoBehaviour
             );
             int maxSpeedLv = playerManager.GetPlayerIntStatus(PlayerStatusIntName.speedMaxLevel);
 
-            // 攻撃力や幸運と同じく平方根を用いて二次関数的な爆発を防ぐ
             float baseSpeedBonus = currentSpeedLv * GameConstants.STATUS_SPEED_BASE_INCREASE;
             float maxLevelBonus =
                 Mathf.Sqrt(currentSpeedLv * maxSpeedLv)

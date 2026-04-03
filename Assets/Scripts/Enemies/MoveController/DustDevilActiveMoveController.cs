@@ -132,7 +132,7 @@ public class DustDevilActiveMoveController : MonoBehaviour, IEnemyResettable
         switch (variantType)
         {
             case EnemyVariant.Desert:
-                damage = 114;
+                damage = 73;
                 break;
             default:
                 Debug.LogError($"{this.name}のEnemyVariantが設定されていません。", this);

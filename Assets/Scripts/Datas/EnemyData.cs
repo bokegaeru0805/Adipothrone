@@ -53,13 +53,6 @@ public class DropItemData
     [Min(1)]
     public int maxDropCount = 1; // 最大ドロップ数
 
-    [Tooltip("アイテムドロップに対する幸運のボーナス倍率")]
-    [BonusMultiplierPopup]
-    [SerializeField]
-    public float luckBonusMultiplier = 1.0f; // 幸運のボーナス倍率
-
-    //ドロップ率の効果を追加するにはBonusMultiplierPopupDrawerを編集してください
-
     [Header("Unlock Condition")]
     [Tooltip("ドロップに特殊な解禁条件を設けるか")]
     public bool hasCondition = false;

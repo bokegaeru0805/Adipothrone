@@ -58,11 +58,6 @@ public abstract class BaseFieldEvent : MonoBehaviour
         // デバッグモードが解放されていれば、ゲーム画面上に可視化オブジェクトを生成する
         if (DebugMenuManager.isDebugModeUnlocked)
         {
-            Debug.Log(
-                $"デバッグモードが解放されているため、{gameObject.name} にイベントエリアのデバッグオーバーレイを表示します。",
-                this
-            );
-
             CreateDebugOverlay();
 
             // 初期状態を反映し、トグル操作による表示切替イベントを購読

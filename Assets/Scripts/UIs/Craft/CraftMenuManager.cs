@@ -59,6 +59,8 @@ public class CraftMenuManager : MonoBehaviour, IPanelActive
         {
             tabPanelController.OnTabChanged += ReloadList;
         }
+
+        ReloadList(0); // 最初のタブ（全アイテム）を表示するために、タブインデックス0でリストを生成
     }
 
     /// <summary>
@@ -128,6 +130,8 @@ public class CraftMenuManager : MonoBehaviour, IPanelActive
             // 0 = 全アイテムタブ（無条件で追加）
             // 1 = 回復アイテムタブ
             // 2 = 強化アイテムタブ
+            // 3 = 弾武器アイテムタブ
+            // 4 = 剣武器アイテムタブ
             bool shouldAdd = false;
             if (currentTabIndex == 0)
             {
@@ -138,6 +142,14 @@ public class CraftMenuManager : MonoBehaviour, IPanelActive
                 shouldAdd = true;
             }
             else if (currentTabIndex == 2 && typeID == (int)TypeID.StatusEnhanceItem)
+            {
+                shouldAdd = true;
+            }
+            else if (currentTabIndex == 3 && typeID == (int)TypeID.Shoot)
+            {
+                shouldAdd = true;
+            }
+            else if (currentTabIndex == 4 && typeID == (int)TypeID.Blade)
             {
                 shouldAdd = true;
             }
@@ -285,6 +297,12 @@ public class CraftMenuManager : MonoBehaviour, IPanelActive
         {
             EventSystem.current.SetSelectedGameObject(obj);
             isFirstButtonSet = true;
+        }
+
+        // ダミーボタンが選択されたときのために、右側の詳細ビューを非表示にする
+        if (detailView != null && detailView.gameObject.activeSelf)
+        {
+            detailView.gameObject.SetActive(false);
         }
     }
 

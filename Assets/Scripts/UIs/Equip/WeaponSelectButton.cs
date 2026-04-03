@@ -3,27 +3,37 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
+/// <summary>
+/// 武器選択画面などのリストに並ぶ、個別の武器選択ボタンを制御するクラス。
+/// 選択時の装備変更処理や、武器種（剣・銃）ごとのアイコンレイアウト調整を行います。
+/// </summary>
 public class WeaponSelectButton : MonoBehaviour, IItemAssignable
 {
-    [Header("武器のランクのTextコンポーネント")]
+    #region UI参照設定
+    [Header("UI設定")]
+    [Tooltip("武器のランクを表示するTextコンポーネント")]
     [SerializeField]
-    private TextMeshProUGUI weaponRankText; //武器のランクを表示するTextコンポーネント
+    private TextMeshProUGUI weaponRankText;
+    #endregion
 
+    #region 内部変数・プロパティ
+    /// <summary>
+    /// このボタンが現在装備中の武器を表しているかどうかのフラグ
+    /// </summary>
     [HideInInspector]
     public bool isEquippedWeaponButton = false;
 
-    [HideInInspector]
-    public Enum AssignedItemID => assignedItemID; //選択されているアイテムのID
-    private Enum assignedItemID; // 実際のEnum型
-    private InventoryWeaponData.WeaponType weaponType; // 武器の種類
-    private float weaponUIImageScale = 0.45f; //武器の画像のScale
+    /// <summary>
+    /// 現在このボタンに割り当てられているアイテムのID（外部公開用）
+    /// </summary>
+    public Enum AssignedItemID => assignedItemID;
 
-    public void AssignItem(Enum itemID)
-    {
-        assignedItemID = itemID;
-        UpdateWeaponIcon(); // アイテムのアイコンを更新
-    }
+    private Enum assignedItemID; // 実際のアイテムID
+    private InventoryWeaponData.WeaponType weaponType; // 武器の種類（剣、銃など）
+    private float weaponUIImageScale = 0.45f; // 武器画像の共通縮小スケール
+    #endregion
 
+    #region 初期化・イベント処理
     private void Awake()
     {
         if (weaponRankText == null)
@@ -31,39 +41,63 @@ public class WeaponSelectButton : MonoBehaviour, IItemAssignable
             Debug.LogError("武器のランクのTextコンポーネントが設定されていません");
             return;
         }
-        GetComponent<Button>().onClick.AddListener(SelectWeapon);
+
+        // ボタンクリック時に武器選択メソッドを呼び出すようリスナーを登録
+        GetComponent<Button>()
+            .onClick.AddListener(SelectWeapon);
     }
 
     private void OnDisable()
     {
-        assignedItemID = null; //weaponIDを初期化する
+        // オブジェクトが非アクティブになる際、割り当て情報をリセットする
+        assignedItemID = null;
     }
 
+    /// <summary>
+    /// ボタンがクリックされた（決定された）際に呼ばれ、装備中の武器を変更します。
+    /// </summary>
     private void SelectWeapon()
     {
         if (WeaponManager.instance != null)
         {
-            SEManager.instance?.PlayUISE(SE_UI.WeaponDecision1); //SEを鳴らす
-            WeaponManager.instance.ReplaceEquippedWeapon(assignedItemID); //装備中の武器を変更する
-            isEquippedWeaponButton = true; //選択ボタンの装備中のフラグをtrueにする
+            SEManager.instance?.PlayUISE(SE_UI.WeaponDecision1); // 決定音を再生
+            WeaponManager.instance.ReplaceEquippedWeapon(assignedItemID); // 装備を変更
+            isEquippedWeaponButton = true; // 装備中フラグを立てる
         }
         else
         {
             Debug.LogWarning("WeaponManagerが存在しません");
         }
     }
+    #endregion
 
+    #region IItemAssignable 実装
+    /// <summary>
+    /// リスト生成時などに外部から呼ばれ、このボタンにアイテムを割り当てます。
+    /// </summary>
+    /// <param name="itemID">割り当てるアイテムのEnum ID</param>
+    public void AssignItem(Enum itemID)
+    {
+        assignedItemID = itemID;
+        UpdateWeaponIcon(); // 割り当てと同時に見た目を更新する
+    }
+    #endregion
+
+    #region UI更新処理
+    /// <summary>
+    /// 割り当てられたアイテムIDに基づいて、武器のアイコン画像、向き、配置、およびランクテキストを更新します。
+    /// </summary>
     public void UpdateWeaponIcon()
     {
-        //武器の画像を表示するImageコンポーネントを取得
+        // 1. Imageコンポーネントの取得（1番目の子オブジェクトを想定）
         Image myImage = this.transform.GetChild(0).GetComponent<Image>();
-
         if (myImage == null)
         {
-            Debug.LogWarning("武器選択ボタンがImageコンポーネントを持っていません");
+            Debug.LogWarning("武器選択ボタンの子オブジェクトにImageコンポーネントを持っていません");
             return;
         }
 
+        // 2. 武器の種類の判定
         if (assignedItemID is ShootName)
         {
             weaponType = InventoryWeaponData.WeaponType.shoot;
@@ -74,60 +108,60 @@ public class WeaponSelectButton : MonoBehaviour, IItemAssignable
         }
         else
         {
-            Debug.LogWarning("武器の種類が設定されていません");
+            Debug.LogWarning("武器の種類が設定されていないか、不明なアイテムIDです");
             return;
         }
 
-        //武器の種類によって画像の角度を変更
+        // 3. アイコン画像の取得と適用
+        Sprite weaponSprite = ItemDataManager.instance.GetItemSpriteByID(assignedItemID);
+        myImage.sprite = weaponSprite;
+
+        // 4. スケールとレイアウトの調整
+        // 全ての武器で共通して本来のピクセルサイズに戻し、同じ比率で縮小する。
+        // これにより、剣と銃でドットの大きさ（スケール感）が統一され美しく表示されます。
+        myImage.SetNativeSize();
+        myImage.rectTransform.localScale = new Vector3(weaponUIImageScale, weaponUIImageScale, 1f);
+
+        // 武器の種類に応じた配置と角度の適用
         if (weaponType == InventoryWeaponData.WeaponType.blade)
         {
-            myImage.rectTransform.rotation = Quaternion.Euler(0, 0, 90f); //剣の武器の場合は画像の角度を90度だけ変更
+            // --- 剣 (Blade) の特殊レイアウト（縦向け・下端合わせ） ---
+            myImage.rectTransform.rotation = Quaternion.Euler(0, 0, 90f);
+
+            // スプライトの幅とスケールから底面の位置（Y座標）を計算
+            float originalWidth = myImage.sprite.rect.width;
+            float bottomY = originalWidth * 6.25f * weaponUIImageScale * 0.5f + 44.7f;
+
+            myImage.rectTransform.pivot = new Vector2(0.5f, 0f); // Pivotを下に設定
+            myImage.rectTransform.anchorMin = new Vector2(0.5f, 0f);
+            myImage.rectTransform.anchorMax = new Vector2(0.5f, 0f); // Anchorを下中央に固定
+            myImage.rectTransform.anchoredPosition = new Vector2(19.7f, bottomY);
         }
         else
         {
-            myImage.rectTransform.rotation = Quaternion.Euler(0, 0, 0f); //それ以外は角度を元に戻す
+            // --- 銃 (Shoot) などの通常レイアウト（横向け・中央合わせ） ---
+            myImage.rectTransform.rotation = Quaternion.Euler(0, 0, 0f);
+
+            myImage.rectTransform.pivot = new Vector2(0.5f, 0.5f); // Pivotを中央に設定
+            myImage.rectTransform.anchorMin = new Vector2(0.5f, 0.5f);
+            myImage.rectTransform.anchorMax = new Vector2(0.5f, 0.5f); // Anchorを中央に固定
+            myImage.rectTransform.anchoredPosition = Vector2.zero; // ボタンのど真ん中に配置
         }
 
-        //武器の画像スプライトを取得
-        Sprite weaponSprite = ItemDataManager.instance.GetItemSpriteByID(assignedItemID);
-
-        if (myImage != null)
-        {
-            myImage.sprite = weaponSprite; //下記のmyImage.sprite.rect.widthのため先に行う
-            if (weaponType == InventoryWeaponData.WeaponType.blade)
-            {
-                myImage.rectTransform.rotation = Quaternion.Euler(0, 0, 90f); //剣の武器の場合は画像の角度を90度だけ変更
-                myImage.SetNativeSize(); //スプライトの元サイズに合わせる
-                myImage.rectTransform.localScale = new Vector3(
-                    weaponUIImageScale,
-                    weaponUIImageScale,
-                    1f
-                ); // Scale を 0.7 にする（サイズを縮小）
-                float originalWidth = myImage.sprite.rect.width; // スプライトの width を取得
-                float bottomY = originalWidth * 6.25f * weaponUIImageScale * 0.5f + 44.7f; // 底の位置（Y座標）を調整
-
-                myImage.rectTransform.pivot = new Vector2(0.5f, 0f); // Pivot を下に設定（0にしないと bottomY がズレる）
-                myImage.rectTransform.anchorMin = new Vector2(0.5f, 0f);
-                myImage.rectTransform.anchorMax = new Vector2(0.5f, 0f); // Anchor を下中央に固定（親の下端基準で配置）
-                myImage.rectTransform.anchoredPosition = new Vector2(19.7f, bottomY); // 底から bottomY に配置
-            }
-        }
-        else
-        {
-            Debug.LogWarning("武器選択ボタンがImageコンポーネントを持っていません");
-        }
-
-        //武器のランクを取得
+        // 5. 武器のランク表示の更新
         ItemRank itemRank = ItemDataManager.instance.GetItemRankByID(assignedItemID);
-        //武器のランクを表示
         if (itemRank != ItemRank.None)
         {
-            // ランクの文字列を取得
-            String weaponRankString = itemRank.ToString();
-            // ランクの文字列を色付け
+            // ランクの文字列を取得し、専用のカラータグで装飾して適用
+            string weaponRankString = itemRank.ToString();
             weaponRankString = string.Format(GameConstants.UI_COLOR_TAG_GOLD, weaponRankString);
-            // ランクの文字列をTextMeshProに設定
             weaponRankText.text = weaponRankString;
         }
+        else
+        {
+            // ランクが設定されていない場合はテキストを消す
+            weaponRankText.text = "";
+        }
     }
+    #endregion
 }

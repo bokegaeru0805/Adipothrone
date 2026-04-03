@@ -12,4 +12,5 @@ public enum TreasureBoxName
     DesertTemple_3_2 = 17053, //砂漠の神殿のステージ3-2の宝箱
     DesertTemple_TreasureArea_1 = 17054, //砂漠の神殿の宝エリアの宝箱1
     DesertTemple_TreasureArea_2 = 17055, //砂漠の神殿の宝エリアの宝箱2
+    DesertTemple_5_1 = 17056, //砂漠の神殿のステージ5-1の宝箱
 }

@@ -46,4 +46,24 @@ public class WeaponItemDatabase : ScriptableObject
         Debug.LogWarning($"未対応の武器ID: {id}");
         return null;
     }
+
+    /// <summary>
+    /// データベース上の武器の並び順（インデックス）を取得します。
+    /// UIでのソートなどに使用します。
+    /// </summary>
+    public int GetWeaponIndex(Enum id)
+    {
+        if (id is ShootName shootID)
+        {
+            int index = shoots.FindIndex(s => s.weaponID == shootID);
+            return index != -1 ? index : int.MaxValue; // 見つからない場合は一番最後に回す
+        }
+        else if (id is BladeName bladeID)
+        {
+            int index = blades.FindIndex(b => b.weaponID == bladeID);
+            return index != -1 ? index : int.MaxValue;
+        }
+
+        return int.MaxValue;
+    }
 }

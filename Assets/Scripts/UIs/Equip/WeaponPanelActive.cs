@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
@@ -104,8 +105,11 @@ public class WeaponPanelActive : MonoBehaviour, IPanelActive, IPageNavigable
             return;
         }
 
-        // UI描画用のメンバ変数 itemList に最新の所持リストを代入しておく
-        itemList = saveData.WeaponInventoryData.GetAllItemByType(weaponType);
+        // UI描画用のメンバ変数 itemList に最新の所持リストを代入し、データベースの並び順にソートしておく
+        itemList = saveData
+            .WeaponInventoryData.GetAllItemByType(weaponType)
+            .OrderBy(item => GetWeaponSortIndex(item.itemID))
+            .ToList();
 
         // 万が一、所持武器が0個の場合は既存の初期化（非表示処理）を呼んで安全に終了する
         if (itemList == null || itemList.Count == 0)
@@ -133,7 +137,7 @@ public class WeaponPanelActive : MonoBehaviour, IPanelActive, IPageNavigable
         int equippedIndex = -1;
         for (int i = 0; i < ownedWeapons.Count; i++)
         {
-            // 【修正】比較する際は、確実で早い int型 同士（itemID）で一致確認を行う
+            // 比較する際は、確実で早い int型 同士（itemID）で一致確認を行う
             if (ownedWeapons[i].itemID == equippedWeaponIntID)
             {
                 equippedIndex = i;
@@ -236,24 +240,11 @@ public class WeaponPanelActive : MonoBehaviour, IPanelActive, IPageNavigable
 
         if (GameManager.instance?.savedata?.WeaponInventoryData.ownedWeapons != null)
         {
-            // 所持中の特定タイプの武器のIDと個数のリストを順番付きで取得
-            if (weaponType == InventoryWeaponData.WeaponType.shoot)
-            {
-                itemList = GameManager.instance.savedata.WeaponInventoryData.GetAllItemByType(
-                    InventoryWeaponData.WeaponType.shoot
-                );
-            }
-            else if (weaponType == InventoryWeaponData.WeaponType.blade)
-            {
-                itemList = GameManager.instance.savedata.WeaponInventoryData.GetAllItemByType(
-                    InventoryWeaponData.WeaponType.blade
-                );
-            }
-            else
-            {
-                Debug.LogWarning("武器の種類が正しく設定されていません");
-                return;
-            }
+            // 所持中の特定タイプの武器のIDと個数のリストを順番付きで取得し、ソートする
+            var unsortedList = GameManager.instance.savedata.WeaponInventoryData.GetAllItemByType(
+                weaponType
+            );
+            itemList = unsortedList.OrderBy(item => GetWeaponSortIndex(item.itemID)).ToList();
         }
         else
         {
@@ -328,5 +319,21 @@ public class WeaponPanelActive : MonoBehaviour, IPanelActive, IPageNavigable
         }
 
         preselectedButtonWeaponID = selectedButtonWeaponID; //前フレームの武器IDを設定する
+    }
+
+    /// <summary>
+    /// アイテムID（int）を受け取り、ソート基準となるデータベース上のインデックスを返します。
+    /// </summary>
+    private int GetWeaponSortIndex(int itemIDInt)
+    {
+        Enum weaponID = EnumIDUtility.FromID(itemIDInt);
+
+        // ItemDataManagerを経由して、インスペクターで設定されたデータベース上の並び順を取得する
+        if (ItemDataManager.instance != null)
+        {
+            return ItemDataManager.instance.GetWeaponIndexByID(weaponID);
+        }
+
+        return int.MaxValue; // マネージャーが存在しない場合は末尾に配置
     }
 }

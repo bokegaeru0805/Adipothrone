@@ -1,8 +1,8 @@
 public enum EnhanceItemName
 {
     None = 0,
-    Attack = 9001,
-    Defense = 9002,
-    Speed = 9003,
-    Luck = 9004
+    AttackPotion = 9001,
+    DefensePotion = 9002,
+    SpeedPotion = 9003,
+    LuckPotion = 9004,
 }

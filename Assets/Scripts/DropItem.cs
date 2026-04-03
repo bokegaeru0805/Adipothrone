@@ -90,6 +90,7 @@ public class DropItem : PoolableObject
     private CircleCollider2D mycollider;
     private CapsuleCollider2D groundCheckerCollider;
     private Rigidbody2D rbody;
+    private Animator animator;
 
     // 現在の宝箱に適用すべき開閉スプライトを保存しておく変数
     private Sprite _currentTargetCloseSprite;
@@ -103,6 +104,7 @@ public class DropItem : PoolableObject
             .gameObject.transform.GetChild(0)
             .gameObject.GetComponent<CapsuleCollider2D>();
         rbody = GetComponent<Rigidbody2D>();
+        animator = GetComponent<Animator>();
     }
 
     /// <summary>
@@ -139,6 +141,11 @@ public class DropItem : PoolableObject
     /// </summary>
     public void SetDropItemSprite()
     {
+        if (animator != null)
+        {
+            animator.enabled = false; // ドロップアイテムのアニメーションは基本的に不要なので無効化
+        }
+
         Sprite dropSprite = ItemDataManager.instance.GetItemSpriteByID(DropID); // アイテムの見た目（スプライト）を取得
         spriteRenderer.sprite = dropSprite; //スプライトを設定
         spriteRenderer.sortingOrder = DropItemsortingOrder; //画像の表示順を設定
@@ -172,8 +179,11 @@ public class DropItem : PoolableObject
     /// </summary>
     public void SetMoneySprite()
     {
-        Animator animator = this.GetComponent<Animator>();
-        animator.enabled = true; //アニメーションを有効化
+        if (animator != null)
+        {
+            animator.enabled = true; // ドロップ時のコインアニメーションを有効化
+        }
+
         switch (DropMoney)
         {
             case 1:
@@ -202,6 +212,11 @@ public class DropItem : PoolableObject
     /// </summary>
     public void SetTreasureSprite()
     {
+        if (animator != null)
+        {
+            animator.enabled = false; // 宝箱のアニメーションは基本的に不要なので無効化
+        }
+
         isTreasureBox = true; //宝箱かどうかのフラグをON
         ItemRank itemRank = ItemDataManager.instance.GetItemRankByID(DropID); //アイテムのランクを取得
 

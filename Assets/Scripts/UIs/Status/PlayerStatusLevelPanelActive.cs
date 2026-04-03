@@ -373,13 +373,13 @@ public class PlayerStatusLevelPanelActive : MonoBehaviour, IPanelActive
                 case PlayerStatusIntName.speedMaxLevel:
                     // SpeedBonusは 0.02 などの「倍率」なので、100倍してパーセントにする
                     statText.text =
-                        $"移動速度等: +{PlayerManager.instance.StatusLevelManager.SpeedBonus * 100:F0}%";
+                        $"素早さ補正: +{PlayerManager.instance.StatusLevelManager.SpeedBonus * 100:F0}%";
                     break;
 
                 case PlayerStatusIntName.luckMaxLevel:
                     // LuckBonusは 2.0 などの「パーセント整数値」なので、そのまま表示する
                     statText.text =
-                        $"ドロップ率: +{PlayerManager.instance.StatusLevelManager.LuckBonus:F0}%";
+                        $"幸運補正　: +{PlayerManager.instance.StatusLevelManager.LuckBonus:F0}%";
                     break;
             }
         }

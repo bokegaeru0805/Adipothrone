@@ -1,8 +1,12 @@
+using NaughtyAttributes;
 using UnityEngine;
 
 public abstract class BaseItemData : ScriptableObject, IItemIDProvider
 {
     public string itemName;
+
+    [ShowAssetPreview]
+    [AllowNesting]
     public Sprite itemSprite;
     public ItemRank itemRank; // アイテムのランク(レア度)
     public int buyPrice; // 購入価格

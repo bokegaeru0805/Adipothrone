@@ -156,4 +156,30 @@ public class ItemDataManager : MonoBehaviour
         BaseItemData data = GetBaseItemDataByID(ID);
         return data != null && data.isSellable;
     }
+
+    /// <summary>
+    /// 指定された武器IDの、データベース上でのインデックス（並び順）を取得します。
+    /// 武器選択UIでの表示順ソートなどに使用します。
+    /// </summary>
+    /// <param name="ID">武器のID</param>
+    /// <returns>リスト上のインデックス。見つからない場合は int.MaxValue</returns>
+    public int GetWeaponIndexByID(Enum ID)
+    {
+        if (weaponItemDatabase == null)
+            return int.MaxValue;
+
+        // データベースの公開リスト(shoots, blades)から直接インデックスを検索して返します
+        if (ID is ShootName shootID)
+        {
+            int index = weaponItemDatabase.shoots.FindIndex(s => s.weaponID == shootID);
+            return index != -1 ? index : int.MaxValue;
+        }
+        else if (ID is BladeName bladeID)
+        {
+            int index = weaponItemDatabase.blades.FindIndex(b => b.weaponID == bladeID);
+            return index != -1 ? index : int.MaxValue;
+        }
+
+        return int.MaxValue; // 見つからなかったアイテムはリストの最後に回す
+    }
 }

@@ -180,7 +180,7 @@ public class DesertTempleGolemFloatMoveController : MonoBehaviour, IEnemyResetta
         switch (variantType)
         {
             case EnemyVariant.Desert:
-                damage = 110;
+                damage = 63;
                 break;
             default:
                 Debug.LogError($"{this.name}のEnemyVariantが設定されていません。", this);

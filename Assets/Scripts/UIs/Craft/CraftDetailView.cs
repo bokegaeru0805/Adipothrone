@@ -42,6 +42,23 @@ public class CraftDetailView : MonoBehaviour
     private GameObject materialUIPrefab;
     #endregion
 
+    #region 内部変数
+    private float iconBaseSize = 0f; // 完成品アイコンの基準サイズ
+    #endregion
+
+    private void Awake()
+    {
+        // 起動時にインスペクターで設定されている完成品アイコンの横幅を基準サイズとして記憶する
+        if (itemIcon != null)
+        {
+            RectTransform rect = itemIcon.GetComponent<RectTransform>();
+            if (rect != null)
+            {
+                iconBaseSize = rect.sizeDelta.x;
+            }
+        }
+    }
+
     #region 更新処理
     /// <summary>
     /// 左側のリストで新しいレシピが選択された際に呼ばれ、
@@ -55,7 +72,7 @@ public class CraftDetailView : MonoBehaviour
             return;
 
         // --- 1. 完成品の基本情報の更新 ---
-        itemIcon.sprite = recipeData.craftedItem.itemSprite;
+        UIUtility.SetSpriteFitToSquare(itemIcon, recipeData.craftedItem.itemSprite, iconBaseSize);
         itemNameText.text = recipeData.craftedItem.itemName;
         itemTypeText.text = GameManager.instance.GetItemTypePrefix(
             recipeData.craftedItem.GetItemID()

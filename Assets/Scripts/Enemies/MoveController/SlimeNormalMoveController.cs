@@ -110,7 +110,7 @@ public class SlimeNormalMoveController : MonoBehaviour, IEnemyResettable
         switch (variantType)
         {
             case EnemyVariant.Chapter1:
-                damage = 23;
+                damage = 20;
                 break;
             default:
                 Debug.LogError($"{this.name}のEnemyVariantが設定されていません。");

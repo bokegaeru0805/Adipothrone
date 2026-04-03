@@ -8,6 +8,12 @@ using UnityEngine.UI;
 
 public class WeaponManager : MonoBehaviour
 {
+    #region 定数
+    private const float BLADE_RANGE_LIMIT = 3f; // 剣武器の射程距離上限
+    private const float BLADE_HANDLING_LIMIT = 5f; // 剣武器の取り回し上限
+    private const float SHOOT_SPEED_LIMIT = 30f; // 弾武器の速度上限
+    #endregion
+
     public static WeaponManager instance;
 
     [SerializeField, Header("武器データベース")]
@@ -29,15 +35,6 @@ public class WeaponManager : MonoBehaviour
             this.saveData = saveData;
         }
     }
-
-    [Min(1)]
-    private float bladeRangeLimit = 100; // ブレード武器の射程距離上限
-
-    [Min(1)]
-    private float bladeHandlingLimit = 100; // ブレード武器の取り回し上限
-
-    [Min(1)]
-    private float shootSpeedLimit = 100; // シュート武器の速度上限
 
     public event Action<Enum> OnWeaponReplaced; // 武器が置き換えられたときのイベント
 
@@ -308,7 +305,7 @@ public class WeaponManager : MonoBehaviour
             //弾の速度のバーを表示
             RangeOrSpeedBar.SetActive(true);
             //弾の速度のバーの表示を設定
-            RangeOrSpeedBarImage.fillAmount = shootWeapon.shootSpeed / shootSpeedLimit;
+            RangeOrSpeedBarImage.fillAmount = shootWeapon.shootSpeed / SHOOT_SPEED_LIMIT;
             //弾の貫通数の数値を表示
             PenetrationText.text = shootWeapon.penetrationLimitCount.ToString();
         }
@@ -321,12 +318,13 @@ public class WeaponManager : MonoBehaviour
             //剣のレンジのバーを表示
             RangeOrSpeedBar.SetActive(true);
             //剣のレンジのバーの表示を設定
-            RangeOrSpeedBarImage.fillAmount = bladeWeapon.ColliderSize.magnitude / bladeRangeLimit;
+            RangeOrSpeedBarImage.fillAmount =
+                bladeWeapon.ColliderSize.magnitude / BLADE_RANGE_LIMIT;
             //剣の取り回しのバーを表示
             HandlingBar.SetActive(true);
             //剣の取り回しのバーの表示を設定
             HandlingBarImage.fillAmount =
-                bladeWeapon.attackActionData.HandlingScore / bladeHandlingLimit;
+                bladeWeapon.attackActionData.HandlingScore / BLADE_HANDLING_LIMIT;
         }
     }
 
@@ -356,7 +354,7 @@ public class WeaponManager : MonoBehaviour
             Debug.LogWarning("WeaponItemDatabaseが設定されていません。");
             return;
         }
-        
+
         foreach (var shoot in weaponItemDatabase.shoots)
         {
             GameManager.instance.AddAllTypeIDToInventory(shoot.weaponID, amount);

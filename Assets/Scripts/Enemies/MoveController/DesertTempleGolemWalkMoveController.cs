@@ -163,7 +163,7 @@ public class DesertTempleGolemWalkMoveController : MonoBehaviour, IEnemyResettab
         switch (variantType)
         {
             case EnemyVariant.Desert:
-                damage = 150;
+                damage = 96;
                 break;
             default:
                 Debug.LogError($"{this.name}のEnemyVariantが設定されていません。", this);

@@ -24,42 +24,38 @@ public static class GameConstants
     #endregion
 
     #region プレイヤーレベル・経験値設定
-    public static int PLAYER_MAX_LEVEL => LevelExpRequirements.Count;
-    public static readonly Dictionary<int, int> LevelExpRequirements = new Dictionary<int, int>
+    public const int PLAYER_MAX_LEVEL = 99; // プレイヤーの最大レベル（これ以上はレベルアップできない）
+
+    /// <summary>
+    /// 現在のレベルから次のレベルに上がるために必要な「区間経験値」を計算します。
+    /// 計算式: 20 × (現在のレベル)^2
+    /// </summary>
+    /// <param name="currentLevel">現在のレベル</param>
+    /// <returns>次のレベルへ上がるために必要な経験値</returns>
+    public static int GetRequiredExpForNextLevel(int currentLevel)
     {
-        { 1, 0 }, // Lv1 -> 初期値
-        { 2, 15 },
-        { 3, 69 },
-        { 4, 168 },
-        { 5, 317 },
-        { 6, 517 },
-        { 7, 773 },
-        { 8, 1085 },
-        { 9, 1455 },
-        { 10, 1885 },
-        { 11, 2377 },
-        { 12, 2932 },
-        { 13, 3551 },
-        { 14, 4234 },
-        { 15, 4984 },
-        { 16, 5801 },
-        { 17, 6686 },
-        { 18, 7640 },
-        { 19, 8663 },
-        { 20, 9758 },
-        { 21, 10923 },
-        { 22, 12161 },
-        { 23, 13472 },
-        { 24, 14856 },
-        { 25, 16314 },
-        { 26, 17847 },
-        { 27, 19455 },
-        { 28, 21139 },
-        { 29, 22900 },
-        { 30, 24738 },
-        // 必要に応じて追加
-        //Mathf.Pow(level, 2.2f) * 15
-    };
+        return 20 * currentLevel * currentLevel;
+    }
+
+    /// <summary>
+    /// 指定したレベルに到達するために必要な「累計経験値」を計算します。
+    /// レベル1から目標レベルの1つ前までの区間経験値を全て足し合わせます。
+    /// </summary>
+    /// <param name="targetLevel">目標レベル</param>
+    /// <returns>目標レベルに到達するための累計経験値</returns>
+    public static int GetTotalExpForLevel(int targetLevel)
+    {
+        if (targetLevel <= 1)
+            return 0;
+
+        int totalExp = 0;
+        for (int i = 1; i < targetLevel; i++)
+        {
+            totalExp += GetRequiredExpForNextLevel(i);
+        }
+        return totalExp;
+    }
+
     #endregion
 
     #region プレイヤーステータス計算式
@@ -126,9 +122,9 @@ public static class GameConstants
     // 計算式: 現在レベル * (基礎増加値 + 最大レベル * ボーナス係数)
 
     // HP計算用の定数
-    public const int STATUS_HP_INITIAL_BASE = 80; // レベル1でも保証される最低HP（旧計算式のベース値）
-    public const float STATUS_HP_BASE_INCREASE = 28.0f; // HPの基礎増加値
-    public const float STATUS_HP_MAX_LEVEL_BONUS = 0.4f; // HPの最大レベルボーナス係数
+    public const int STATUS_HP_INITIAL_BASE = 80; // レベル1でも保証される最低HP
+    public const float STATUS_HP_BASE_INCREASE = 15.0f; // HPの基礎増加値
+    public const float STATUS_HP_MAX_LEVEL_BONUS = 10.0f; // HPの最大レベルボーナス係数
 
     // 攻撃力計算用の定数
     public const float STATUS_ATTACK_BASE_INCREASE = 1.0f; // 攻撃力の基礎増加値
@@ -136,8 +132,8 @@ public static class GameConstants
     public const float PLAYER_ATTACK_TO_MULTIPLIER_RATE = 100f; // プレイヤー基礎攻撃力を倍率に変換する際の割る数
 
     // 防御力計算用の定数
-    public const float STATUS_DEFENSE_BASE_INCREASE = 2.0f; // 防御力の基礎増加値
-    public const float STATUS_DEFENSE_MAX_LEVEL_BONUS = 0.5f; // 防御力の最大レベルボーナス係数
+    public const float STATUS_DEFENSE_BASE_INCREASE = 1.5f; // 防御力の基礎増加値
+    public const float STATUS_DEFENSE_MAX_LEVEL_BONUS = 1.5f; // 防御力の最大レベルボーナス係数
 
     // 素早さ計算用の定数
     public const float STATUS_SPEED_BASE_INCREASE = 0.01f; // 素早さの基礎増加値 (Lv100で3倍にするための調整)

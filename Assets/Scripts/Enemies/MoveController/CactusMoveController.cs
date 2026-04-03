@@ -124,7 +124,7 @@ public class CactusMoveController : MonoBehaviour, IEnemyResettable
         switch (variantType)
         {
             case EnemyVariant.Desert:
-                damage = 65;
+                damage = 38;
                 break;
             default:
                 Debug.LogError($"{this.name}のEnemyVariantが設定されていません。", this);

@@ -48,6 +48,22 @@ public class RecipeButtonUI : MonoBehaviour, ISelectHandler, ISubmitHandler
     private CraftMenuManager menuManager; // 全体を統括するマネージャーの参照
     private int maxCraftableCount; // 現在の所持素材や制限から計算された「最大合成可能数」
     private int maxCraftLimit = 99; // 1回で合成できる最大数の上限
+    private float iconBaseSize = 0f; // アイコンの基準サイズ
+    #endregion
+
+    #region Unityイベント
+    private void Awake()
+    {
+        // 起動時にインスペクターで設定されているアイコンの横幅を基準サイズとして記憶する
+        if (itemIcon != null)
+        {
+            RectTransform rect = itemIcon.GetComponent<RectTransform>();
+            if (rect != null)
+            {
+                iconBaseSize = rect.sizeDelta.x;
+            }
+        }
+    }
     #endregion
 
     #region 初期化・セットアップ
@@ -73,7 +89,11 @@ public class RecipeButtonUI : MonoBehaviour, ISelectHandler, ISubmitHandler
 
         if (itemIcon != null)
         {
-            itemIcon.sprite = recipeData.craftedItem.itemSprite;
+            UIUtility.SetSpriteFitToSquare(
+                itemIcon,
+                recipeData.craftedItem.itemSprite,
+                iconBaseSize
+            );
         }
 
         // 合成可能かどうかで色やアイコンの表示状態を切り替える
@@ -177,7 +197,8 @@ public class RecipeButtonUI : MonoBehaviour, ISelectHandler, ISubmitHandler
     /// </summary>
     public void OnSelect(BaseEventData eventData)
     {
-        if (menuManager == null) return; 
+        if (menuManager == null)
+            return;
 
         // ダミーボタンの時は詳細ビューを非表示にする
         if (recipeData == null)
@@ -213,8 +234,7 @@ public class RecipeButtonUI : MonoBehaviour, ISelectHandler, ISubmitHandler
         }
         else
         {
-            // TODO: 合成不可のときのエラーSEなどを鳴らす場合はここに実装
-            Debug.Log("素材が足りないか、合成回数の上限に達しているため合成できません。");
+            SEManager.instance.Play(SE_UI.Beep1); // 合成できないときの効果音
         }
     }
     #endregion

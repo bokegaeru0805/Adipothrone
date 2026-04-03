@@ -41,6 +41,10 @@ SpriteAtlas:
     cachedData: {fileID: 0}
     packedSpriteRenderDataKeys:
     - 652bc943fab9ceb4ca60239bae772b79: 1267147520
+    - 26bd7887e53e8fe448e692286cdac493: 72990847
+    - 26bd7887e53e8fe448e692286cdac493: 1441070913
+    - 26bd7887e53e8fe448e692286cdac493: 1083562796
+    - 26bd7887e53e8fe448e692286cdac493: 1463958095
     - 96259aa7da2d9b84fa11796214e34a9f: -1197484545
     - 3af3a498d5a15c1419cab6eb446ad826: 21300000
     - 90428b98cd0c8a048937eb4baead7343: 21300000
@@ -62,6 +66,10 @@ SpriteAtlas:
   m_MasterAtlas: {fileID: 0}
   m_PackedSprites:
   - {fileID: 1267147520, guid: 652bc943fab9ceb4ca60239bae772b79, type: 3}
+  - {fileID: 72990847, guid: 26bd7887e53e8fe448e692286cdac493, type: 3}
+  - {fileID: 1441070913, guid: 26bd7887e53e8fe448e692286cdac493, type: 3}
+  - {fileID: 1083562796, guid: 26bd7887e53e8fe448e692286cdac493, type: 3}
+  - {fileID: 1463958095, guid: 26bd7887e53e8fe448e692286cdac493, type: 3}
   - {fileID: -1197484545, guid: 96259aa7da2d9b84fa11796214e34a9f, type: 3}
   - {fileID: 21300000, guid: 3af3a498d5a15c1419cab6eb446ad826, type: 3}
   - {fileID: 21300000, guid: 90428b98cd0c8a048937eb4baead7343, type: 3}
@@ -82,6 +90,10 @@ SpriteAtlas:
   - {fileID: 21300000, guid: bc666b9fecf7ea84eb34b1df26f2ba3c, type: 3}
   m_PackedSpriteNamesToIndex:
   - Herb
+  - StatusLevelPotion_Speed
+  - StatusLevelPotion_Luck
+  - StatusLevelPotion_Defense
+  - StatusLevelPotion_Attack
   - Berry
   - CactusEnemy_Arm
   - donut_choco

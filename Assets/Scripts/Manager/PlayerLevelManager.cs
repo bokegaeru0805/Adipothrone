@@ -115,10 +115,10 @@ public class PlayerLevelManager : MonoBehaviour
         int nextLevel = playerLv + 1;
         if (nextLevel > GameConstants.PLAYER_MAX_LEVEL)
             return false;
-        if (!GameConstants.LevelExpRequirements.ContainsKey(nextLevel))
-            return false;
 
-        return PlayerStatus.playerExp >= GameConstants.LevelExpRequirements[nextLevel];
+        // 次のレベルに必要な「累計経験値」を取得し、現在の経験値がそれを満たしているかチェック
+        int requiredTotalExp = GameConstants.GetTotalExpForLevel(nextLevel);
+        return PlayerStatus.playerExp >= requiredTotalExp;
     }
 
     /// <summary>
@@ -150,31 +150,34 @@ public class PlayerLevelManager : MonoBehaviour
         }
 
         int nextLevel = playerLv + 1;
-        if (!GameConstants.LevelExpRequirements.ContainsKey(nextLevel))
+        if (nextLevel > GameConstants.PLAYER_MAX_LEVEL)
             return 0;
 
-        return GameConstants.LevelExpRequirements[nextLevel] - PlayerStatus.playerExp;
+        // 次のレベルの累計経験値から、現在の所持経験値を引く
+        int requiredTotalExp = GameConstants.GetTotalExpForLevel(nextLevel);
+        return requiredTotalExp - PlayerStatus.playerExp;
     }
 
-    // <summary>
+    /// <summary>
     /// 指定された経験値がどのレベルに相当するかを計算して返します。
-    /// (GameConstants.LevelExpRequirementsがレベル昇順にソートされている前提)
     /// </summary>
     /// <param name="experience">計算対象の経験値</param>
     /// <returns>対応するレベル (最低レベル1)</returns>
     public static int GetLevelFromExp(int experience)
     {
         int determinedLevel = 1; // 経験値0でもレベル1
+        int requiredTotalExp = 0;
 
-        // 条件を満たす限り、レベルを上げていく
-        // (GameConstants.LevelExpRequirements は Key=レベル, Value=必要経験値 の辞書orリスト)
-        foreach (var pair in GameConstants.LevelExpRequirements)
+        // レベル1から最大レベルまで、区間経験値を足しながらチェックしていく
+        for (int i = 1; i < GameConstants.PLAYER_MAX_LEVEL; i++)
         {
-            // 所持経験値(experience)が、そのレベル(pair.Key)に必要な経験値(pair.Value)以上か
-            if (experience >= pair.Value)
+            requiredTotalExp += GameConstants.GetRequiredExpForNextLevel(i);
+
+            // 所持経験値(experience)が、計算した累計経験値以上か
+            if (experience >= requiredTotalExp)
             {
                 // 満たしている場合、レベルを更新
-                determinedLevel = pair.Key;
+                determinedLevel = i + 1;
             }
             else
             {
@@ -183,16 +186,8 @@ public class PlayerLevelManager : MonoBehaviour
             }
         }
 
-        // 最大レベルを超えないように丸める (CanLevelUpの処理に合わせる)
-        if (determinedLevel > GameConstants.PLAYER_MAX_LEVEL)
-        {
-            determinedLevel = GameConstants.PLAYER_MAX_LEVEL;
-        }
-
         return determinedLevel;
     }
-
-    // （...既存の AddExperience, CanLevelUp, LevelUp, GetExpToNextLevel, GetLevelFromExp メソッドはそのまま維持...）
 
     /// <summary>
     /// デバッグ機能などからプレイヤーのレベルを直接指定の値に変更します。
@@ -215,16 +210,9 @@ public class PlayerLevelManager : MonoBehaviour
         if (oldLevel == targetLevel)
             return;
 
-        // 目標レベルに必要な経験値を取得して上書き
-        if (GameConstants.LevelExpRequirements.TryGetValue(targetLevel, out int requiredExp))
-        {
-            PlayerStatus.playerExp = requiredExp;
-        }
-        else
-        {
-            Debug.LogWarning($"レベル {targetLevel} の必要経験値が定義されていません。");
-            return;
-        }
+        // 目標レベルに必要な「累計経験値」を取得して上書き
+        int requiredTotalExp = GameConstants.GetTotalExpForLevel(targetLevel);
+        PlayerStatus.playerExp = requiredTotalExp;
 
         playerLv = targetLevel;
         UpdateLevelBasedStats(true); // レベルに応じた能力の変化値を更新し、HPをリセット

@@ -230,7 +230,6 @@ public class ItemUsePromptPanel : MonoBehaviour
         else if (typeID == (int)TypeID.StatusEnhanceItem)
         {
             playerManager.UseStatusEnhanceItem(currentItemID);
-            Debug.Log($"ステータス強化アイテム({currentItemID})を使用しました");
         }
         else
         {
