@@ -321,22 +321,5 @@ namespace CriWare.Assets
                 this.Stop();
             }
         }
-
-#if UNITY_EDITOR
-        /// <summary>
-        /// CRI Atom Craftでビルドした最新データを反映させるための手動リロード機能です。
-        /// メニューの「Tools > CRIWAREデータの手動リロード」をクリックするか、
-        /// ショートカットキー (Ctrl + Shift + R / Cmd + Shift + R) で実行できます。
-        /// </summary>
-        [UnityEditor.MenuItem("Tools/CRIWAREデータの手動リロード (強制リセット) %&r")]
-        public static void ForceDomainReload()
-        {
-            // スクリプトコンパイル時と同じ「ドメインリロード」を強制的に要求し、CRI内部のキャッシュを破棄します。
-            UnityEditor.EditorUtility.RequestScriptReload();
-            Debug.Log(
-                "[CRIWARE] 音声データ更新のための強制リセット（ドメインリロード）を実行しました。"
-            );
-        }
-#endif
     }
 }

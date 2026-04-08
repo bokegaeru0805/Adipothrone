@@ -414,7 +414,7 @@ public class ShopUIManager : MonoBehaviour
         }
 
         // ショップデータに基づいてボタンをセットアップ
-        for (int i = 0; i < shopData.shopItems.Length; i++)
+        for (int i = 0; i < shopData.shopItems.Count; i++)
         {
             Button button = uiRefs.ShopButtons[i];
             var script = button.GetComponent<PurchaseSelectButton>();
@@ -427,15 +427,18 @@ public class ShopUIManager : MonoBehaviour
                 continue;
             }
 
-            Enum itemID = shopData.shopItems[i].GetItemID();
-            if (itemID == null)
+            BaseItemData itemData = shopData.shopItems[i].item;
+
+            if (itemData == null)
             {
-                Debug.LogWarning($"ShopItem {i} のアイテムIDがnullです。");
+                Debug.LogWarning($"ShopItem {i} のアイテムデータが設定されていません。");
                 continue;
             }
 
+            Enum itemID = itemData.GetItemID();
+
             // 購入選択ボタンを初期化して表示
-            script.InitializePurchaseSelectButton(shopData.shopItems[i]);
+            script.InitializePurchaseSelectButton(itemData);
             button.gameObject.SetActive(true);
         }
 

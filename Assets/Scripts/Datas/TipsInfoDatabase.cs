@@ -31,4 +31,14 @@ public class TipsInfoDatabase : ScriptableObject
 
         return null;
     }
+
+    /// <summary>
+    /// データベース上のヒントの並び順（インデックス）を取得します。
+    /// UIでのソートなどに使用します。
+    /// </summary>
+    public int GetTipsIndex(TipsName id)
+    {
+        int index = tips.FindIndex(t => t.tipsName == id);
+        return index != -1 ? index : int.MaxValue; // 見つからない場合は一番最後に回す
+    }
 }

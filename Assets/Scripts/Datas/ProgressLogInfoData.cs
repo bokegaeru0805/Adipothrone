@@ -41,16 +41,15 @@ public class ProgressLogSection
     public string sectionName;
 
     [Tooltip(
-        "上から順に条件を判定し、最初に条件を満たしたテキストが1つだけ追記されます。優先度の高い状態（クリア後など）を上に配置してください。"
+        "表示するテキストのリスト。下から順（逆順）に評価され、最初に条件を満たしたものが表示されます。"
     )]
     public List<ConditionalLog> conditionalLogs = new List<ConditionalLog>();
 }
 
-
 [CreateAssetMenu(fileName = "ProgressLogData", menuName = "Game/ProgressLog")]
 public class ProgressLogInfoData : ScriptableObject
 {
-    public ProgressLogName logName; // 進行度の名前
+    public ProgressLogName logName;
 
     [TextArea(3, 10)]
     public string logText; // 実際の文章

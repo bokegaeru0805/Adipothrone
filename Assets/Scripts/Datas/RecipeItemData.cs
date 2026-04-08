@@ -7,6 +7,11 @@ using UnityEngine;
 [System.Serializable]
 public class CraftingMaterial
 {
+    #region エディタ表示用
+    [HideInInspector]
+    public string _inspectorLabel; // Unityの仕様を利用してインスペクターの要素名にするための隠し変数
+    #endregion
+
     [Header("素材アイテム")]
     public BaseItemData item;
 
@@ -44,12 +49,14 @@ public class RecipeItemData : BaseItemData
         return maxCraftCount <= 0;
     }
 
+    #region エディタ専用処理
 #if UNITY_EDITOR
     /// <summary>
     /// インスペクターで値が変更されたときに自動で呼ばれるメソッド
     /// </summary>
     private void OnValidate()
     {
+        // 1. レシピ名自身の自動更新処理
         // craftedItemがセットされていれば、そのアイテム名に自動更新する
         if (craftedItem != null && !string.IsNullOrEmpty(craftedItem.itemName))
         {
@@ -59,6 +66,27 @@ public class RecipeItemData : BaseItemData
             // 「〜のレシピ」のように少しアレンジを加えたい場合はこちら
             // itemName = $"{craftedItem.itemName}のレシピ";
         }
+
+        // 2. 素材リストの表示用ラベル更新処理
+        if (materials != null)
+        {
+            foreach (var mat in materials)
+            {
+                if (mat == null)
+                    continue;
+
+                if (mat.item != null)
+                {
+                    // 例: "薬草 × 3" のように表示させる
+                    mat._inspectorLabel = $"{mat.item.itemName} × {mat.requiredAmount}";
+                }
+                else
+                {
+                    mat._inspectorLabel = "未設定 (Empty)";
+                }
+            }
+        }
     }
 #endif
+    #endregion
 }

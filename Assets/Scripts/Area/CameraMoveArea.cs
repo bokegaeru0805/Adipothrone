@@ -130,8 +130,9 @@ public class CameraMoveArea : MonoBehaviour
     [SerializeField]
     private BGMCategory defaultBgm;
 
+    [InfoBox("時系列が後の条件（進行度が高いもの）を下に配置してください。")]
     [Tooltip(
-        "特定のフラグが立っている場合に、優先的に再生するBGMのリスト。上にあるものほど優先度が高いです。"
+        "特定のフラグが立っている場合に、優先的に再生するBGMのリスト。下から順（逆順）に評価され、最初に一致したものが再生されます。"
     )]
     [SerializeField]
     private List<ConditionalBgm> conditionalBgms = new List<ConditionalBgm>();
@@ -470,8 +471,10 @@ public class CameraMoveArea : MonoBehaviour
     /// </summary>
     public BGMCategory GetBgmForCurrentFlags()
     {
-        foreach (var condition in conditionalBgms)
+        // 条件リストを下から順（新しい/進行度が高い条件）に評価
+        for (int i = conditionalBgms.Count - 1; i >= 0; i--)
         {
+            var condition = conditionalBgms[i];
             if (condition.AreConditionsMet())
             {
                 return condition.bgmToPlay;
@@ -523,7 +526,7 @@ public class CameraMoveArea : MonoBehaviour
     /// <summary>
     /// areaLightの形状をareaColliderの形状に合わせる
     /// </summary>
-    private void UpdateLightShapeToCollider()
+    public void UpdateLightShapeToCollider()
     {
         // if (areaLight != null)
         //     areaLight.gameObject.SetActive(true);
@@ -644,70 +647,6 @@ public class CameraMoveArea : MonoBehaviour
     #endregion
 
     #region Editor / Debug
-
-#if UNITY_EDITOR
-    /// <summary>
-    /// シーン内に存在する全てのCameraMoveAreaに対して、Light2Dの形状更新を一括実行します。
-    /// </summary>
-    [MenuItem("Tools/CameraMoveArea/Update All CameraMoveArea Light Shapes")]
-    public static void UpdateAllLightShapes()
-    {
-        // シーン内のCameraMoveAreaを全て検索（アクティブなもののみ）
-        CameraMoveArea[] allAreas = FindObjectsOfType<CameraMoveArea>();
-        int count = 0;
-
-        foreach (var area in allAreas)
-        {
-            // エディタ実行用にColliderの参照が切れていないか確認
-            if (area.areaCollider == null)
-                area.areaCollider = area.GetComponent<CompositeCollider2D>();
-
-            if (area.areaLight != null)
-            {
-                // 更新前の頂点データを保存
-                Vector3[] oldPath = area.areaLight.shapePath;
-
-                // Undo（Ctrl+Z）で戻せるように記録
-                Undo.RecordObject(area.areaLight, "Update Light Shape");
-
-                // 既存の更新メソッドを呼び出し
-                area.UpdateLightShapeToCollider();
-
-                // 更新後の頂点データを取得
-                Vector3[] newPath = area.areaLight.shapePath;
-
-                // 頂点データに変化があったかを判定
-                bool isChanged = false;
-                if (oldPath == null || newPath == null || oldPath.Length != newPath.Length)
-                {
-                    isChanged = true; // 頂点の数が違う、またはnullになった場合
-                }
-                else
-                {
-                    // 頂点の座標を1つずつ比較
-                    for (int i = 0; i < oldPath.Length; i++)
-                    {
-                        if (oldPath[i] != newPath[i])
-                        {
-                            isChanged = true;
-                            break;
-                        }
-                    }
-                }
-
-                // 実際に変更があった場合のみカウントし、保存対象(Dirty)にする
-                if (isChanged)
-                {
-                    EditorUtility.SetDirty(area.areaLight);
-                    count++;
-                }
-            }
-        }
-        Debug.Log(
-            $"シーン内のCameraMoveAreaをチェックし、{count} 個のLight2Dの形状を実際に更新しました。"
-        );
-    }
-#endif
 
     private void OnDrawGizmos()
     {

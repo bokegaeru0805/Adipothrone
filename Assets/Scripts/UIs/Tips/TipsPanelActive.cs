@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 using TMPro;
 using UnityEngine;
 using UnityEngine.EventSystems;
@@ -225,6 +226,14 @@ public class TipsPanelActive : MonoBehaviour, IPanelActive
             }
         }
 
+        // 取得したヒントリストを、データベース上の登録順にソートする
+        if (allUnlockedTips.Count > 0)
+        {
+            allUnlockedTips = allUnlockedTips
+                .OrderBy(tip => GetTipsSortIndex(tip.Entry.TipsID))
+                .ToList();
+        }
+
         // 総ページ数を計算
         if (allUnlockedTips.Count == 0)
         {
@@ -436,5 +445,24 @@ public class TipsPanelActive : MonoBehaviour, IPanelActive
             // 画像がない場合の処理
             tipsPanelTextWithoutImage.text = tipsInfo.tipsText;
         }
+    }
+
+    /// <summary>
+    /// TipsIDを受け取り、ソート基準となるデータベース上のインデックスを返します。
+    /// </summary>
+    private int GetTipsSortIndex(int tipsIDInt)
+    {
+        TipsName tipsID = (TipsName)tipsIDInt;
+
+        // TipsInfoDatabaseにインデックス取得メソッド(GetTipsIndex等)を追加した場合
+        if (tipsinfoDatabase != null)
+        {
+            return tipsinfoDatabase.GetTipsIndex(tipsID);
+        }
+
+        // （簡易版）もしデータベースから取得できない場合は、Enumの定義順（数値）をそのまま使う
+        // return tipsIDInt;
+
+        return int.MaxValue;
     }
 }

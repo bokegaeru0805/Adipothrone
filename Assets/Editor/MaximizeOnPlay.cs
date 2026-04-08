@@ -16,32 +16,17 @@ public static class MaximizeOnPlay
     {
         // EditorPrefsから設定を読み込み、メニューの状態を更新
         isEnabled = EditorPrefs.GetBool(MENU_NAME, false);
-        UpdateMenuCheckedState();
 
         // プレイモードの状態が変化したときのイベントに、メソッドを登録
         EditorApplication.playModeStateChanged += OnPlayModeStateChanged;
     }
 
-    // Toolsメニューに項目を追加
-    [MenuItem(MENU_NAME)]
-    private static void ToggleAction()
-    {
-        // 現在の状態を反転させ、EditorPrefsに保存
-        isEnabled = !isEnabled;
-        EditorPrefs.SetBool(MENU_NAME, isEnabled);
-        UpdateMenuCheckedState();
-    }
-
-    // メニュー項目のチェック状態を更新
-    private static void UpdateMenuCheckedState()
-    {
-        Menu.SetChecked(MENU_NAME, isEnabled);
-    }
-
-    // プレイモードの状態が変化したときに呼ばれる
     // プレイモードの状態が変化したときに呼ばれる
     private static void OnPlayModeStateChanged(PlayModeStateChange state)
     {
+        // 設定画面での変更を即座に反映させるため、最新のEditorPrefsを読み込む
+        isEnabled = EditorPrefs.GetBool(MENU_NAME, false);
+
         // 機能が無効の場合は何もしない
         if (!isEnabled)
         {

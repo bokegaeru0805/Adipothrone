@@ -128,7 +128,7 @@ public class DialogueUpdaterEditor : Editor
     /// <summary>
     /// ツールバー（Toolsメニュー）から、現在開いているシーン内のすべてのDialogueUpdaterを実行します。
     /// </summary>
-    [MenuItem("Tools/CSVからダイアログを更新 (現在のシーン)")]
+    [MenuItem("Tools/MyGame/Scene/Update Dialogues From CSV")]
     public static void UpdateAllDialoguesFromToolbar()
     {
         // シーン内のすべてのDialogueUpdaterコンポーネントを取得

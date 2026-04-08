@@ -25,6 +25,11 @@ public enum EnhanceType
 [System.Serializable]
 public class EnhanceEffect
 {
+    #region エディタ表示用
+    [HideInInspector]
+    public string _inspectorLabel; // Unityの仕様を利用してインスペクターの要素名にするための隠し変数
+    #endregion
+
     [Header("強化するステータス")]
     public EnhanceTargetStatus targetStatus;
 
@@ -51,4 +56,27 @@ public class StatusEnhanceItemData : BaseItemData
     {
         return itemID;
     }
+
+    #region エディタ専用処理
+#if UNITY_EDITOR
+    /// <summary>
+    /// インスペクターで値が変更されたときに自動で呼ばれるメソッド
+    /// </summary>
+    private void OnValidate()
+    {
+        if (enhanceEffects != null)
+        {
+            foreach (var effect in enhanceEffects)
+            {
+                if (effect == null)
+                    continue;
+
+                // 例: "Attack +1 (MaxLevelUp)" のように表示させる
+                effect._inspectorLabel =
+                    $"{effect.targetStatus} +{effect.amount} ({effect.enhanceType})";
+            }
+        }
+    }
+#endif
+    #endregion
 }

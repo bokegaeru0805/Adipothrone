@@ -23,9 +23,9 @@ public class FlagDrivenStatePro : MonoBehaviour
     [SerializeField]
     private StatePro defaultState;
 
-    [InfoBox("時系列が後の条件を上に配置してください。")]
+    [InfoBox("時系列が後の条件（進行度が高いもの）を下に配置してください。")]
     [Tooltip(
-        "条件と、それが満たされたときに適用される状態のリスト。上から順に評価され、最初に一致した条件が適用されます。"
+        "条件と、それが満たされたときに適用される状態のリスト。下から順（逆順）に評価され、最初に一致した条件が適用されます。"
     )]
     [SerializeField]
     private List<StateConditionPro> stateConditions = new();
@@ -160,9 +160,11 @@ public class FlagDrivenStatePro : MonoBehaviour
     {
         //Debug.Log("[FlagDrivenStatePro] Evaluating state based on flags.", this);
 
-        // 条件リストを上から（＝優先度が高いものから）順にチェックします。
-        foreach (var condition in stateConditions)
+        // 条件リストを下から（＝新しい/進行度が高い条件から）順（逆順）にチェックします。
+        for (int i = stateConditions.Count - 1; i >= 0; i--)
         {
+            var condition = stateConditions[i];
+
             if (condition.AreAllFlagsMet())
             {
                 // 条件に一致するものが見つかったら、その状態を適用して処理を終了します。

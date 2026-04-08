@@ -32,7 +32,7 @@ public class LotteryGameManager : MonoBehaviour
 
     [Header("Conditional Profiles")]
     [Tooltip(
-        "条件に応じて切り替わる設定のリスト。上から順に評価され、最初に条件を満たしたものが適用されます。"
+        "条件に応じて切り替わる設定のリスト。下から順（逆順）に評価され、最初に条件を満たしたものが適用されます。"
     )]
     [SerializeField]
     private List<LotteryProfile> lotteryProfiles;
@@ -181,11 +181,17 @@ public class LotteryGameManager : MonoBehaviour
     /// 現在のフラグやアイテム所持状況に基づいて、適用するプロファイルを決定します。
     /// </summary>
     /// <returns>有効な設定が見つかった（またはデフォルトが有効）場合はtrue、開催不可能な場合はfalse</returns>
+    /// <summary>
+    /// 現在のフラグやアイテム所持状況に基づいて、適用するプロファイルを決定します。
+    /// </summary>
+    /// <returns>有効な設定が見つかった（またはデフォルトが有効）場合はtrue、開催不可能な場合はfalse</returns>
     private bool UpdateActiveProfile()
     {
-        // 1. プロファイルリストを上から順に評価
-        foreach (var profile in lotteryProfiles)
+        // 1. プロファイルリストを下から順（新しい/進行度が高い条件）に評価
+        for (int i = lotteryProfiles.Count - 1; i >= 0; i--)
         {
+            var profile = lotteryProfiles[i];
+
             if (profile.AreConditionsMet())
             {
                 // 条件に合致したプロファイルの設定を適用

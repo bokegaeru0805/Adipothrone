@@ -72,7 +72,7 @@ public class FlagSearchToolWindow : EditorWindow
 
     #region Editor Window Lifecycle
 
-    [MenuItem("Tools/Flag Search Tool")]
+    [MenuItem("Tools/MyGame/Window/Flag Search Tool %g")]
     public static void ShowWindow()
     {
         GetWindow<FlagSearchToolWindow>("Flag Searcher");

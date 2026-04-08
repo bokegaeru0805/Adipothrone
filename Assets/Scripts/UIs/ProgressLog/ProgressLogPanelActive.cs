@@ -76,7 +76,6 @@ public class ProgressLogPanelActive : MonoBehaviour, IPanelActive
                         if (section.conditionalLogs != null)
                         {
                             // リストを「後ろから（進行度が後のものから）」逆順に評価するようにする
-                            // これにより、インスペクターやスプレッドシート上で「時系列順（早いものが上、遅いものが下）」に並べられます
                             for (int i = section.conditionalLogs.Count - 1; i >= 0; i--)
                             {
                                 var conditionalLog = section.conditionalLogs[i];

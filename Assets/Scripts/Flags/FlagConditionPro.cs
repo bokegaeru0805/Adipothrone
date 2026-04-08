@@ -245,6 +245,9 @@ public class FlagOperation
 [System.Serializable]
 public class ConditionalDialogue
 {
+    [HideInInspector]
+    public string _inspectorLabel;
+
     [Tooltip("このセリフが表示されるためのフラグ条件（AND条件）")]
     public List<FlagConditionPro> conditions = new List<FlagConditionPro>();
 

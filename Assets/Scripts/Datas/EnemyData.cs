@@ -30,7 +30,6 @@ public class EnemyData : ScriptableObject, IItemIDProvider
     public int requiredLevel; // 所要レベル
     public List<DropItemData> dropItems = new List<DropItemData>(); // ドロップアイテムリスト
 
-    // public EffekseerEmitter destroyeffect; // 死亡エフェクトのアセット
     public float destroyeffectScale = 1.0f; // 死亡エフェクトの大きさ
 
     [Tooltip("この敵を図鑑に表示するかどうか")]
@@ -40,11 +39,42 @@ public class EnemyData : ScriptableObject, IItemIDProvider
     {
         return enemyID;
     }
+
+#if UNITY_EDITOR
+    /// <summary>
+    /// インスペクター上で値が変更された際（またはロード時）に自動的に呼ばれるメソッド。
+    /// リストの要素名にアイテム名を同期させます。
+    /// </summary>
+    private void OnValidate()
+    {
+        if (dropItems != null)
+        {
+            for (int i = 0; i < dropItems.Count; i++)
+            {
+                if (dropItems[i] != null)
+                {
+                    // baseItemData がセットされていれば、その itemName を表示用変数に入れる
+                    if (dropItems[i].baseItemData != null)
+                    {
+                        dropItems[i]._inspectorLabel = dropItems[i].baseItemData.itemName;
+                    }
+                    else
+                    {
+                        dropItems[i]._inspectorLabel = "アイテム未設定";
+                    }
+                }
+            }
+        }
+    }
+#endif
 }
 
 [System.Serializable]
 public class DropItemData
 {
+    [HideInInspector]
+    public string _inspectorLabel; // Unityの仕様を利用してインスペクターの要素名にするための隠し変数
+
     public BaseItemData baseItemData; // アイテムID(種類が多様なのでEnumにしてはいけない)
 
     [Range(0f, 100f)]
