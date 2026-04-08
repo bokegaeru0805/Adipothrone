@@ -177,9 +177,11 @@ public class CraftConfirmPopup : MonoBehaviour, IPanelActive
             currentAmount
         );
 
+        // 4. 成功SEを再生する
+        SEManager.instance.Play(SE_UI.Success1);
         Debug.Log($"{currentRecipe.craftedItem.itemName} を {currentAmount} 個合成しました！");
 
-        // 4. ポップアップを閉じ、消費した状態を反映するためにリストを再生成する
+        // 5. ポップアップを閉じ、消費した状態を反映するためにリストを再生成する
         UIManager.instance.ClosePopup();
         menuManager.ReloadCurrentTab();
     }

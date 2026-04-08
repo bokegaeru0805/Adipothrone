@@ -32,8 +32,8 @@ public class NPCDialogueTrigger : MonoBehaviour
     [SerializeField]
     private string defaultBlockName;
 
-    [InfoBox("時系列が後の条件を上に配置してください。")]
-    [Tooltip("会話の条件リスト。上から順に評価され、最初に一致したものが実行されます。")]
+    [InfoBox("時系列が後の条件（進行度が高いもの）を下に配置してください。")]
+    [Tooltip("会話の条件リスト。下から順（逆順）に評価され、最初に一致したものが実行されます。")]
     [SerializeField]
     private List<DialogueCondition> dialogueConditions = new List<DialogueCondition>();
 
@@ -182,9 +182,11 @@ public class NPCDialogueTrigger : MonoBehaviour
         if (targetFlowchart == null)
             return;
 
-        // 条件リストを上から順に評価
-        foreach (var condition in dialogueConditions)
+        // 条件リストを下から順（新しい/進行度が高い条件）に評価
+        for (int i = dialogueConditions.Count - 1; i >= 0; i--)
         {
+            var condition = dialogueConditions[i];
+
             if (condition.AreAllFlagsMet())
             {
                 // ショップトリガーとしての処理かどうかを判定
@@ -263,9 +265,11 @@ public class NPCDialogueTrigger : MonoBehaviour
 
         bool shouldShow = false; // 初期値は非表示
 
-        // 会話実行時と同じロジックで、現在有効な条件を探す
-        foreach (var condition in dialogueConditions)
+        // 会話実行時と同じロジックで、現在有効な条件を下から順に探す
+        for (int i = dialogueConditions.Count - 1; i >= 0; i--)
         {
+            var condition = dialogueConditions[i];
+
             if (condition.AreAllFlagsMet())
             {
                 shouldShow = condition.showBubble;

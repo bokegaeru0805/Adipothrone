@@ -4,9 +4,6 @@ using NaughtyAttributes;
 using UnityEngine;
 using UnityEngine.Events;
 
-// このファイルはMonoBehaviourではないため、どのGameObjectにもアタッチしません。
-// プロジェクト内に存在するだけで、他のスクリプトから参照できます。
-
 #region ### フラグ条件定義 ###
 
 /// <summary>

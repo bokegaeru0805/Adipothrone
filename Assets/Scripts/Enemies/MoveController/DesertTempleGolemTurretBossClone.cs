@@ -228,6 +228,21 @@ public class DesertTempleGolemTurretBossClone : MonoBehaviour
 
         isActiveClone = false;
 
+        // 実行中の攻撃コルーチン（レーザーや連続着弾のタメ）を全て強制停止
+        StopAllCoroutines();
+
+        // 攻撃中のビームや予測線が残っていれば強制的に非表示にする
+        if (beamObject != null)
+            beamObject.SetActive(false);
+        if (predictionLine != null)
+            predictionLine.gameObject.SetActive(false);
+
+        // 再生中の攻撃SE（チャージ音など）を全て停止
+        if (_sePlayer != null)
+        {
+            _sePlayer.Stop();
+        }
+
         // アウトラインなどのエフェクトを消すためにタグを外す
         this.tag = GameConstants.UNTAGGED_TAG_NAME;
 

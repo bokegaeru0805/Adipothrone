@@ -99,6 +99,7 @@ public class FieldEvent_Tutorial : BaseFieldEvent
                 {
                     flagManager.SetBoolFlag(PrologueTriggeredEvent.TutorialStart, true);
                     FungusHelper.ExecuteBlock(targetFlowchart, "StartField");
+                    GameManager.instance.savedata.TipsData.RegisterTipsData(TipsName.StatusLevel); // ステータスレベルのヒントを登録
                     GameManager.instance.savedata.ProgressLogData.RegisterProgressData(
                         ProgressLogName.TutorialStart
                     ); // チュートリアル開始のログを登録
@@ -223,7 +224,7 @@ public class FieldEvent_Tutorial : BaseFieldEvent
                 // {
                 //     flagManager.SetBoolFlag(TutorialEvent.BreakableShootTutorialComplete, true);
                 //     FungusHelper.ExecuteBlock(targetFlowchart, "BreakableShootTutorialField");
-                    
+
                 // }
                 isEventTriggered = true;
                 break;

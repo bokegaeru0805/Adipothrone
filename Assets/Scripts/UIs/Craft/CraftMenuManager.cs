@@ -352,6 +352,12 @@ public class CraftMenuManager : MonoBehaviour, IPanelActive
             return;
         }
 
+        // 既にポップアップが開いている場合は初期化（個数のリセット等）をスキップし、イベントの二重発火を防ぐ
+        if (confirmPopup.gameObject.activeSelf)
+        {
+            return;
+        }
+
         // ポップアップに「何を」「最大いくつ」合成するかをセット
         confirmPopup.Setup(recipe, maxCraftable, this);
 

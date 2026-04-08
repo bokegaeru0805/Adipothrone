@@ -21,6 +21,7 @@ public enum SE_UI
     WeaponDecision1 = 2015,
     Register1 = 2020,
     DialogVoice = 2025,
+    Success1 = 2030,
 }
 
 /// <summary>

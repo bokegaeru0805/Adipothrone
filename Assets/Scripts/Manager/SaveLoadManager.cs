@@ -1058,6 +1058,9 @@ public class SaveLoadManager : MonoBehaviour
             saveData.PlayerStatus.defenseMaxLevel = playerLevel;
             saveData.PlayerStatus.defenseCurrentLevel = playerLevel;
         }
+
+        // 新規Tipsの登録
+        saveData.TipsData.RegisterTipsData(TipsName.StatusLevel);
     }
 
     /// <summary>

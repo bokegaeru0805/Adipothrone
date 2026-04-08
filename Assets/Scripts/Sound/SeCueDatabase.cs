@@ -20,6 +20,7 @@ public static class SeCueDatabase
         { SE_UI.WeaponDecision1, "WeaponDecision1" },
         { SE_UI.Register1, "Register1" },
         { SE_UI.DialogVoice, "DialogVoice" },
+        { SE_UI.Success1, "Success1" },
     };
 
     /// <summary>

@@ -5,4 +5,6 @@ public enum RecipeItemName
     CactusBall = 11002, // サボテンの玉
     DuneBlade = 11003, // デューンブレードのレシピ
     SolLaguna = 11004, // ソルラグナのレシピ
+    AttackPotion_Desert = 11005, // 攻撃の砂漠のポーションのレシピ
+    DefensePotion_Desert = 11006, // 防御の砂漠のポーションのレシピ
 }

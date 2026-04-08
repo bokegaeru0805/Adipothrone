@@ -752,6 +752,12 @@ public class DesertTempleGolemTurretBossMoveController : MonoBehaviour, IEnemyRe
             bossRoutine = null;
         }
 
+        // 再生中の攻撃SE（チャージ音やレーザー音）を即座に停止
+        if (_sePlayer != null)
+        {
+            _sePlayer.Stop();
+        }
+
         if (beamObject != null)
             beamObject.SetActive(false);
         if (predictionLine != null)

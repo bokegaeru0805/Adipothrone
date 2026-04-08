@@ -95,3 +95,13 @@
 ……水が少しだけ戻ったようじゃが、これでは何日持つことか。,OldMan_Desert_1,OldMan_Desert_1_AfterOasisPartiallyRestored,OldMan_Desert_1_normal_normal
 装置を全て起動しよう。,narrative,BossGate_Default,
 扉の先に行く前に、フィルさんに話しかけておこう。,narrative,BossGate_CompleteAllOrbsPlacedInDevice,
+"おーっと！　そこのあなた、ちょっと待ったー！
+ふふふ、いいところに通りかかったわね！",Alchemistess_Desert,Alchemistess_Desert_Default,
+"私は錬金術師！　今はお師匠様の言いつけで、
+錬金術の素晴らしさを広める活動をしている真っ最中なの！",Alchemistess_Desert,Alchemistess_Desert_Default,
+"見て見て、このレシピ！　これさえあれば、
+材料を揃えるだけで誰でも簡単にアイテムが作れちゃうんだから！",Alchemistess_Desert,Alchemistess_Desert_Default,
+そうだ、あなたにもこの感動を分けてあげる！　はい、これ！,Alchemistess_Desert,Alchemistess_Desert_Default,
+"よし、それじゃあ私はもっとたくさんの人に広めてくるわ！　
+錬金術で、あなたの旅がもっとキラキラになりますように！　
+じゃあねー！",Alchemistess_Desert,Alchemistess_Desert_Default,

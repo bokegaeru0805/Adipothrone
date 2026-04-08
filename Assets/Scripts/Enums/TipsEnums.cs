@@ -26,4 +26,5 @@ public enum TipsName
     EffectTypes1 = 18014, // 状態異常の種類1
     FastTravel = 18015, // ファストトラベルの説明
     Shield = 18016, // シールドの説明
+    StatusLevel = 18017, // ステータスレベルの説明
 }

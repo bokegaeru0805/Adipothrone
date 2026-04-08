@@ -26,6 +26,7 @@ public class FieldEvent_Chapter2 : BaseFieldEvent
         Chapter2StartField = 1, // 第二章開始フィールド
         VillageEntranceField = 2, // 村の入り口フィールド
         CoachmanField = 3, // 馬車の御者フィールド
+        AlchemistessField = 10, // 女性錬金術師フィールド
         WaterSourceFrontField = 7, // オアシスの源泉前フィールド1
         WaterSourceField1 = 4, // オアシスの源泉フィールド
         TempleBuildingField = 5, // 砂漠の神殿建物フィールド
@@ -120,6 +121,23 @@ public class FieldEvent_Chapter2 : BaseFieldEvent
                         ProgressLogName.AttemptedToReportCoachmanQuest
                     ); //進行ログを登録
                     FungusHelper.ExecuteBlock(targetFlowchart, "AttemptedToReportCoachmanQuest");
+                }
+                break;
+            case FieldName.AlchemistessField:
+                if (
+                    flagManager.GetBoolFlag(Chapter2TriggeredEvent.FirstMetCoachman)
+                    && !flagManager.GetBoolFlag(Chapter2TriggeredEvent.FirstMetAlchemistess)
+                )
+                {
+                    var recipeSaveData = GameManager.instance.savedata.RecipeData;
+                    if (recipeSaveData != null)
+                    {
+                        recipeSaveData.UnlockRecipe(RecipeItemName.Normal_v2);
+                        recipeSaveData.UnlockRecipe(RecipeItemName.AttackPotion_Desert);
+                        recipeSaveData.UnlockRecipe(RecipeItemName.DefensePotion_Desert);
+                    }
+                    FungusHelper.ExecuteBlock(targetFlowchart, "Alchemistess_Desert_Default");
+                    isEventTriggered = true; // イベントがトリガーされたことを記録
                 }
                 break;
             case FieldName.WaterSourceFrontField:
