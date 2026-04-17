@@ -234,6 +234,7 @@ public static class GameConstants
     public const string SCENE_NAME_TUTORIAL_START = "TutorialStartScene"; // チュートリアルシーンの名前
     public const string SCENE_NAME_CHAPTER_1 = "Chapter1Scene"; // 第1章のシーン名
     public const string SCENE_NAME_DESERT = "DesertScene"; // 砂漠エリアのシーン名
+    public const string SCENE_NAME_ROYAL_CAPITAL = "RoyalCapitalScene"; // 王都のシーンの名前
 
     // --- プールタグ名 ---
     public const string EFFECT_ENEMY_SPAWN_POOLTAG = "Effect_Enemy_Spawn";

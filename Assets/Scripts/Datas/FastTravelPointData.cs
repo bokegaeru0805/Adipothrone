@@ -9,6 +9,7 @@ public class FastTravelPointData : ScriptableObject, IItemIDProvider
         TutorialStart = 10,
         Chapter1 = 20,
         Desert = 30,
+        ROYAL_CAPITAL = 40,
         // 追加可能
     }
 
@@ -42,6 +43,8 @@ public class FastTravelPointData : ScriptableObject, IItemIDProvider
                 return GameConstants.SCENE_NAME_CHAPTER_1;
             case SceneNameEnum.Desert:
                 return GameConstants.SCENE_NAME_DESERT;
+            case SceneNameEnum.ROYAL_CAPITAL:
+                return GameConstants.SCENE_NAME_ROYAL_CAPITAL;
             case SceneNameEnum.None:
             default:
                 return string.Empty;
