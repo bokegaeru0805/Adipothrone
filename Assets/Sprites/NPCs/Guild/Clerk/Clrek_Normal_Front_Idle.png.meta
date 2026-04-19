@@ -110,7 +110,7 @@ TextureImporter:
     serializedVersion: 2
     sprites:
     - serializedVersion: 2
-      name: Clrek_Normal_Front_Idle_0
+      name: Clerk_Normal_Front_Idle_0
       rect:
         serializedVersion: 2
         x: 0
@@ -131,7 +131,7 @@ TextureImporter:
       edges: []
       weights: []
     - serializedVersion: 2
-      name: Clrek_Normal_Front_Idle_1
+      name: Clerk_Normal_Front_Idle_1
       rect:
         serializedVersion: 2
         x: 24
@@ -152,7 +152,7 @@ TextureImporter:
       edges: []
       weights: []
     - serializedVersion: 2
-      name: Clrek_Normal_Front_Idle_2
+      name: Clerk_Normal_Front_Idle_2
       rect:
         serializedVersion: 2
         x: 48
@@ -173,7 +173,7 @@ TextureImporter:
       edges: []
       weights: []
     - serializedVersion: 2
-      name: Clrek_Normal_Front_Idle_3
+      name: Clerk_Normal_Front_Idle_3
       rect:
         serializedVersion: 2
         x: 72
@@ -204,10 +204,10 @@ TextureImporter:
     weights: []
     secondaryTextures: []
     nameFileIdTable:
-      Clrek_Normal_Front_Idle_0: 2137520892
-      Clrek_Normal_Front_Idle_1: -1167768612
-      Clrek_Normal_Front_Idle_2: -1660432428
-      Clrek_Normal_Front_Idle_3: 935841462
+      Clerk_Normal_Front_Idle_0: 2137520892
+      Clerk_Normal_Front_Idle_1: -1167768612
+      Clerk_Normal_Front_Idle_2: -1660432428
+      Clerk_Normal_Front_Idle_3: 935841462
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 

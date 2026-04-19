@@ -133,6 +133,12 @@ public class StatePro
     [AllowNesting, ShowIf("changeAnimation")]
     public string animationStateName;
 
+    [Tooltip(
+        "Trueの場合、アニメーションの再生開始位置（0%〜100%）をランダムにずらし、複数オブジェクトの動きが完全に同期するのを防ぎます。"
+    )]
+    [AllowNesting, ShowIf("changeAnimation")]
+    public bool randomizeAnimationStart = false;
+
     // [Header("コライダー")]
     // public bool changeColliderState;
     // public bool isColliderEnabled = true;

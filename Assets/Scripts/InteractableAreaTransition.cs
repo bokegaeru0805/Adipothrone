@@ -1,6 +1,6 @@
 using UnityEngine;
 
-public class FrontDoor : MonoBehaviour
+public class InteractableAreaTransition : MonoBehaviour
 {
     #region Inspector Fields
     [SerializeField]

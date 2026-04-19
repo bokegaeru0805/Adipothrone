@@ -273,7 +273,19 @@ public class FlagDrivenStatePro : MonoBehaviour
                     if (targetAnimator.HasState(0, stateHash))
                     {
                         // 全てのチェックを通過した場合：アニメーションを再生
-                        targetAnimator.Play(state.animationStateName);
+                        if (state.randomizeAnimationStart)
+                        {
+                            // 0.0(0%) から 1.0(100%) の間でランダムな開始時間を生成
+                            float randomNormalizedTime = UnityEngine.Random.Range(0f, 1f);
+
+                            // Play(ステートのハッシュ, レイヤー番号, 正規化された開始時間) を使って再生
+                            targetAnimator.Play(stateHash, 0, randomNormalizedTime);
+                        }
+                        else
+                        {
+                            // ランダム化しない場合は通常通り最初から再生
+                            targetAnimator.Play(stateHash); // 文字列よりハッシュで渡す方がわずかに高速です
+                        }
                     }
                     else
                     {

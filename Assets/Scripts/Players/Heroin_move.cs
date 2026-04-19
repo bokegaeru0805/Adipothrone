@@ -37,7 +37,7 @@ public class Heroin_move : MonoBehaviour
     /// </summary>
     public bool IsImmune => immunity;
 
-    public float m_defaultSpeed { get; private set; } = 4.0f; // 通常の歩行速度
+    public float m_defaultSpeed { get; private set; } = 6.0f; // 通常の歩行速度
 
     // プレイヤーの可視状態が変化したときに呼び出されるイベント
     public event Action<bool> OnPlayerVisibilityChanged;

@@ -17,6 +17,7 @@ public class DoorOpener : MonoBehaviour
         DesertGate = 30,
         DesertTempleEntrance = 34,
         DesertTempleDoor = 35,
+        GuildStair = 40,
     }
 
     /// <summary>
