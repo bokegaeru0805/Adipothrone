@@ -23,6 +23,10 @@ public class Heroin_move : MonoBehaviour
 
     [SerializeField]
     private Transform groundCheck; // プレイヤーの足元のTransform
+
+    [Header("影の設定")]
+    [SerializeField]
+    private GameObject shadowObject; // 影のオブジェクト（インスペクターで設定）
     #endregion
 
     #region Public Properties & Variables
@@ -37,7 +41,7 @@ public class Heroin_move : MonoBehaviour
     /// </summary>
     public bool IsImmune => immunity;
 
-    public float m_defaultSpeed { get; private set; } = 6.0f; // 通常の歩行速度
+    public float m_defaultSpeed { get; private set; } = 4.0f; // 通常の歩行速度
 
     // プレイヤーの可視状態が変化したときに呼び出されるイベント
     public event Action<bool> OnPlayerVisibilityChanged;
@@ -59,6 +63,8 @@ public class Heroin_move : MonoBehaviour
     private float attackMoveSlowRate = 4.0f; //攻撃中の移動速度の減少率
     private float WalkTime = 1.46f; //一回の歩行アニメーションの秒数
     private float DashTime = 0.72f; //一回のダッシュアニメーションの秒数
+    private bool isShadowEnabled = false; // 現在のエリアで影が有効かどうか
+    private float shadowRayDistance = 20.0f; // 地面を探知する光線の長さ
     private List<EnvironmentArea> activeEnvironments = new List<EnvironmentArea>(); // 現在適用中の環境エリアリスト
     #endregion
 
@@ -74,8 +80,6 @@ public class Heroin_move : MonoBehaviour
     [SerializeField]
     private Vector2 groundCheckSize = new Vector2(0.8f, 0.2f); // 接地判定のサイズ(幅, 高さ)
     private float gravity; //重力の大きさを保存する変数
-    private int BodyState; //体形の状態を保存する変数
-    private int AnimBodyState; //アニメーションの体形の状態を保存する変数
     private bool isAttacking = false; // 攻撃中かどうかのフラグ
     private bool immunity = false; //無敵かどうかのフラグ
     private bool isFadingOut = true; //不透明度が減少するかどうかのフラグ
@@ -85,7 +89,6 @@ public class Heroin_move : MonoBehaviour
     private bool isGrounded = false; //接地しているかどうかのフラグ
     private bool wasGroundedLastFrame = true; //前のフレームで接地していたかどうかのフラグ
     private bool jumpRequested = false;
-    private bool isTalking = false; // 会話状態を保存するローカル変数
     private bool isDead = false; // プレイヤーが死亡しているかどうかのマスターフラグ
     private Vector2 currentCarrierVelocity = Vector2.zero; // 現在のリフト速度
     private bool isOnCarrier = false; // リフトに乗っているかどうかのフラグ
@@ -142,7 +145,7 @@ public class Heroin_move : MonoBehaviour
         vx = 0;
 
         // ポーズ中、会話中、死亡中は入力を受け付けない
-        if (Time.timeScale > 0f && !isTalking && !isDead)
+        if (Time.timeScale > 0f && !gameManager.IsTalking && !isDead)
         {
             HandleFirstKeyInput();
             HandleMovementInput();
@@ -167,6 +170,7 @@ public class Heroin_move : MonoBehaviour
             ExecuteJumpPhysics();
             HandleLanding();
             UpdateImmunityBlink();
+            UpdateShadowPosition();
 
             // 座標更新とRobot同期
             pos = this.transform.position;
@@ -289,8 +293,9 @@ public class Heroin_move : MonoBehaviour
         playerManager.OnBoolStatusChanged += OnAnyBoolStatusChanged;
         playerEffectManager.OnSpeedEffectChanged += CalculateMoveSpeed;
         playerBodyManager.OnChangeBodyState += GetBodyStateData;
-        GameManager.OnTalkingStateChanged += HandleTalkingStateChanged;
         SaveLoadManager.OnLoadingStateChanged += HandleLoadingStateChanged;
+        CameraMoveArea.OnPlayerEnteredArea += HandleAreaEntered;
+        CameraMoveArea.OnPlayerExitedArea += HandleAreaExited;
     }
 
     private void UnsubscribeEvents()
@@ -310,8 +315,9 @@ public class Heroin_move : MonoBehaviour
         if (playerBodyManager != null)
             playerBodyManager.OnChangeBodyState -= GetBodyStateData;
 
-        GameManager.OnTalkingStateChanged -= HandleTalkingStateChanged;
         SaveLoadManager.OnLoadingStateChanged -= HandleLoadingStateChanged;
+        CameraMoveArea.OnPlayerEnteredArea -= HandleAreaEntered;
+        CameraMoveArea.OnPlayerExitedArea -= HandleAreaExited;
 
         // 状態リセット
         move = true;
@@ -432,7 +438,7 @@ public class Heroin_move : MonoBehaviour
 
         if (
             BoundIntervalTime >= BOUND2_SOUND_LENGHT + bound2SoundIntervalTime
-            && BodyState == GameConstants.BODY_STATE_ARMED_2
+            && playerBodyManager.BodyState == GameConstants.BODY_STATE_ARMED_2
         )
         {
             sePlayer.Play(SE_PlayerAction.Bound2);
@@ -440,7 +446,7 @@ public class Heroin_move : MonoBehaviour
         }
         else if (
             BoundIntervalTime >= BOUND1_SOUND_LENGHT + bound1SoundIntervalTime
-            && BodyState == GameConstants.BODY_STATE_ARMED_1
+            && playerBodyManager.BodyState == GameConstants.BODY_STATE_ARMED_1
         )
         {
             sePlayer.Play(SE_PlayerAction.GichiGichi1);
@@ -565,8 +571,7 @@ public class Heroin_move : MonoBehaviour
         _rbody.velocity = new Vector2(_rbody.velocity.x, jumpForce);
 
         // 体型に応じたジャンプアニメーション
-        AnimBodyState = playerBodyManager.AnimBodyState;
-        switch (AnimBodyState)
+        switch (playerBodyManager.AnimBodyState)
         {
             case GameConstants.ANIM_BODY_STATE_NORMAL:
                 TriggerAnimation("Normal_JumpTrigger");
@@ -619,11 +624,11 @@ public class Heroin_move : MonoBehaviour
         {
             sePlayer.Play(SE_PlayerAction.Land1);
 
-            if (BodyState == GameConstants.BODY_STATE_ARMED_2)
+            if (playerBodyManager.BodyState == GameConstants.BODY_STATE_ARMED_2)
             {
                 sePlayer.Play(SE_PlayerAction.Bound1);
             }
-            else if (BodyState == GameConstants.BODY_STATE_ARMED_1)
+            else if (playerBodyManager.BodyState == GameConstants.BODY_STATE_ARMED_1)
             {
                 sePlayer.Play(SE_PlayerAction.Bound3);
             }
@@ -811,9 +816,40 @@ public class Heroin_move : MonoBehaviour
 
     private void GetBodyStateData()
     {
-        BodyState = playerBodyManager.BodyState;
-        AnimBodyState = playerBodyManager.AnimBodyState;
-        _animator.SetInteger("BodyState", AnimBodyState);
+        _animator.SetInteger("BodyState", playerBodyManager.AnimBodyState);
+        UpdateShadowSize(); // 体形が変更されたときに影のサイズも更新する
+    }
+
+    /// <summary>
+    /// 現在の体形(BodyState)に合わせて影のサイズ(Scale)を変更する
+    /// </summary>
+    private void UpdateShadowSize()
+    {
+        if (shadowObject == null)
+            return;
+
+        // PlayerBodyManagerから最新の体形状態を取得
+        int currentBodyState = playerBodyManager.BodyState;
+
+        // 体形に応じて影のスケールを切り替え
+        switch (currentBodyState)
+        {
+            case GameConstants.BODY_STATE_NORMAL:
+                shadowObject.transform.localScale = new Vector2(0.5f, 0.6f);
+                break;
+            case GameConstants.BODY_STATE_ARMED_1:
+                shadowObject.transform.localScale = new Vector2(0.7f, 0.7f);
+                break;
+            case GameConstants.BODY_STATE_ARMED_2:
+                shadowObject.transform.localScale = new Vector2(0.8f, 0.9f);
+                break;
+            case GameConstants.BODY_STATE_ARMED_3:
+                shadowObject.transform.localScale = new Vector2(1.0f, 2.0f);
+                break;
+            default:
+                shadowObject.transform.localScale = new Vector2(0.5f, 0.6f);
+                break;
+        }
     }
 
     private void HandleLoadingStateChanged(bool isLoading)
@@ -837,11 +873,6 @@ public class Heroin_move : MonoBehaviour
                 isRobotmove = isEnabled;
                 break;
         }
-    }
-
-    private void HandleTalkingStateChanged(bool talkState)
-    {
-        isTalking = talkState;
     }
 
     private void SetColorWithFixedBrightness(Color newColor)
@@ -901,6 +932,72 @@ public class Heroin_move : MonoBehaviour
         // ここで currentCarrierVelocity をゼロにしないことで、
         // 空中にいる間は「慣性」として速度が残り続ける。
         // CheckGroundStatus で着地判定されたときにゼロになる。
+    }
+
+    /// <summary>
+    /// CameraMoveAreaに入ったときの影の有効/無効の切り替え
+    /// </summary>
+    private void HandleAreaEntered(CameraMoveArea area)
+    {
+        isShadowEnabled = area.EnablePlayerShadow;
+
+        // エリアに入った時点で影が無効なら非表示にする
+        if (shadowObject != null && !isShadowEnabled)
+        {
+            shadowObject.SetActive(false);
+        }
+    }
+
+    /// <summary>
+    /// CameraMoveAreaから出たときの処理
+    /// </summary>
+    private void HandleAreaExited(CameraMoveArea area)
+    {
+        isShadowEnabled = false;
+
+        if (shadowObject != null)
+        {
+            shadowObject.SetActive(false);
+        }
+    }
+
+    /// <summary>
+    /// 光線を飛ばして地面を検知し、影の位置を更新する
+    /// </summary>
+    private void UpdateShadowPosition()
+    {
+        if (!isShadowEnabled || shadowObject == null)
+            return;
+
+        // 光線の起点を設定（groundCheckがあればそれを利用、なければプレイヤーの座標）
+        Vector2 rayOrigin =
+            groundCheck != null ? (Vector2)groundCheck.position : (Vector2)transform.position;
+
+        // 真下に向かって光線を飛ばし、地面レイヤーと衝突するか確認
+        RaycastHit2D hit = Physics2D.Raycast(
+            rayOrigin,
+            Vector2.down,
+            shadowRayDistance,
+            groundLayer
+        );
+
+        if (hit.collider != null)
+        {
+            // 地面が見つかった場合は影を表示し、座標を更新する
+            shadowObject.SetActive(true);
+
+            // X座標はプレイヤーに追従、Y座標は地面の衝突ポイント、Z座標は影自身のものを維持
+            shadowObject.transform.position = new Vector3(
+                transform.position.x,
+                hit.point.y,
+                shadowObject.transform.position.z
+            );
+        }
+        else
+        {
+            // 底なし穴など、地面が見つからない場合は影を隠す
+            shadowObject.SetActive(false);
+        }
     }
 
     #endregion

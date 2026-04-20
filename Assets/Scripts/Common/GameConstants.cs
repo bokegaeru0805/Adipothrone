@@ -1,4 +1,3 @@
-using System.Collections.Generic;
 using UnityEngine;
 
 /// <summary>
@@ -229,7 +228,6 @@ public static class GameConstants
     public const string SORTING_LAYER_NAME_CHARACTER = "Character"; // 描画順(Sorting Layer)用の名前
 
     // --- シーン名 ---
-    // 追加したら、SceneChangeCommand.csのSceneType Enumも変更すること
     public const string SCENE_NAME_TITLE = "TitleScene"; // タイトルシーンの名前
     public const string SCENE_NAME_TUTORIAL_START = "TutorialStartScene"; // チュートリアルシーンの名前
     public const string SCENE_NAME_CHAPTER_1 = "Chapter1Scene"; // 第1章のシーン名

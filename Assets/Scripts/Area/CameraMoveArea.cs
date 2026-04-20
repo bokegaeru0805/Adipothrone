@@ -120,6 +120,16 @@ public class CameraMoveArea : MonoBehaviour
     [SerializeField]
     private VolumeProfile areaVolumeProfile;
 
+    [Header("プレイヤーの影設定")]
+    [Tooltip("このエリア内でプレイヤーの足元に影を表示するかどうか")]
+    [SerializeField]
+    private bool enablePlayerShadow = false;
+
+    /// <summary>
+    /// 外部から影の有効状態を読み取るためのプロパティ
+    /// </summary>
+    public bool EnablePlayerShadow => enablePlayerShadow;
+
     [Header("2Dライト設定")]
     [Tooltip("形状をこのエリアのコライダーに合わせたいFreeform Light 2D")]
     [SerializeField]
