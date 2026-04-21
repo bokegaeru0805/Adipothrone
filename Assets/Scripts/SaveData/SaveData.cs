@@ -49,6 +49,9 @@ public class SaveData
     // ===== レシピ・合成進行度 =====
     public RecipeSaveData RecipeData = new RecipeSaveData();
 
+    // ===== スキル情報 =====
+    public SkillSaveData SkillData = new SkillSaveData();
+
     /// <summary>
     /// データの整合性をチェックし、nullの箇所があれば初期化して修復する
     /// ロード直後に呼び出すこと
@@ -77,5 +80,7 @@ public class SaveData
             EnemyRecordData = new EnemyRecordData();
         if (RecipeData == null)
             RecipeData = new RecipeSaveData();
+        if (SkillData == null)
+            SkillData = new SkillSaveData();
     }
 }

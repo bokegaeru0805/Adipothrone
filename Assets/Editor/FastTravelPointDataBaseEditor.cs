@@ -1,6 +1,5 @@
 using System.Collections.Generic;
 using UnityEditor;
-using UnityEngine;
 
 [CustomEditor(typeof(FastTravelPointDataBase))]
 public class FastTravelPointDataBaseEditor : BaseDatabaseEditor<FastTravelPointDataBase>
@@ -30,7 +29,6 @@ public class FastTravelPointDataBaseEditor : BaseDatabaseEditor<FastTravelPointD
             idCheckDict
         );
 
-        // ID順でソート（任意） (※ソート機能は除外しました)
         // 変更を保存
         SaveDatabase(database, addedCount, "ファストトラベルポイント");
     }

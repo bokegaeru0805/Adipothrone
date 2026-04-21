@@ -296,6 +296,18 @@ public class DebugMenuManager : MonoBehaviour
     }
 
     /// <summary>
+    /// すべてのスキル(Skill)を解放します。（UIボタンの OnClick 等に設定）
+    /// </summary>
+    public void UnlockAllSkills()
+    {
+        if (GameManager.instance != null)
+        {
+            GameManager.instance.UnlockAllSkills();
+            Debug.Log("すべての Skill を解放しました。");
+        }
+    }
+
+    /// <summary>
     /// タイムスケール入力欄でEnterが押されたときの処理
     /// </summary>
     private void ApplyTimeScale(string text)

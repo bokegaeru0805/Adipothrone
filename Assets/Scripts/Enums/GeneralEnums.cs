@@ -11,5 +11,6 @@ public enum TypeID
     ProgressLog = 16,
     TreasureBox = 17,
     Tips = 18,
-    FastTravel = 20
+    FastTravel = 20,
+    Skill = 21
 }

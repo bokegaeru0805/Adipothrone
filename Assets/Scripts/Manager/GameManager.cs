@@ -64,6 +64,9 @@ public class GameManager : MonoBehaviour
     [Tooltip("Tips情報のデータベース")]
     public TipsInfoDatabase tipsInfoDatabase;
 
+    [Tooltip("スキルのデータベース")]
+    public SkillDatabase skillDatabase;
+
     [Header("ゲーム全体で使用するプレハブ")]
     [Tooltip("アイテムドロップのプレハブ")]
     public GameObject DropItemPrefab;
@@ -142,6 +145,7 @@ public class GameManager : MonoBehaviour
             || statusEnhanceItemDatabase == null
             || recipeItemDatabase == null
             || materialItemDatabase == null
+            || skillDatabase == null
         )
         {
             Debug.LogError("GameManagerに必要なデータベースが設定されていません");
@@ -342,6 +346,12 @@ public class GameManager : MonoBehaviour
             case (int)TypeID.RecipeItem:
                 itemPrefix = "レシピ";
                 break;
+            case (int)TypeID.Skill:
+                itemPrefix = "スキル";
+                break;
+            default:
+                itemPrefix = ""; // 該当しない場合は空文字
+                break;
         }
 
         return itemPrefix;
@@ -380,6 +390,9 @@ public class GameManager : MonoBehaviour
                     break;
                 case (int)TypeID.RecipeItem:
                     GameManager.instance.savedata.RecipeData.UnlockRecipe(ID);
+                    break;
+                case (int)TypeID.Skill:
+                    Debug.LogWarning($"スキルの追加はサポートされていません。ID: {ID}");
                     break;
                 default:
                     Debug.LogError($"このID{ID}はSaveDataに保存できません");
@@ -454,6 +467,9 @@ public class GameManager : MonoBehaviour
                 case (int)TypeID.RecipeItem:
                     Debug.LogWarning($"レシピアイテムはインベントリから削除できません。ID: {ID}");
                     break;
+                case (int)TypeID.Skill:
+                    Debug.LogWarning($"スキルは削除できません。ID: {ID}");
+                    break;
                 default:
                     Debug.LogError($"このID{ID}はSaveDataに保存できません");
                     break;
@@ -521,6 +537,9 @@ public class GameManager : MonoBehaviour
                 break;
             case (int)TypeID.RecipeItem:
                 amount = GameManager.instance.savedata.RecipeData.GetRecipeAmount(ID);
+                break;
+            case (int)TypeID.Skill:
+                amount = SkillManager.instance.IsSkillUnlocked(ID) ? 1 : 0; // スキルは所持数ではなく、解放されているかどうかで判定
                 break;
             default:
                 Debug.LogError($"このID{ID}は数を取得できません");
@@ -665,6 +684,20 @@ public class GameManager : MonoBehaviour
         foreach (var recipeItem in recipeItemDatabase.recipeItems)
         {
             AddAllTypeIDToInventory(recipeItem.itemID, amount);
+        }
+    }
+
+    //  <summary>
+    /// デバッグ用：データベース内のすべてのスキル(Skill)を解放します。
+    /// <summary>
+    public void UnlockAllSkills()
+    {
+        if (skillDatabase == null || skillDatabase.skills == null)
+            return;
+
+        foreach (var skill in skillDatabase.skills)
+        {
+            SkillManager.instance.UnlockSkill(skill.skillID);
         }
     }
 
