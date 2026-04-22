@@ -134,7 +134,7 @@ TextureImporter:
       name: Button_Round_Brown_Hover
       rect:
         serializedVersion: 2
-        x: 240
+        x: 478
         y: 0
         width: 240
         height: 76
@@ -155,7 +155,7 @@ TextureImporter:
       name: Button_Round_Brown
       rect:
         serializedVersion: 2
-        x: 480
+        x: 719
         y: 0
         width: 240
         height: 76
@@ -176,7 +176,7 @@ TextureImporter:
       name: Button_Round_LightBrown_Hover
       rect:
         serializedVersion: 2
-        x: 720
+        x: 960
         y: 0
         width: 240
         height: 76
@@ -197,7 +197,7 @@ TextureImporter:
       name: Button_Round_LightBrown
       rect:
         serializedVersion: 2
-        x: 960
+        x: 1200
         y: 0
         width: 240
         height: 76
@@ -214,6 +214,27 @@ TextureImporter:
       indices: 
       edges: []
       weights: []
+    - serializedVersion: 2
+      name: Button_Round_Black_Hover
+      rect:
+        serializedVersion: 2
+        x: 240
+        y: 0
+        width: 237
+        height: 76
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 34, y: 0, z: 34, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: f63006b4f6a67324e80ee9143ce996a0
+      internalID: -164630551
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
     outline: []
     physicsShape: []
     bones: []
@@ -226,6 +247,7 @@ TextureImporter:
     secondaryTextures: []
     nameFileIdTable:
       Button_Round_Black: 1912204899
+      Button_Round_Black_Hover: -164630551
       Button_Round_Brown: 2079231178
       Button_Round_Brown_Hover: 312189425
       Button_Round_LightBrown: 1304534184

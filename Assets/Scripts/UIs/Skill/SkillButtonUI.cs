@@ -6,7 +6,7 @@ using UnityEngine.UI;
 
 /// <summary>
 /// スキルリストに並ぶ個別のボタンUI
-/// 装備状態と選択状態に応じてスプライトを切り替え、コストをクリスタルで表現します。
+/// 解放/未解放、装備/非装備、選択/未選択の組み合わせによる6状態のスプライト切り替えに対応。
 /// </summary>
 public class SkillButtonUI
     : MonoBehaviour,
@@ -15,55 +15,55 @@ public class SkillButtonUI
         ISubmitHandler,
         IPointerClickHandler
 {
-    [Header("テキスト参照")]
+    [Header("UI参照")]
     [SerializeField]
     private TextMeshProUGUI nameText;
 
-    // ※不要になった costText 変数は削除しました
-
-    [Tooltip("装備中であることを示すマークや枠（任意）")]
     [SerializeField]
     private GameObject equippedMark;
 
+    [Tooltip("新しく入手した際に表示するアイコン")]
+    [SerializeField]
+    private GameObject newIcon;
+
     [Header("ボタンスプライト設定")]
-    [Tooltip("ボタンの背景画像（スプライトを切り替える対象のImageコンポーネント）")]
     [SerializeField]
     private Image buttonBackgroundImage;
 
+    [Header("1. 未解放(Locked)状態")]
     [SerializeField]
-    private Sprite lockedSprite; // 1. 未開放時のスプライト
+    private Sprite lockedSelectedSprite; // 未解放 ＋ 選択時
 
     [SerializeField]
-    private Sprite equippedSelectedSprite; // 2. 装備時 ＋ 選択時のスプライト
+    private Sprite lockedUnselectedSprite; // 未解放 ＋ 非選択時
+
+    [Header("2. 装備(Equipped)状態")]
+    [SerializeField]
+    private Sprite equippedSelectedSprite; // 装備 ＋ 選択時
 
     [SerializeField]
-    private Sprite equippedUnselectedSprite; // 3. 装備時 ＋ 未選択時のスプライト
+    private Sprite equippedUnselectedSprite; // 装備 ＋ 非選択時
+
+    [Header("3. 非装備(Unequipped)状態")]
+    [SerializeField]
+    private Sprite unequippedSelectedSprite; // 非装備 ＋ 選択時
 
     [SerializeField]
-    private Sprite unequippedSelectedSprite; // 4. 非装備時 ＋ 選択時のスプライト
-
-    [SerializeField]
-    private Sprite unequippedUnselectedSprite; // 5. 非装備時 ＋ 未選択時のスプライト
+    private Sprite unequippedUnselectedSprite; // 非装備 ＋ 非選択時
 
     [Header("コスト表示 (オブジェクト生成用)")]
-    [Tooltip("クリスタルを並べる親オブジェクト (HorizontalLayoutGroup推奨)")]
     [SerializeField]
     private Transform costContainer;
 
-    [Tooltip("生成するクリスタルのプレハブ")]
     [SerializeField]
     private GameObject pointIconPrefab;
 
     private SkillData currentSkill;
     private SkillMenuManager menuManager;
-    private bool isSelected = false; // EventSystemで現在選択されているかどうかのフラグ
+    private bool isSelected = false;
 
-    // 生成したクリスタルアイコンを保持しておくリスト
     private List<PointIconUI> generatedCostIcons = new List<PointIconUI>();
 
-    /// <summary>
-    /// マネージャーから呼ばれ、初期設定を行う
-    /// </summary>
     public void Setup(SkillData skill, SkillMenuManager manager)
     {
         currentSkill = skill;
@@ -72,36 +72,42 @@ public class SkillButtonUI
     }
 
     /// <summary>
-    /// 現在の解放状態、装備状態、選択状態を総合して、ボタンの見た目を更新する
+    /// 解放・装備・選択の全状態を統合して、ボタンの見た目を更新します。
     /// </summary>
     public void RefreshUI()
     {
-        if (currentSkill == null)
+        if (currentSkill == null || SkillManager.instance == null)
             return;
 
+        int id = EnumIDUtility.ToID(currentSkill.skillID);
         bool isUnlocked = SkillManager.instance.IsSkillUnlocked(currentSkill.skillID);
         bool isEquipped = SkillManager.instance.IsSkillActive(currentSkill.skillID);
 
-        // --- テキストとコンテナの更新 ---
+        // --- 1. テキストとNewアイコンの更新 ---
         if (isUnlocked)
         {
             nameText.text = currentSkill.skillName;
-
             if (costContainer != null)
-                costContainer.gameObject.SetActive(true); // 解放済みの場合はクリスタルの親を表示
+                costContainer.gameObject.SetActive(true);
+
+            // マネージャーが記憶している「開いた時の状態」で表示を固定
+            if (newIcon != null)
+            {
+                newIcon.SetActive(menuManager.WasNewOnOpen(id));
+            }
         }
         else
         {
             nameText.text = "？？？";
-
             if (costContainer != null)
-                costContainer.gameObject.SetActive(false); // 未解放の場合はクリスタルの親ごと非表示
+                costContainer.gameObject.SetActive(false);
+            if (newIcon != null)
+                newIcon.SetActive(false); // 未解放はNewも出さない
         }
 
-        // --- コストアイコン(クリスタル)の生成と状態更新 ---
+        // --- 2. クリスタルアイコンの生成と状態更新 ---
         if (isUnlocked && costContainer != null && pointIconPrefab != null)
         {
-            // 足りない分だけ生成する（毎回全削除すると重いため）
             while (generatedCostIcons.Count < currentSkill.requiredPoints)
             {
                 GameObject obj = Instantiate(pointIconPrefab, costContainer);
@@ -110,14 +116,12 @@ public class SkillButtonUI
                 if (iconUI != null)
                     generatedCostIcons.Add(iconUI);
             }
-            // 多すぎる分は非表示にし、必要な分だけアニメーション状態をセット
             for (int i = 0; i < generatedCostIcons.Count; i++)
             {
                 if (i < currentSkill.requiredPoints)
                 {
                     generatedCostIcons[i].gameObject.SetActive(true);
-                    // 装備状態に応じてアニメーションを切り替える
-                    generatedCostIcons[i].SetState(isEquipped);
+                    generatedCostIcons[i].SetState(isEquipped); // 同期機能付き
                 }
                 else
                 {
@@ -126,19 +130,18 @@ public class SkillButtonUI
             }
         }
 
-        // --- 装備マークの更新 (使用する場合) ---
         if (equippedMark != null)
-        {
             equippedMark.SetActive(isEquipped);
-        }
 
-        // --- 【重要】背景スプライトの5状態切り替え ---
+        // --- 3. 背景スプライトの切り替え (6状態判定) ---
         if (buttonBackgroundImage != null)
         {
             if (!isUnlocked)
             {
-                // 1. 未開放状態（選択・未選択にかかわらず固定）
-                buttonBackgroundImage.sprite = lockedSprite;
+                // 未解放状態も選択/非選択で分ける
+                buttonBackgroundImage.sprite = isSelected
+                    ? lockedSelectedSprite
+                    : lockedUnselectedSprite;
             }
             else if (isEquipped)
             {
@@ -158,73 +161,58 @@ public class SkillButtonUI
     }
 
     // =======================================================
-    // EventSystem インターフェースの実装
+    // EventSystem インターフェース
     // =======================================================
 
     public void OnSelect(BaseEventData eventData)
     {
         isSelected = true;
-
-        // カーソルが合った瞬間に右側の詳細ビューを更新
         menuManager.UpdateDetailView(currentSkill);
 
-        // 選択状態のスプライトに切り替えるためにUI更新
+        // セーブデータ上の既読処理（表示自体は閉じられるまで維持）
+        MarkAsSeen();
+
         RefreshUI();
+    }
+
+    private void MarkAsSeen()
+    {
+        if (currentSkill == null || GameManager.instance.savedata == null)
+            return;
+        int id = EnumIDUtility.ToID(currentSkill.skillID);
+        var entry = GameManager.instance.savedata.SkillData.knownSkills.Find(s => s.skillID == id);
+        if (entry != null && entry.isNew)
+            entry.isNew = false;
     }
 
     public void OnDeselect(BaseEventData eventData)
     {
         isSelected = false;
-
-        // 未選択状態のスプライトに戻すためにUI更新
         RefreshUI();
     }
 
-    public void OnSubmit(BaseEventData eventData)
-    {
-        ToggleSkill();
-    }
+    public void OnSubmit(BaseEventData eventData) => ToggleSkill();
 
-    public void OnPointerClick(PointerEventData eventData)
-    {
-        ToggleSkill();
-    }
+    public void OnPointerClick(PointerEventData eventData) => ToggleSkill();
 
-    /// <summary>
-    /// スキルの着脱処理を即座に実行する
-    /// </summary>
     private void ToggleSkill()
     {
         if (currentSkill == null)
             return;
-
-        // 未解放のスキルは弾く
         if (!SkillManager.instance.IsSkillUnlocked(currentSkill.skillID))
-        {
-            Debug.Log("未解放のスキルのため操作できません。");
             return;
-        }
 
-        bool isEquipped = SkillManager.instance.IsSkillActive(currentSkill.skillID);
-
-        if (isEquipped)
+        if (SkillManager.instance.IsSkillActive(currentSkill.skillID))
         {
             SkillManager.instance.UnequipSkill(currentSkill.skillID);
         }
         else
         {
-            bool success = SkillManager.instance.EquipSkill(currentSkill.skillID);
-            if (!success)
-            {
-                Debug.Log("スキルポイントが不足しているため装備できません。");
+            if (!SkillManager.instance.EquipSkill(currentSkill.skillID))
                 return;
-            }
         }
 
-        // 着脱によって装備状態が変わったので、スプライトを更新
         RefreshUI();
-
-        // 残りポイントなどが変化したため、詳細ビューも更新
         menuManager.UpdateDetailView(currentSkill);
     }
 }

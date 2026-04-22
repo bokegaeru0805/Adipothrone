@@ -5,7 +5,7 @@ using UnityEngine.UI;
 
 /// <summary>
 /// スキルメニュー全体を統括するマネージャークラス
-/// 1つのボタンでもフォーカスが逃げないよう、ナビゲーションを厳密に「自分自身」へ拘束します。
+/// パネル展開時のNEWフラグ状態を記憶し、表示の一貫性を保ちます。
 /// </summary>
 public class SkillMenuManager : MonoBehaviour, IPanelActive
 {
@@ -26,8 +26,11 @@ public class SkillMenuManager : MonoBehaviour, IPanelActive
     private List<GameObject> instantiatedButtons = new List<GameObject>();
     private int currentTabIndex = 0;
 
-    private const int ROW_COUNT = 6; // 縦6行
-    private const int COLUMN_COUNT = 3; // 横3列
+    // ▼ 追加：パネルを開いた時点でNEWだったスキルIDを保持するリスト
+    private HashSet<int> newSkillsAtOpen = new HashSet<int>();
+
+    private const int ROW_COUNT = 6;
+    private const int COLUMN_COUNT = 3;
     private const int MAX_SKILLS = 18;
 
     private void OnEnable()
@@ -38,6 +41,9 @@ public class SkillMenuManager : MonoBehaviour, IPanelActive
         if (detailView != null)
             detailView.UpdateAvailablePoints();
 
+        // ▼ 追加：パネルを開いた瞬間に、NEWフラグが立っているスキルを記憶する
+        RecordNewSkills();
+
         ReloadList(currentTabIndex);
     }
 
@@ -45,6 +51,35 @@ public class SkillMenuManager : MonoBehaviour, IPanelActive
     {
         if (tabPanelController != null)
             tabPanelController.OnTabChanged -= ReloadList;
+
+        // ※ 前回の一括削除(ClearAllNewFlags)は廃止しました
+    }
+
+    /// <summary>
+    /// メニューを開いた時点でのNEWスキルの状態をスナップショットとして記憶します。
+    /// </summary>
+    private void RecordNewSkills()
+    {
+        newSkillsAtOpen.Clear();
+        if (GameManager.instance == null || GameManager.instance.savedata == null)
+            return;
+
+        foreach (var skill in GameManager.instance.savedata.SkillData.knownSkills)
+        {
+            if (skill.isNew)
+            {
+                newSkillsAtOpen.Add(skill.skillID);
+            }
+        }
+    }
+
+    /// <summary>
+    /// 指定したスキルが、このパネルを開いた時点でNEWだったかどうかを返します。
+    /// ボタンのUI表示（RefreshUI）から参照されます。
+    /// </summary>
+    public bool WasNewOnOpen(int skillID)
+    {
+        return newSkillsAtOpen.Contains(skillID);
     }
 
     public void ReloadList(int tabIndex)
@@ -77,7 +112,6 @@ public class SkillMenuManager : MonoBehaviour, IPanelActive
             }
         }
 
-        // 重要：ボタンが1つでもナビゲーションを構築する
         SetupNavigation();
 
         if (instantiatedButtons.Count == 0 && detailView != null)
@@ -105,16 +139,10 @@ public class SkillMenuManager : MonoBehaviour, IPanelActive
         }
     }
 
-    /// <summary>
-    /// ナビゲーションをボタン内のみに限定し、外部へ逃がさないようにします。
-    /// ボタンが1つの場合、上下左右すべて「自分自身」を指すように設定し、
-    /// 意図しないEventSystemの挙動を防ぎます。
-    /// </summary>
     private void SetupNavigation()
     {
         int totalCount = instantiatedButtons.Count;
 
-        // 0個のときは設定できないのでリターン
         if (totalCount == 0)
             return;
 
@@ -125,50 +153,42 @@ public class SkillMenuManager : MonoBehaviour, IPanelActive
                 continue;
 
             Navigation nav = new Navigation();
-            nav.mode = Navigation.Mode.Explicit; // 手動定義のみを有効にする
+            nav.mode = Navigation.Mode.Explicit;
 
             int currentRow = i % ROW_COUNT;
             int currentCol = i / ROW_COUNT;
 
-            // --- 上下の移動先決定 ---
             int nextUp = i - 1;
             if (currentRow == 0)
             {
-                // 先頭なら末尾へワープ（要素が1つの場合は i = 0 なので 0 になる）
                 nextUp = Mathf.Min((currentCol + 1) * ROW_COUNT - 1, totalCount - 1);
             }
 
             int nextDown = i + 1;
             if (currentRow == ROW_COUNT - 1 || nextDown >= totalCount)
             {
-                // 末尾なら先頭へワープ
                 nextDown = currentCol * ROW_COUNT;
             }
 
-            // --- 左右の移動先決定 ---
             int nextRight = i + ROW_COUNT;
             if (nextRight >= totalCount)
             {
-                // 右端なら左端（同じ行）へ
                 nextRight = currentRow;
                 if (nextRight >= totalCount)
-                    nextRight = 0; // それでもなければ0番へ
+                    nextRight = 0;
             }
 
             int nextLeft = i - ROW_COUNT;
             if (nextLeft < 0)
             {
-                // 左端なら右端へ
                 int maxCol = (totalCount - 1) / ROW_COUNT;
                 nextLeft = currentRow + (maxCol * ROW_COUNT);
                 if (nextLeft >= totalCount)
                     nextLeft -= ROW_COUNT;
                 if (nextLeft < 0)
-                    nextLeft = 0; // 最終防衛ライン
+                    nextLeft = 0;
             }
 
-            // 全ての方向をリスト内のボタンに強制的に紐付ける
-            // totalCount が 1 の場合、これら全てが instantiatedButtons[0] になります
             nav.selectOnUp = instantiatedButtons[nextUp].GetComponent<Selectable>();
             nav.selectOnDown = instantiatedButtons[nextDown].GetComponent<Selectable>();
             nav.selectOnLeft = instantiatedButtons[nextLeft].GetComponent<Selectable>();
