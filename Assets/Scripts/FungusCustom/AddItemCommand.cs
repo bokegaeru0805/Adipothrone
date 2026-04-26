@@ -48,7 +48,7 @@ public class AddItemCommand : Command
         GameManager.instance.AddAllTypeIDToInventory(containedItemID, quantity); //インベントにアイテムを保存
         SEManager.instance?.PlaySystemEventSE(SE_SystemEvent.ItemGet1); // アイテム取得のSEを再生
 
-        //変更点：メッセージ表示がオフなら、ここで処理を終えて次のコマンドへ
+        // メッセージ表示がオフなら、ここで処理を終えて次のコマンドへ
         if (!showAcquisitionDialog)
         {
             Continue();

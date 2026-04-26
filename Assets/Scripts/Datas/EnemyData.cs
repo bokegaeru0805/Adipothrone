@@ -28,6 +28,7 @@ public class EnemyData : ScriptableObject, IItemIDProvider
     public int rewardExp; // 倒したときに獲得できる経験値
     public int dropMoney; // 落とす金額
     public int requiredLevel; // 所要レベル
+    public List<DropSkillData> dropSkills = new List<DropSkillData>(); // スキルドロップリスト
     public List<DropItemData> dropItems = new List<DropItemData>(); // ドロップアイテムリスト
 
     public float destroyeffectScale = 1.0f; // 死亡エフェクトの大きさ
@@ -62,6 +63,17 @@ public class EnemyData : ScriptableObject, IItemIDProvider
                     {
                         dropItems[i]._inspectorLabel = "アイテム未設定";
                     }
+                }
+            }
+        }
+
+        if (dropSkills != null)
+        {
+            for (int i = 0; i < dropSkills.Count; i++)
+            {
+                if (dropSkills[i] != null)
+                {
+                    dropSkills[i]._inspectorLabel = dropSkills[i].skillID.ToString();
                 }
             }
         }
@@ -109,4 +121,16 @@ public class DropItemData
     [Header("Unique Settings")]
     [Tooltip("一度しか入手できない貴重品か（取得即セーブ＆重複ドロップ防止）")]
     public bool isUnique = false;
+}
+
+[System.Serializable]
+public class DropSkillData
+{
+    [HideInInspector]
+    public string _inspectorLabel; // Unityの仕様を利用してインスペクターの要素名にするための隠し変数
+
+    public SkillName skillID; // ドロップするスキル
+
+    [Range(0f, 100f)]
+    public float dropChance; // ドロップ確率（％）
 }

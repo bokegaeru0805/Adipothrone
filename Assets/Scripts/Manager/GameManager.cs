@@ -11,7 +11,6 @@ public class GameManager : MonoBehaviour
     #region Singleton & Events
 
     public static GameManager instance { get; private set; } //シングルトン用のインスタンス
-
     public event Action OnAnyItemAddedToInventory; // 任意のアイテムがインベントリに追加されたときのイベント
     public event Action<Enum> OnAnyItemRemovedFromInventory; // 任意のアイテムがインベントリから削除されたときのイベント
     public static event Action<bool> OnTalkingStateChanged; // 会話状態が変化したときのイベント
@@ -79,6 +78,7 @@ public class GameManager : MonoBehaviour
 
     private ItemDataManager itemDataManager; //アイテムデータベースマネージャーの参照
     private Block TreasureBlock; //宝箱開封時の会話のブロック
+    private Block SkillGetBlock; //スキル取得時の会話のブロック
     #endregion
 
     #region Internal States
@@ -129,6 +129,12 @@ public class GameManager : MonoBehaviour
                 {
                     Debug.LogWarning("TreasureBlock が GlobalFlowchart 上に存在しません！");
                     return;
+                }
+
+                SkillGetBlock = globalFlowchart.FindBlock("SkillGet");
+                if (SkillGetBlock == null)
+                {
+                    Debug.LogWarning("SkillGetBlock が GlobalFlowchart 上に存在しません！");
                 }
             }
         }
@@ -306,6 +312,42 @@ public class GameManager : MonoBehaviour
         else
         {
             Debug.LogError($"GlobalFlowchart もしくは TreasureBlock が見つかりません");
+        }
+    }
+
+    /// <summary>
+    /// スキルを入手した際のFungus会話ブロックを起動します。
+    /// ブロック内の SkillGetCommand を探し、対象のスキルIDをセットして実行します。
+    /// </summary>
+    /// <param name="skillID">取得したスキルのID</param>
+    public void SkillGetFungus(SkillName skillID)
+    {
+        if (SkillGetBlock != null && globalFlowchart != null)
+        {
+            // ブロック内のコマンドリストから SkillGetCommand を探す
+            bool commandFound = false;
+            foreach (Command command in SkillGetBlock.CommandList)
+            {
+                if (command is SkillGetCommand skillGetCommand)
+                {
+                    // コマンドに直接スキルIDをセット
+                    skillGetCommand.SetSkillData(skillID);
+                    commandFound = true;
+                    break;
+                }
+            }
+
+            if (!commandFound)
+            {
+                Debug.LogWarning("SkillGet ブロック内に SkillGetCommand が見つかりませんでした。");
+            }
+
+            // ブロックを実行
+            globalFlowchart.ExecuteBlock(SkillGetBlock);
+        }
+        else
+        {
+            Debug.LogError($"GlobalFlowchart もしくは SkillGetBlock が見つかりません");
         }
     }
 

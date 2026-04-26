@@ -667,6 +667,21 @@ public class Heroin_move : MonoBehaviour
                 sePlayer.Play(SE_Field.CoinGet1);
             }
 
+            // スキルドロップに触れた場合の取得処理
+            if (script.isSkillDrop)
+            {
+                // 既にスキルを入手済みの場合は取得処理やFungusの起動を行わない
+                if (!SkillManager.instance.IsSkillUnlocked(script.DropSkillID))
+                {
+                    SkillManager.instance.UnlockSkill(script.DropSkillID);
+
+                    // Fungusを呼び出して「〇〇を手に入れた」メッセージを表示する
+                    GameManager.instance.SkillGetFungus(script.DropSkillID);
+
+                    sePlayer.Play(SE_SystemEvent.ItemGet2);
+                }
+            }
+
             if (script.DropID != null)
             {
                 gameManager.AddAllTypeIDToInventory(script.DropID);

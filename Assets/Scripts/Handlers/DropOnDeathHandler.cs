@@ -234,6 +234,61 @@ public static class DropOnDeathHandler
             }
         }
 
+        // 敵が持つすべてのドロップ候補スキルについて処理
+        if (enemyData.dropSkills != null)
+        {
+            foreach (var dropSkill in enemyData.dropSkills)
+            {
+                if (dropSkill.skillID == SkillName.None)
+                    continue;
+
+                // 既に所持・解放済みの場合はドロップさせない
+                if (SkillManager.instance.IsSkillUnlocked(dropSkill.skillID))
+                {
+                    continue;
+                }
+
+                // 幸運ボーナスを加味した最終ドロップ率を計算（上限100%）
+                float finalDropChance = Mathf.Clamp(
+                    dropSkill.dropChance * (1f + (luckBonus / 100f)),
+                    0f,
+                    100f
+                );
+
+                // 確率判定
+                bool isDropped = UnityEngine.Random.Range(0f, 100f) <= finalDropChance;
+
+                if (isDropped)
+                {
+                    // ドロップ位置を少しランダムにずらす（自然な演出のため）
+                    Vector2 offset = UnityEngine.Random.insideUnitCircle * ItemPositionOffsetRadius;
+                    Vector3 dropPos = dropBasePos + new Vector3(offset.x, offset.y, 0);
+
+                    // 【重要】DropItemはシーンオブジェクト（EnemyActivator）の子になるため、
+                    // シーン遷移時の整合性を保つために PersistentInstance ではなく SceneInstance を使用する。
+                    GameObject dropObj = ObjectPooler.SceneInstance.SpawnFromPool(
+                        GameConstants.DROP_ITEM_POOLTAG,
+                        dropPos,
+                        Quaternion.identity
+                    );
+
+                    // 親オブジェクト指定がある場合は、生成後に設定する
+                    if (dropObj != null && parent != null)
+                    {
+                        dropObj.transform.SetParent(parent);
+                    }
+
+                    // DropItemスクリプトを取得（存在しない場合は警告を出してスキップ）
+                    var dropScript = dropObj.GetComponent<DropItem>();
+                    if (dropScript != null)
+                    {
+                        // スキル用の設定を呼び出す
+                        dropScript.SetSkillSprite(dropSkill.skillID);
+                    }
+                }
+            }
+        }
+
         //経験値をドロップ
         if (enemyData.rewardExp > 0)
         {

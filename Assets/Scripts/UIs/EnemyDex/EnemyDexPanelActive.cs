@@ -32,6 +32,13 @@ public class EnemyDexPanelActive : MonoBehaviour, IPanelActive
     [SerializeField]
     private TextMeshProUGUI dropItemsText; // ドロップアイテム一覧
 
+    [Header("スキルドロップ表示エリア")]
+    [SerializeField]
+    private GameObject skillPanelObject; // スキル表示枠全体（背景なども含む）
+
+    [SerializeField]
+    private TextMeshProUGUI dropSkillsText; // ドロップスキル一覧を表示するテキスト
+
     [Header("空の状態の表示")]
     [SerializeField]
     private GameObject detailGroup; // 詳細表示エリアの親オブジェクト
@@ -303,6 +310,26 @@ public class EnemyDexPanelActive : MonoBehaviour, IPanelActive
         if (enemyData == null)
             return;
 
+        // --- ドロップスキルが存在するかどうかの事前判定 ---
+        bool hasValidSkills = false;
+        if (enemyData.dropSkills != null)
+        {
+            foreach (var skill in enemyData.dropSkills)
+            {
+                if (skill.skillID != SkillName.None)
+                {
+                    hasValidSkills = true;
+                    break;
+                }
+            }
+        }
+
+        // スキル枠自体の表示/非表示を設定（未討伐・討伐済みに関わらず適用）
+        if (skillPanelObject != null)
+        {
+            skillPanelObject.SetActive(hasValidSkills);
+        }
+
         // --- 未討伐（遭遇のみ）の場合の表示処理 ---
         if (saveEntry.killCount == 0)
         {
@@ -327,6 +354,13 @@ public class EnemyDexPanelActive : MonoBehaviour, IPanelActive
             {
                 dropItemsText.alignment = TextAlignmentOptions.Center;
                 dropItemsText.text = "不明";
+            }
+
+            // スキル枠が表示されている場合、テキストを不明に設定
+            if (hasValidSkills && dropSkillsText != null)
+            {
+                dropSkillsText.alignment = TextAlignmentOptions.Center;
+                dropSkillsText.text = "不明";
             }
 
             // これ以降の処理（詳細なドロップ表示など）はスキップ
@@ -460,6 +494,37 @@ public class EnemyDexPanelActive : MonoBehaviour, IPanelActive
         if (dropItemsText != null)
         {
             dropItemsText.text = dropItemsBuilder.ToString();
+        }
+
+        // --- ドロップスキルの表示 ---
+        if (hasValidSkills && dropSkillsText != null)
+        {
+            // スキル一覧表示：左上揃えに設定
+            dropSkillsText.alignment = TextAlignmentOptions.TopLeft;
+            StringBuilder dropSkillsBuilder = new StringBuilder();
+
+            foreach (var dropSkill in enemyData.dropSkills)
+            {
+                if (dropSkill.skillID == SkillName.None)
+                    continue;
+
+                // スキルを既に所持・解放しているかどうかで表示を分岐する
+                if (SkillManager.instance.IsSkillUnlocked(dropSkill.skillID))
+                {
+                    // 入手済みの場合は名前のみを表示し、確率は記載しない
+                    string displayName = SkillManager.instance.GetSkillDisplayName(
+                        dropSkill.skillID
+                    );
+                    dropSkillsBuilder.AppendLine($"{displayName}");
+                }
+                else
+                {
+                    // 未入手の場合は「？？？」と確率を表示する
+                    dropSkillsBuilder.AppendLine($"？？？ ({dropSkill.dropChance:F1}%)");
+                }
+            }
+
+            dropSkillsText.text = dropSkillsBuilder.ToString();
         }
     }
 }

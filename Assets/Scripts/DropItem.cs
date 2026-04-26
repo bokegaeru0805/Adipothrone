@@ -15,6 +15,16 @@ public class TreasureSpriteSet
 }
 
 /// <summary>
+/// スキルカテゴリーに応じたスプライトを管理するクラス
+/// </summary>
+[System.Serializable]
+public class SkillSpriteSet
+{
+    public SkillCategory category; // スキルカテゴリー
+    public Sprite skillSprite; // スキルのスプライト
+}
+
+/// <summary>
 /// ドロップアイテム、お金、宝箱の表示と基本的な動作を管理するクラス。
 /// アイテムの種類に応じてスプライトを設定し、地面への自動配置やホバーアニメーション、宝箱の開閉処理などを担当します。
 /// </summary>
@@ -36,11 +46,19 @@ public class TreasureSpriteSet
 /// </remarks>
 public class DropItem : PoolableObject
 {
-    private float maxUnitPixel = 2.0f; //スプライトの最大表示サイズ（Unity単位）
-    private float originalColliderSize = 2.0f; //元のColliderサイズ（固定）
-    private float originalTreasureColliderRadius = 1f; //宝箱のColliderの半径（固定）
-    private float GroundCheckerColliderOffsetY = 0f; //地面判定のcolliderのy座標のoffset (固定)
+    #region 定数・変数設定
 
+    // --- 固定パラメータ ---
+    private float maxUnitPixel = 2.0f; // スプライトの最大表示サイズ（Unity単位）
+    private float originalColliderSize = 2.0f; // 元のColliderサイズ（固定）
+    private float originalTreasureColliderRadius = 1f; // 宝箱のColliderの半径（固定）
+    private float GroundCheckerColliderOffsetY = 0f; // 地面判定のcolliderのy座標のoffset (固定)
+    private float groundCheckRaycastDistance = 5f; // 地面を探すために真下に飛ばすRaycastの最大距離
+    private int TreasuresortingOrder = 20; // 宝箱の表示順
+    private int CoinsortingOrder = 30; // コインの表示順
+    private int DropItemsortingOrder = 40; // ドロップアイテムの表示順
+
+    // --- 外部公開プロパティ・変数 ---
     [HideInInspector]
     public Enum DropID;
 
@@ -50,10 +68,22 @@ public class DropItem : PoolableObject
     [HideInInspector]
     public bool isTreasureBox = false;
 
+    [HideInInspector]
+    public bool isSkillDrop = false; // スキルドロップかどうかの判定フラグ
+
+    [HideInInspector]
+    public SkillName DropSkillID; // ドロップするスキルID
+
+    // --- インスペクター設定 ---
     [Header("宝箱のスプライト設定")]
     [Tooltip("アイテムランクごとの宝箱の開閉スプライトを設定します")]
     [SerializeField]
     private List<TreasureSpriteSet> treasureSpritesByRank;
+
+    [Header("スキルドロップのスプライト設定")]
+    [Tooltip("スキルカテゴリーごとのスプライトを設定します")]
+    [SerializeField]
+    private List<SkillSpriteSet> skillSpritesByCategory;
 
     [Tooltip("どのランクにも一致しない場合の、デフォルトの『閉じている』宝箱スプライト")]
     [SerializeField]
@@ -62,6 +92,11 @@ public class DropItem : PoolableObject
     [Tooltip("どのランクにも一致しない場合の、デフォルトの『開いている』宝箱スプライト")]
     [SerializeField]
     private Sprite defaultOpenSprite;
+
+    [Header("エフェクト設定")]
+    [Tooltip("スキルドロップ時に表示する子オブジェクトのエフェクト")]
+    [SerializeField]
+    private GameObject skillEffectObject;
 
     [Header("地面への自動配置設定")]
     [Tooltip("地面として判定するレイヤー")]
@@ -82,20 +117,26 @@ public class DropItem : PoolableObject
     [Tooltip("ドロップ時に上方向に加える力の強さ")]
     [SerializeField]
     private float dropInitialUpForce = 5f;
-    private float groundCheckRaycastDistance = 5f; //地面を探すために真下に飛ばすRaycastの最大距離
-    private int TreasuresortingOrder = 20;
-    private int CoinsortingOrder = 30;
-    private int DropItemsortingOrder = 40;
+
+    // --- 内部コンポーネント参照 ---
     private SpriteRenderer spriteRenderer;
     private CircleCollider2D mycollider;
     private CapsuleCollider2D groundCheckerCollider;
     private Rigidbody2D rbody;
     private Animator animator;
 
+    // --- 宝箱用スプライトキャッシュ ---
     // 現在の宝箱に適用すべき開閉スプライトを保存しておく変数
     private Sprite _currentTargetCloseSprite;
     private Sprite _currentTargetOpenSprite;
 
+    #endregion
+
+    #region Unityライフサイクル
+
+    /// <summary>
+    /// コンポーネントの初期化を行います。必要なコンポーネントをキャッシュします。
+    /// </summary>
     private void Awake()
     {
         spriteRenderer = GetComponent<SpriteRenderer>();
@@ -108,16 +149,45 @@ public class DropItem : PoolableObject
     }
 
     /// <summary>
-    /// 変数やコンポーネントの状態を初期化します。
+    /// プールから取り出された際に状態をリセットします。
+    /// </summary>
+    private void OnEnable()
+    {
+        ResetState();
+    }
+
+    /// <summary>
+    /// プールに戻る際（または非アクティブ化時）にアニメーションを停止し、バグを防ぎます。
+    /// </summary>
+    private void OnDisable()
+    {
+        // 確実にTweenを停止しないと、次に取り出した時に異常な座標移動が起きる可能性があります
+        transform.DOKill();
+    }
+
+    #endregion
+
+    #region 初期化・リセット処理
+
+    /// <summary>
+    /// オブジェクトの状態（変数やコンポーネントの設定）を初期化・リセットします。
     /// </summary>
     private void ResetState()
     {
         isTreasureBox = false;
+        isSkillDrop = false;
         DropMoney = 0;
         DropID = null;
+        DropSkillID = SkillName.None;
 
         // 宝箱化によって変更されたタグを元に戻す
         this.tag = GameConstants.UNTAGGED_TAG_NAME;
+
+        // スキル用エフェクトを非表示にリセット
+        if (skillEffectObject != null)
+        {
+            skillEffectObject.SetActive(false);
+        }
 
         // 物理挙動のリセット（地面判定ロジックが走るまではKinematicで静止させておく）
         if (rbody != null)
@@ -136,8 +206,12 @@ public class DropItem : PoolableObject
         // SetDropItemSpriteで変更される可能性があるため、必要ならここでも戻す
     }
 
+    #endregion
+
+    #region スプライト・種別設定処理
+
     /// <summary>
-    /// ドロップアイテムのスプライトを設定します。
+    /// ドロップアイテムとしてのスプライトを設定し、配置を調整します。
     /// </summary>
     public void SetDropItemSprite()
     {
@@ -147,8 +221,9 @@ public class DropItem : PoolableObject
         }
 
         Sprite dropSprite = ItemDataManager.instance.GetItemSpriteByID(DropID); // アイテムの見た目（スプライト）を取得
-        spriteRenderer.sprite = dropSprite; //スプライトを設定
-        spriteRenderer.sortingOrder = DropItemsortingOrder; //画像の表示順を設定
+        spriteRenderer.sprite = dropSprite; // スプライトを設定
+        spriteRenderer.sortingOrder = DropItemsortingOrder; // 画像の表示順を設定
+
         if (dropSprite != null)
         {
             // スプライトのサイズ（Unity単位）を取得
@@ -175,7 +250,7 @@ public class DropItem : PoolableObject
     }
 
     /// <summary>
-    /// ドロップするお金のスプライトを設定します。
+    /// お金（コイン）としてのスプライト・アニメーションを設定し、配置を調整します。
     /// </summary>
     public void SetMoneySprite()
     {
@@ -199,7 +274,7 @@ public class DropItem : PoolableObject
                 Debug.LogWarning($"指定された{DropMoney}の金額のスプライトは存在しません");
                 break;
         }
-        spriteRenderer.sortingOrder = CoinsortingOrder; //画像の表示順を設定
+        spriteRenderer.sortingOrder = CoinsortingOrder; // 画像の表示順を設定
 
         // アニメーション設定後に座標を調整
         AdjustPositionToGroundSurface();
@@ -217,8 +292,8 @@ public class DropItem : PoolableObject
             animator.enabled = false; // 宝箱のアニメーションは基本的に不要なので無効化
         }
 
-        isTreasureBox = true; //宝箱かどうかのフラグをON
-        ItemRank itemRank = ItemDataManager.instance.GetItemRankByID(DropID); //アイテムのランクを取得
+        isTreasureBox = true; // 宝箱かどうかのフラグをON
+        ItemRank itemRank = ItemDataManager.instance.GetItemRankByID(DropID); // アイテムのランクを取得
 
         // 1. まず、デフォルトのスプライトを変数に設定
         _currentTargetCloseSprite = defaultCloseSprite;
@@ -239,19 +314,78 @@ public class DropItem : PoolableObject
         // 3. 保存しておいた「閉じている」スプライトを初期表示として適用する
         spriteRenderer.sprite = _currentTargetCloseSprite;
 
-        spriteRenderer.sortingOrder = TreasuresortingOrder; //画像の表示順を設定
-        this.tag = GameConstants.INTERACTABLE_OBJECT_TAG_NAME; //タグを変更
-        mycollider.radius = originalTreasureColliderRadius; //当たり判定のcolliderの半径を調整
-        groundCheckerCollider.offset = new Vector2(0, GroundCheckerColliderOffsetY); //地面当たり判定のcolliderのoffsetを調整
-        // //  宝箱は手動で配置するため、座標調整は行わない
+        spriteRenderer.sortingOrder = TreasuresortingOrder; // 画像の表示順を設定
+        this.tag = GameConstants.INTERACTABLE_OBJECT_TAG_NAME; // タグを変更
+        mycollider.radius = originalTreasureColliderRadius; // 当たり判定のcolliderの半径を調整
+        groundCheckerCollider.offset = new Vector2(0, GroundCheckerColliderOffsetY); // 地面当たり判定のcolliderのoffsetを調整
 
         // 宝箱も地面に配置、または落下させるために座標調整を呼び出す
         AdjustPositionToGroundSurface();
     }
 
     /// <summary>
+    /// ドロップスキルとしてのスプライトを設定し、配置を調整します。
+    /// </summary>
+    /// <param name="skillID">設定するスキルID</param>
+    public void SetSkillSprite(SkillName skillID)
+    {
+        if (animator != null)
+        {
+            animator.enabled = false; // ドロップアイテムのアニメーションは基本的に不要なので無効化
+        }
+
+        isSkillDrop = true;
+        DropSkillID = skillID;
+
+        // スキル用エフェクトを表示する
+        if (skillEffectObject != null)
+        {
+            skillEffectObject.SetActive(true);
+        }
+
+        // SkillManagerからデータベース経由でカテゴリーを取得
+        SkillCategory category = SkillManager.instance.GetSkillCategory(skillID);
+        Sprite skillSprite = null;
+
+        foreach (var spriteSet in skillSpritesByCategory)
+        {
+            if (spriteSet.category == category)
+            {
+                skillSprite = spriteSet.skillSprite;
+                break;
+            }
+        }
+
+        if (skillSprite != null)
+        {
+            spriteRenderer.sprite = skillSprite;
+        }
+        else
+        {
+            Debug.LogWarning(
+                $"カテゴリー {category} に対応するスキルのスプライトが設定されていません"
+            );
+        }
+
+        spriteRenderer.sortingOrder = DropItemsortingOrder; // 画像の表示順を設定
+
+        // Colliderサイズを元のサイズに戻す
+        if (mycollider != null)
+        {
+            mycollider.radius = originalColliderSize / 2;
+        }
+
+        // スプライト設定後に座標を調整（通常のドロップアイテムと同じ軌道に乗せる）
+        AdjustPositionToGroundSurface();
+    }
+
+    #endregion
+
+    #region 配置・アニメーション処理
+
+    /// <summary>
     /// オブジェクトの登場処理。
-    /// 地面に埋まっていれば表面にスナップし、空中にいればドロップ（落下）させる。
+    /// 地面に埋まっていれば表面にスナップし、空中にいればドロップ（落下）させます。
     /// </summary>
     private void AdjustPositionToGroundSurface()
     {
@@ -266,7 +400,6 @@ public class DropItem : PoolableObject
         }
 
         // --- 1. まず、現在地が地面に埋まっているか（または接しているか）をチェック ---
-
         float checkRayDistance;
         Vector2 checkRayStart = transform.position;
 
@@ -294,7 +427,6 @@ public class DropItem : PoolableObject
         );
 
         // --- 2. 判定に応じて処理を分岐 ---
-
         if (checkHit.collider != null)
         {
             // 【ケースA: 地面に埋まっている（または接している）場合】
@@ -388,11 +520,39 @@ public class DropItem : PoolableObject
             .SetLoops(-1, LoopType.Yoyo);
     }
 
+    #endregion
+
+    #region 物理判定・獲得処理
+
+    /// <summary>
+    /// 落下後に地面と衝突した際の処理を行います。
+    /// </summary>
+    private void OnCollisionEnter2D(Collision2D collision)
+    {
+        // 落下中(Dynamic)でなければ何もしない
+        if (rbody == null || rbody.bodyType != RigidbodyType2D.Dynamic)
+        {
+            return;
+        }
+
+        // 衝突した相手が地面レイヤーかどうかを判定
+        if ((groundLayer.value & (1 << collision.gameObject.layer)) > 0)
+        {
+            // 地面に着地したら、物理演算を停止してその場に固定する
+            rbody.bodyType = RigidbodyType2D.Kinematic;
+            rbody.velocity = Vector2.zero; // 完全に静止させる
+            StartHoverAnimation(); // 着地後にホバーアニメーションを開始
+        }
+    }
+
+    /// <summary>
+    /// プレイヤーがインタラクト範囲内にいる時の処理（宝箱・アイテムの取得判定）を行います。
+    /// </summary>
     private void OnTriggerStay2D(Collider2D collision)
     {
         if (Time.timeScale > 0 && this.CompareTag(GameConstants.INTERACTABLE_OBJECT_TAG_NAME))
         {
-            //プレイヤーの所得動作との兼合いで、Tagで判断する
+            // プレイヤーの所得動作との兼合いで、Tagで判断する
             if (
                 InputManager.instance.GetInteract()
                 && collision.CompareTag(GameConstants.PLAYER_TAG_NAME)
@@ -404,7 +564,7 @@ public class DropItem : PoolableObject
     }
 
     /// <summary>
-    /// アイテム獲得処理を強制的に実行する
+    /// アイテム獲得処理を強制的に実行します。
     /// </summary>
     public void ForceAcquire()
     {
@@ -430,12 +590,13 @@ public class DropItem : PoolableObject
 
         SEManager.instance?.PlaySystemEventSE(SE_SystemEvent.ItemGet2);
         GameManager.instance.TreasureFungus(baseItemData, 1);
-        //インベントリにアイテムを保存はFungusのFlowchartで行います
+
+        // インベントリにアイテムを保存はFungusのFlowchartで行います
         // GameManager.instance.AddAllTypeIDToInventory(DropID); //インベントにアイテムを保存
     }
 
     /// <summary>
-    /// スプライトを表示せず、即座に獲得処理を行ってプールに戻る
+    /// スプライトを表示せず、即座に獲得処理を行ってプールに戻ります。
     /// （ユニークアイテムのロスト防止用）
     /// </summary>
     public void AcquireInstantly()
@@ -447,34 +608,5 @@ public class DropItem : PoolableObject
         ReturnToPool();
     }
 
-    private void OnCollisionEnter2D(Collision2D collision)
-    {
-        // 落下中(Dynamic)でなければ何もしない
-        if (rbody == null || rbody.bodyType != RigidbodyType2D.Dynamic)
-        {
-            return;
-        }
-
-        // 衝突した相手が地面レイヤーかどうかを判定
-        if ((groundLayer.value & (1 << collision.gameObject.layer)) > 0)
-        {
-            // 地面に着地したら、物理演算を停止してその場に固定する
-            rbody.bodyType = RigidbodyType2D.Kinematic;
-            rbody.velocity = Vector2.zero; // 完全に静止させる
-            StartHoverAnimation(); // 着地後にホバーアニメーションを開始
-        }
-    }
-
-    private void OnEnable()
-    {
-        // プールから取り出された際に状態をリセットする
-        ResetState();
-    }
-
-    private void OnDisable()
-    {
-        // プールに戻る際（または非アクティブ化時）にアニメーションを確実に停止する
-        // これを忘れると、次に取り出した時に変な位置に飛んだりする
-        transform.DOKill();
-    }
+    #endregion
 }

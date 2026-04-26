@@ -259,4 +259,43 @@ public class SkillManager : MonoBehaviour
             RebuildSkillCache();
         }
     }
+
+    /// <summary>
+    /// データベースからスキル情報を検索し、そのスキルカテゴリーを取得する
+    /// </summary>
+    /// <param name="skillID">判定するスキルのID</param>
+    /// <returns>スキルカテゴリー</returns>
+    public SkillCategory GetSkillCategory(SkillName skillID)
+    {
+        // SkillDatabaseから直接SkillDataを取得
+        SkillData data = skillDatabase.GetSkillByID(skillID);
+
+        if (data != null)
+        {
+            // SkillDataに定義されているカテゴリーを返す
+            return data.category;
+        }
+
+        Debug.LogWarning($"スキルID:{skillID} のデータがデータベースに存在しません。");
+        return SkillCategory.None;
+    }
+
+    /// <summary>
+    /// データベースからスキル情報を検索し、そのスキルの表示名（日本語名）を取得する
+    /// </summary>
+    /// <param name="skillID">判定するスキルのID</param>
+    /// <returns>スキルの表示名</returns>
+    public string GetSkillDisplayName(SkillName skillID)
+    {
+        SkillData data = skillDatabase.GetSkillByID(skillID);
+
+        if (data != null)
+        {
+            // SkillDataに定義されている日本語名を返す
+            return data.skillName;
+        }
+
+        Debug.LogWarning($"スキルID:{skillID} のデータがデータベースに存在しません。");
+        return skillID.ToString(); // 万が一取得できなかった場合は列挙型名を返す
+    }
 }
