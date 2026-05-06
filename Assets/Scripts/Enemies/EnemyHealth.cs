@@ -70,9 +70,21 @@ public class EnemyHealth : CharacterHealth, IEnemyResettable
                 CurrentHP = MaxHP;
                 isInitialized = true;
             }
+#if UNITY_EDITOR
+            // Editor上のみ、DebugSceneであればEnemyDataが無くてもHP1で初期化する
+            else if (
+                UnityEngine.SceneManagement.SceneManager.GetActiveScene().name
+                == GameConstants.SCENE_NAME_DEBUG
+            )
+            {
+                MaxHP = 1;
+                CurrentHP = MaxHP;
+                isInitialized = true;
+            }
+#endif
             else
             {
-                Debug.LogWarning(
+                Debug.LogError(
                     $"[{gameObject.name}] EnemyDataが設定されていません。手動HP設定(useManualHP)も無効です。"
                 );
             }

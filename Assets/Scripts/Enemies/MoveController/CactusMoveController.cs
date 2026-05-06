@@ -23,9 +23,6 @@ public class CactusMoveController : MonoBehaviour, IEnemyResettable
 
     [Header("設定項目")]
     [SerializeField]
-    private Transform playerTransform = null;
-
-    [SerializeField]
     private EnemyActivator activator = null; // 親のEnemyActivatorコンポーネント
 
     [SerializeField]
@@ -111,6 +108,7 @@ public class CactusMoveController : MonoBehaviour, IEnemyResettable
     private bool shouldAttack = false;
     private const float BALL_ATTACK_ANIMATION_TIME = 0.800f; // ボール攻撃のアニメーション時間
     private const string BALL_POOLTAG = "CactusBall"; //ボールのプールタグ名
+    private Transform playerTransform;
     private List<SpriteRenderer> allRenderers = new List<SpriteRenderer>(); // 子オブジェクトの位置反転用
     private List<GameObject> spawnedObjects = new List<GameObject>(); //生成したオブジェクトを管理するリスト
 
@@ -199,13 +197,17 @@ public class CactusMoveController : MonoBehaviour, IEnemyResettable
     {
         if (playerTransform == null)
         {
-            playerTransform = GameObject
-                .FindGameObjectWithTag(GameConstants.PLAYER_TAG_NAME)
-                ?.transform;
-            if (playerTransform == null)
+            if (PlayerManager.instance != null)
             {
-                Debug.LogError($"{this.name}はPlayerTransformを見つけられませんでした");
-                return;
+                // PlayerManagerが持つキャッシュから高速に取得
+                playerTransform = PlayerManager.instance.PlayerGameObject?.transform;
+            }
+            else
+            {
+                // テスト環境などでPlayerManagerが存在しない場合のフォールバック（従来方式）
+                playerTransform = GameObject
+                    .FindGameObjectWithTag(GameConstants.PLAYER_TAG_NAME)
+                    ?.transform;
             }
         }
 

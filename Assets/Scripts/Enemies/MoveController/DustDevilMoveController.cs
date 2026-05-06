@@ -12,10 +12,6 @@ public class DustDevilMoveController : MonoBehaviour, IEnemyResettable
     [SerializeField]
     private EnemyVariant variantType = EnemyVariant.None; //敵の種類を設定
 
-    [Header("設定項目")]
-    [SerializeField]
-    private Transform playerTransform = null;
-
     [SerializeField]
     private EnemyActivator activator = null; // 親のEnemyActivatorコンポーネント
 
@@ -59,6 +55,7 @@ public class DustDevilMoveController : MonoBehaviour, IEnemyResettable
     private bool isUseManualInitialPosition = false;
 
     private float maxCheckDistance = 20.0f; //地面を探す最大距離
+    private Transform playerTransform;
     private LayerMask groundLayer;
     private Transform _transform;
     private Animator animator;
@@ -118,13 +115,17 @@ public class DustDevilMoveController : MonoBehaviour, IEnemyResettable
     {
         if (playerTransform == null)
         {
-            playerTransform = GameObject
-                .FindGameObjectWithTag(GameConstants.PLAYER_TAG_NAME)
-                ?.transform;
-            if (playerTransform == null)
+            if (PlayerManager.instance != null)
             {
-                Debug.LogError($"{this.name}はPlayerTransformを見つけられませんでした");
-                return;
+                // PlayerManagerが持つキャッシュから高速に取得
+                playerTransform = PlayerManager.instance.PlayerGameObject?.transform;
+            }
+            else
+            {
+                // テスト環境などでPlayerManagerが存在しない場合のフォールバック（従来方式）
+                playerTransform = GameObject
+                    .FindGameObjectWithTag(GameConstants.PLAYER_TAG_NAME)
+                    ?.transform;
             }
         }
 

@@ -152,7 +152,7 @@ Shader "MyShaders/2D/SpriteLitFlash"
                 half4 finalColor = CombinedShapeLightShared(surfaceData, inputData);
 
                 // フラッシュの色を合成する
-                finalColor.rgb = lerp(finalColor.rgb, _FlashColor.rgb, _FlashAmount);
+                finalColor.rgb = lerp(finalColor.rgb, _FlashColor.rgb, _FlashAmount * _FlashColor.a);
 
                 // --- オーバーレイ処理開始 ---
                 #if defined(_OVERLAY_ON)
@@ -322,7 +322,7 @@ Shader "MyShaders/2D/SpriteLitFlash"
                 float4 mainTex = i.color * SAMPLE_TEXTURE2D(_MainTex, sampler_MainTex, i.uv);
 
                 // フラッシュの色を合成する
-                mainTex.rgb = lerp(mainTex.rgb, _FlashColor.rgb, _FlashAmount);
+                mainTex.rgb = lerp(mainTex.rgb, _FlashColor.rgb, _FlashAmount * _FlashColor.a);
 
                 // --- オーバーレイ処理開始 ---
                 #if defined(_OVERLAY_ON)

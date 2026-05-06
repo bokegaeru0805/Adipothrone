@@ -15,6 +15,7 @@ public abstract class CharacterHealth : PoolableObject, IDamageable, IDroppable,
 
     // --- シェーダープロパティ・キーワード名 ---
     private const string SHADER_PROP_FLASH_AMOUNT = "_FlashAmount";
+    private const string SHADER_PROP_FLASH_COLOR = "_FlashColor";
     private const string SHADER_PROP_OVERLAY_ON = "_OverlayOn";
     private const string SHADER_KEYWORD_OVERLAY_ON = "_OVERLAY_ON";
 
@@ -441,6 +442,61 @@ public abstract class CharacterHealth : PoolableObject, IDamageable, IDroppable,
                 {
                     mat.SetFloat(SHADER_PROP_OVERLAY_ON, 0.0f);
                     mat.DisableKeyword(SHADER_KEYWORD_OVERLAY_ON);
+                }
+            }
+        }
+    }
+
+    /// <summary>
+    /// 外部から任意の色、明るさ、時間でフラッシュ演出を実行します。
+    /// タックル開始時の予兆エフェクトなどに使用します。
+    /// </summary>
+    /// <param name="flashColor">フラッシュさせる色</param>
+    /// <param name="amount">フラッシュの強さ（0.0f ～ 1.0f）</param>
+    /// <param name="duration">フラッシュさせる時間（秒）</param>
+    public void TriggerCustomFlash(Color flashColor, float amount, float duration)
+    {
+        StartCoroutine(CustomFlashCoroutine(flashColor, amount, duration));
+    }
+
+    /// <summary>
+    /// カスタムフラッシュ処理を行うコルーチン
+    /// </summary>
+    private IEnumerator CustomFlashCoroutine(Color flashColor, float amount, float duration)
+    {
+        if (activeMaterials == null || activeMaterials.Length == 0)
+            yield break;
+
+        try
+        {
+            foreach (var mat in activeMaterials)
+            {
+                if (mat.HasProperty(SHADER_PROP_FLASH_AMOUNT))
+                {
+                    // シェーダーにカラープロパティがあれば色を設定
+                    if (mat.HasProperty(SHADER_PROP_FLASH_COLOR))
+                    {
+                        mat.SetColor(SHADER_PROP_FLASH_COLOR, flashColor);
+                    }
+                    mat.SetFloat(SHADER_PROP_FLASH_AMOUNT, amount);
+                }
+            }
+            yield return new WaitForSeconds(duration);
+        }
+        finally
+        {
+            // 処理完了後、または途中で中断された場合に確実に元に戻す
+            foreach (var mat in activeMaterials)
+            {
+                if (mat.HasProperty(SHADER_PROP_FLASH_AMOUNT))
+                {
+                    mat.SetFloat(SHADER_PROP_FLASH_AMOUNT, 0.0f);
+
+                    // 次の被弾時（FlashOnDamage）に影響が出ないよう、色をデフォルト（白）に戻しておく
+                    if (mat.HasProperty(SHADER_PROP_FLASH_COLOR))
+                    {
+                        mat.SetColor(SHADER_PROP_FLASH_COLOR, Color.white);
+                    }
                 }
             }
         }
