@@ -1,0 +1,738 @@
+fileFormatVersion: 2
+guid: a4fc8a45a6e369841bff947fd3be9657
+ScriptedImporter:
+  internalIDToNameTable: []
+  externalObjects: {}
+  serializedVersion: 2
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+  script: {fileID: 11500000, guid: 62a9f0aa5b59740cfbadc7e5f9823bb0, type: 3}
+  importerVersion: 2
+  textureImporterSettings:
+    alphaSource: 1
+    mipMapMode: 0
+    enableMipMap: 0
+    fadeOut: 0
+    borderMipMap: 0
+    mipMapsPreserveCoverage: 0
+    alphaTestReferenceValue: 0.5
+    mipMapFadeDistanceStart: 1
+    mipMapFadeDistanceEnd: 3
+    convertToNormalMap: 0
+    heightScale: 0.25
+    normalMapFilter: 0
+    flipGreenChannel: 0
+    swizzle: 50462976
+    isReadable: 0
+    streamingMipmaps: 0
+    streamingMipmapsPriority: 0
+    vTOnly: 0
+    ignoreMipmapLimit: 0
+    nPOTScale: 1
+    sRGBTexture: 1
+    spriteMode: 2
+    spriteExtrude: 1
+    spriteMeshType: 0
+    alignment: 0
+    spritePivot: {x: 0.5, y: 0.5}
+    spritePixelsToUnits: 16
+    spriteBorder: {x: 0, y: 0, z: 0, w: 0}
+    spriteGenerateFallbackPhysicsShape: 0
+    generateCubemap: 6
+    cubemapConvolution: 0
+    seamlessCubemap: 0
+    alphaIsTransparency: 1
+    spriteTessellationDetail: -1
+    textureType: 8
+    textureShape: 1
+    singleChannelComponent: 0
+    flipbookRows: 0
+    flipbookColumns: 0
+    ignorePngGamma: 0
+    cookieMode: 0
+    filterMode: 0
+    aniso: 1
+    mipBias: 0
+    wrapU: 1
+    wrapV: 1
+    wrapW: 1
+    normalMap: 0
+    textureFormat: 0
+    maxTextureSize: 0
+    lightmap: 0
+    compressionQuality: 0
+    linearTexture: 0
+    grayScaleToAlpha: 0
+    rGBM: 0
+    cubemapConvolutionSteps: 0
+    cubemapConvolutionExponent: 0
+    maxTextureSizeSet: 0
+    compressionQualitySet: 0
+    textureFormatSet: 0
+    applyGammaDecoding: 0
+  previousAsepriteImporterSettings:
+    fileImportMode: 1
+    importHiddenLayers: 0
+    layerImportMode: 0
+    defaultPivotSpace: 0
+    defaultPivotAlignment: 7
+    customPivotPosition: {x: 0.5, y: 0.5}
+    mosaicPadding: 4
+    spritePadding: 0
+    generateModelPrefab: 1
+    generateAnimationClips: 1
+    addSortingGroup: 1
+    addShadowCasters: 0
+  asepriteImporterSettings:
+    fileImportMode: 1
+    importHiddenLayers: 0
+    layerImportMode: 0
+    defaultPivotSpace: 0
+    defaultPivotAlignment: 7
+    customPivotPosition: {x: 0.5, y: 0.5}
+    mosaicPadding: 4
+    spritePadding: 0
+    generateModelPrefab: 1
+    generateAnimationClips: 1
+    addSortingGroup: 1
+    addShadowCasters: 0
+  importFileNodeState: 1
+  platformSettingsDirtyTick: 639139176574339981
+  textureAssetName: 
+  singleSpriteImportData:
+  - name: 
+    originalName: 
+    pivot: {x: 0, y: 0}
+    alignment: 0
+    border: {x: 0, y: 0, z: 0, w: 0}
+    rect:
+      serializedVersion: 2
+      x: 0
+      y: 0
+      width: 0
+      height: 0
+    spriteID: 
+    spriteBone: []
+    spriteOutline: []
+    vertices: []
+    spritePhysicsOutline: []
+    indices: 
+    edges: []
+    tessellationDetail: 0
+    uvTransform: {x: 0, y: 0}
+  animatedSpriteImportData:
+  - name: Head
+    originalName: 
+    pivot: {x: 0.3181818, y: -6.3928576}
+    alignment: 9
+    border: {x: 0, y: 0, z: 0, w: 0}
+    rect:
+      serializedVersion: 2
+      x: 4
+      y: 208
+      width: 22
+      height: 28
+    spriteID: 1d68693929136cc408e67874947d5e52
+    spriteBone: []
+    spriteOutline: []
+    vertices: []
+    spritePhysicsOutline: []
+    indices: 
+    edges: []
+    tessellationDetail: 0
+    uvTransform: {x: 4, y: 208}
+  - name: Body
+    originalName: 
+    pivot: {x: 0.3478261, y: -2.1864407}
+    alignment: 9
+    border: {x: 0, y: 0, z: 0, w: 0}
+    rect:
+      serializedVersion: 2
+      x: 4
+      y: 141
+      width: 46
+      height: 59
+    spriteID: 0406ee254122bdd4fa71e6b5e721cecc
+    spriteBone: []
+    spriteOutline: []
+    vertices: []
+    spritePhysicsOutline: []
+    indices: 
+    edges: []
+    tessellationDetail: 0
+    uvTransform: {x: 4, y: 141}
+  - name: Foot_L
+    originalName: 
+    pivot: {x: -0.9333334, y: -1.1578947}
+    alignment: 9
+    border: {x: 0, y: 0, z: 0, w: 0}
+    rect:
+      serializedVersion: 2
+      x: 89
+      y: 184
+      width: 15
+      height: 38
+    spriteID: 94611c38c374f104aad70a171678bdcd
+    spriteBone: []
+    spriteOutline: []
+    vertices: []
+    spritePhysicsOutline: []
+    indices: 
+    edges: []
+    tessellationDetail: 0
+    uvTransform: {x: 89, y: 184}
+  - name: Thigh_L
+    originalName: 
+    pivot: {x: -0.125, y: -2.8333333}
+    alignment: 9
+    border: {x: 0, y: 0, z: 0, w: 0}
+    rect:
+      serializedVersion: 2
+      x: 34
+      y: 208
+      width: 16
+      height: 36
+    spriteID: f4dd200d34da1cb49907c760627a8174
+    spriteBone: []
+    spriteOutline: []
+    vertices: []
+    spritePhysicsOutline: []
+    indices: 
+    edges: []
+    tessellationDetail: 0
+    uvTransform: {x: 34, y: 208}
+  - name: Calf_L
+    originalName: 
+    pivot: {x: -0.47058824, y: -2.142857}
+    alignment: 9
+    border: {x: 0, y: 0, z: 0, w: 0}
+    rect:
+      serializedVersion: 2
+      x: 89
+      y: 141
+      width: 17
+      height: 35
+    spriteID: 265aae86eda34cc408ab1077ef69337c
+    spriteBone: []
+    spriteOutline: []
+    vertices: []
+    spritePhysicsOutline: []
+    indices: 
+    edges: []
+    tessellationDetail: 0
+    uvTransform: {x: 89, y: 141}
+  - name: Foot_R
+    originalName: 
+    pivot: {x: 1.1578947, y: -1.6060606}
+    alignment: 9
+    border: {x: 0, y: 0, z: 0, w: 0}
+    rect:
+      serializedVersion: 2
+      x: 58
+      y: 204
+      width: 19
+      height: 33
+    spriteID: 1ff419087f2997d459fc7c2569c48ea6
+    spriteBone: []
+    spriteOutline: []
+    vertices: []
+    spritePhysicsOutline: []
+    indices: 
+    edges: []
+    tessellationDetail: 0
+    uvTransform: {x: 58, y: 204}
+  - name: Thigh_R
+    originalName: 
+    pivot: {x: 1.117647, y: -3.6551723}
+    alignment: 9
+    border: {x: 0, y: 0, z: 0, w: 0}
+    rect:
+      serializedVersion: 2
+      x: 103
+      y: 4
+      width: 17
+      height: 29
+    spriteID: a855f6b461be6484086e56ca26ab0f9b
+    spriteBone: []
+    spriteOutline: []
+    vertices: []
+    spritePhysicsOutline: []
+    indices: 
+    edges: []
+    tessellationDetail: 0
+    uvTransform: {x: 103, y: 4}
+  - name: Calf_R
+    originalName: 
+    pivot: {x: 1.2, y: -1.972973}
+    alignment: 9
+    border: {x: 0, y: 0, z: 0, w: 0}
+    rect:
+      serializedVersion: 2
+      x: 80
+      y: 4
+      width: 15
+      height: 37
+    spriteID: d8f5970131753874c808362f66daa8a1
+    spriteBone: []
+    spriteOutline: []
+    vertices: []
+    spritePhysicsOutline: []
+    indices: 
+    edges: []
+    tessellationDetail: 0
+    uvTransform: {x: 80, y: 4}
+  - name: Arm_L
+    originalName: 
+    pivot: {x: -0.9130435, y: -1.9272727}
+    alignment: 9
+    border: {x: 0, y: 0, z: 0, w: 0}
+    rect:
+      serializedVersion: 2
+      x: 58
+      y: 141
+      width: 23
+      height: 55
+    spriteID: a1a1cdf8bf3c935468e362e28af8d8db
+    spriteBone: []
+    spriteOutline: []
+    vertices: []
+    spritePhysicsOutline: []
+    indices: 
+    edges: []
+    tessellationDetail: 0
+    uvTransform: {x: 58, y: 141}
+  - name: Sholder_L
+    originalName: 
+    pivot: {x: -1.7, y: -7.75}
+    alignment: 9
+    border: {x: 0, y: 0, z: 0, w: 0}
+    rect:
+      serializedVersion: 2
+      x: 89
+      y: 230
+      width: 10
+      height: 20
+    spriteID: 88a94f027a4f5d840aea9d0b2b7a5214
+    spriteBone: []
+    spriteOutline: []
+    vertices: []
+    spritePhysicsOutline: []
+    indices: 
+    edges: []
+    tessellationDetail: 0
+    uvTransform: {x: 89, y: 230}
+  - name: Shoulder_R
+    originalName: 
+    pivot: {x: 1.5, y: -10.466667}
+    alignment: 9
+    border: {x: 0, y: 0, z: 0, w: 0}
+    rect:
+      serializedVersion: 2
+      x: 114
+      y: 141
+      width: 10
+      height: 15
+    spriteID: 6eb3a33e160d32744bd829496693bd89
+    spriteBone: []
+    spriteOutline: []
+    vertices: []
+    spritePhysicsOutline: []
+    indices: 
+    edges: []
+    tessellationDetail: 0
+    uvTransform: {x: 114, y: 141}
+  - name: Arm_R
+    originalName: 
+    pivot: {x: 1.132353, y: -0.27131784}
+    alignment: 9
+    border: {x: 0, y: 0, z: 0, w: 0}
+    rect:
+      serializedVersion: 2
+      x: 4
+      y: 4
+      width: 68
+      height: 129
+    spriteID: a46a90b63ea1d7a4ea57ca8d52460e66
+    spriteBone: []
+    spriteOutline: []
+    vertices: []
+    spritePhysicsOutline: []
+    indices: 
+    edges: []
+    tessellationDetail: 0
+    uvTransform: {x: 4, y: 4}
+  spriteSheetImportData: []
+  asepriteLayers:
+  - layerIndex: 15
+    uuid:
+      value0: 4136223136
+      value1: 0
+      value2: 0
+      value3: 0
+    guid: 0
+    name: Head
+    layerFlags: 3
+    layerType: 0
+    blendMode: 0
+    cells:
+    - name: Head
+      frameIndex: 0
+      additiveSortOrder: 0
+      cellRect:
+        x: 121
+        y: 179
+        width: 22
+        height: 28
+      spriteId: 1d68693929136cc408e67874947d5e52
+    linkedCells: []
+    parentIndex: -1
+  - layerIndex: 10
+    uuid:
+      value0: 3383614466
+      value1: 0
+      value2: 0
+      value3: 0
+    guid: 0
+    name: Body
+    layerFlags: 3
+    layerType: 0
+    blendMode: 0
+    cells:
+    - name: Body
+      frameIndex: 0
+      additiveSortOrder: 0
+      cellRect:
+        x: 112
+        y: 129
+        width: 46
+        height: 59
+      spriteId: 0406ee254122bdd4fa71e6b5e721cecc
+    linkedCells: []
+    parentIndex: -1
+  - layerIndex: 5
+    uuid:
+      value0: 1382371321
+      value1: 0
+      value2: 0
+      value3: 0
+    guid: 0
+    name: LeftLeg
+    layerFlags: 35
+    layerType: 1
+    blendMode: 0
+    cells: []
+    linkedCells: []
+    parentIndex: -1
+  - layerIndex: 6
+    uuid:
+      value0: 1492611999
+      value1: 0
+      value2: 0
+      value3: 0
+    guid: 0
+    name: Foot_L
+    layerFlags: 3
+    layerType: 0
+    blendMode: 0
+    cells:
+    - name: Foot_L
+      frameIndex: 0
+      additiveSortOrder: 0
+      cellRect:
+        x: 142
+        y: 44
+        width: 15
+        height: 38
+      spriteId: 94611c38c374f104aad70a171678bdcd
+    linkedCells: []
+    parentIndex: 5
+  - layerIndex: 8
+    uuid:
+      value0: 2121601987
+      value1: 0
+      value2: 0
+      value3: 0
+    guid: 0
+    name: Thigh_L
+    layerFlags: 3
+    layerType: 0
+    blendMode: 0
+    cells:
+    - name: Thigh_L
+      frameIndex: 0
+      additiveSortOrder: 0
+      cellRect:
+        x: 130
+        y: 102
+        width: 16
+        height: 36
+      spriteId: f4dd200d34da1cb49907c760627a8174
+    linkedCells: []
+    parentIndex: 5
+  - layerIndex: 7
+    uuid:
+      value0: 4004174013
+      value1: 0
+      value2: 0
+      value3: 0
+    guid: 0
+    name: Calf_L
+    layerFlags: 3
+    layerType: 0
+    blendMode: 0
+    cells:
+    - name: Calf_L
+      frameIndex: 0
+      additiveSortOrder: 0
+      cellRect:
+        x: 136
+        y: 75
+        width: 17
+        height: 35
+      spriteId: 265aae86eda34cc408ab1077ef69337c
+    linkedCells: []
+    parentIndex: 5
+  - layerIndex: 1
+    uuid:
+      value0: 97931404
+      value1: 0
+      value2: 0
+      value3: 0
+    guid: 0
+    name: RightLeg
+    layerFlags: 35
+    layerType: 1
+    blendMode: 0
+    cells: []
+    linkedCells: []
+    parentIndex: -1
+  - layerIndex: 2
+    uuid:
+      value0: 934023908
+      value1: 0
+      value2: 0
+      value3: 0
+    guid: 0
+    name: Foot_R
+    layerFlags: 3
+    layerType: 0
+    blendMode: 0
+    cells:
+    - name: Foot_R
+      frameIndex: 0
+      additiveSortOrder: 0
+      cellRect:
+        x: 106
+        y: 53
+        width: 19
+        height: 33
+      spriteId: 1ff419087f2997d459fc7c2569c48ea6
+    linkedCells: []
+    parentIndex: 1
+  - layerIndex: 4
+    uuid:
+      value0: 4106121414
+      value1: 0
+      value2: 0
+      value3: 0
+    guid: 0
+    name: Thigh_R
+    layerFlags: 3
+    layerType: 0
+    blendMode: 0
+    cells:
+    - name: Thigh_R
+      frameIndex: 0
+      additiveSortOrder: 0
+      cellRect:
+        x: 109
+        y: 106
+        width: 17
+        height: 29
+      spriteId: a855f6b461be6484086e56ca26ab0f9b
+    linkedCells: []
+    parentIndex: 1
+  - layerIndex: 3
+    uuid:
+      value0: 2811369206
+      value1: 0
+      value2: 0
+      value3: 0
+    guid: 0
+    name: Calf_R
+    layerFlags: 3
+    layerType: 0
+    blendMode: 0
+    cells:
+    - name: Calf_R
+      frameIndex: 0
+      additiveSortOrder: 0
+      cellRect:
+        x: 110
+        y: 73
+        width: 15
+        height: 37
+      spriteId: d8f5970131753874c808362f66daa8a1
+    linkedCells: []
+    parentIndex: 1
+  - layerIndex: 11
+    uuid:
+      value0: 1335317569
+      value1: 0
+      value2: 0
+      value3: 0
+    guid: 0
+    name: LeftArm
+    layerFlags: 35
+    layerType: 1
+    blendMode: 0
+    cells: []
+    linkedCells: []
+    parentIndex: -1
+  - layerIndex: 12
+    uuid:
+      value0: 1575506903
+      value1: 0
+      value2: 0
+      value3: 0
+    guid: 0
+    name: Arm_L
+    layerFlags: 3
+    layerType: 0
+    blendMode: 0
+    cells:
+    - name: Arm_L
+      frameIndex: 0
+      additiveSortOrder: 0
+      cellRect:
+        x: 149
+        y: 106
+        width: 23
+        height: 55
+      spriteId: a1a1cdf8bf3c935468e362e28af8d8db
+    linkedCells: []
+    parentIndex: 11
+  - layerIndex: 13
+    uuid:
+      value0: 1333083128
+      value1: 0
+      value2: 0
+      value3: 0
+    guid: 0
+    name: Sholder_L
+    layerFlags: 3
+    layerType: 0
+    blendMode: 0
+    cells:
+    - name: Sholder_L
+      frameIndex: 0
+      additiveSortOrder: 0
+      cellRect:
+        x: 145
+        y: 155
+        width: 10
+        height: 20
+      spriteId: 88a94f027a4f5d840aea9d0b2b7a5214
+    linkedCells: []
+    parentIndex: 11
+  - layerIndex: 9
+    uuid:
+      value0: 142002715
+      value1: 0
+      value2: 0
+      value3: 0
+    guid: 0
+    name: Shoulder_R
+    layerFlags: 3
+    layerType: 0
+    blendMode: 0
+    cells:
+    - name: Shoulder_R
+      frameIndex: 0
+      additiveSortOrder: 0
+      cellRect:
+        x: 113
+        y: 157
+        width: 10
+        height: 15
+      spriteId: 6eb3a33e160d32744bd829496693bd89
+    linkedCells: []
+    parentIndex: -1
+  - layerIndex: 14
+    uuid:
+      value0: 3604952835
+      value1: 0
+      value2: 0
+      value3: 0
+    guid: 0
+    name: Arm_R
+    layerFlags: 3
+    layerType: 0
+    blendMode: 0
+    cells:
+    - name: Arm_R
+      frameIndex: 0
+      additiveSortOrder: 0
+      cellRect:
+        x: 51
+        y: 35
+        width: 68
+        height: 129
+      spriteId: a46a90b63ea1d7a4ea57ca8d52460e66
+    linkedCells: []
+    parentIndex: -1
+  platformSettings:
+  - name: Default
+    overridden: 0
+    ignorePlatformSupport: 0
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 0
+    compressionQuality: 50
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    androidETC2FallbackOverride: 0
+  - name: DefaultTexturePlatform
+    overridden: 0
+    ignorePlatformSupport: 0
+    maxTextureSize: 16384
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 0
+    compressionQuality: 50
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    androidETC2FallbackOverride: 0
+  - name: Standalone
+    overridden: 0
+    ignorePlatformSupport: 0
+    maxTextureSize: 16384
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 0
+    compressionQuality: 50
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    androidETC2FallbackOverride: 0
+  - name: WebGL
+    overridden: 0
+    ignorePlatformSupport: 0
+    maxTextureSize: 16384
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 0
+    compressionQuality: 50
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    androidETC2FallbackOverride: 0
+  generatePhysicsShape: 0
+  secondarySpriteTextures: []
+  spritePackingTag: 
+  canvasSize: {x: 256, y: 256}
+  previousTextureSize: {x: 128, y: 256}
