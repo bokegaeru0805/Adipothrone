@@ -130,7 +130,7 @@ ScriptedImporter:
     rect:
       serializedVersion: 2
       x: 4
-      y: 208
+      y: 221
       width: 22
       height: 28
     spriteID: 1d68693929136cc408e67874947d5e52
@@ -141,7 +141,7 @@ ScriptedImporter:
     indices: 
     edges: []
     tessellationDetail: 0
-    uvTransform: {x: 4, y: 208}
+    uvTransform: {x: 4, y: 221}
   - name: Body
     originalName: 
     pivot: {x: 0.3478261, y: -2.1864407}
@@ -149,8 +149,8 @@ ScriptedImporter:
     border: {x: 0, y: 0, z: 0, w: 0}
     rect:
       serializedVersion: 2
-      x: 4
-      y: 141
+      x: 82
+      y: 84
       width: 46
       height: 59
     spriteID: 0406ee254122bdd4fa71e6b5e721cecc
@@ -161,7 +161,7 @@ ScriptedImporter:
     indices: 
     edges: []
     tessellationDetail: 0
-    uvTransform: {x: 4, y: 141}
+    uvTransform: {x: 82, y: 84}
   - name: Foot_L
     originalName: 
     pivot: {x: -0.9333334, y: -1.1578947}
@@ -169,8 +169,8 @@ ScriptedImporter:
     border: {x: 0, y: 0, z: 0, w: 0}
     rect:
       serializedVersion: 2
-      x: 89
-      y: 184
+      x: 156
+      y: 195
       width: 15
       height: 38
     spriteID: 94611c38c374f104aad70a171678bdcd
@@ -181,7 +181,7 @@ ScriptedImporter:
     indices: 
     edges: []
     tessellationDetail: 0
-    uvTransform: {x: 89, y: 184}
+    uvTransform: {x: 156, y: 195}
   - name: Thigh_L
     originalName: 
     pivot: {x: -0.125, y: -2.8333333}
@@ -189,8 +189,8 @@ ScriptedImporter:
     border: {x: 0, y: 0, z: 0, w: 0}
     rect:
       serializedVersion: 2
-      x: 34
-      y: 208
+      x: 156
+      y: 151
       width: 16
       height: 36
     spriteID: f4dd200d34da1cb49907c760627a8174
@@ -201,7 +201,7 @@ ScriptedImporter:
     indices: 
     edges: []
     tessellationDetail: 0
-    uvTransform: {x: 34, y: 208}
+    uvTransform: {x: 156, y: 151}
   - name: Calf_L
     originalName: 
     pivot: {x: -0.47058824, y: -2.142857}
@@ -209,8 +209,8 @@ ScriptedImporter:
     border: {x: 0, y: 0, z: 0, w: 0}
     rect:
       serializedVersion: 2
-      x: 89
-      y: 141
+      x: 156
+      y: 108
       width: 17
       height: 35
     spriteID: 265aae86eda34cc408ab1077ef69337c
@@ -221,7 +221,7 @@ ScriptedImporter:
     indices: 
     edges: []
     tessellationDetail: 0
-    uvTransform: {x: 89, y: 141}
+    uvTransform: {x: 156, y: 108}
   - name: Foot_R
     originalName: 
     pivot: {x: 1.1578947, y: -1.6060606}
@@ -229,8 +229,8 @@ ScriptedImporter:
     border: {x: 0, y: 0, z: 0, w: 0}
     rect:
       serializedVersion: 2
-      x: 58
-      y: 204
+      x: 156
+      y: 67
       width: 19
       height: 33
     spriteID: 1ff419087f2997d459fc7c2569c48ea6
@@ -241,7 +241,7 @@ ScriptedImporter:
     indices: 
     edges: []
     tessellationDetail: 0
-    uvTransform: {x: 58, y: 204}
+    uvTransform: {x: 156, y: 67}
   - name: Thigh_R
     originalName: 
     pivot: {x: 1.117647, y: -3.6551723}
@@ -249,8 +249,8 @@ ScriptedImporter:
     border: {x: 0, y: 0, z: 0, w: 0}
     rect:
       serializedVersion: 2
-      x: 103
-      y: 4
+      x: 34
+      y: 221
       width: 17
       height: 29
     spriteID: a855f6b461be6484086e56ca26ab0f9b
@@ -261,7 +261,7 @@ ScriptedImporter:
     indices: 
     edges: []
     tessellationDetail: 0
-    uvTransform: {x: 103, y: 4}
+    uvTransform: {x: 34, y: 221}
   - name: Calf_R
     originalName: 
     pivot: {x: 1.2, y: -1.972973}
@@ -269,7 +269,7 @@ ScriptedImporter:
     border: {x: 0, y: 0, z: 0, w: 0}
     rect:
       serializedVersion: 2
-      x: 80
+      x: 187
       y: 4
       width: 15
       height: 37
@@ -281,7 +281,7 @@ ScriptedImporter:
     indices: 
     edges: []
     tessellationDetail: 0
-    uvTransform: {x: 80, y: 4}
+    uvTransform: {x: 187, y: 4}
   - name: Arm_L
     originalName: 
     pivot: {x: -0.9130435, y: -1.9272727}
@@ -289,8 +289,8 @@ ScriptedImporter:
     border: {x: 0, y: 0, z: 0, w: 0}
     rect:
       serializedVersion: 2
-      x: 58
-      y: 141
+      x: 156
+      y: 4
       width: 23
       height: 55
     spriteID: a1a1cdf8bf3c935468e362e28af8d8db
@@ -301,7 +301,7 @@ ScriptedImporter:
     indices: 
     edges: []
     tessellationDetail: 0
-    uvTransform: {x: 58, y: 141}
+    uvTransform: {x: 156, y: 4}
   - name: Sholder_L
     originalName: 
     pivot: {x: -1.7, y: -7.75}
@@ -309,8 +309,8 @@ ScriptedImporter:
     border: {x: 0, y: 0, z: 0, w: 0}
     rect:
       serializedVersion: 2
-      x: 89
-      y: 230
+      x: 59
+      y: 221
       width: 10
       height: 20
     spriteID: 88a94f027a4f5d840aea9d0b2b7a5214
@@ -321,7 +321,7 @@ ScriptedImporter:
     indices: 
     edges: []
     tessellationDetail: 0
-    uvTransform: {x: 89, y: 230}
+    uvTransform: {x: 59, y: 221}
   - name: Shoulder_R
     originalName: 
     pivot: {x: 1.5, y: -10.466667}
@@ -329,8 +329,8 @@ ScriptedImporter:
     border: {x: 0, y: 0, z: 0, w: 0}
     rect:
       serializedVersion: 2
-      x: 114
-      y: 141
+      x: 136
+      y: 84
       width: 10
       height: 15
     spriteID: 6eb3a33e160d32744bd829496693bd89
@@ -341,18 +341,18 @@ ScriptedImporter:
     indices: 
     edges: []
     tessellationDetail: 0
-    uvTransform: {x: 114, y: 141}
+    uvTransform: {x: 136, y: 84}
   - name: Arm_R
     originalName: 
-    pivot: {x: 1.132353, y: -0.27131784}
+    pivot: {x: 1.1, y: -0.26923078}
     alignment: 9
     border: {x: 0, y: 0, z: 0, w: 0}
     rect:
       serializedVersion: 2
       x: 4
       y: 4
-      width: 68
-      height: 129
+      width: 70
+      height: 130
     spriteID: a46a90b63ea1d7a4ea57ca8d52460e66
     spriteBone: []
     spriteOutline: []
@@ -362,9 +362,169 @@ ScriptedImporter:
     edges: []
     tessellationDetail: 0
     uvTransform: {x: 4, y: 4}
+  - name: Wing_L4
+    originalName: 
+    pivot: {x: -1.625, y: -9.153847}
+    alignment: 9
+    border: {x: 0, y: 0, z: 0, w: 0}
+    rect:
+      serializedVersion: 2
+      x: 210
+      y: 45
+      width: 24
+      height: 13
+    spriteID: ea00ba17c1fc7b84c9dc1fce7aeb6b23
+    spriteBone: []
+    spriteOutline: []
+    vertices: []
+    spritePhysicsOutline: []
+    indices: 
+    edges: []
+    tessellationDetail: 0
+    uvTransform: {x: 210, y: 45}
+  - name: Wing_L3
+    originalName: 
+    pivot: {x: -0.99999994, y: -13.363637}
+    alignment: 9
+    border: {x: 0, y: 0, z: 0, w: 0}
+    rect:
+      serializedVersion: 2
+      x: 210
+      y: 4
+      width: 41
+      height: 11
+    spriteID: d850c2e72099a014cad775e4d30bc6a5
+    spriteBone: []
+    spriteOutline: []
+    vertices: []
+    spritePhysicsOutline: []
+    indices: 
+    edges: []
+    tessellationDetail: 0
+    uvTransform: {x: 210, y: 4}
+  - name: Wing_L2
+    originalName: 
+    pivot: {x: -0.754717, y: -4.8857145}
+    alignment: 9
+    border: {x: 0, y: 0, z: 0, w: 0}
+    rect:
+      serializedVersion: 2
+      x: 82
+      y: 196
+      width: 53
+      height: 35
+    spriteID: 91e3cc147260eb04499ca422ba403001
+    spriteBone: []
+    spriteOutline: []
+    vertices: []
+    spritePhysicsOutline: []
+    indices: 
+    edges: []
+    tessellationDetail: 0
+    uvTransform: {x: 82, y: 196}
+  - name: Wing_L1
+    originalName: 
+    pivot: {x: -0.469697, y: -2.5555556}
+    alignment: 9
+    border: {x: 0, y: 0, z: 0, w: 0}
+    rect:
+      serializedVersion: 2
+      x: 82
+      y: 4
+      width: 66
+      height: 72
+    spriteID: 378c4f74a1590ac43a77d419bf5303c0
+    spriteBone: []
+    spriteOutline: []
+    vertices: []
+    spritePhysicsOutline: []
+    indices: 
+    edges: []
+    tessellationDetail: 0
+    uvTransform: {x: 82, y: 4}
+  - name: Wing_R4
+    originalName: 
+    pivot: {x: 2.2307694, y: -8.642858}
+    alignment: 9
+    border: {x: 0, y: 0, z: 0, w: 0}
+    rect:
+      serializedVersion: 2
+      x: 210
+      y: 23
+      width: 26
+      height: 14
+    spriteID: 6f7f0145bdad71346a1f57385d37c683
+    spriteBone: []
+    spriteOutline: []
+    vertices: []
+    spritePhysicsOutline: []
+    indices: 
+    edges: []
+    tessellationDetail: 0
+    uvTransform: {x: 210, y: 23}
+  - name: Wing_R3
+    originalName: 
+    pivot: {x: 1.8333334, y: -12.333334}
+    alignment: 9
+    border: {x: 0, y: 0, z: 0, w: 0}
+    rect:
+      serializedVersion: 2
+      x: 82
+      y: 239
+      width: 42
+      height: 12
+    spriteID: b23769fe531ed294085ba4ec2df45f2f
+    spriteBone: []
+    spriteOutline: []
+    vertices: []
+    spritePhysicsOutline: []
+    indices: 
+    edges: []
+    tessellationDetail: 0
+    uvTransform: {x: 82, y: 239}
+  - name: Wing_R2
+    originalName: 
+    pivot: {x: 1.4909091, y: -4.5405407}
+    alignment: 9
+    border: {x: 0, y: 0, z: 0, w: 0}
+    rect:
+      serializedVersion: 2
+      x: 82
+      y: 151
+      width: 55
+      height: 37
+    spriteID: df48f8fac6d5a71409ecedb707cb2875
+    spriteBone: []
+    spriteOutline: []
+    vertices: []
+    spritePhysicsOutline: []
+    indices: 
+    edges: []
+    tessellationDetail: 0
+    uvTransform: {x: 82, y: 151}
+  - name: Wing_R1
+    originalName: 
+    pivot: {x: 1.2537314, y: -2.4788733}
+    alignment: 9
+    border: {x: 0, y: 0, z: 0, w: 0}
+    rect:
+      serializedVersion: 2
+      x: 4
+      y: 142
+      width: 67
+      height: 71
+    spriteID: 2baa536b0134df9438b6fda87fb4cde4
+    spriteBone: []
+    spriteOutline: []
+    vertices: []
+    spritePhysicsOutline: []
+    indices: 
+    edges: []
+    tessellationDetail: 0
+    uvTransform: {x: 4, y: 142}
   spriteSheetImportData: []
   asepriteLayers:
-  - layerIndex: 15
+  - layerIndex: 20
     uuid:
       value0: 4136223136
       value1: 0
@@ -387,7 +547,7 @@ ScriptedImporter:
       spriteId: 1d68693929136cc408e67874947d5e52
     linkedCells: []
     parentIndex: -1
-  - layerIndex: 10
+  - layerIndex: 19
     uuid:
       value0: 3383614466
       value1: 0
@@ -410,7 +570,7 @@ ScriptedImporter:
       spriteId: 0406ee254122bdd4fa71e6b5e721cecc
     linkedCells: []
     parentIndex: -1
-  - layerIndex: 5
+  - layerIndex: 14
     uuid:
       value0: 1382371321
       value1: 0
@@ -424,7 +584,7 @@ ScriptedImporter:
     cells: []
     linkedCells: []
     parentIndex: -1
-  - layerIndex: 6
+  - layerIndex: 15
     uuid:
       value0: 1492611999
       value1: 0
@@ -446,8 +606,8 @@ ScriptedImporter:
         height: 38
       spriteId: 94611c38c374f104aad70a171678bdcd
     linkedCells: []
-    parentIndex: 5
-  - layerIndex: 8
+    parentIndex: 14
+  - layerIndex: 17
     uuid:
       value0: 2121601987
       value1: 0
@@ -469,8 +629,8 @@ ScriptedImporter:
         height: 36
       spriteId: f4dd200d34da1cb49907c760627a8174
     linkedCells: []
-    parentIndex: 5
-  - layerIndex: 7
+    parentIndex: 14
+  - layerIndex: 16
     uuid:
       value0: 4004174013
       value1: 0
@@ -492,8 +652,8 @@ ScriptedImporter:
         height: 35
       spriteId: 265aae86eda34cc408ab1077ef69337c
     linkedCells: []
-    parentIndex: 5
-  - layerIndex: 1
+    parentIndex: 14
+  - layerIndex: 10
     uuid:
       value0: 97931404
       value1: 0
@@ -507,7 +667,7 @@ ScriptedImporter:
     cells: []
     linkedCells: []
     parentIndex: -1
-  - layerIndex: 2
+  - layerIndex: 11
     uuid:
       value0: 934023908
       value1: 0
@@ -529,8 +689,8 @@ ScriptedImporter:
         height: 33
       spriteId: 1ff419087f2997d459fc7c2569c48ea6
     linkedCells: []
-    parentIndex: 1
-  - layerIndex: 4
+    parentIndex: 10
+  - layerIndex: 13
     uuid:
       value0: 4106121414
       value1: 0
@@ -552,8 +712,8 @@ ScriptedImporter:
         height: 29
       spriteId: a855f6b461be6484086e56ca26ab0f9b
     linkedCells: []
-    parentIndex: 1
-  - layerIndex: 3
+    parentIndex: 10
+  - layerIndex: 12
     uuid:
       value0: 2811369206
       value1: 0
@@ -575,8 +735,8 @@ ScriptedImporter:
         height: 37
       spriteId: d8f5970131753874c808362f66daa8a1
     linkedCells: []
-    parentIndex: 1
-  - layerIndex: 11
+    parentIndex: 10
+  - layerIndex: 21
     uuid:
       value0: 1335317569
       value1: 0
@@ -590,7 +750,7 @@ ScriptedImporter:
     cells: []
     linkedCells: []
     parentIndex: -1
-  - layerIndex: 12
+  - layerIndex: 22
     uuid:
       value0: 1575506903
       value1: 0
@@ -612,8 +772,8 @@ ScriptedImporter:
         height: 55
       spriteId: a1a1cdf8bf3c935468e362e28af8d8db
     linkedCells: []
-    parentIndex: 11
-  - layerIndex: 13
+    parentIndex: 21
+  - layerIndex: 23
     uuid:
       value0: 1333083128
       value1: 0
@@ -635,8 +795,8 @@ ScriptedImporter:
         height: 20
       spriteId: 88a94f027a4f5d840aea9d0b2b7a5214
     linkedCells: []
-    parentIndex: 11
-  - layerIndex: 9
+    parentIndex: 21
+  - layerIndex: 18
     uuid:
       value0: 142002715
       value1: 0
@@ -659,7 +819,7 @@ ScriptedImporter:
       spriteId: 6eb3a33e160d32744bd829496693bd89
     linkedCells: []
     parentIndex: -1
-  - layerIndex: 14
+  - layerIndex: 24
     uuid:
       value0: 3604952835
       value1: 0
@@ -677,11 +837,209 @@ ScriptedImporter:
       cellRect:
         x: 51
         y: 35
-        width: 68
-        height: 129
+        width: 70
+        height: 130
       spriteId: a46a90b63ea1d7a4ea57ca8d52460e66
     linkedCells: []
     parentIndex: -1
+  - layerIndex: 1
+    uuid:
+      value0: 2294720851
+      value1: 0
+      value2: 0
+      value3: 0
+    guid: 0
+    name: Wing
+    layerFlags: 35
+    layerType: 1
+    blendMode: 0
+    cells: []
+    linkedCells: []
+    parentIndex: -1
+  - layerIndex: 2
+    uuid:
+      value0: 3591947566
+      value1: 0
+      value2: 0
+      value3: 0
+    guid: 0
+    name: Wing_L4
+    layerFlags: 1
+    layerType: 0
+    blendMode: 0
+    cells:
+    - name: Wing_L4
+      frameIndex: 0
+      additiveSortOrder: 0
+      cellRect:
+        x: 167
+        y: 119
+        width: 24
+        height: 13
+      spriteId: ea00ba17c1fc7b84c9dc1fce7aeb6b23
+    linkedCells: []
+    parentIndex: 1
+  - layerIndex: 3
+    uuid:
+      value0: 2832432679
+      value1: 0
+      value2: 0
+      value3: 0
+    guid: 0
+    name: Wing_L3
+    layerFlags: 1
+    layerType: 0
+    blendMode: 0
+    cells:
+    - name: Wing_L3
+      frameIndex: 0
+      additiveSortOrder: 0
+      cellRect:
+        x: 169
+        y: 147
+        width: 41
+        height: 11
+      spriteId: d850c2e72099a014cad775e4d30bc6a5
+    linkedCells: []
+    parentIndex: 1
+  - layerIndex: 4
+    uuid:
+      value0: 103549324
+      value1: 0
+      value2: 0
+      value3: 0
+    guid: 0
+    name: Wing_L2
+    layerFlags: 1
+    layerType: 0
+    blendMode: 0
+    cells:
+    - name: Wing_L2
+      frameIndex: 0
+      additiveSortOrder: 0
+      cellRect:
+        x: 168
+        y: 171
+        width: 53
+        height: 35
+      spriteId: 91e3cc147260eb04499ca422ba403001
+    linkedCells: []
+    parentIndex: 1
+  - layerIndex: 5
+    uuid:
+      value0: 3995232093
+      value1: 0
+      value2: 0
+      value3: 0
+    guid: 0
+    name: Wing_L1
+    layerFlags: 1
+    layerType: 0
+    blendMode: 0
+    cells:
+    - name: Wing_L1
+      frameIndex: 0
+      additiveSortOrder: 0
+      cellRect:
+        x: 159
+        y: 184
+        width: 66
+        height: 72
+      spriteId: 378c4f74a1590ac43a77d419bf5303c0
+    linkedCells: []
+    parentIndex: 1
+  - layerIndex: 6
+    uuid:
+      value0: 3591947564
+      value1: 0
+      value2: 0
+      value3: 0
+    guid: 0
+    name: Wing_R4
+    layerFlags: 1
+    layerType: 0
+    blendMode: 0
+    cells:
+    - name: Wing_R4
+      frameIndex: 0
+      additiveSortOrder: 0
+      cellRect:
+        x: 70
+        y: 121
+        width: 26
+        height: 14
+      spriteId: 6f7f0145bdad71346a1f57385d37c683
+    linkedCells: []
+    parentIndex: 1
+  - layerIndex: 7
+    uuid:
+      value0: 2832432677
+      value1: 0
+      value2: 0
+      value3: 0
+    guid: 0
+    name: Wing_R3
+    layerFlags: 1
+    layerType: 0
+    blendMode: 0
+    cells:
+    - name: Wing_R3
+      frameIndex: 0
+      additiveSortOrder: 0
+      cellRect:
+        x: 51
+        y: 148
+        width: 42
+        height: 12
+      spriteId: b23769fe531ed294085ba4ec2df45f2f
+    linkedCells: []
+    parentIndex: 1
+  - layerIndex: 8
+    uuid:
+      value0: 103549322
+      value1: 0
+      value2: 0
+      value3: 0
+    guid: 0
+    name: Wing_R2
+    layerFlags: 3
+    layerType: 0
+    blendMode: 0
+    cells:
+    - name: Wing_R2
+      frameIndex: 0
+      additiveSortOrder: 0
+      cellRect:
+        x: 46
+        y: 168
+        width: 55
+        height: 37
+      spriteId: df48f8fac6d5a71409ecedb707cb2875
+    linkedCells: []
+    parentIndex: 1
+  - layerIndex: 9
+    uuid:
+      value0: 3995232091
+      value1: 0
+      value2: 0
+      value3: 0
+    guid: 0
+    name: Wing_R1
+    layerFlags: 1
+    layerType: 0
+    blendMode: 0
+    cells:
+    - name: Wing_R1
+      frameIndex: 0
+      additiveSortOrder: 0
+      cellRect:
+        x: 44
+        y: 176
+        width: 67
+        height: 71
+      spriteId: 2baa536b0134df9438b6fda87fb4cde4
+    linkedCells: []
+    parentIndex: 1
   platformSettings:
   - name: Default
     overridden: 0
@@ -735,4 +1093,4 @@ ScriptedImporter:
   secondarySpriteTextures: []
   spritePackingTag: 
   canvasSize: {x: 256, y: 256}
-  previousTextureSize: {x: 128, y: 256}
+  previousTextureSize: {x: 256, y: 256}

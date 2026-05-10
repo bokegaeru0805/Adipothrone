@@ -233,6 +233,7 @@ public static class GameConstants
     public const string SCENE_NAME_CHAPTER_1 = "Chapter1Scene"; // 第1章のシーン名
     public const string SCENE_NAME_DESERT = "DesertScene"; // 砂漠エリアのシーン名
     public const string SCENE_NAME_ROYAL_CAPITAL = "RoyalCapitalScene"; // 王都のシーンの名前
+    public const string SCENE_NAME_SNOW = "SnowScene"; // 雪エリアのシーン名
     public const string SCENE_NAME_DEBUG = "DebugScene"; // デバッグ用シーンの名前
 
     // --- プールタグ名 ---
