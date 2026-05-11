@@ -24,9 +24,18 @@ public class EnvironmentArea : MonoBehaviour
     [Tooltip("風に向かって歩く際の抵抗係数。\n1.0に近いほど、向かい風で強く減速します。")]
     [Range(0.0f, 1.0f)]
     public float WindResistanceFactor = 0.5f;
+
     [Header("落下制限")]
-    [Tooltip("このエリア内での最大落下速度（絶対値）。\n0の場合は制限なし。\n例: 2.0 にすると、秒速2.0以上で落下しなくなります（ゆっくり落下）。")]
+    [Tooltip(
+        "このエリア内での最大落下速度（絶対値）。\n0の場合は制限なし。\n例: 2.0 にすると、秒速2.0以上で落下しなくなります（ゆっくり落下）。"
+    )]
     public float MaxFallSpeed = 0f;
+
+    [Header("氷の床（滑る環境）設定")]
+    [Tooltip(
+        "床での滑りにくさ（加速度）。\n0の場合は滑りません（通常の即時移動）。\n値が小さいほど滑りやすく（加速・減速に時間がかかる）なります。"
+    )]
+    public float SlipAcceleration = 0f;
 
     /// <summary>
     /// プレイヤーがエリアに入ったときの処理

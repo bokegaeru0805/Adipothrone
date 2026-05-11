@@ -92,6 +92,7 @@ public class Heroin_move : MonoBehaviour
     private bool isDead = false; // プレイヤーが死亡しているかどうかのマスターフラグ
     private Vector2 currentCarrierVelocity = Vector2.zero; // 現在のリフト速度
     private bool isOnCarrier = false; // リフトに乗っているかどうかのフラグ
+    private float currentHorizontalVelocity = 0f; // 現在の自力移動速度（滑る床の慣性計算用）
     #endregion
 
     #region Component References
@@ -484,6 +485,7 @@ public class Heroin_move : MonoBehaviour
         float globalSpeedMult = 1.0f; // 地形による速度倍率
         Vector2 totalWindVelocity = Vector2.zero; // 風の合成ベクトル
         float restrictFallSpeed = -1f; // 落下制限（-1は未設定を表す）
+        float currentSlipAcceleration = 0f; // 滑る床の加速度（0なら滑らない）
 
         for (int i = 0; i < activeEnvironments.Count; i++)
         {
@@ -505,26 +507,55 @@ public class Heroin_move : MonoBehaviour
                     restrictFallSpeed = area.MaxFallSpeed;
                 }
             }
+
+            // 滑る床の判定（最も加速度が小さい＝一番滑るものを優先して採用する）
+            if (area.SlipAcceleration > 0f)
+            {
+                if (
+                    currentSlipAcceleration == 0f
+                    || area.SlipAcceleration < currentSlipAcceleration
+                )
+                {
+                    currentSlipAcceleration = area.SlipAcceleration;
+                }
+            }
         }
 
         // --- 2. プレイヤー入力に基づく基本速度の計算 (X軸) ---
-        float baseInputVelocityX = 0f;
+        float targetVelocityX = 0f; // 目標とする速度
 
         if (!isAttacking)
         {
             // 通常時: 入力速度(vx) * 環境倍率
-            baseInputVelocityX = vx * globalSpeedMult;
+            targetVelocityX = vx * globalSpeedMult;
         }
         else
         {
             // 攻撃中: 減速適用 * 環境倍率
-            baseInputVelocityX = (vx / attackMoveSlowRate) * globalSpeedMult;
+            targetVelocityX = (vx / attackMoveSlowRate) * globalSpeedMult;
+        }
+
+        // 滑る環境（接地中のみ）の慣性計算
+        if (isGrounded && currentSlipAcceleration > 0f)
+        {
+            // 現在の速度から目標速度へ、指定した加速度で徐々に近づける
+            currentHorizontalVelocity = Mathf.MoveTowards(
+                currentHorizontalVelocity,
+                targetVelocityX,
+                currentSlipAcceleration * Time.fixedDeltaTime
+            );
+        }
+        else
+        {
+            // 滑らない場合（または空中）は即座に目標速度を適用する
+            currentHorizontalVelocity = targetVelocityX;
         }
 
         // --- 3. 最終速度の合成 ---
 
-        // [X軸] 入力 + 風(X) + リフト慣性
-        float finalVelocityX = baseInputVelocityX + totalWindVelocity.x + currentCarrierVelocity.x;
+        // [X軸] 自力移動(慣性込み) + 風(X) + リフト慣性
+        float finalVelocityX =
+            currentHorizontalVelocity + totalWindVelocity.x + currentCarrierVelocity.x;
 
         // [Y軸] 現在の物理挙動(重力落下など) + 風(Y)
         // ※風(Y)は、重力とは別に「外力」として加算します（上昇気流ならプラス、吹き下ろしならマイナス）
