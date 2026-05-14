@@ -3,142 +3,157 @@ using NaughtyAttributes;
 using UnityEngine;
 
 /// <summary>
-/// BurstEffect_Master オブジェクトにアタッチします。
-/// 2つのエフェクトグループ（CoreEffects, ParticleEffects）の
-/// 大きさ、再生/停止をまとめて制御します。
+/// エフェクトグループ（Core/Particle）のスケール、再生、停止を一括管理するクラス。
+/// Animator等によるオブジェクトのアクティブ状態の切り替えに連動した自動再生に対応します。
 /// </summary>
 public class BurstEffect_Master : MonoBehaviour
 {
-    [Header("エフェクトグループのTransform")]
-    [SerializeField]
-    [Tooltip("CoreEffects オブジェクトのTransformをここにドラッグ＆ドロップ")]
+    [Header("再生設定")]
+    [
+        SerializeField,
+        Tooltip("オブジェクトが有効（Active）になった瞬間に自動でエフェクトを再生するかどうか")
+    ]
+    private bool playOnEnable = false;
+
+    [Header("エフェクトグループの参照")]
+    [SerializeField, Tooltip("中心となるエフェクトグループのTransform")]
     private Transform coreEffectsGroup;
 
-    [SerializeField]
-    [Tooltip("ParticleEffects オブジェクトのTransformをここにドラッグ＆ドロップ")]
+    [SerializeField, Tooltip("周囲に飛び散るパーティクルグループのTransform")]
     private Transform particleEffectsGroup;
 
-    [Header("Particleエフェクト速度設定")]
-    [SerializeField]
-    [Tooltip("速度変更（SetParticleSpeedMultiplier）を「適用しない」例外エフェクト")]
+    [Header("詳細設定")]
+    [
+        SerializeField,
+        Tooltip("速度変更（SetParticleSpeedMultiplier）を適用しない例外エフェクトのリスト")
+    ]
     private List<ParticleSystem> speedChangeExceptions;
 
-    [Header("スケール設定（編集モード用）")]
-    [Space]
-    [SerializeField, Tooltip("Coreグループのスケール"), OnValueChanged(nameof(UpdateScaleInEditor))]
+    [Header("エディタ用プレビュー設定")]
+    [
+        SerializeField,
+        Tooltip("Coreグループの表示スケール"),
+        OnValueChanged(nameof(UpdateScaleInEditor))
+    ]
     private float coreScale = 1.0f;
 
     [
         SerializeField,
-        Tooltip("Particleグループのスケール"),
+        Tooltip("Particleグループの速度倍率"),
         OnValueChanged(nameof(UpdateScaleInEditor))
     ]
     private float particleScale = 1.0f;
 
-    // キャッシュ（保存）した全てのパーティクルシステム
+    /// <summary>
+    /// 管理対象の全パーティクルシステムのキャッシュリスト
+    /// </summary>
     private List<ParticleSystem> allParticleSystems;
 
     /// <summary>
-    /// particleEffectsGroup内のPSと、その元の速度(Min, Max)を保存する辞書
+    /// 各パーティクルシステムの初期速度（Min, Max）を保持する辞書
     /// </summary>
     private Dictionary<ParticleSystem, Vector2> particleSystemOriginalSpeeds;
 
-    // 初期化が完了したかどうかのフラグ
+    /// <summary>
+    /// 初期化が完了しているかどうかのフラグ
+    /// </summary>
     private bool isInitialized = false;
 
-    void Awake()
+    private void Awake()
     {
         Initialize();
     }
 
     /// <summary>
-    /// 初期化処理。子階層から全てのParticleSystemを取得しキャッシュします。
+    /// オブジェクトが有効になった際のコールバック
+    /// playOnEnableが有効な場合、エフェクトを再生します
     /// </summary>
-    private void Initialize()
+    private void OnEnable()
     {
-        // 既に初期化済みの場合は何もしない
-        if (isInitialized)
+        if (playOnEnable)
         {
-            return;
+            PlayEffect();
         }
+    }
 
-        // 1. メインのリストと辞書を「空」にする
+    /// <summary>
+    /// 子階層から全てのParticleSystemを取得し、初期状態をキャッシュします
+    /// </summary>
+    public void Initialize()
+    {
+        if (isInitialized)
+            return;
+
         allParticleSystems = new List<ParticleSystem>();
         particleSystemOriginalSpeeds = new Dictionary<ParticleSystem, Vector2>();
 
-        // 2. CoreEffectsGroup の処理
+        // CoreEffectsGroup配下の取得
         if (coreEffectsGroup != null)
         {
-            List<ParticleSystem> coreTempList = new List<ParticleSystem>();
-            coreEffectsGroup.GetComponentsInChildren<ParticleSystem>(true, coreTempList);
-            foreach (var ps in coreTempList)
-            {
-                allParticleSystems.Add(ps);
-            }
+            var coreTemp = new List<ParticleSystem>();
+            coreEffectsGroup.GetComponentsInChildren(true, coreTemp);
+            allParticleSystems.AddRange(coreTemp);
         }
         else
         {
-            Debug.LogError("CoreEffectsGroup が設定されていません。", this);
+            Debug.LogWarning("CoreEffectsGroup が未設定です。", this);
         }
 
-        // 3. ParticleEffectsGroup の処理
+        // ParticleEffectsGroup配下の取得と速度データの保存
         if (particleEffectsGroup != null)
         {
-            List<ParticleSystem> particleTempList = new List<ParticleSystem>();
-            particleEffectsGroup.GetComponentsInChildren<ParticleSystem>(true, particleTempList);
+            var particleTemp = new List<ParticleSystem>();
+            particleEffectsGroup.GetComponentsInChildren(true, particleTemp);
 
-            foreach (var ps in particleTempList)
+            foreach (var ps in particleTemp)
             {
-                // (A) 全体リストに追加
                 allParticleSystems.Add(ps);
 
                 var main = ps.main;
-                // 元のMin/Max速度を取得
-                float minSpeed = main.startSpeed.constantMin;
-                float maxSpeed = main.startSpeed.constantMax;
-
-                // 辞書にPS本体と、Vector2(min, max)の形で元の速度を保存
                 if (!particleSystemOriginalSpeeds.ContainsKey(ps))
                 {
-                    particleSystemOriginalSpeeds.Add(ps, new Vector2(minSpeed, maxSpeed));
+                    particleSystemOriginalSpeeds.Add(
+                        ps,
+                        new Vector2(main.startSpeed.constantMin, main.startSpeed.constantMax)
+                    );
                 }
             }
         }
         else
         {
-            Debug.LogError("ParticleEffectsGroup が設定されていません。", this);
-        }
-
-        // 4. 最終結果の確認
-        if (allParticleSystems.Count == 0)
-        {
-            Debug.LogWarning("制御対象のParticleSystemが一つも見つかりませんでした。", this);
+            Debug.LogWarning("ParticleEffectsGroup が未設定です。", this);
         }
 
         isInitialized = true;
     }
 
-    // --- 外部から実行する Public メソッド ---
-
+    /// <summary>
+    /// 全てのエフェクトを最初から再生します
+    /// </summary>
     public void PlayEffect()
     {
         if (!isInitialized)
-        {
             Initialize();
-        }
+
         foreach (var ps in allParticleSystems)
         {
             if (ps == null)
                 continue;
+
+            // 既存の粒子を消去してから再生を開始
             ps.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
             ps.Play();
         }
     }
 
+    /// <summary>
+    /// 全てのエフェクトを停止します
+    /// </summary>
     public void StopEffect()
     {
         if (!isInitialized)
             return;
+
         foreach (var ps in allParticleSystems)
         {
             if (ps == null)
@@ -147,79 +162,70 @@ public class BurstEffect_Master : MonoBehaviour
         }
     }
 
-    // --- 大きさを制御するメソッド ---
-
+    /// <summary>
+    /// Coreグループ全体のローカルスケールを設定します
+    /// </summary>
+    /// <param name="scale">設定するスケール値</param>
     public void SetCoreScale(float scale)
     {
         if (coreEffectsGroup != null)
         {
-            coreEffectsGroup.localScale = new Vector3(scale, scale, scale);
+            coreEffectsGroup.localScale = Vector3.one * scale;
         }
     }
 
     /// <summary>
-    /// ParticleEffects グループ内のエフェクトの初速（Start Speed）に倍率をかけます。
+    /// Particleグループ内のエフェクトの初速（またはサイズ/バースト数）に倍率を適用します
     /// </summary>
-    /// <param name="multiplier">元の速度にかける倍率 (例: 1.0 = 100%, 2.5 = 250%)</param>
+    /// <param name="multiplier">適用する倍率</param>
     public void SetParticleSpeedMultiplier(float multiplier)
     {
         if (!isInitialized)
-        {
-            Debug.LogWarning(
-                "Initialize() が完了する前に SetParticleSpeedMultiplier が呼ばれました。"
-            );
-            Initialize(); // 安全のため初期化
-        }
+            Initialize();
 
-        // 保存しておいた「particleEffectsGroup」のエフェクトだけをループ
         foreach (var pair in particleSystemOriginalSpeeds)
         {
             ParticleSystem ps = pair.Key;
-            Vector2 originalSpeeds = pair.Value; // (originalMin, originalMax)
+            Vector2 originalSpeeds = pair.Value;
 
             if (ps == null)
                 continue;
 
-            // このPSが例外リストに含まれているかチェック
+            // 例外リストに含まれるかどうかで処理を分岐
             if (speedChangeExceptions != null && speedChangeExceptions.Contains(ps))
             {
-                // 例外リストに含まれている場合は、バースト数を調整する例外処理
-                ParticleSystem.Burst burst = ps.emission.GetBurst(0);
-                burst.count = 60 * multiplier;
-                ps.emission.SetBurst(0, burst);
+                // バースト数の調整
+                var emission = ps.emission;
+                if (emission.burstCount > 0)
+                {
+                    var burst = emission.GetBurst(0);
+                    burst.count = 60 * multiplier;
+                    emission.SetBurst(0, burst);
+                }
 
-                // サイズを設定
+                // サイズの調整
                 var main = ps.main;
-                var sizeCurve = main.startSize;
-
-                sizeCurve.mode = ParticleSystemCurveMode.TwoConstants;
-
-                // 計算された倍率(effectiveMultiplier)でサイズを設定
-                sizeCurve.constantMin = 0.04f * multiplier;
-                sizeCurve.constantMax = 0.06f * multiplier;
-
-                main.startSize = sizeCurve;
+                var size = main.startSize;
+                size.mode = ParticleSystemCurveMode.TwoConstants;
+                size.constantMin = 0.04f * multiplier;
+                size.constantMax = 0.06f * multiplier;
+                main.startSize = size;
             }
             else
             {
-                // 速度を設定
+                // 通常の速度調整
                 var main = ps.main;
-                var speedCurve = main.startSpeed;
-
-                speedCurve.mode = ParticleSystemCurveMode.TwoConstants;
-
-                // 計算された倍率(effectiveMultiplier)で速度を設定
-                speedCurve.constantMin = originalSpeeds.x * multiplier;
-                speedCurve.constantMax = originalSpeeds.y * multiplier;
-
-                main.startSpeed = speedCurve;
+                var speed = main.startSpeed;
+                speed.mode = ParticleSystemCurveMode.TwoConstants;
+                speed.constantMin = originalSpeeds.x * multiplier;
+                speed.constantMax = originalSpeeds.y * multiplier;
+                main.startSpeed = speed;
             }
         }
     }
 
     /// <summary>
-    /// エディタの非再生中（編集モード）でスケールを更新します。
-    /// coreScale と particleScale の値が変更されたときに呼び出されます。
+    /// インスペクター上の値が変更された際、非再生モードでもプレビューを更新します
     /// </summary>
     private void UpdateScaleInEditor()
     {
