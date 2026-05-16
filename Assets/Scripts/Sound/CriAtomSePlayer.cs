@@ -19,6 +19,7 @@ namespace CriWare.Assets
      * </para>
      * </remarks>
      */
+    [Icon("Assets/Sprites/SystemIcons/SePlayerIcon.png")]
     public class CriAtomSePlayer : CriAtomSourceBase
     {
         [SerializeField]

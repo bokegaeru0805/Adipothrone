@@ -58,6 +58,10 @@ namespace MyGame.CameraControl
         private float originalXDamping; // 元のDamping設定保存用
         private float originalYDamping; // 元のDamping設定保存用
         private bool isDebugScene = false; // 開発用フラグ：デバッグシーンかどうか
+
+        // --- エリアロック制御用変数 ---
+        private GameObject areaLockTargetObject; // エリアロック時の追従用ダミーオブジェクト
+        private bool isAreaLocked = false; // エリアロック中かどうかのフラグ
         #region Unity Methods
         private void Awake()
         {
@@ -115,6 +119,9 @@ namespace MyGame.CameraControl
 
                     timelineTargetObject = new GameObject("TimelineCameraTarget");
                     timelineTargetObject.transform.SetParent(this.transform);
+
+                    areaLockTargetObject = new GameObject("AreaLockCameraTarget");
+                    areaLockTargetObject.transform.SetParent(this.transform);
 
 #if UNITY_EDITOR
                     if (isDebugScene)
@@ -845,6 +852,61 @@ namespace MyGame.CameraControl
                 }
             }
         }
+        #endregion
+
+        #region Area Lock Control
+
+        /// <summary>
+        /// カメラの追従対象をダミーオブジェクトに変更し、指定した座標（エリア中心）に完全に固定します。
+        /// </summary>
+        public void SetAreaCameraLock(bool isLocked, Vector2 targetPosition)
+        {
+            if (virtualCamera == null || framing == null || areaLockTargetObject == null)
+                return;
+
+            // Timelineモードがアクティブな場合は、演出を優先するためロック処理を行わない
+            if (IsTimelineControlMode)
+                return;
+
+            isAreaLocked = isLocked;
+
+            if (isLocked)
+            {
+                // 現在のターゲットがダミーオブジェクトでなければ、元のターゲット（プレイヤー）として保存
+                if (
+                    virtualCamera.Follow != areaLockTargetObject.transform
+                    && virtualCamera.Follow != timelineTargetObject.transform
+                )
+                {
+                    originalFollowTarget = virtualCamera.Follow;
+                }
+
+                // 追従対象をエリアロック用ダミーに切り替え
+                virtualCamera.Follow = areaLockTargetObject.transform;
+
+                // FollowOffset（カメラと対象の距離設定）の影響を逆算して打ち消し、
+                // 画面の中央がピタリと targetPosition に合うようにダミーの位置を調整する
+                Vector3 offset = framing.m_FollowOffset;
+                areaLockTargetObject.transform.position = new Vector3(
+                    targetPosition.x - offset.x,
+                    targetPosition.y - offset.y,
+                    cam.transform.position.z
+                );
+            }
+            else
+            {
+                // ロック解除時、Timelineモードでなければ元のターゲット（プレイヤー）に戻す
+                if (originalFollowTarget != null && !IsTimelineControlMode)
+                {
+                    virtualCamera.Follow = originalFollowTarget;
+                }
+
+                // ※ ここに virtualCamera.PreviousStateIsValid = false; を入れると
+                // ロック解除時に一瞬でプレイヤーにカメラがワープして戻ります。
+                // ボス部屋の解除などで「カメラをゆっくりプレイヤーに戻したい」場合は不要なため省いています。
+            }
+        }
+
         #endregion
     }
 }

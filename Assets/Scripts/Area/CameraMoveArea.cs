@@ -148,6 +148,10 @@ public class CameraMoveArea : MonoBehaviour
     private List<ConditionalBgm> conditionalBgms = new List<ConditionalBgm>();
 
     [Header("カメラ個別設定")]
+    [Tooltip("このエリア内に入った時、カメラをエリア（コライダー）の中央に完全に固定するかどうか")]
+    [SerializeField]
+    private bool lockCameraToCenter = false;
+
     [Tooltip("このエリアに入った時、カメラのサイズやオフセットを変更するかどうか")]
     [SerializeField]
     private bool overrideCameraSettings = false;
@@ -318,6 +322,12 @@ public class CameraMoveArea : MonoBehaviour
         // 各種設定の適用
         ApplyAreaSettings();
 
+        // カメラの完全固定フラグがONなら、コライダーの中心座標を渡して固定する
+        if (lockCameraToCenter && CameraManager.instance != null)
+        {
+            CameraManager.instance.SetAreaCameraLock(true, areaCollider.bounds.center);
+        }
+
         // 背景移動開始
         if (backgroundMoveCoroutine == null)
         {
@@ -384,6 +394,12 @@ public class CameraMoveArea : MonoBehaviour
         if (overrideCameraSettings && CameraManager.instance != null)
         {
             CameraManager.instance.ResetCameraSettings(settingsTransitionDuration);
+        }
+
+        // カメラの完全固定フラグがONだった場合はロックを解除する
+        if (lockCameraToCenter && CameraManager.instance != null)
+        {
+            CameraManager.instance.SetAreaCameraLock(false, Vector2.zero);
         }
 
         // イベント発行

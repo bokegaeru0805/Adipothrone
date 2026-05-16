@@ -93,6 +93,7 @@ public class Heroin_move : MonoBehaviour
     private Vector2 currentCarrierVelocity = Vector2.zero; // 現在のリフト速度
     private bool isOnCarrier = false; // リフトに乗っているかどうかのフラグ
     private float currentHorizontalVelocity = 0f; // 現在の自力移動速度（滑る床の慣性計算用）
+    private Color defaultCharacterColor; // インスペクターで設定された初期状態のデフォルト色を保存する変数
     #endregion
 
     #region Component References
@@ -207,7 +208,10 @@ public class Heroin_move : MonoBehaviour
         _rbody = GetComponent<Rigidbody2D>();
         _spriteRenderer = GetComponent<SpriteRenderer>();
         sePlayer = GetComponent<CriWare.Assets.CriAtomSePlayer>();
-        _col = _spriteRenderer.color;
+
+        // 初期状態の色を完全にキャッシュし、現在の色(_col)のベースにする
+        defaultCharacterColor = _spriteRenderer.color;
+        _col = defaultCharacterColor;
 
         if (RobotObject == null)
         {
@@ -324,8 +328,7 @@ public class Heroin_move : MonoBehaviour
         move = true;
         isDead = false;
         immunity = false;
-        _col = new Color(1.0f, 1.0f, 1.0f, 1.0f);
-        SetColorWithFixedBrightness(_col);
+        SetColorWithFixedBrightness(defaultCharacterColor);
         OnPlayerVisibilityChanged?.Invoke(false);
     }
 
@@ -775,7 +778,7 @@ public class Heroin_move : MonoBehaviour
 
     private IEnumerator MoveStartCoroutine(bool hasKnockback)
     {
-        _col = new Color(1.0f, 1.0f, 1.0f, 1.0f);
+        _col = defaultCharacterColor;
         immunity = true;
 
         yield return new WaitForSeconds(MoveStart_Sec); // 硬直時間
@@ -789,7 +792,7 @@ public class Heroin_move : MonoBehaviour
         yield return new WaitForSeconds(immunityDuration); // 無敵時間残り
 
         immunity = false;
-        _col.a = 1.0f;
+        _col.a = defaultCharacterColor.a;
         SetColorWithFixedBrightness(_col);
     }
 
@@ -803,11 +806,11 @@ public class Heroin_move : MonoBehaviour
 
     private IEnumerator EnableInvincibilityCoroutine(float time)
     {
-        _col = new Color(1.0f, 1.0f, 1.0f, 1.0f);
+        _col = defaultCharacterColor;
         immunity = true;
         yield return new WaitForSeconds(time);
         immunity = false;
-        _col.a = 1.0f;
+        _col.a = defaultCharacterColor.a;
         SetColorWithFixedBrightness(_col);
     }
 
@@ -834,7 +837,7 @@ public class Heroin_move : MonoBehaviour
 
         immunity = false;
         if (_spriteRenderer != null)
-            _spriteRenderer.color = Color.white;
+            _spriteRenderer.color = defaultCharacterColor;
     }
 
     public void ResetToLiveState()
@@ -847,7 +850,7 @@ public class Heroin_move : MonoBehaviour
         if (_animator != null)
             _animator.enabled = true;
         if (_spriteRenderer != null)
-            _spriteRenderer.color = Color.white;
+            _spriteRenderer.color = defaultCharacterColor;
     }
 
     #endregion
@@ -921,20 +924,17 @@ public class Heroin_move : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// 色や透明度をスプライトに適用する
+    /// （HSV変換による明度の強制固定処理を廃止し、初期色をそのまま適用するように変更）
+    /// </summary>
     private void SetColorWithFixedBrightness(Color newColor)
     {
         if (_spriteRenderer == null)
             return;
 
-        float h,
-            s,
-            v;
-        Color.RGBToHSV(newColor, out h, out s, out v);
-        float fixedBrightness = 0.8f;
-        Color finalColor = Color.HSVToRGB(h, s, fixedBrightness);
-        finalColor.a = newColor.a;
-
-        _spriteRenderer.color = finalColor;
+        // 渡された色(_col)をそのまま描画色として適用する
+        _spriteRenderer.color = newColor;
     }
 
     /// <summary>

@@ -1,11 +1,20 @@
-/****************************************************************************
- *
- * Copyright (c) 2022 CRI Middleware Co., Ltd.
- * (This script has been modified based on the original.)
- *
- ****************************************************************************/
-
 #if UNITY_EDITOR
+using CriWare.Assets;
+using UnityEditor;
+
+// CriAtomSePlayerコンポーネントのインスペクター表示を上書きします
+[CustomEditor(typeof(CriAtomSePlayer))]
+public class CriAtomSePlayerEditor : Editor
+{
+    public override void OnInspectorGUI()
+    {
+        // base.OnInspectorGUI() を呼ばないことで、親クラスを含めたすべての項目を描画しません
+        // これによりインスペクターには何も表示されなくなります
+    }
+}
+#endif // UNITY_EDITOR
+
+/*#if UNITY_EDITOR
 
 using UnityEditor;
 using UnityEngine;
@@ -113,3 +122,4 @@ namespace CriWare.Assets
 }
 
 #endif // UNITY_EDITOR
+*/
