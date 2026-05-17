@@ -19,12 +19,19 @@ public class AreaParallaxBackground : MonoBehaviour
         )]
         public float scrollFactor = 0.5f;
 
+        [Tooltip("Y軸追従が有効な際、カメラの中心から上下にどれくらいズラすか（0でカメラ中央）")]
+        public float manualOffsetY = 0f;
+
         [HideInInspector]
         public List<Transform> _instances = new List<Transform>();
 
         [HideInInspector]
         public float _spriteWidth;
     }
+
+    [SerializeField]
+    [Tooltip("有効にすると、すべての背景レイヤーがカメラのY座標に追従します")]
+    private bool _followCameraY = true;
 
     [SerializeField]
     [Tooltip("連動させる対象のCameraMoveAreaを設定します")]
@@ -38,12 +45,14 @@ public class AreaParallaxBackground : MonoBehaviour
     private Collider2D _targetCollider;
     private bool _isPlayerInArea = false;
     private float _lastCameraPosX;
+    private float _lastCameraPosY;
+    private bool _needsArrangement = false;
+    private bool _enteredFromRight = false;
 
     private void Awake()
     {
         _camera = Camera.main;
 
-        // 連動対象のエリアからコライダーコンポーネントを取得しておく
         if (_targetCameraArea != null)
         {
             _targetCollider = _targetCameraArea.GetComponent<Collider2D>();
@@ -54,21 +63,17 @@ public class AreaParallaxBackground : MonoBehaviour
 
     private void OnEnable()
     {
-        // CameraMoveAreaの静的イベントに自身のメソッドを登録
         CameraMoveArea.OnPlayerEnteredArea += OnPlayerEnteredArea;
         CameraMoveArea.OnPlayerExitedArea += OnPlayerExitedArea;
 
-        // Cinemachineのカメラ計算が完了したタイミングのイベントを購読（UnityEventのためAddListenerを使用）
         CinemachineCore.CameraUpdatedEvent.AddListener(OnCameraUpdated);
     }
 
     private void OnDisable()
     {
-        // 破棄・無効化時にイベントの登録を解除
         CameraMoveArea.OnPlayerEnteredArea -= OnPlayerEnteredArea;
         CameraMoveArea.OnPlayerExitedArea -= OnPlayerExitedArea;
 
-        // UnityEventの登録解除のためRemoveListenerを使用
         CinemachineCore.CameraUpdatedEvent.RemoveListener(OnCameraUpdated);
     }
 
@@ -80,7 +85,6 @@ public class AreaParallaxBackground : MonoBehaviour
         if (_camera == null)
             return;
 
-        // カメラの半幅を計算
         float cameraHalfWidth = _camera.orthographicSize * _camera.aspect;
 
         foreach (var layer in _parallaxLayers)
@@ -97,16 +101,14 @@ public class AreaParallaxBackground : MonoBehaviour
 
             layer._spriteWidth = sr.bounds.size.x;
 
-            // カメラ幅をカバーするのに必要な枚数 + 両端のバッファ2枚
             int requiredCount = Mathf.CeilToInt((cameraHalfWidth * 2f) / layer._spriteWidth) + 2;
 
-            // オリジナルのオブジェクトは非表示にする
             layer.baseBackground.SetActive(false);
 
             for (int i = 0; i < requiredCount; i++)
             {
                 GameObject instance = Instantiate(layer.baseBackground, transform);
-                instance.SetActive(false); // 初期状態では非表示
+                instance.SetActive(false);
                 layer._instances.Add(instance.transform);
             }
         }
@@ -117,17 +119,16 @@ public class AreaParallaxBackground : MonoBehaviour
     /// </summary>
     private void OnPlayerEnteredArea(CameraMoveArea area)
     {
-        // 進入されたエリアが、インスペクターで指定したターゲットでなければ処理しない
         if (area != _targetCameraArea)
             return;
         if (_isPlayerInArea)
             return;
 
-        GetPlayerTransform();
+        getPlayerTransform();
         _isPlayerInArea = true;
         _lastCameraPosX = _camera.transform.position.x;
+        _lastCameraPosY = _camera.transform.position.y;
 
-        // プレイヤーの進入方向（右側からかどうか）を判定
         bool enteredFromRight = false;
         if (_playerTransform != null && _targetCollider != null)
         {
@@ -135,6 +136,9 @@ public class AreaParallaxBackground : MonoBehaviour
         }
 
         ArrangeBackgrounds(enteredFromRight);
+
+        // ここで即座に配置せず、カメラ座標が確定するのを待機するフラグを立てる
+        _needsArrangement = true;
     }
 
     /// <summary>
@@ -142,13 +146,11 @@ public class AreaParallaxBackground : MonoBehaviour
     /// </summary>
     private void OnPlayerExitedArea(CameraMoveArea area)
     {
-        // 退出されたエリアが、インスペクターで指定したターゲットでなければ処理しない
         if (area != _targetCameraArea)
             return;
 
         _isPlayerInArea = false;
 
-        // エリアから出たら全インスタンスを非表示にして描画負荷を下げる
         foreach (var layer in _parallaxLayers)
         {
             foreach (var inst in layer._instances)
@@ -159,9 +161,9 @@ public class AreaParallaxBackground : MonoBehaviour
     }
 
     /// <summary>
-    /// 指定された要件コードに則ってプレイヤーのTransformを取得・キャッシュします。
+    /// 指定された仕様に則ってプレイヤーのTransformを取得・キャッシュします。
     /// </summary>
-    private void GetPlayerTransform()
+    private void getPlayerTransform()
     {
         if (_playerTransform == null)
         {
@@ -194,10 +196,12 @@ public class AreaParallaxBackground : MonoBehaviour
                 continue;
 
             float startX;
+            float targetY = _followCameraY
+                ? _camera.transform.position.y + layer.manualOffsetY
+                : layer.baseBackground.transform.position.y;
 
             if (enteredFromRight)
             {
-                // 右端を基準に左へ向かって敷き詰める
                 startX = camX + cameraHalfWidth;
                 for (int i = layer._instances.Count - 1; i >= 0; i--)
                 {
@@ -205,7 +209,7 @@ public class AreaParallaxBackground : MonoBehaviour
                     float posX = startX - (reverseIndex * layer._spriteWidth);
                     layer._instances[i].position = new Vector3(
                         posX,
-                        layer.baseBackground.transform.position.y,
+                        targetY,
                         layer.baseBackground.transform.position.z
                     );
                     layer._instances[i].gameObject.SetActive(true);
@@ -213,14 +217,13 @@ public class AreaParallaxBackground : MonoBehaviour
             }
             else
             {
-                // 左端を基準に右へ向かって敷き詰める
                 startX = camX - cameraHalfWidth;
                 for (int i = 0; i < layer._instances.Count; i++)
                 {
                     float posX = startX + (i * layer._spriteWidth);
                     layer._instances[i].position = new Vector3(
                         posX,
-                        layer.baseBackground.transform.position.y,
+                        targetY,
                         layer.baseBackground.transform.position.z
                     );
                     layer._instances[i].gameObject.SetActive(true);
@@ -230,12 +233,10 @@ public class AreaParallaxBackground : MonoBehaviour
     }
 
     /// <summary>
-    /// Cinemachineの全処理（Confinerの壁押し戻し等）が終わった確定座標で背景を更新します。
-    /// これにより端でのあらぶり（ジッター）を防ぎます。
+    /// Cinemachineの全処理が終わった確定座標で背景を更新します。
     /// </summary>
     private void OnCameraUpdated(CinemachineBrain brain)
     {
-        // メインカメラ以外の処理は無視
         if (brain.OutputCamera != _camera)
             return;
 
@@ -251,16 +252,27 @@ public class AreaParallaxBackground : MonoBehaviour
             return;
 
         float camX = _camera.transform.position.x;
-        float deltaX = camX - _lastCameraPosX;
+        float camY = _camera.transform.position.y;
 
-        // 微小な計算誤差やブレを無視する（デッドゾーン）
-        if (Mathf.Abs(deltaX) < 0.001f)
+        // エリア進入直後、カメラの座標が確定した最初のフレームで初期配置を行う
+        if (_needsArrangement)
         {
-            deltaX = 0f;
+            _lastCameraPosX = camX;
+            _lastCameraPosY = camY;
+            ArrangeBackgrounds(_enteredFromRight);
+            _needsArrangement = false;
+            return; // 初回は正しい位置への配置のみ行い、スクロール計算はスキップする
         }
 
-        // カメラが動いていなければ処理をスキップ
-        if (deltaX == 0f)
+        float deltaX = camX - _lastCameraPosX;
+        float deltaY = camY - _lastCameraPosY;
+
+        if (Mathf.Abs(deltaX) < 0.001f)
+            deltaX = 0f;
+        if (Mathf.Abs(deltaY) < 0.001f)
+            deltaY = 0f;
+
+        if (deltaX == 0f && deltaY == 0f)
             return;
 
         foreach (var layer in _parallaxLayers)
@@ -268,14 +280,17 @@ public class AreaParallaxBackground : MonoBehaviour
             if (layer._instances.Count == 0)
                 continue;
 
-            // 背景のスクロール移動
             float moveX = deltaX * layer.scrollFactor;
+            float targetY = _followCameraY
+                ? _camera.transform.position.y + layer.manualOffsetY
+                : layer.baseBackground.transform.position.y;
+
             foreach (var inst in layer._instances)
             {
-                inst.position += new Vector3(moveX, 0, 0);
+                float newX = inst.position.x + moveX;
+                inst.position = new Vector3(newX, targetY, inst.position.z);
             }
 
-            // ループ用の境界値を計算
             float cameraHalfWidth = _camera.orthographicSize * _camera.aspect;
             float leftBound = camX - cameraHalfWidth - layer._spriteWidth;
             float rightBound = camX + cameraHalfWidth + layer._spriteWidth;
@@ -283,13 +298,11 @@ public class AreaParallaxBackground : MonoBehaviour
             Transform first = layer._instances[0];
             Transform last = layer._instances[layer._instances.Count - 1];
 
-            // カメラの移動方向に応じて、片側だけワープ判定を行う
             if (deltaX > 0f && first.position.x < leftBound)
             {
-                // カメラが右へ移動：左端の画像を右へワープ
                 first.position = new Vector3(
                     last.position.x + layer._spriteWidth,
-                    first.position.y,
+                    targetY,
                     first.position.z
                 );
                 layer._instances.RemoveAt(0);
@@ -297,10 +310,9 @@ public class AreaParallaxBackground : MonoBehaviour
             }
             else if (deltaX < 0f && last.position.x > rightBound)
             {
-                // カメラが左へ移動：右端の画像を左へワープ
                 last.position = new Vector3(
                     first.position.x - layer._spriteWidth,
-                    last.position.y,
+                    targetY,
                     last.position.z
                 );
                 layer._instances.RemoveAt(layer._instances.Count - 1);
@@ -309,5 +321,6 @@ public class AreaParallaxBackground : MonoBehaviour
         }
 
         _lastCameraPosX = camX;
+        _lastCameraPosY = camY;
     }
 }

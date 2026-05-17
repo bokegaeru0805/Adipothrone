@@ -129,7 +129,7 @@ public class IcicleMoveController : MonoBehaviour, IEnemyResettable
         switch (_variantType)
         {
             case EnemyVariant.Icicle:
-                _damage = 30;
+                _damage = 20;
                 break;
             default:
                 Debug.LogError($"{this.name}のEnemyVariantが設定されていません。");
@@ -167,17 +167,6 @@ public class IcicleMoveController : MonoBehaviour, IEnemyResettable
                     $"{this.name}の子オブジェクトにSpriteRendererがアタッチされていません。"
                 );
             }
-
-            if (_contactDamageController != null)
-            {
-                _contactDamageController.SetNormalDamage(_damage);
-            }
-            else
-            {
-                Debug.LogError(
-                    $"{this.name}の子オブジェクトにContactDamageControllerがアタッチされていません。"
-                );
-            }
         }
 
         // 地面のレイヤーを取得
@@ -195,11 +184,12 @@ public class IcicleMoveController : MonoBehaviour, IEnemyResettable
 
             _hitEffectObject.SetActive(false); // 初期状態は非表示
         }
+
+        _initialPosition = transform.position;
     }
 
     private void Start()
     {
-        _initialPosition = transform.position;
         ResetState();
     }
 
@@ -283,6 +273,17 @@ public class IcicleMoveController : MonoBehaviour, IEnemyResettable
             _enemyHP.ResetState();
         }
 
+        if (_contactDamageController != null)
+        {
+            _contactDamageController.SetNormalDamage(_damage);
+        }
+        else
+        {
+            Debug.LogError(
+                $"{this.name}の子オブジェクトにContactDamageControllerがアタッチされていません。"
+            );
+        }
+
         // 現在実行中のTweenがあればキャンセル
         _currentTween?.Kill();
 
@@ -333,20 +334,30 @@ public class IcicleMoveController : MonoBehaviour, IEnemyResettable
         if (deltaX > _detectRangeX)
             return;
 
-        // 自身の位置から下方向にレイを飛ばして地面までの距離を動的に取得
+        // boundsはSleep状態の影響でズレる可能性があるため、transform.positionとoffsetから正確な開始位置を計算
+        Vector2 startPos =
+            (Vector2)transform.position
+            + _boxCollider.offset
+            + (Vector2.down * ((_boxCollider.size.y / 2f) + 0.1f));
+
+        // 横の壁を絶対に検知しないよう、幅を極力細くする（点に近いサイズ）
+        Vector2 castSize = new Vector2(0.05f, 0.1f);
+
+        // 下方向にレイを飛ばして本来の地面までの距離を動的に取得
         RaycastHit2D hit = Physics2D.BoxCast(
-            _boxCollider.bounds.center,
-            _boxCollider.size,
+            startPos,
+            castSize,
             0f,
             Vector2.down,
-            100f, // 適当な最大検知距離
+            100f,
             _groundLayer
         );
 
-        if (hit.collider != null)
+        // hit.point.y が startPos より確実に下にある場合のみ「地面」として扱う（壁へのめり込み誤検知を完全に防止）
+        if (hit.collider != null && hit.point.y < startPos.y)
         {
-            // プレイヤーが自分より下、かつレイが当たった地面より上にいるかを判定
-            if (playerPos.y < myPos.y && playerPos.y > hit.point.y)
+            // 床に立っている時のめり込みや、Pivot位置の違いを考慮して、地面のY座標に -1.5f ほどの猶予を持たせる
+            if (playerPos.y < myPos.y && playerPos.y > hit.point.y - 1.5f)
             {
                 ChangeState(IcicleState.Shake);
             }
@@ -368,13 +379,17 @@ public class IcicleMoveController : MonoBehaviour, IEnemyResettable
         // 速度を適用
         _rbody.velocity = new Vector2(0f, -_currentFallSpeed);
 
-        // すり抜け防止のためのBoxCastによる地面事前検知
-        Vector2 boxSize = _boxCollider.size;
-        float castDistance = (_currentFallSpeed * Time.fixedDeltaTime) + 0.1f;
+        // 天井との即時衝突を避けるため、BoxCastの開始地点をコライダーの下端から少し下にずらす
+        Vector2 startPos =
+            (Vector2)_boxCollider.bounds.center
+            + (Vector2.down * ((_boxCollider.size.y / 2f) + 0.1f));
+        // 壁や天井の誤検知を防ぐため、キャストするBoxのサイズを小さく薄くする
+        Vector2 castSize = new Vector2(_boxCollider.size.x * 0.8f, 0.1f);
+        float castDistance = (_currentFallSpeed * Time.fixedDeltaTime);
 
         RaycastHit2D hit = Physics2D.BoxCast(
-            _boxCollider.bounds.center,
-            boxSize,
+            startPos,
+            castSize,
             0f,
             Vector2.down,
             castDistance,
@@ -385,7 +400,7 @@ public class IcicleMoveController : MonoBehaviour, IEnemyResettable
         {
             // 衝突地点に合わせて少しめり込みを補正し、地面に突き刺さったようにする
             Vector3 newPos = transform.position;
-            newPos.y = hit.point.y + (boxSize.y / 2f) - _pierceDepth;
+            newPos.y = hit.point.y + (_boxCollider.size.y / 2f) - _pierceDepth;
             transform.position = newPos;
 
             // 突き刺さった瞬間に動きを止める
