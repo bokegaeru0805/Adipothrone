@@ -25,14 +25,14 @@ public class EditorGizmoLabel : MonoBehaviour
     public DisplayMode displayMode = DisplayMode.Always;
     
     [Tooltip("カメラからこれ以上離れるとラベルを非表示にする距離")]
-    public float maxViewDistance = 30f;
+    public float maxViewDistance = 60f;
     
     [Tooltip("ラベルの表示位置（オブジェクトの中心からのズレ）")]
     public Vector3 offset = new Vector3(0f, 1f, 0f);
 
     [Header("文字のスタイル")]
     public Color textColor = Color.yellow;
-    public int fontSize = 14;
+    public int fontSize = 20;
 
     // --- キャッシュ用変数（パフォーマンス対策） ---
     private string lastObjectName = "";

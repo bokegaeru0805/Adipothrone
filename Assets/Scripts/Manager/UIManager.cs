@@ -161,6 +161,15 @@ public class UIManager : MonoBehaviour, IPanelStackManager
             && // メニューを開く入力があった
             !playerManager.isControlLocked; // プレイヤーが操作不能状態ではない
 
+        if (inputManager.MenuUIOpen() && !canOpenMenu)
+        {
+            Debug.Log(
+                "メニューを開く条件を満たしていないため、入力は無視されました。条件詳細: "
+                    + $"isTalking={isTalking}, MenuCanvas.activeSelf={uiRefs.MenuCanvas.activeSelf}, Time.timeScale={Time.timeScale}, "
+                    + $"playerManager.isControlLocked={playerManager.isControlLocked}"
+            );
+        }
+
         if (canOpenMenu)
         {
             isOpeningCanvas = true; // CloseTopPanel()などが誤作動しないように先にフラグをON
@@ -251,6 +260,8 @@ public class UIManager : MonoBehaviour, IPanelStackManager
             // 所持金が変わったときにUIに反映されるようイベントを登録し、現在の所持金を表示
             playerManager.OnChangePlayerMoney += SetCoinText;
             SetCoinText();
+
+            Debug.Log("UIManagerはMenuCanvasを開きました");
         }
         else
         {
@@ -332,6 +343,12 @@ public class UIManager : MonoBehaviour, IPanelStackManager
     /// </summary>
     public void CloseTopPanel()
     {
+        // スタックが空の場合は何もしない（エラー防止）
+        if (panelStack.Count == 0)
+        {
+            return;
+        }
+
         // トップ画面（ProgressLogPanel）を表示中にキャンセルボタンが押された場合は、メニュー全体を閉じる
         if (panelStack.Peek() == uiRefs.ProgressLogPanel)
         {

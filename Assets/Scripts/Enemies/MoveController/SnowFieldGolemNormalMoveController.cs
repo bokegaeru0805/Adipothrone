@@ -53,11 +53,20 @@ public class SnowFieldGolemNormalMoveController : MonoBehaviour, IEnemyResettabl
     private float _attackRangeY = 2.0f;
 
     [SerializeField]
-    private float _attackCooldown = 3.0f;
+    [Tooltip("自身の足元から下方向への攻撃検知範囲（浮いている場合の補正用）")]
+    private float _attackRangeYDown = 1.0f;
 
-    [Header("攻撃確率")]
+    [Header("攻撃確率・クールダウン")]
     [SerializeField, Range(0, 1)]
     private float _boomerangProbability = 0.5f;
+
+    [SerializeField]
+    [Tooltip("ブーメラン攻撃終了後、次の攻撃が可能になるまでの待機時間")]
+    private float _boomerangAttackCooldown = 3.0f;
+
+    [SerializeField]
+    [Tooltip("ブレス攻撃開始後、次の攻撃が可能になるまでの待機時間")]
+    private float _breathAttackCooldown = 3.0f;
 
     [Header("ブーメラン設定")]
     [SerializeField]
@@ -310,7 +319,7 @@ public class SnowFieldGolemNormalMoveController : MonoBehaviour, IEnemyResettabl
 
     /// <summary>
     /// プレイヤーが攻撃範囲内にいるかを判定します。
-    /// PivotがBottomであることを考慮し、足元より上側でのみ判定を行います。
+    /// PivotがBottomであることを考慮し、足元からの上下の範囲で判定を行います。
     /// </summary>
     /// <returns>攻撃範囲内にいる場合は true</returns>
     private bool IsPlayerInAttackRange()
@@ -321,8 +330,8 @@ public class SnowFieldGolemNormalMoveController : MonoBehaviour, IEnemyResettabl
         // X軸の判定（向いている方向かつ指定距離以内）
         bool isWithinRangeX = horizontalDist > 0 && horizontalDist <= _attackRangeX;
 
-        // Y軸の判定（PivotがBottomであることを考慮し、足元より上でかつ範囲内かチェックする）
-        bool isWithinRangeY = diff.y >= 0f && diff.y <= _attackRangeY;
+        // Y軸の判定（足元から上方向 _attackRangeY、下方向 _attackRangeYDown の範囲内かチェック）
+        bool isWithinRangeY = diff.y >= -_attackRangeYDown && diff.y <= _attackRangeY;
 
         return isWithinRangeX && isWithinRangeY;
     }
@@ -340,20 +349,25 @@ public class SnowFieldGolemNormalMoveController : MonoBehaviour, IEnemyResettabl
         _isAttacking = true;
         _animator.SetBool(AnimIsAttacking, true);
 
-        // 攻撃の抽選
+        float currentCooldown = 0f;
+
+        // 攻撃の抽選とクールダウンの決定
         if (Random.value <= _boomerangProbability)
         {
             yield return StartCoroutine(BoomerangAttackRoutine());
+            currentCooldown = _boomerangAttackCooldown;
         }
         else
         {
             yield return StartCoroutine(BreathAttackRoutine());
+            currentCooldown = _breathAttackCooldown;
         }
 
         _isAttacking = false;
         _animator.SetBool(AnimIsAttacking, false);
 
-        yield return new WaitForSeconds(_attackCooldown);
+        // 指定されたクールダウン時間を待機
+        yield return new WaitForSeconds(currentCooldown);
         _canAttack = true;
     }
 
@@ -472,15 +486,17 @@ public class SnowFieldGolemNormalMoveController : MonoBehaviour, IEnemyResettabl
                 Vector2 aimDirection = _isFacingRight ? Vector2.right : Vector2.left;
                 if (_playerTransform != null)
                 {
-                    aimDirection = (_playerTransform.position - spawnPos).normalized;
+                    // プレイヤーの中心（足元 + PLAYER_BASE_HEIGHT / 2）を狙うように補正を加える
+                    Vector3 targetPos =
+                        _playerTransform.position
+                        + new Vector3(0, GameConstants.PLAYER_BASE_HEIGHT / 2f, 0);
+                    aimDirection = (targetPos - spawnPos).normalized;
                 }
 
                 // インスペクターで設定した _mistYVariance を渡す
                 controller.Initialize(aimDirection, _mistDuration, _mistMoveSpeed, _mistYVariance);
             }
         }
-
-        yield return new WaitForSeconds(_mistDuration);
     }
 
     #endregion
@@ -520,12 +536,32 @@ public class SnowFieldGolemNormalMoveController : MonoBehaviour, IEnemyResettabl
 
     private void OnDrawGizmosSelected()
     {
+        // 実行中（Playモード）でない場合は、SpriteRendererのflipXから現在の向きを判定する
+        bool currentFacingRight = _isFacingRight;
+        if (!Application.isPlaying)
+        {
+            var sr = GetComponent<SpriteRenderer>();
+            if (sr != null)
+            {
+                // flipXがfalseなら右向き、trueなら左向き
+                currentFacingRight = !sr.flipX;
+            }
+        }
+
+        float facingMultiplier = currentFacingRight ? 1f : -1f;
+
         // 攻撃範囲の描画
         Gizmos.color = new Color(0, 1, 0, 0.2f);
-        Vector3 size = new Vector3(_attackRangeX, _attackRangeY, 0.1f);
+
+        // サイズは上方向と下方向の合計値
+        Vector3 size = new Vector3(_attackRangeX, _attackRangeY + _attackRangeYDown, 0.1f);
+
+        // 中心位置のY軸を、上下の範囲の中間に調整
+        float centerYOffset = (_attackRangeY - _attackRangeYDown) / 2f;
         Vector3 center =
             transform.position
-            + new Vector3((_isFacingRight ? 1 : -1) * (_attackRangeX / 2), _attackRangeY / 2, 0);
+            + new Vector3(facingMultiplier * (_attackRangeX / 2), centerYOffset, 0);
+
         Gizmos.DrawCube(center, size);
 
         // 地面チェック範囲
@@ -539,14 +575,17 @@ public class SnowFieldGolemNormalMoveController : MonoBehaviour, IEnemyResettabl
         Gizmos.color = Color.yellow;
         Vector3 breathSpawnPos =
             transform.position
-            + new Vector3(_isFacingRight ? _breathOffset.x : -_breathOffset.x, _breathOffset.y, 0);
+            + new Vector3(
+                currentFacingRight ? _breathOffset.x : -_breathOffset.x,
+                _breathOffset.y,
+                0
+            );
         Gizmos.DrawSphere(breathSpawnPos, 0.15f);
 
         // ブーメランの軌跡（ベジェ曲線）の描画
         Gizmos.color = Color.magenta;
         Vector3 p0 = transform.position;
         Vector3 p3 = p0;
-        float facingMultiplier = _isFacingRight ? 1f : -1f;
 
         // Gizmo描画時も同じ下限補正を適用
         float topY = p0.y + _boomerangCurveWidth;

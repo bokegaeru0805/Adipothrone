@@ -1,0 +1,19 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!221 &22100000
+AnimatorOverrideController:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: SnowFieldGolem_Normal_SnowMan
+  m_Controller: {fileID: 9100000, guid: ac084fabd9c622b43b5d06f15a4d502b, type: 2}
+  m_Clips:
+  - m_OriginalClip: {fileID: 7400000, guid: e0f4fbd54d0517a41a12ab0464a626f0, type: 2}
+    m_OverrideClip: {fileID: 7400000, guid: feaa398e79f3db640a5354951b6529bc, type: 2}
+  - m_OriginalClip: {fileID: 7400000, guid: ddc1552bb1fe5df4496cb59493361781, type: 2}
+    m_OverrideClip: {fileID: 7400000, guid: a611bf307af64fb43a7792531390616d, type: 2}
+  - m_OriginalClip: {fileID: 7400000, guid: cb250616243810640b1df891fe486e83, type: 2}
+    m_OverrideClip: {fileID: 7400000, guid: 5a1f806eb54767f4f9641365d4a73a8e, type: 2}
+  - m_OriginalClip: {fileID: 7400000, guid: 0a7198dc8c9c6344fb02dbc1e45e8f5a, type: 2}
+    m_OverrideClip: {fileID: 7400000, guid: 25898355bf958f346902fa10d12f2c6e, type: 2}

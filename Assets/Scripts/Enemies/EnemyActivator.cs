@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using NaughtyAttributes;
 using UnityEngine;
 
 /// <summary>
@@ -51,15 +52,50 @@ public class EnemyParentTracker : MonoBehaviour
 /// CameraMoveAreaと連携し、特定のエリアに入ったときに子オブジェクト（敵など）を有効化/無効化するクラス。
 /// エリア切り替え時に敵の状態をリセットする機能や、レア敵の出現管理も行います。
 /// </summary>
+[ExecuteAlways]
 [RequireComponent(typeof(BoxCollider2D))]
 public class EnemyActivator : MonoBehaviour
 {
-    #region Inspector Settings
+    #region インスペクター設定
 
     [Header("連携設定")]
     [SerializeField]
     [Tooltip("このEnemyActivatorを起動させるCameraMoveArea")]
     private CameraMoveArea targetCameraArea;
+
+    [Tooltip(
+        "エディタ上で、対象のCameraMoveAreaのBoxCollider2Dに自身のコライダーサイズとオフセットを自動追従させるかどうか"
+    )]
+    [SerializeField]
+    private bool syncColliderWithArea = false;
+
+    [Tooltip("自動追従時に上下左右の端からのオフセットを加算するかどうか")]
+    [SerializeField, ShowIf(nameof(syncColliderWithArea))]
+    private bool applyCustomOffset = false;
+
+    [Tooltip("上端のオフセット（正の値で上へ、負の値で下へ移動）")]
+    [SerializeField, ShowIf(nameof(ShouldShowOffsets))]
+    private float offsetTop = 0f;
+
+    [Tooltip("下端のオフセット（正の値で下へ、負の値で上へ移動）")]
+    [SerializeField, ShowIf(nameof(ShouldShowOffsets))]
+    private float offsetBottom = 0f;
+
+    [Tooltip("左端のオフセット（正の値で右へ、負の値で左へ移動）")]
+    [SerializeField, ShowIf(nameof(ShouldShowOffsets))]
+    private float offsetLeft = 0f;
+
+    [Tooltip("右端のオフセット（正の値で左へ、負の値で右へ移動）")]
+    [SerializeField, ShowIf(nameof(ShouldShowOffsets))]
+    private float offsetRight = 0f;
+
+    /// <summary>
+    /// NaughtyAttributes用の表示条件メソッド
+    /// </summary>
+    private bool ShouldShowOffsets()
+    {
+        return syncColliderWithArea && applyCustomOffset;
+    }
 
     [Header("レア敵の設定")]
     [Tooltip(
@@ -70,7 +106,7 @@ public class EnemyActivator : MonoBehaviour
 
     #endregion
 
-    #region Internal State
+    #region 内部状態
 
     // このエリアの範囲を示すコライダー
     private BoxCollider2D activationZone;
@@ -81,7 +117,7 @@ public class EnemyActivator : MonoBehaviour
 
     #endregion
 
-    #region Unity Lifecycle
+    #region Unityライフサイクル
 
     private void Awake()
     {
@@ -105,11 +141,15 @@ public class EnemyActivator : MonoBehaviour
 
     private void Start()
     {
-        // 初期化時に、現在の子オブジェクト全てにTrackerを追加して記録する
-        InitializeTrackers();
+        // ゲーム実行時のみトラッカーの追加や初期化を行うように修正
+        if (Application.isPlaying)
+        {
+            // 初期化時に、現在の子オブジェクト全てにTrackerを追加して記録する
+            InitializeTrackers();
 
-        // ゲーム開始時は、管理下のオブジェクトを全て非表示にする
-        SetChildrenActive(false);
+            // ゲーム開始時は、管理下のオブジェクトを全て非表示にする
+            SetChildrenActive(false);
+        }
     }
 
     private void OnEnable()
@@ -126,9 +166,20 @@ public class EnemyActivator : MonoBehaviour
         CameraMoveArea.OnPlayerExitedArea -= HandlePlayerExitedArea;
     }
 
+    private void Update()
+    {
+#if UNITY_EDITOR
+        // エディタ上かつゲームが再生されていない場合、常にコライダーを同期する
+        if (!Application.isPlaying)
+        {
+            SyncCollider();
+        }
+#endif
+    }
+
     #endregion
 
-    #region Event Handlers
+    #region イベントハンドラ
 
     /// <summary>
     /// プレイヤーがいずれかのエリアに入った時の処理
@@ -156,7 +207,7 @@ public class EnemyActivator : MonoBehaviour
 
     #endregion
 
-    #region Tracker Management
+    #region トラッカー管理
 
     /// <summary>
     /// 全ての子オブジェクトにParentTrackerを追加し、管理リストに登録します。
@@ -195,7 +246,7 @@ public class EnemyActivator : MonoBehaviour
 
     #endregion
 
-    #region Core Logic
+    #region コアロジック
 
     /// <summary>
     /// 子オブジェクトのアクティブ状態を設定します。
@@ -203,11 +254,9 @@ public class EnemyActivator : MonoBehaviour
     /// <param name="isActive">有効にする場合はtrue、無効にする場合はfalse</param>
     private void SetChildrenActive(bool isActive)
     {
-        // ---------------------------------------------------------
         // Step 1: 親子関係の修復
         // 処理を開始する前に、すべての管理対象オブジェクトを親元に強制送還させる
         // これにより、リフトなどで親子関係が変わっていても、このActivatorの下に戻ってくる
-        // ---------------------------------------------------------
         foreach (var tracker in managedTrackers)
         {
             // オブジェクトが破棄されている場合はスキップ
@@ -217,9 +266,7 @@ public class EnemyActivator : MonoBehaviour
             tracker.ReturnToOriginalParent();
         }
 
-        // ---------------------------------------------------------
         // Step 2: プレイヤーがエリアに入った時の有効化処理
-        // ---------------------------------------------------------
         if (isActive)
         {
             // レア敵の判定用にセットを作成（高速検索用）
@@ -268,9 +315,7 @@ public class EnemyActivator : MonoBehaviour
                 }
             }
         }
-        // ---------------------------------------------------------
         // Step 3: プレイヤーがエリアから出た時の無効化処理
-        // ---------------------------------------------------------
         else
         {
             // 返却すべきアイテム（PoolableObjectとして扱う）を一時リストに格納する
@@ -293,7 +338,7 @@ public class EnemyActivator : MonoBehaviour
                 }
             }
 
-            // ↓↓↓ 変更: 各アイテムのメソッドを呼ぶだけ ↓↓↓
+            // 各アイテムのメソッドを呼ぶだけ
             foreach (var item in itemsToReturn)
             {
                 if (item != null)
@@ -323,7 +368,85 @@ public class EnemyActivator : MonoBehaviour
 
     #endregion
 
-    #region Debug / Editor
+    #region デバッグ / エディタ
+
+#if UNITY_EDITOR
+    /// <summary>
+    /// 対象のCameraMoveAreaのBoxCollider2Dに自身のコライダーを同期させます。
+    /// </summary>
+    private void SyncCollider()
+    {
+        if (!syncColliderWithArea || targetCameraArea == null)
+            return;
+
+        if (activationZone == null)
+            activationZone = GetComponent<BoxCollider2D>();
+
+        if (activationZone == null)
+            return;
+
+        BoxCollider2D targetBox = targetCameraArea.GetComponent<BoxCollider2D>();
+        if (targetBox == null)
+            return;
+
+        // ターゲットのワールド座標での中心を計算
+        Vector3 targetWorldCenter = targetCameraArea.transform.TransformPoint(
+            (Vector3)targetBox.offset
+        );
+
+        // スケールを考慮したサイズの計算
+        Vector2 targetWorldSize = new Vector2(
+            targetBox.size.x * Mathf.Abs(targetCameraArea.transform.lossyScale.x),
+            targetBox.size.y * Mathf.Abs(targetCameraArea.transform.lossyScale.y)
+        );
+
+        //　オフセットの適用
+        if (applyCustomOffset)
+        {
+            // 現在の上下左右の端のワールド座標を計算
+            float left = targetWorldCenter.x - targetWorldSize.x / 2f;
+            float right = targetWorldCenter.x + targetWorldSize.x / 2f;
+            float bottom = targetWorldCenter.y - targetWorldSize.y / 2f;
+            float top = targetWorldCenter.y + targetWorldSize.y / 2f;
+
+            // 各端にオフセットを加算
+            left += offsetLeft;
+            right -= offsetRight;
+            bottom += offsetBottom;
+            top -= offsetTop;
+
+            // 新しい中心とサイズを計算
+            targetWorldCenter.x = (left + right) / 2f;
+            targetWorldCenter.y = (bottom + top) / 2f;
+
+            // サイズが 0 以下にならないように制限
+            targetWorldSize.x = Mathf.Max(0.0001f, right - left);
+            targetWorldSize.y = Mathf.Max(0.0001f, top - bottom);
+        }
+
+        // 自身のローカル座標系でのオフセットに変換（自身のTransformは動かさない）
+        Vector3 localOffset = transform.InverseTransformPoint(targetWorldCenter);
+        Vector2 newOffset = new Vector2(localOffset.x, localOffset.y);
+
+        // 自身のスケールで割り戻してローカルサイズを決定（ゼロ除算防止）
+        float scaleX = Mathf.Abs(transform.lossyScale.x);
+        float scaleY = Mathf.Abs(transform.lossyScale.y);
+        Vector2 newSize = new Vector2(
+            targetWorldSize.x / (scaleX != 0f ? scaleX : 1f),
+            targetWorldSize.y / (scaleY != 0f ? scaleY : 1f)
+        );
+
+        // 値が変わった場合のみ代入
+        if (activationZone.offset != newOffset || activationZone.size != newSize)
+        {
+            // エディタのUndoシステムに登録し、シーンを保存対象（Dirty）にする
+            UnityEditor.Undo.RecordObject(activationZone, "Sync Collider with CameraMoveArea");
+            activationZone.offset = newOffset;
+            activationZone.size = newSize;
+            UnityEditor.EditorUtility.SetDirty(activationZone);
+        }
+    }
+#endif
 
     private void OnDrawGizmos()
     {

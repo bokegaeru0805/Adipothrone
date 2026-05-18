@@ -683,14 +683,14 @@ public class CameraMoveArea : MonoBehaviour
         Color fillColor = new Color(1f, 0f, 1f, 0.2f); // 半透明のマゼンタ
         Color borderColor = Color.magenta;
 
-        Vector3 centerPos = transform.position + (Vector3)box2D.offset;
-        Gizmos.matrix = Matrix4x4.TRS(centerPos, transform.rotation, transform.lossyScale);
+        // BoxCollider2Dの正確なローカル情報とTransform行列を使って描画
+        Gizmos.matrix = transform.localToWorldMatrix;
 
         Gizmos.color = fillColor;
-        Gizmos.DrawCube(Vector3.zero, (Vector3)box2D.size);
+        Gizmos.DrawCube(box2D.offset, box2D.size);
 
         Gizmos.color = borderColor;
-        Gizmos.DrawWireCube(Vector3.zero, (Vector3)box2D.size);
+        Gizmos.DrawWireCube(box2D.offset, box2D.size);
 
 #if UNITY_EDITOR
         // エディタ上でのラベル表示
@@ -705,8 +705,9 @@ public class CameraMoveArea : MonoBehaviour
         style.fontSize = 12;
         style.fontStyle = FontStyle.Bold;
 
-        // Gizmos.matrixの影響を受けないため、ワールド座標で描画
-        Handles.Label(centerPos, labelText, style);
+        // ラベルはワールド座標の中心に描画するため、TransformPointで取得
+        Vector3 worldCenterPos = transform.TransformPoint((Vector3)box2D.offset);
+        UnityEditor.Handles.Label(worldCenterPos, labelText, style);
 #endif
     }
 

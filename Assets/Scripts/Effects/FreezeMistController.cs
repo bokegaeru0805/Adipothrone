@@ -25,6 +25,8 @@ public class FreezeMistController : PoolableObject
     #endregion
 
     #region プライベート変数
+    private float _sizeMultiplierMin = 1.75f; // パーティクルサイズのランダム倍率の最小値
+    private float _sizeMultiplierMax = 2.25f; // パーティクルサイズのランダム倍率の最大値
 
     // コンポーネントキャッシュ
     private ParticleSystem _mainPS;
@@ -73,7 +75,7 @@ public class FreezeMistController : PoolableObject
         }
 
         // 1.0～1.75倍の範囲でサイズや放出量をランダムに決定
-        float multiplier = Random.Range(1.0f, 1.75f);
+        float multiplier = Random.Range(_sizeMultiplierMin, _sizeMultiplierMax);
         ApplyParameters(multiplier);
 
         // 移動と制御のコルーチンを開始
