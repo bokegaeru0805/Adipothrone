@@ -161,6 +161,7 @@ public static class SeCueDatabase
             { SE_SystemEvent.Vanish1, "Vanish1" },
             { SE_SystemEvent.Warning1, "Warning1" },
             { SE_SystemEvent.Warp1, "Warp1" },
+            { SE_SystemEvent.Warp2, "Warp2" },
             { SE_SystemEvent.WarpStandby1, "WarpStandby1" },
             { SE_SystemEvent.ItemGet1, "ItemGet1" },
             { SE_SystemEvent.ItemGet2, "ItemGet2" },

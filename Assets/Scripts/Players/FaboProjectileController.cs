@@ -11,7 +11,6 @@ using UnityEngine;
 public class FaboProjectileController : MonoBehaviour
 {
     #region キャッシュ・外部参照
-    private PlayerEffectManager playerEffectManager;
     private CriWare.Assets.CriAtomSePlayer sePlayer;
     #endregion
 
@@ -85,7 +84,7 @@ public class FaboProjectileController : MonoBehaviour
         // --- 2. コンポーネントの設定 ---
         sePlayer = this.GetComponent<CriWare.Assets.CriAtomSePlayer>();
 
-        CircleCollider2D collider = this.GetComponent<CircleCollider2D>();
+        var collider = this.GetComponent<CircleCollider2D>();
         if (collider != null)
         {
             collider.offset = data.colliderOffset;
@@ -107,7 +106,7 @@ public class FaboProjectileController : MonoBehaviour
         Destroy(this.gameObject, vanishTime);
 
         // --- 4. 発射処理の呼び出し ---
-        Rigidbody2D rb = this.gameObject.GetComponent<Rigidbody2D>();
+        var rb = this.gameObject.GetComponent<Rigidbody2D>();
         ExecuteFire(rb);
     }
 
@@ -195,7 +194,7 @@ public class FaboProjectileController : MonoBehaviour
     private IEnumerator SubBulletMovement(float yDirection)
     {
         initialPosition = this.transform.position;
-        Rigidbody2D rb = GetComponent<Rigidbody2D>();
+        var rb = GetComponent<Rigidbody2D>();
 
         if (rb == null)
             yield break;
@@ -264,7 +263,8 @@ public class FaboProjectileController : MonoBehaviour
             }
 
             // ダメージ計算と適用
-            int damageSumAmount = playerEffectManager.CalculateFinalAttackPower(shootPower);
+            int damageSumAmount =
+                PlayerEffectManager.instance?.CalculateFinalAttackPower(shootPower) ?? 0;
             hpScript.Damage(damageSumAmount);
             sePlayer.Play(SE_EnemyAction.Damage2);
 

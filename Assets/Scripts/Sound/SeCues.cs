@@ -156,6 +156,7 @@ public enum SE_SystemEvent
     Vanish1 = 6010,
     Warning1 = 6015,
     Warp1 = 6020,
+    Warp2 = 6021,
     WarpStandby1 = 6025,
     ItemGet1 = 6030,
     ItemGet2 = 6035,

@@ -2,14 +2,14 @@ using UnityEngine;
 
 public class MenuCanvas : MonoBehaviour
 {
-    private void Start()
+    private void Awake()
     {
         HideAllChildren();
-        this.gameObject.SetActive(false);
     }
 
     /// <summary>
-    /// 全ての子オブジェクトを非表示にする
+    /// エディタ編集時に表示状態のままになっている、全ての子オブジェクト（各種メニューUI）を非表示にします。
+    /// ゲーム開始時に手動で非表示にする手間を省き、初期状態をクリアにするための関数です。
     /// </summary>
     private void HideAllChildren()
     {

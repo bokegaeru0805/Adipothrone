@@ -153,7 +153,7 @@ public class UIManager : MonoBehaviour, IPanelStackManager
         bool canOpenMenu =
             !isTalking
             && // 会話中でない
-            !uiRefs.MenuCanvas.activeSelf
+            !uiRefs.MenuPanel.activeSelf
             && // 既にメニューが開いていない
             Time.timeScale != 0
             && // ゲームが停止状態（ポーズ中）でない
@@ -165,7 +165,7 @@ public class UIManager : MonoBehaviour, IPanelStackManager
         {
             Debug.Log(
                 "メニューを開く条件を満たしていないため、入力は無視されました。条件詳細: "
-                    + $"isTalking={isTalking}, MenuCanvas.activeSelf={uiRefs.MenuCanvas.activeSelf}, Time.timeScale={Time.timeScale}, "
+                    + $"isTalking={isTalking}, MenuPanel.activeSelf={uiRefs.MenuPanel.activeSelf}, Time.timeScale={Time.timeScale}, "
                     + $"playerManager.isControlLocked={playerManager.isControlLocked}"
             );
         }
@@ -180,7 +180,7 @@ public class UIManager : MonoBehaviour, IPanelStackManager
         }
 
         // メニューが開かれていない場合はこれ以降のUI処理を行わない
-        if (!uiRefs.MenuCanvas.activeSelf)
+        if (!uiRefs.MenuPanel.activeSelf)
             return;
 
         // --- メニュー（パネル）を閉じる判定と処理 ---

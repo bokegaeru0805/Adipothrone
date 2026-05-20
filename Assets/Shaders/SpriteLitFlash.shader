@@ -6,7 +6,7 @@ Shader "MyShaders/2D/SpriteLitFlash"
         _MaskTex("Mask", 2D) = "white" {}
         _NormalMap("Normal Map", 2D) = "bump" {}
 
-        // --- オーバーレイプロパティ開始 ---
+        // --- オーバーレイプロパティ ---
         [Header(Overlay Effect)]
         [Toggle(_OVERLAY_ON)] _OverlayOn("Enable Overlay", Float) = 0
         [Toggle(_OVERLAY_MULT_ON)] _OverlayMultOn("Overlay Multiply Mode", Float) = 0
@@ -16,11 +16,20 @@ Shader "MyShaders/2D/SpriteLitFlash"
         _OverlayBlend("Overlay Blend", Range(0, 1)) = 1
         _OverlayTextureScrollXSpeed("Speed X Axis", Range(-5, 5)) = 0.25
         _OverlayTextureScrollYSpeed("Speed Y Axis", Range(-5, 5)) = 0.25
-        // --- オーバーレイプロパティ終了 ---
 
         [Header(Flash Effect)]
         _FlashAmount ("Flash Amount", Range(0,1)) = 0.0
         _FlashColor ("Flash Color", Color) = (1,1,1,1)
+
+        // --- ホログラムプロパティ ---
+        [Header(Hologram Effect)]
+        _HologramStripesAmount("Stripes Amount", Range(0, 1)) = 0.1
+        _HologramUnmodAmount("Unchanged Amount", Range(0, 1)) = 0.0
+        _HologramStripesSpeed("Stripes Speed", Range(-20, 20)) = 4.5
+        _HologramMinAlpha("Min Alpha", Range(0, 1)) = 0.1
+        _HologramMaxAlpha("Max Alpha", Range(0, 100)) = 0.75
+        _HologramStripeColor("Stripes Color", Color) = (0,1,1,1)
+        _HologramBlend ("Hologram Blend", Range(0, 1)) = 1
 
         // Legacy properties. They're here so that materials using this shader can gracefully fallback to the legacy sprite shader.
         [HideInInspector] _Color("Tint", Color) = (1,1,1,1)
@@ -57,7 +66,9 @@ Shader "MyShaders/2D/SpriteLitFlash"
             // --- オーバーレイ機能の有効化スイッチ ---
             #pragma shader_feature_local _OVERLAY_ON
             #pragma shader_feature_local _OVERLAY_MULT_ON
-            // ------------------------------------
+
+            // --- ホログラム機能の有効化スイッチ ---
+            #pragma shader_feature_local _HOLOGRAM_ON
 
             struct Attributes
             {
@@ -101,7 +112,15 @@ Shader "MyShaders/2D/SpriteLitFlash"
             half _OverlayBlend;
             half _OverlayTextureScrollXSpeed;
             half _OverlayTextureScrollYSpeed;
-            // ---------------------------
+
+            // --- ホログラム用変数定義 ---
+            half _HologramStripesAmount;
+            half _HologramUnmodAmount;
+            half _HologramStripesSpeed;
+            half _HologramMinAlpha;
+            half _HologramMaxAlpha;
+            half4 _HologramStripeColor;
+            half _HologramBlend;
 
             #if USE_SHAPE_LIGHT_TYPE_0
             SHAPE_LIGHT(0)
@@ -178,6 +197,26 @@ Shader "MyShaders/2D/SpriteLitFlash"
                     #endif
                 #endif
                 // --- オーバーレイ処理終了 ---
+
+                // --- ホログラム処理開始 ---
+                #if defined(_HOLOGRAM_ON)
+                    half totalHologram = _HologramStripesAmount + _HologramUnmodAmount;
+                    half hologramYCoord = ((i.uv.y + (_Time.x * _HologramStripesSpeed)) % totalHologram) / totalHologram;
+                    hologramYCoord = abs(hologramYCoord);
+                    
+                    // リマップ処理（LightingUtility.hlsl 等にある組み込み関数、または簡易計算）
+                    half alpha = lerp(_HologramMinAlpha, saturate(_HologramMaxAlpha), saturate((hologramYCoord - (_HologramUnmodAmount / totalHologram)) / (1.0 - (_HologramUnmodAmount / totalHologram))));
+                    half hologramMask = max(sign((_HologramUnmodAmount / totalHologram) - hologramYCoord), 0.0);
+                    
+                    half4 hologramResult = finalColor;
+                    hologramResult.a *= lerp(alpha, 1, hologramMask);
+                    hologramResult.rgb *= max(1, _HologramMaxAlpha * max(sign(hologramYCoord - (_HologramUnmodAmount / totalHologram)), 0.0));
+                    
+                    hologramMask = 1 - step(0.01, hologramMask);
+                    hologramResult.rgb += hologramMask * _HologramStripeColor.rgb * finalColor.a;
+                    finalColor = lerp(finalColor, hologramResult, _HologramBlend);
+                #endif
+                // --- ホログラム処理終了 ---
                 
                 // 合成した色を返す
                 return finalColor;
@@ -261,7 +300,9 @@ Shader "MyShaders/2D/SpriteLitFlash"
             // --- オーバーレイ機能の有効化スイッチ ---
             #pragma shader_feature_local _OVERLAY_ON
             #pragma shader_feature_local _OVERLAY_MULT_ON
-            //
+            
+            // --- ホログラム機能の有効化スイッチ ---
+            #pragma shader_feature_local _HOLOGRAM_ON
 
             struct Attributes
             {
@@ -300,7 +341,15 @@ Shader "MyShaders/2D/SpriteLitFlash"
             half _OverlayBlend;
             half _OverlayTextureScrollXSpeed;
             half _OverlayTextureScrollYSpeed;
-            // ---------------------------
+
+            // --- ホログラム用変数定義 ---
+            half _HologramStripesAmount;
+            half _HologramUnmodAmount;
+            half _HologramStripesSpeed;
+            half _HologramMinAlpha;
+            half _HologramMaxAlpha;
+            half4 _HologramStripeColor;
+            half _HologramBlend;
 
             Varyings UnlitVertex(Attributes attributes)
             {
@@ -348,6 +397,25 @@ Shader "MyShaders/2D/SpriteLitFlash"
                     #endif
                 #endif
                 // --- オーバーレイ処理終了 ---
+
+                // --- ホログラム処理開始 ---
+                #if defined(_HOLOGRAM_ON)
+                    half totalHologram = _HologramStripesAmount + _HologramUnmodAmount;
+                    half hologramYCoord = ((i.uv.y + (_Time.x * _HologramStripesSpeed)) % totalHologram) / totalHologram;
+                    hologramYCoord = abs(hologramYCoord);
+                    
+                    half alpha = lerp(_HologramMinAlpha, saturate(_HologramMaxAlpha), saturate((hologramYCoord - (_HologramUnmodAmount / totalHologram)) / (1.0 - (_HologramUnmodAmount / totalHologram))));
+                    half hologramMask = max(sign((_HologramUnmodAmount / totalHologram) - hologramYCoord), 0.0);
+                    
+                    half4 hologramResult = mainTex;
+                    hologramResult.a *= lerp(alpha, 1, hologramMask);
+                    hologramResult.rgb *= max(1, _HologramMaxAlpha * max(sign(hologramYCoord - (_HologramUnmodAmount / totalHologram)), 0.0));
+                    
+                    hologramMask = 1 - step(0.01, hologramMask);
+                    hologramResult.rgb += hologramMask * _HologramStripeColor.rgb * mainTex.a;
+                    mainTex = lerp(mainTex, hologramResult, _HologramBlend);
+                #endif
+                // --- ホログラム処理終了 ---
 
                 #if defined(DEBUG_DISPLAY)
                 SurfaceData2D surfaceData;

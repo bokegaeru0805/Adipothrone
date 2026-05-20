@@ -47,6 +47,12 @@ Material:
     m_Floats:
     - _EnableExternalAlpha: 0
     - _FlashAmount: 0
+    - _HologramBlend: 1
+    - _HologramMaxAlpha: 0.75
+    - _HologramMinAlpha: 0.1
+    - _HologramStripesAmount: 0.1
+    - _HologramStripesSpeed: 4.5
+    - _HologramUnmodAmount: 0
     - _OverlayBlend: 1
     - _OverlayGlow: 10
     - _OverlayMultOn: 0
@@ -57,6 +63,7 @@ Material:
     - _Color: {r: 1, g: 1, b: 1, a: 1}
     - _FlashColor: {r: 1, g: 1, b: 1, a: 1}
     - _Flip: {r: 1, g: 1, b: 1, a: 1}
+    - _HologramStripeColor: {r: 0, g: 1, b: 1, a: 1}
     - _OverlayColor: {r: 0.6156863, g: 0.45006663, b: 0.45006663, a: 1}
     - _RendererColor: {r: 1, g: 1, b: 1, a: 1}
   m_BuildTextureStacks: []
