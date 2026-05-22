@@ -1,5 +1,5 @@
 using System.Collections;
-using DG.Tweening; // DOTweenを使用
+using DG.Tweening;
 using UnityEngine;
 
 [RequireComponent(typeof(Rigidbody2D))]
@@ -20,7 +20,8 @@ public class IcicleMoveController : MonoBehaviour, IEnemyResettable
         Shake, // 落下前の予備動作（微振動）
         Fall, // 落下中
         Fade, // 地面衝突後、フェードアウトして消える
-        Regenerate // 指定時間後に初期位置から生えてくる
+        Regenerate, // 指定時間後に初期位置から生えてくる
+        BossIdle // ボス召喚時の即時消滅を防ぐ空中静止状態
         ,
     }
 
@@ -86,6 +87,16 @@ public class IcicleMoveController : MonoBehaviour, IEnemyResettable
     [SerializeField, Tooltip("生え終わるまでにかかる時間")]
     private float _regenerateDuration = 1.0f;
 
+    [Header("出現設定(使い捨て用)")]
+    [
+        SerializeField,
+        Tooltip("一度きりの使い捨て(ボス召喚等)として出現した際のエフェクト用子オブジェクト")
+    ]
+    private GameObject _spawnEffectObject = null;
+
+    [SerializeField, Tooltip("一度きりかどうか(trueの場合は落下後に消滅し再生成されない)")]
+    private bool _isSingleUse = false;
+
     #endregion
 
     #region 内部変数
@@ -106,6 +117,9 @@ public class IcicleMoveController : MonoBehaviour, IEnemyResettable
     private Transform _hitEffectTransform;
     private SpriteRenderer _hitEffectSpriteRenderer;
     private Animator _hitEffectAnimator;
+
+    // SpawnEffectコンポーネントキャッシュ
+    private Animator _spawnEffectAnimator;
 
     // 状態管理
     private int _damage = 20;
@@ -142,7 +156,6 @@ public class IcicleMoveController : MonoBehaviour, IEnemyResettable
 
         if (_rbody != null)
         {
-            // Static設定によるvelocity代入エラーを防止するため、強制的にDynamicにする
             _rbody.bodyType = RigidbodyType2D.Dynamic;
             _rbody.gravityScale = 0f; // 重力は手動で計算するため0
             _rbody.constraints =
@@ -185,6 +198,13 @@ public class IcicleMoveController : MonoBehaviour, IEnemyResettable
             _hitEffectObject.SetActive(false); // 初期状態は非表示
         }
 
+        // 出現エフェクトオブジェクトの初期設定
+        if (_spawnEffectObject != null)
+        {
+            _spawnEffectAnimator = _spawnEffectObject.GetComponent<Animator>();
+            _spawnEffectObject.SetActive(false); // 初期状態は非表示
+        }
+
         _initialPosition = transform.position;
     }
 
@@ -223,6 +243,18 @@ public class IcicleMoveController : MonoBehaviour, IEnemyResettable
                 UpdateSleepState();
                 break;
 
+            case IcicleState.BossIdle:
+                // ボス召喚時は、初期フレームでの誤検知を防ぐため
+                // 単純なX座標の距離チェックのみで予備動作（Shake）へ移行させる
+                if (Mathf.Abs(_playerTransform.position.x - transform.position.x) <= _detectRangeX)
+                {
+                    if (_playerTransform.position.y < transform.position.y)
+                    {
+                        ChangeState(IcicleState.Shake);
+                    }
+                }
+                break;
+
             case IcicleState.Fall:
                 UpdateFallState();
                 break;
@@ -230,7 +262,6 @@ public class IcicleMoveController : MonoBehaviour, IEnemyResettable
             case IcicleState.Shake:
             case IcicleState.Fade:
             case IcicleState.Regenerate:
-                // これらの状態はDOTweenやコルーチンで進行するため、物理的な移動は行わない
                 _rbody.velocity = Vector2.zero;
                 break;
         }
@@ -245,6 +276,59 @@ public class IcicleMoveController : MonoBehaviour, IEnemyResettable
     #endregion
 
     #region 初期化・リセット処理
+
+    /// <summary>
+    /// ボス召喚用としてつららを指定位置に出現させます。
+    /// </summary>
+    /// <param name="position">出現させる座標</param>
+    public void SpawnAsBossSummon(Vector3 position)
+    {
+        _isSingleUse = true;
+        _initialPosition = position;
+        transform.position = position;
+
+        // 一度非アクティブ状態にしてからアクティブ化することでAnimatorの初期リセットを確実に走らせる
+        gameObject.SetActive(false);
+        gameObject.SetActive(true);
+
+        if (_spawnEffectObject != null)
+        {
+            _spawnEffectObject.SetActive(false);
+            _spawnEffectObject.SetActive(true);
+            if (_spawnEffectAnimator != null)
+            {
+                //　Animatorの最初のステート（仕様に合わせたデフォルトのステート）を強制的に0フレーム目から再生
+                _spawnEffectAnimator.Play(
+                    _spawnEffectAnimator.GetCurrentAnimatorStateInfo(0).fullPathHash,
+                    -1,
+                    0f
+                );
+            }
+        }
+
+        // 状態をリセットした直後に、誤判定を起こさない専用ステートへ移行
+        ResetState();
+        ChangeState(IcicleState.BossIdle);
+    }
+
+    /// <summary>
+    /// 外部からこのつららを安全に即時破壊し、ヒットエフェクトを再生しながら消滅させます。
+    /// </summary>
+    public void ForceCrash()
+    {
+        // すでに非アクティブなら何もしない
+        if (!gameObject.activeInHierarchy)
+            return;
+
+        // 落下中の移動物理を止める
+        if (_rbody != null)
+        {
+            _rbody.velocity = Vector2.zero;
+        }
+
+        // 即座にFadeステート（破壊・コライダー消去・エフェクト再生・フェードアウト）へ移行させる
+        ChangeState(IcicleState.Fade);
+    }
 
     /// <summary>
     /// 敵の状態を初期化・リセットします。
@@ -383,6 +467,7 @@ public class IcicleMoveController : MonoBehaviour, IEnemyResettable
         Vector2 startPos =
             (Vector2)_boxCollider.bounds.center
             + (Vector2.down * ((_boxCollider.size.y / 2f) + 0.1f));
+
         // 壁や天井の誤検知を防ぐため、キャストするBoxのサイズを小さく薄くする
         Vector2 castSize = new Vector2(_boxCollider.size.x * 0.8f, 0.1f);
         float castDistance = (_currentFallSpeed * Time.fixedDeltaTime);
@@ -431,7 +516,8 @@ public class IcicleMoveController : MonoBehaviour, IEnemyResettable
         switch (newState)
         {
             case IcicleState.Sleep:
-                // 待機状態は無敵
+            case IcicleState.BossIdle:
+                // 待機状態、ボス召喚時は無敵
                 SetTagState(TagState.Immune);
                 break;
 
@@ -463,7 +549,19 @@ public class IcicleMoveController : MonoBehaviour, IEnemyResettable
                 // エフェクトをアクティブ化して自動再生
                 if (_hitEffectObject != null)
                 {
+                    // 一度falseにしてからtrueにし、Animatorを強制的に0フレーム目からリセット再生させる
+                    _hitEffectObject.SetActive(false);
                     _hitEffectObject.SetActive(true);
+
+                    if (_hitEffectAnimator != null)
+                    {
+                        _hitEffectAnimator.Play(
+                            _hitEffectAnimator.GetCurrentAnimatorStateInfo(0).fullPathHash,
+                            -1,
+                            0f
+                        );
+                    }
+
                     if (_hitEffectSpriteRenderer != null)
                     {
                         Color effColor = _hitEffectSpriteRenderer.color;
@@ -483,17 +581,27 @@ public class IcicleMoveController : MonoBehaviour, IEnemyResettable
                     fadeSeq.Join(_hitEffectSpriteRenderer.DOFade(0f, _fadeDuration));
                 }
 
-                // フェード完了後、指定時間待機してからRegenerateへ移行
+                // フェード完了後、指定時間待機してからRegenerateへ移行（ボス召喚時は消滅のみ）
                 fadeSeq.OnComplete(() =>
                 {
                     if (_hitEffectObject != null)
                     {
                         _hitEffectObject.SetActive(false); // 再生終了後に非表示に戻す
                     }
-                    _currentTween = DOVirtual.DelayedCall(
-                        _respawnDelay,
-                        () => ChangeState(IcicleState.Regenerate)
-                    );
+
+                    if (_isSingleUse)
+                    {
+                        // ボス召喚等の「1回限り」の場合はプールへ返却する
+                        gameObject.SetActive(false);
+                    }
+                    else
+                    {
+                        // 通常のステージギミックの場合は再生成処理へ
+                        _currentTween = DOVirtual.DelayedCall(
+                            _respawnDelay,
+                            () => ChangeState(IcicleState.Regenerate)
+                        );
+                    }
                 });
                 _currentTween = fadeSeq;
                 break;
@@ -577,7 +685,6 @@ public class IcicleMoveController : MonoBehaviour, IEnemyResettable
     private void OnDrawGizmosSelected()
     {
         // プレイヤー検知範囲の描画（エディタ確認用）
-        // Y軸は動的取得に変更したため、X軸の範囲のみ描画します
         Gizmos.color = new Color(1f, 0f, 0f, 0.3f);
 
         Vector3 p1 = transform.position + new Vector3(-_detectRangeX, 0f, 0f);

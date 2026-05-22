@@ -38,9 +38,17 @@ public class BossHealth : CharacterHealth
         // 基本クラスのAwake処理（SpriteRendererの取得など）を実行
         base.Awake();
 
-        // --- 元のAwakeにあったエラーチェック ---
         if (bossname == BossName.None)
-            Debug.LogError($"{this.gameObject.name}のボス名が設定されていません", this);
+        {
+            if (
+                UnityEngine.SceneManagement.SceneManager.GetActiveScene().name
+                != GameConstants.SCENE_NAME_DEBUG
+            )
+            {
+                Debug.LogError($"{this.gameObject.name}のボス名が設定されていません", this);
+            }
+        }
+
         if (AfterDeathGameObject != null)
         {
             AfterDeathGameObject.SetActive(false); //最初は非表示
