@@ -1,4 +1,6 @@
+using System;
 using System.Collections;
+using System.Collections.Generic;
 using UnityEngine;
 
 [RequireComponent(typeof(Rigidbody2D))]
@@ -22,9 +24,18 @@ public class ApothecaryFireBullet : MonoBehaviour
     private ContactDamageController _burnDamageController;
 
     private LayerMask _groundLayer;
+    private int _solidGroundLayerIndex;
+
     private int _groundDamage;
     private float _groundDuration;
     private bool _isGrounded;
+
+    // 貫通・確率用の内部変数
+    private float _currentBurnProbability;
+    private float _probabilityStep;
+    private int _maxPierceCount;
+    private int _currentHitCount;
+    private List<Collider2D> _ignoredColliders = new List<Collider2D>();
 
     // Animatorのパラメータをハッシュ化してキャッシュ
     private readonly int _flyHash = Animator.StringToHash("FlyTrigger");
@@ -45,11 +56,14 @@ public class ApothecaryFireBullet : MonoBehaviour
             _burnDamageController = burnChildObject.GetComponent<ContactDamageController>();
         }
 
-        // 指定されたレイヤーマスクを取得
+        // 弾が検知するレイヤー（硬い地面 ＋ 薄い足場）
         _groundLayer = LayerMask.GetMask(
             GameConstants.PHYSICS_LAYER_NAME_GROUND,
             GameConstants.PHYSICS_LAYER_NAME_OBJECT_GROUND
         );
+
+        // 100%炎上させるための「硬い地面」のレイヤーインデックス
+        _solidGroundLayerIndex = LayerMask.NameToLayer(GameConstants.PHYSICS_LAYER_NAME_GROUND);
     }
 
     /// <summary>
@@ -60,12 +74,31 @@ public class ApothecaryFireBullet : MonoBehaviour
         float speed,
         int airDamage,
         int groundDamage,
-        float groundDuration
+        float groundDuration,
+        float initialBurnProbability,
+        int maxPierceCount
     )
     {
         _groundDamage = groundDamage;
         _groundDuration = groundDuration;
         _isGrounded = false;
+
+        // 貫通関連の初期化
+        _currentBurnProbability = initialBurnProbability;
+        _maxPierceCount = maxPierceCount;
+        _currentHitCount = 0;
+        _ignoredColliders.Clear();
+
+        // 限界回数に達した時にちょうど1.0(100%)になるような1回あたりの上昇幅を計算
+        if (_maxPierceCount > 0)
+        {
+            _probabilityStep = (1.0f - initialBurnProbability) / _maxPierceCount;
+        }
+        else
+        {
+            _probabilityStep = 0f;
+            _currentBurnProbability = 1.0f; // 貫通させない設定の場合は最初から100%
+        }
 
         // 子オブジェクトの初期アクティブ状態を設定（Fly側を有効、Burn側を無効）
         if (flyChildObject != null)
@@ -99,19 +132,55 @@ public class ApothecaryFireBullet : MonoBehaviour
         // 上昇中も含めて、移動中は常に進行方向を向くように回転を更新する
         UpdateRotation();
 
-        // 下降中のみ着地判定を行う
+        // 下降中のみ着地・すり抜け判定を行う
         if (_rb.velocity.y <= 0)
         {
-            // 自身の中心から真下へ向けてRaycastで地面を検知
-            RaycastHit2D hit = Physics2D.Raycast(
+            // 自身の中心から真下へ向けてRaycastで地面を検知（貫通するため複数取得）
+            RaycastHit2D[] hits = Physics2D.RaycastAll(
                 transform.position,
                 Vector2.down,
                 0.5f,
                 _groundLayer
             );
-            if (hit.collider != null)
+
+            // 弾に近いものから順に処理できるよう距離でソート
+            Array.Sort(hits, (a, b) => a.distance.CompareTo(b.distance));
+
+            foreach (var hit in hits)
             {
-                HandleLanding(hit);
+                // すでにすり抜けた足場は無視する
+                if (hit.collider == null || _ignoredColliders.Contains(hit.collider))
+                    continue;
+
+                // 1. 完全に硬い地面(GROUNDレイヤー)の場合は、確率によらず100%炎上
+                if (hit.collider.gameObject.layer == _solidGroundLayerIndex)
+                {
+                    HandleLanding(hit);
+                    break;
+                }
+                else
+                {
+                    // 2. 薄い足場(OBJECT_GROUND等)の場合は確率で判定
+                    if (
+                        _currentHitCount >= _maxPierceCount
+                        || UnityEngine.Random.value <= _currentBurnProbability
+                    )
+                    {
+                        // 炎上する
+                        HandleLanding(hit);
+                        break;
+                    }
+                    else
+                    {
+                        // 貫通（すり抜け）する
+                        _currentHitCount++;
+                        _currentBurnProbability += _probabilityStep; // 確率を上昇
+                        _ignoredColliders.Add(hit.collider); // 今回すり抜けた床を無視リストに追加
+
+                        // 落下を継続させるため、ここでループを抜けて次のフレームへ
+                        break;
+                    }
+                }
             }
         }
     }
@@ -130,7 +199,7 @@ public class ApothecaryFireBullet : MonoBehaviour
     }
 
     /// <summary>
-    /// 着地した瞬間の処理を行います
+    /// 着地（炎上）が確定した瞬間の処理を行います
     /// </summary>
     /// <param name="hit">地面のコライダーとの衝突情報</param>
     private void HandleLanding(RaycastHit2D hit)

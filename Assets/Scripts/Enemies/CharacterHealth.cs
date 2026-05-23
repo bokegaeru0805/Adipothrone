@@ -28,7 +28,7 @@ public abstract class CharacterHealth : PoolableObject, IDamageable, IDroppable,
     protected bool useManualHP = false;
 
     [Tooltip("useManualHPがtrueの場合、この値が最大HPになります")]
-    [SerializeField, NaughtyAttributes.ShowIf(nameof(useManualHP))]
+    [SerializeField, ShowIf(nameof(useManualHP))]
     protected int manualMaxHP = 0;
     #endregion
 
