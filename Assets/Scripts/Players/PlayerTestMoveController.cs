@@ -141,20 +141,28 @@ public class PlayerTestMoveController : MonoBehaviour
         // マウスのスクリーン座標をワールド座標に変換
         Vector2 mouseWorldPos = mainCamera.ScreenToWorldPoint(Input.mousePosition);
 
-        // その地点にあるCollider2Dを取得（重なっている場合は手前のもの）
-        Collider2D hitCollider = Physics2D.OverlapPoint(mouseWorldPos);
+        // その地点にあるすべてのCollider2Dを取得
+        Collider2D[] hitColliders = Physics2D.OverlapPointAll(mouseWorldPos);
 
-        if (hitCollider != null)
+        Debug.Log(
+            $"Damage Test: マウス位置のワールド座標: {mouseWorldPos}, ヒットしたオブジェクト数: {hitColliders.Length}"
+        );
+
+        // 重なっているすべてのコライダーに対してループ処理を行う
+        foreach (Collider2D hitCollider in hitColliders)
         {
-            // Collider2Dが見つかった場合、そのオブジェクトにIDamageableがあるかチェックしてダメージを与える
-            var health = hitCollider.GetComponent<IDamageable>();
-
-            if (health != null)
+            if (hitCollider != null)
             {
-                health.Damage(damageAmount);
-                Debug.Log(
-                    $"<color=red>Damage Test:</color> {hitCollider.name} に {damageAmount} のダメージを与えました。(CurrentHP: {health.CurrentHP})"
-                );
+                // Collider2Dが見つかった場合、そのオブジェクトにIDamageableがあるかチェックしてダメージを与える
+                var health = hitCollider.GetComponent<IDamageable>();
+
+                if (health != null)
+                {
+                    health.Damage(damageAmount);
+                    Debug.Log(
+                        $"<color=red>Damage Test:</color> {hitCollider.name} に {damageAmount} のダメージを与えました。(CurrentHP: {health.CurrentHP})"
+                    );
+                }
             }
         }
 

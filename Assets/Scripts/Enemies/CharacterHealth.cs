@@ -81,6 +81,11 @@ public abstract class CharacterHealth : PoolableObject, IDamageable, IDroppable,
     public event Action OnDefeated;
 
     /// <summary>
+    /// ダメージを受けた瞬間に、受けたダメージ量（軽減後）を渡して発火するイベント
+    /// </summary>
+    public event Action<int> OnDamageTaken;
+
+    /// <summary>
     /// 派生クラスから安全にOnHPChangedイベントを発火させるためのメソッド。
     /// </summary>
     protected void InvokeHPChangedEvent()
@@ -261,6 +266,7 @@ public abstract class CharacterHealth : PoolableObject, IDamageable, IDroppable,
         CurrentHP -= damage;
 
         // HPが変動したことを外部に通知する
+        OnDamageTaken?.Invoke(damage);
         OnHPChanged?.Invoke(CurrentHP);
 
         // --- Step 3: ダメージ適用"後"の、派生クラス独自の処理を呼び出すフック ---
