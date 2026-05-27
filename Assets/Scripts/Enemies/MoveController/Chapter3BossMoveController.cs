@@ -8,6 +8,8 @@ using UnityEngine;
 /// </summary>
 public class Chapter3BossMoveController : MonoBehaviour
 {
+    private const string SHOOT_BULLET_POOLTAG = "Chapter3BossShoot";
+
     /// <summary>
     /// ボスの現在の状態を表す列挙型
     /// </summary>
@@ -17,7 +19,9 @@ public class Chapter3BossMoveController : MonoBehaviour
         Idle, // 待機中（下端からの特定座標をキープ）
         LowAttacking, // 下段攻撃中
         HighAttacking, // 上段攻撃中
-        ThrustAttacking // 突き攻撃中
+        ThrustAttacking, // 突き攻撃中
+        ShootAttacking, // 射撃攻撃中
+        RetreatTeleporting // 後退テレポート攻撃中 (新規追加)
         ,
     }
 
@@ -151,6 +155,74 @@ public class Chapter3BossMoveController : MonoBehaviour
     [SerializeField]
     private ParticleSystem thrustEffect;
 
+    [Header("ShootAttack(射撃攻撃)状態の設定")]
+    [Tooltip("攻撃準備時間（秒）")]
+    [SerializeField]
+    private float shootReadyDuration = 1.0f;
+
+    [Tooltip("攻撃の基本Y座標オフセット")]
+    [SerializeField]
+    private float shootBulletHeightOffset = 1.0f;
+
+    [Tooltip("弾の速度")]
+    [SerializeField]
+    private float shootBulletSpeed = 10.0f;
+
+    [Tooltip("弾の攻撃力")]
+    [SerializeField]
+    private int shootDamage = 10;
+
+    [Tooltip("Shoot攻撃フェーズ自体の時間（秒）")]
+    [SerializeField]
+    private float shootAttackDuration = 0.5f;
+
+    [Tooltip("連射時の弾と弾の間の発射間隔（秒）")]
+    [SerializeField]
+    private float shootBulletInterval = 0.3f;
+
+    [Tooltip("攻撃後待機時間（秒）")]
+    [SerializeField]
+    private float postShootWaitDuration = 1.0f;
+
+    [Tooltip("Shoot攻撃時に再生するエフェクト（子オブジェクト）")]
+    [SerializeField]
+    private ParticleSystem shootEffect;
+
+    [Header("後退テレポート(RetreatTeleport)状態の設定")]
+    [Tooltip("背後への指定距離")]
+    [SerializeField]
+    private float retreatDistance = 10f;
+
+    [Tooltip("壁からのマージン")]
+    [SerializeField]
+    private float retreatWallMargin = 2f;
+
+    [Tooltip("初期の消滅にかかる時間（秒）")]
+    [SerializeField]
+    private float retreatInitialFadeOutTime = 1.0f;
+
+    [Tooltip("ホログラム出現時間（秒）")]
+    [SerializeField]
+    private float retreatHologramAppearTime = 0.5f;
+
+    [Tooltip("攻撃の時間（秒）")]
+    [SerializeField]
+    private float retreatAttackDuration = 1.0f;
+
+    [Tooltip("ホログラム再消滅時間（秒）")]
+    [SerializeField]
+    private float retreatHologramDisappearTime = 0.5f;
+
+    [Tooltip("予め指定する複数の地面からの高さ（areaBottomBoundからのオフセット値）")]
+    [SerializeField]
+    private float[] retreatHeights;
+
+    [Tooltip(
+        "ホログラム演出の対象となるSpriteRenderer（Slashエフェクト等を除外するため手動で設定）"
+    )]
+    [SerializeField]
+    private SpriteRenderer[] hologramTargetRenderers;
+
     // 内部管理用変数
     private Animator _animator;
     private Coroutine _actionLoopCoroutine;
@@ -188,6 +260,26 @@ public class Chapter3BossMoveController : MonoBehaviour
     private readonly int _thrustTriggerHash = Animator.StringToHash("ThrustAttackTrigger");
     private readonly int _thrustReadySpeedHash = Animator.StringToHash("ThrustAttackReadySpeed");
     private readonly int _thrustSpeedHash = Animator.StringToHash("ThrustAttackSpeed");
+
+    // ShootAttack用ハッシュ
+    private readonly int _shootReadyTriggerHash = Animator.StringToHash("ShootAttackReadyTrigger");
+    private readonly int _shootTriggerHash = Animator.StringToHash("ShootAttackTrigger");
+    private readonly int _shootReadySpeedHash = Animator.StringToHash("ShootAttackReadySpeed");
+    private readonly int _shootSpeedHash = Animator.StringToHash("ShootAttackSpeed");
+
+    // HorizontalAttack用ハッシュ
+    private readonly int _horizontalAttackReadyTriggerHash = Animator.StringToHash(
+        "HorizontalAttackReadyTrigger"
+    );
+    private readonly int _horizontalAttackTriggerHash = Animator.StringToHash(
+        "HorizontalAttackTrigger"
+    );
+    private readonly int _horizontalAttackReadySpeedHash = Animator.StringToHash(
+        "HorizontalAttackReadySpeed"
+    );
+    private readonly int _horizontalAttackSpeedHash = Animator.StringToHash(
+        "HorizontalAttackSpeed"
+    );
 
     /// <summary>
     /// エディタ上かつisDebugNoWaitがtrueの場合のみ有効化されるデバッグ判定プロパティ
@@ -268,10 +360,10 @@ public class Chapter3BossMoveController : MonoBehaviour
     {
         while (true)
         {
-            // 本来は半々の確率でNormalAttackかThrustAttackを分岐させるが、今回は突き攻撃で固定
-            bool forceThrustAttack = true;
+            // 本来は確率で攻撃を分岐させるが、今回はRetreatTeleportAttackで固定
+            bool forceRetreatTeleportAttack = true;
 
-            if (!forceThrustAttack)
+            if (!forceRetreatTeleportAttack)
             {
                 // 次にHighAttackを行うかどうかを事前に判定
                 bool willDoHighAttack = Random.value <= highAttackProbability;
@@ -296,8 +388,8 @@ public class Chapter3BossMoveController : MonoBehaviour
             }
             else
             {
-                // 突き攻撃（ThrustAttack）の実行
-                yield return StartCoroutine(PerformThrustAttack());
+                // Shoot攻撃（ShootAttack）の実行（今回は3発発射を指定）
+                yield return StartCoroutine(PerformRetreatTeleport(3));
             }
 
             // 3. 待機状態（Idle）への移行
@@ -572,6 +664,172 @@ public class Chapter3BossMoveController : MonoBehaviour
     }
 
     /// <summary>
+    /// ShootAttack（射撃攻撃）の一連のアクションを実行します。
+    /// </summary>
+    /// <param name="shootCount">発射する弾の最大個数</param>
+    private IEnumerator PerformShootAttack(int shootCount)
+    {
+        CurrentState = BossState.ShootAttacking;
+
+        float readyDuration = IsDebugNoWaitActive ? 0.1f : shootReadyDuration;
+        float attackDur = IsDebugNoWaitActive ? 0.1f : shootAttackDuration; // 攻撃フェーズ自体の時間
+        float bulletInterval = IsDebugNoWaitActive ? 0.1f : shootBulletInterval; // 弾の発射間隔
+        float postWait = IsDebugNoWaitActive ? 0.1f : postShootWaitDuration;
+
+        if (readyDuration < 0.1f)
+            readyDuration = 0.1f;
+        if (attackDur < 0.1f)
+            attackDur = 0.1f;
+        if (bulletInterval < 0.1f)
+            bulletInterval = 0.1f;
+        if (postWait < 0.1f)
+            postWait = 0.1f;
+
+        // --- 1. 準備フェーズ ---
+        if (_animator != null)
+        {
+            SetAnimatorSpeed(_shootReadySpeedHash, readyDuration);
+            _animator.SetTrigger(_shootReadyTriggerHash);
+        }
+
+        yield return new WaitForSeconds(readyDuration);
+
+        // --- 2. オフセットリストの作成と抽出 ---
+        List<float> allOffsets = new List<float>
+        {
+            -2f * shootBulletHeightOffset,
+            -1f * shootBulletHeightOffset,
+            0f,
+            1f * shootBulletHeightOffset,
+            2f * shootBulletHeightOffset,
+        };
+
+        // リストをランダムにシャッフル
+        for (int i = 0; i < allOffsets.Count; i++)
+        {
+            int randomIndex = Random.Range(i, allOffsets.Count);
+            float temp = allOffsets[i];
+            allOffsets[i] = allOffsets[randomIndex];
+            allOffsets[randomIndex] = temp;
+        }
+
+        int actualCount = Mathf.Min(shootCount, allOffsets.Count);
+        List<float> targetYOffsets = allOffsets.GetRange(0, actualCount);
+
+        // --- 3. 発射ループ ---
+        UpdatePlayerTransformReference();
+        int facingDir = _isFacingRight ? 1 : -1;
+
+        foreach (float yOffset in targetYOffsets)
+        {
+            UpdatePlayerTransformReference();
+
+            float currentSwordTipX =
+                swordTipTransform != null ? swordTipTransform.position.x : transform.position.x;
+
+            // 懐判定
+            bool shouldFire = true;
+            if (_playerTransform != null)
+            {
+                float forwardDistance =
+                    (_playerTransform.position.x - currentSwordTipX) * facingDir;
+                if (forwardDistance <= 0f)
+                {
+                    shouldFire = false;
+                }
+            }
+
+            // 懐に入られていた場合は、これ以降の射撃処理と postWait をすべてスキップして即座にコルーチンを抜ける
+            if (!shouldFire)
+            {
+                yield break;
+            }
+
+            // アニメーションの再生速度には「攻撃時間（shootAttackDuration）」を指定
+            if (_animator != null)
+            {
+                SetAnimatorSpeed(_shootSpeedHash, attackDur);
+                _animator.SetTrigger(_shootTriggerHash);
+            }
+
+            // エフェクトを再生（子オブジェクトのまま）
+            if (shootEffect != null)
+            {
+                shootEffect.Stop(); // 連射時に最初から再生されるよう一度停止する
+                shootEffect.Play();
+            }
+
+            // 弾の発射
+            FireShootBullet(yOffset, facingDir, currentSwordTipX);
+
+            yield return new WaitForSeconds(attackDur); // 攻撃フェーズ自体の時間を待機
+
+            // 次の弾を発射するまでの待機には「発射間隔（shootBulletInterval）」を使用
+            yield return new WaitForSeconds(bulletInterval);
+        }
+
+        // --- 4. 攻撃後待機（リカバリー）フェーズ ---
+        yield return new WaitForSeconds(postWait);
+    }
+
+    /// <summary>
+    /// Shoot攻撃用の弾を生成・発射します。
+    /// </summary>
+    /// <param name="yOffset">プレイヤーに対するY座標オフセット</param>
+    /// <param name="facingDir">現在のボスの向き（1 or -1）</param>
+    /// <param name="startX">弾の生成X座標（剣先）</param>
+    private void FireShootBullet(float yOffset, int facingDir, float startX)
+    {
+        // 発射位置の決定（Y座標も剣先を基準にする）
+        float startY =
+            swordTipTransform != null ? swordTipTransform.position.y : transform.position.y;
+        Vector3 spawnPos = new Vector3(startX, startY, 0f);
+
+        // ターゲット位置の計算
+        Vector3 targetPos = Vector3.zero;
+        if (_playerTransform != null)
+        {
+            targetPos = _playerTransform.position + new Vector3(0f, yOffset, 0f);
+        }
+        else
+        {
+            // プレイヤーがいない場合は前方へ飛ばす
+            targetPos = spawnPos + new Vector3(facingDir * 10f, yOffset, 0f);
+        }
+
+        // プールから弾を取得して生成
+        GameObject bullet = ObjectPooler.SceneInstance.SpawnFromPool(
+            SHOOT_BULLET_POOLTAG,
+            spawnPos,
+            Quaternion.identity
+        );
+
+        if (bullet != null)
+        {
+            // 進行方向ベクトル
+            Vector2 direction = (targetPos - spawnPos).normalized;
+
+            // 弾の回転角度設定
+            float angle = Mathf.Atan2(direction.y, direction.x) * Mathf.Rad2Deg;
+            bullet.transform.rotation = Quaternion.Euler(0, 0, angle);
+
+            // 速度の適用
+            Rigidbody2D rb = bullet.GetComponent<Rigidbody2D>();
+            if (rb != null)
+            {
+                rb.velocity = direction * shootBulletSpeed;
+            }
+
+            // 攻撃力の設定
+            var damageController = bullet.GetComponent<ContactDamageController>();
+            if (damageController != null)
+            {
+                damageController.SetNormalDamage(shootDamage);
+            }
+        }
+    }
+
+    /// <summary>
     /// プレイヤーのTransform参照を最新の状態に更新します。
     /// </summary>
     private void UpdatePlayerTransformReference()
@@ -644,6 +902,196 @@ public class Chapter3BossMoveController : MonoBehaviour
                 thrustRenderer.color = color;
             }
         }
+    }
+
+    /// <summary>
+    /// 後退しながら瞬間移動し、中間地点で攻撃を行う一連のアクションを実行します。
+    /// </summary>
+    /// <param name="teleportCount">中間地点で攻撃を行う回数</param>
+    private IEnumerator PerformRetreatTeleport(int teleportCount)
+    {
+        CurrentState = BossState.RetreatTeleporting;
+
+        float initialFadeTime = IsDebugNoWaitActive ? 0.1f : retreatInitialFadeOutTime;
+        float appearTime = IsDebugNoWaitActive ? 0.1f : retreatHologramAppearTime;
+        float attackDur = IsDebugNoWaitActive ? 0.1f : retreatAttackDuration;
+        float disappearTime = IsDebugNoWaitActive ? 0.1f : retreatHologramDisappearTime;
+
+        if (initialFadeTime < 0.1f)
+            initialFadeTime = 0.1f;
+        if (appearTime < 0.1f)
+            appearTime = 0.1f;
+        if (attackDur < 0.1f)
+            attackDur = 0.1f;
+        if (disappearTime < 0.1f)
+            disappearTime = 0.1f;
+
+        // --- 1. 広い方向の判定と向きの固定 ---
+        float distToLeft = transform.position.x - areaLeftBound;
+        float distToRight = areaRightBound - transform.position.x;
+
+        // 端からの距離が遠い方（広い空間がある方）を選ぶ
+        bool retreatToRight = distToRight >= distToLeft;
+
+        // 後退方向とは「逆」を常に向き続けるように固定する（右に逃げるなら左向き）
+        UpdateFacingDirection(!retreatToRight);
+
+        // --- 2. 最終移動X座標の計算 ---
+        float startX = transform.position.x;
+        float finalX;
+
+        if (retreatToRight)
+        {
+            float targetX = startX + retreatDistance;
+            float wallLimitX = areaRightBound - retreatWallMargin;
+            // 右へ進むので、値が小さい（自分に近い）方を採用
+            finalX = Mathf.Min(targetX, wallLimitX);
+        }
+        else
+        {
+            float targetX = startX - retreatDistance;
+            float wallLimitX = areaLeftBound + retreatWallMargin;
+            // 左へ進むので、値が大きい（自分に近い）方を採用
+            finalX = Mathf.Max(targetX, wallLimitX);
+        }
+
+        // --- 3. 最初の消滅演出 ---
+        Sequence fadeOutSeq = DOTween.Sequence();
+        foreach (var renderer in hologramTargetRenderers)
+        {
+            if (renderer != null && renderer.material != null)
+            {
+                Material mat = renderer.material;
+                mat.EnableKeyword("_HOLOGRAM_ON");
+                mat.SetFloat("_HologramBlend", 1.0f);
+
+                fadeOutSeq.Join(renderer.DOFade(0f, initialFadeTime));
+            }
+        }
+        yield return fadeOutSeq.SetEase(Ease.OutCubic).WaitForCompletion();
+
+        // --- 4. 瞬間移動と攻撃のループ ---
+        // 攻撃回数 + 1(最後の出現用) で等分することで、1回目の出現を1区画先から開始する
+        float stepX = (finalX - startX) / (teleportCount + 1);
+
+        for (int i = 1; i <= teleportCount; i++)
+        {
+            // 座標の決定
+            float currentTargetX = startX + stepX * i;
+            float currentHeight = 0f;
+            if (retreatHeights != null && retreatHeights.Length > 0)
+            {
+                currentHeight = retreatHeights[Random.Range(0, retreatHeights.Length)];
+            }
+            float currentTargetY = areaBottomBound + currentHeight;
+
+            transform.position = new Vector3(currentTargetX, currentTargetY, transform.position.z);
+
+            // 出現に合わせたアニメーション (Ready)
+            if (_animator != null)
+            {
+                SetAnimatorSpeed(_horizontalAttackReadySpeedHash, appearTime);
+                _animator.SetTrigger(_horizontalAttackReadyTriggerHash);
+            }
+
+            // ホログラムによる出現演出
+            Sequence appearSeq = DOTween.Sequence();
+            foreach (var renderer in hologramTargetRenderers)
+            {
+                if (renderer != null && renderer.material != null)
+                {
+                    Material mat = renderer.material;
+                    mat.EnableKeyword("_HOLOGRAM_ON");
+                    mat.SetFloat("_HologramBlend", 1.0f);
+
+                    // 透明度をパッと実体に戻す
+                    Color c = renderer.color;
+                    c.a = 1f;
+                    renderer.color = c;
+
+                    // ホログラムから実体へとブレンドさせる
+                    appearSeq.Join(mat.DOFloat(0f, "_HologramBlend", appearTime));
+                }
+            }
+
+            yield return appearSeq.WaitForCompletion();
+
+            // 実体化後は念のためキーワードを無効化
+            foreach (var renderer in hologramTargetRenderers)
+            {
+                if (renderer != null && renderer.material != null)
+                {
+                    renderer.material.DisableKeyword("_HOLOGRAM_ON");
+                }
+            }
+
+            // 攻撃実行と待機
+            if (_animator != null)
+            {
+                SetAnimatorSpeed(_horizontalAttackSpeedHash, attackDur);
+                _animator.SetTrigger(_horizontalAttackTriggerHash);
+            }
+
+            yield return new WaitForSeconds(attackDur);
+
+            // 再びホログラム演出で消滅
+            Sequence disappearSeq = DOTween.Sequence();
+            foreach (var renderer in hologramTargetRenderers)
+            {
+                if (renderer != null && renderer.material != null)
+                {
+                    Material mat = renderer.material;
+                    mat.EnableKeyword("_HOLOGRAM_ON");
+
+                    disappearSeq.Join(mat.DOFloat(1.0f, "_HologramBlend", disappearTime));
+                    disappearSeq.Join(renderer.DOFade(0f, disappearTime));
+                }
+            }
+            yield return disappearSeq.SetEase(Ease.OutCubic).WaitForCompletion();
+        }
+
+        // --- 5. 最後の出現（攻撃なしでIdleへ戻る） ---
+        transform.position = new Vector3(
+            finalX,
+            areaBottomBound + idleHeightFromBottom,
+            transform.position.z
+        );
+
+        Sequence finalAppearSeq = DOTween.Sequence();
+        foreach (var renderer in hologramTargetRenderers)
+        {
+            if (renderer != null && renderer.material != null)
+            {
+                Material mat = renderer.material;
+                mat.EnableKeyword("_HOLOGRAM_ON");
+                mat.SetFloat("_HologramBlend", 1.0f);
+
+                Color c = renderer.color;
+                c.a = 1f;
+                renderer.color = c;
+
+                finalAppearSeq.Join(mat.DOFloat(0f, "_HologramBlend", appearTime));
+            }
+        }
+
+        // 最終出現時はそのままIdleへ滑らかにクロスフェード
+        if (_animator != null)
+        {
+            _animator.CrossFadeInFixedTime(_idleStateHash, appearTime);
+        }
+
+        yield return finalAppearSeq.WaitForCompletion();
+
+        // 最終クリーンアップ
+        foreach (var renderer in hologramTargetRenderers)
+        {
+            if (renderer != null && renderer.material != null)
+            {
+                renderer.material.DisableKeyword("_HOLOGRAM_ON");
+            }
+        }
+
+        CurrentState = BossState.Idle;
     }
 
     /// <summary>
