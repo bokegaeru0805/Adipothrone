@@ -21,7 +21,8 @@ public class Chapter3BossMoveController : MonoBehaviour
         HighAttacking, // 上段攻撃中
         ThrustAttacking, // 突き攻撃中
         ShootAttacking, // 射撃攻撃中
-        RetreatTeleporting // 後退テレポート攻撃中 (新規追加)
+        RetreatTeleporting, // 後退テレポート攻撃中
+        RushComboAttacking // 突進コンボ攻撃中 (新規追加)
         ,
     }
 
@@ -223,6 +224,61 @@ public class Chapter3BossMoveController : MonoBehaviour
     [SerializeField]
     private SpriteRenderer[] hologramTargetRenderers;
 
+    [Header("WindEffect(後退テレポート時)の設定")]
+    [Tooltip("発射するWindEffectのプレハブ")]
+    [SerializeField]
+    private GameObject windEffectPrefab;
+
+    [Tooltip("WindEffectのオブジェクトプール初期サイズ")]
+    [SerializeField]
+    private int windEffectPoolSize = 5;
+
+    [Tooltip("WindEffectの攻撃力")]
+    [SerializeField]
+    private int windEffectDamage = 15;
+
+    [Tooltip("WindEffectの移動速度（1秒間に進む距離）")]
+    [SerializeField]
+    private float windEffectSpeed = 20.0f;
+
+    [Header("RushComboAttack(突進コンボ攻撃)状態の設定")]
+    [Tooltip("1回で進む距離")]
+    [SerializeField]
+    private float advanceDistancePerHit = 3.0f;
+
+    [Tooltip("壁からのマージン")]
+    [SerializeField]
+    private float advanceWallMargin = 2.0f;
+
+    [Tooltip("Y座標の高さ（areaBottomBoundからのオフセット）")]
+    [SerializeField]
+    private float advanceHeightFromBottom = 0.0f;
+
+    [Tooltip("準備時間（秒）")]
+    [SerializeField]
+    private float advanceReadyDuration = 1.0f;
+
+    [Tooltip("1回ごとの攻撃時間（秒）")]
+    [SerializeField]
+    private float advanceAttackDuration = 0.5f;
+
+    [Tooltip("1回ごとの待機・インターバル時間（秒）")]
+    [SerializeField]
+    private float advanceWaitDuration = 0.3f;
+
+    [Tooltip("攻撃時間のうち、移動に使う時間の割合（0.0～1.0）")]
+    [Range(0f, 1f)]
+    [SerializeField]
+    private float advanceMoveTimeRatio = 0.2f;
+
+    [Tooltip("Upper攻撃の攻撃力")]
+    [SerializeField]
+    private int upperAttackDamage = 15;
+
+    [Tooltip("Upper攻撃時に使用するContactDamageController")]
+    [SerializeField]
+    private ContactDamageController upperAttackDamageController;
+
     // 内部管理用変数
     private Animator _animator;
     private Coroutine _actionLoopCoroutine;
@@ -230,8 +286,10 @@ public class Chapter3BossMoveController : MonoBehaviour
     private Transform _playerTransform;
     private bool _isFacingRight = false; // 現在右を向いているかどうかのフラグ（デフォルト左向き）
 
+    // オブジェクトプール用キュー
+    private Queue<GameObject> _windEffectPool;
+
     // Animatorパラメータの事前キャッシュ
-    private readonly int _idleTriggerHash = Animator.StringToHash("IdleTrigger");
     private readonly int _idleStateHash = Animator.StringToHash("Chapter3Boss_Idle");
 
     // LowAttack用ハッシュ
@@ -243,13 +301,16 @@ public class Chapter3BossMoveController : MonoBehaviour
     private readonly int _lowAttackSpeedHash = Animator.StringToHash("LowAttackSpeed");
 
     // HighAttack用ハッシュ
-    private readonly int _highAttackReadyTriggerHash = Animator.StringToHash(
-        "HighAttackReadyTrigger"
+    private readonly int _normalHighAttackReadyTriggerHash = Animator.StringToHash(
+        "NormalHighAttackReadyTrigger"
     );
     private readonly int _comboHighAttackReadyTriggerHash = Animator.StringToHash(
         "ComboHighAttackReadyTrigger"
     );
-    private readonly int _highAttackTriggerHash = Animator.StringToHash("HighAttackTrigger");
+    private readonly int _normalHighAttackTriggerHash = Animator.StringToHash("NormalHighAttackTrigger");
+    private readonly int _comboHighAttackTriggerHash = Animator.StringToHash(
+        "ComboHighAttackTrigger"
+    );
     private readonly int _highAttackReadySpeedHash = Animator.StringToHash("HighAttackReadySpeed");
     private readonly int _highAttackSpeedHash = Animator.StringToHash("HighAttackSpeed");
 
@@ -281,6 +342,10 @@ public class Chapter3BossMoveController : MonoBehaviour
         "HorizontalAttackSpeed"
     );
 
+    // UpperAttack用ハッシュ (RushComboAttack内で使用)
+    private readonly int _upperAttackTriggerHash = Animator.StringToHash("UpperAttackTrigger");
+    private readonly int _upperAttackSpeedHash = Animator.StringToHash("UpperAttackSpeed");
+
     /// <summary>
     /// エディタ上かつisDebugNoWaitがtrueの場合のみ有効化されるデバッグ判定プロパティ
     /// </summary>
@@ -311,6 +376,8 @@ public class Chapter3BossMoveController : MonoBehaviour
     /// </summary>
     public void ResetState()
     {
+        InitializeWindEffectPool();
+
         if (_actionLoopCoroutine != null)
         {
             StopCoroutine(_actionLoopCoroutine);
@@ -323,6 +390,52 @@ public class Chapter3BossMoveController : MonoBehaviour
         }
 
         StartCoroutine(IntroSequence());
+    }
+
+    /// <summary>
+    /// WindEffect用のオブジェクトプールを初期化します。
+    /// </summary>
+    private void InitializeWindEffectPool()
+    {
+        _windEffectPool = new Queue<GameObject>();
+
+        if (windEffectPrefab == null)
+        {
+            Debug.LogWarning("WindEffectのプレハブが設定されていません。");
+            return;
+        }
+
+        // 弾がボスの移動に影響されないよう、ルート階層（親なし）に生成する
+        for (int i = 0; i < windEffectPoolSize; i++)
+        {
+            GameObject effect = Instantiate(windEffectPrefab);
+            effect.SetActive(false);
+            _windEffectPool.Enqueue(effect);
+        }
+    }
+
+    /// <summary>
+    /// プールからWindEffectを取得します。足りない場合は追加生成します。
+    /// </summary>
+    private GameObject GetWindEffectFromPool()
+    {
+        if (windEffectPrefab == null)
+            return null;
+
+        // プール内に非アクティブなオブジェクトがあるか探す
+        foreach (GameObject effect in _windEffectPool)
+        {
+            if (!effect.activeInHierarchy)
+            {
+                return effect;
+            }
+        }
+
+        // 足りない場合は新規作成してキューに追加
+        GameObject newEffect = Instantiate(windEffectPrefab);
+        newEffect.SetActive(false);
+        _windEffectPool.Enqueue(newEffect);
+        return newEffect;
     }
 
     /// <summary>
@@ -360,10 +473,10 @@ public class Chapter3BossMoveController : MonoBehaviour
     {
         while (true)
         {
-            // 本来は確率で攻撃を分岐させるが、今回はRetreatTeleportAttackで固定
-            bool forceRetreatTeleportAttack = true;
+            // 本来は確率で攻撃を分岐させるが、今回はRushComboAttackで固定
+            bool forceRushComboAttack = true;
 
-            if (!forceRetreatTeleportAttack)
+            if (!forceRushComboAttack)
             {
                 // 次にHighAttackを行うかどうかを事前に判定
                 bool willDoHighAttack = Random.value <= highAttackProbability;
@@ -389,7 +502,7 @@ public class Chapter3BossMoveController : MonoBehaviour
             else
             {
                 // Shoot攻撃（ShootAttack）の実行（今回は3発発射を指定）
-                yield return StartCoroutine(PerformRetreatTeleport(3));
+                yield return StartCoroutine(PerformRushComboAttack());
             }
 
             // 3. 待機状態（Idle）への移行
@@ -499,7 +612,7 @@ public class Chapter3BossMoveController : MonoBehaviour
         if (_animator != null)
         {
             SetAnimatorSpeed(_highAttackReadySpeedHash, readyDuration);
-            _animator.SetTrigger(_comboHighAttackReadyTriggerHash);
+            _animator.SetTrigger(_normalHighAttackReadyTriggerHash);
         }
 
         float targetY = areaBottomBound + highAttackHeightFromBottom;
@@ -515,7 +628,7 @@ public class Chapter3BossMoveController : MonoBehaviour
         if (_animator != null)
         {
             SetAnimatorSpeed(_highAttackSpeedHash, attackDur);
-            _animator.SetTrigger(_highAttackTriggerHash);
+            _animator.SetTrigger(_normalHighAttackTriggerHash);
         }
 
         yield return new WaitForSeconds(attackDur);
@@ -1032,6 +1145,13 @@ public class Chapter3BossMoveController : MonoBehaviour
                 _animator.SetTrigger(_horizontalAttackTriggerHash);
             }
 
+            // shootの時と同じエフェクトを再生（子オブジェクトのまま）
+            if (shootEffect != null)
+            {
+                shootEffect.Stop();
+                shootEffect.Play();
+            }
+
             yield return new WaitForSeconds(attackDur);
 
             // 再びホログラム演出で消滅
@@ -1092,6 +1212,180 @@ public class Chapter3BossMoveController : MonoBehaviour
         }
 
         CurrentState = BossState.Idle;
+    }
+
+    /// <summary>
+    /// アニメーションイベントから呼び出され、WindEffectを発射します。
+    /// </summary>
+    public void FireWindEffect()
+    {
+        GameObject effectObj = GetWindEffectFromPool();
+        if (effectObj == null)
+            return;
+
+        Chapter3BossWindEffect windEffect = effectObj.GetComponent<Chapter3BossWindEffect>();
+        if (windEffect == null)
+        {
+            Debug.LogWarning(
+                "WindEffectプレハブにChapter3BossWindEffectスクリプトがアタッチされていません。"
+            );
+            return;
+        }
+
+        // 発射位置（X, Y両方ともSwordTipの座標にする。未設定ならボス本体）
+        Vector3 spawnPos =
+            swordTipTransform != null ? swordTipTransform.position : transform.position;
+
+        // 目標となる端のX座標を、現在ボスが向いている方向から決定
+        float targetX = _isFacingRight ? areaRightBound : areaLeftBound;
+
+        // 速度と距離から移動時間(Duration)を逆算する
+        // 現在地から目標地点までの絶対距離を計算
+        float distance = Mathf.Abs(targetX - spawnPos.x);
+
+        // 距離 ÷ 速度 ＝ 到達にかかる時間
+        float calculatedDuration = distance / Mathf.Max(0.1f, windEffectSpeed); // ゼロ除算防止
+
+        // エフェクトのセットアップと発射
+        windEffect.Setup(
+            startPos: spawnPos,
+            targetX: targetX,
+            duration: calculatedDuration,
+            damage: windEffectDamage,
+            isFacingRight: _isFacingRight
+        );
+    }
+
+    /// <summary>
+    /// 前進しながら3連撃（High → Upper → High）を叩き込む一連のアクションを実行します。
+    /// </summary>
+    private IEnumerator PerformRushComboAttack()
+    {
+        CurrentState = BossState.RushComboAttacking;
+
+        float readyDur = IsDebugNoWaitActive ? 0.1f : advanceReadyDuration;
+        float attackDur = IsDebugNoWaitActive ? 0.1f : advanceAttackDuration;
+        float waitDur = IsDebugNoWaitActive ? 0.1f : advanceWaitDuration;
+
+        if (readyDur < 0.1f)
+            readyDur = 0.1f;
+        if (attackDur < 0.1f)
+            attackDur = 0.1f;
+        if (waitDur < 0.1f)
+            waitDur = 0.1f;
+
+        // 移動にかかる実際の時間（攻撃時間 × 指定割合）
+        float moveDur = attackDur * advanceMoveTimeRatio;
+        if (moveDur <= 0f)
+            moveDur = 0.01f; // 0除算やエラー防止
+
+        // --- 1. 進行方向の決定と目標座標の計算 ---
+        UpdatePlayerTransformReference();
+
+        // プレイヤーの位置を元に向きを更新する（プレイヤーがいない場合は現在の向きを維持）
+        if (_playerTransform != null)
+        {
+            UpdateFacingDirection(_playerTransform.position.x > transform.position.x);
+        }
+        int facingDir = _isFacingRight ? 1 : -1;
+
+        float startX = transform.position.x;
+        // 理論上の最終移動座標（3回分の前進）
+        float theoreticalFinalX = startX + (facingDir * advanceDistancePerHit * 3);
+        float finalX;
+
+        // 壁からのマージンを考慮し、近い方を最終座標として決定
+        if (_isFacingRight)
+        {
+            float wallLimitX = areaRightBound - advanceWallMargin;
+            finalX = Mathf.Min(theoreticalFinalX, wallLimitX);
+        }
+        else
+        {
+            float wallLimitX = areaLeftBound + advanceWallMargin;
+            finalX = Mathf.Max(theoreticalFinalX, wallLimitX);
+        }
+
+        // 3等分した移動距離（1回あたりの実際のステップ幅）
+        float stepX = (finalX - startX) / 3f;
+        float targetY = areaBottomBound + advanceHeightFromBottom;
+
+        // --- 2. 準備フェーズ ---
+        if (_animator != null)
+        {
+            SetAnimatorSpeed(_highAttackReadySpeedHash, readyDur);
+            // 最初はHighAttackの構えを使用
+            _animator.SetTrigger(_comboHighAttackReadyTriggerHash);
+        }
+
+        // 指定の高さへ移動しながら待機
+        _moveTween = transform.DOMoveY(targetY, readyDur).SetEase(Ease.InOutQuad);
+        yield return _moveTween.WaitForCompletion();
+
+        // --- 3. 攻撃フェーズ（3連撃） ---
+
+        // 【1撃目：HighAttack】
+        float targetX1 = startX + stepX * 1;
+
+        if (highAttackDamageController != null)
+            highAttackDamageController.SetNormalDamage(highAttackDamage);
+        if (_animator != null)
+        {
+            SetAnimatorSpeed(_highAttackSpeedHash, attackDur);
+            _animator.SetTrigger(_comboHighAttackTriggerHash);
+        }
+        if (shootEffect != null)
+        {
+            shootEffect.Stop();
+            shootEffect.Play();
+        }
+
+        // 鋭い動き（Ease.OutExpo）で移動
+        _moveTween = transform.DOMoveX(targetX1, moveDur).SetEase(Ease.OutExpo);
+        yield return new WaitForSeconds(attackDur); // 攻撃時間いっぱい待つ
+        yield return new WaitForSeconds(waitDur); // インターバル待機
+
+        // 【2撃目：UpperAttack】
+        float targetX2 = startX + stepX * 2;
+
+        if (upperAttackDamageController != null)
+            upperAttackDamageController.SetNormalDamage(upperAttackDamage);
+        if (_animator != null)
+        {
+            SetAnimatorSpeed(_upperAttackSpeedHash, attackDur);
+            _animator.SetTrigger(_upperAttackTriggerHash);
+        }
+        if (shootEffect != null)
+        {
+            shootEffect.Stop();
+            shootEffect.Play();
+        }
+
+        _moveTween = transform.DOMoveX(targetX2, moveDur).SetEase(Ease.OutExpo);
+        yield return new WaitForSeconds(attackDur);
+        yield return new WaitForSeconds(waitDur);
+
+        // 【3撃目：HighAttack】
+        float targetX3 = startX + stepX * 3; // (ほぼfinalXと一致)
+
+        if (highAttackDamageController != null)
+            highAttackDamageController.SetNormalDamage(highAttackDamage);
+        if (_animator != null)
+        {
+            SetAnimatorSpeed(_highAttackSpeedHash, attackDur);
+            _animator.SetTrigger(_comboHighAttackTriggerHash);
+        }
+        if (shootEffect != null)
+        {
+            shootEffect.Stop();
+            shootEffect.Play();
+        }
+
+        _moveTween = transform.DOMoveX(targetX3, moveDur).SetEase(Ease.OutExpo);
+        yield return new WaitForSeconds(attackDur);
+
+        // 3撃目の後のリカバリー（インターバル）待機
+        yield return new WaitForSeconds(waitDur);
     }
 
     /// <summary>

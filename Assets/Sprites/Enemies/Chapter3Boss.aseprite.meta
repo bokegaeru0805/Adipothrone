@@ -524,7 +524,7 @@ ScriptedImporter:
     uvTransform: {x: 4, y: 142}
   spriteSheetImportData: []
   asepriteLayers:
-  - layerIndex: 20
+  - layerIndex: 24
     uuid:
       value0: 4136223136
       value1: 0
@@ -736,7 +736,7 @@ ScriptedImporter:
       spriteId: d8f5970131753874c808362f66daa8a1
     linkedCells: []
     parentIndex: 10
-  - layerIndex: 21
+  - layerIndex: 20
     uuid:
       value0: 1335317569
       value1: 0
@@ -750,7 +750,7 @@ ScriptedImporter:
     cells: []
     linkedCells: []
     parentIndex: -1
-  - layerIndex: 22
+  - layerIndex: 21
     uuid:
       value0: 1575506903
       value1: 0
@@ -772,8 +772,8 @@ ScriptedImporter:
         height: 55
       spriteId: a1a1cdf8bf3c935468e362e28af8d8db
     linkedCells: []
-    parentIndex: 21
-  - layerIndex: 23
+    parentIndex: 20
+  - layerIndex: 22
     uuid:
       value0: 1333083128
       value1: 0
@@ -795,7 +795,7 @@ ScriptedImporter:
         height: 20
       spriteId: 88a94f027a4f5d840aea9d0b2b7a5214
     linkedCells: []
-    parentIndex: 21
+    parentIndex: 20
   - layerIndex: 18
     uuid:
       value0: 142002715
@@ -819,7 +819,7 @@ ScriptedImporter:
       spriteId: 6eb3a33e160d32744bd829496693bd89
     linkedCells: []
     parentIndex: -1
-  - layerIndex: 24
+  - layerIndex: 23
     uuid:
       value0: 3604952835
       value1: 0
