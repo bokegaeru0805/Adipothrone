@@ -88,7 +88,7 @@ public static class MyGameSceneTools
             }
         }
         Debug.Log(
-            $"シーン内のCameraMoveAreaをチェックし、{count} 個のLight2Dの形状を実際に更新しました。"
+            $"{count} 個のLight2Dの形状を更新しました。(CameraMoveArea)"
         );
     }
 

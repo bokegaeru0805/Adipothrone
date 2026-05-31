@@ -11,6 +11,9 @@ public class MyGameSettingsProvider : SettingsProvider
     private const string MAXIMIZE_PREFS_KEY = "Tools/Maximize On Play";
     private const string FORCE_TITLE_PREFS_KEY = "GameInitializer_Enabled";
 
+    // ギズモ表示設定用の一括管理キー
+    private const string GIZMO_VISIBILITY_KEY = "MyGame_ShowCustomGizmos";
+
     // コンストラクタ
     public MyGameSettingsProvider(string path, SettingsScope scope)
         : base(path, scope) { }
@@ -23,7 +26,15 @@ public class MyGameSettingsProvider : SettingsProvider
         var provider = new MyGameSettingsProvider("Project/MyGame", SettingsScope.Project);
 
         // 検索窓で引っかかりやすくするためのキーワード設定
-        provider.keywords = new string[] { "Maximize", "Title", "Scene", "Play", "MyGame" };
+        provider.keywords = new string[]
+        {
+            "Maximize",
+            "Title",
+            "Scene",
+            "Play",
+            "MyGame",
+            "Gizmo",
+        };
         return provider;
     }
 
@@ -55,6 +66,25 @@ public class MyGameSettingsProvider : SettingsProvider
         {
             // 値が変更されたら保存
             EditorPrefs.SetBool(FORCE_TITLE_PREFS_KEY, newForceTitle);
+        }
+
+        // --- 3. ギズモ表示設定 ---
+        EditorGUILayout.Space();
+        GUILayout.Label("ギズモ表示設定 (Gizmo Visibility)", EditorStyles.boldLabel);
+        EditorGUILayout.Space();
+
+        // CameraMoveArea と EnemyActivator 等のカスタムギズモを一括管理するトグル
+        bool currentGizmoVisibility = EditorPrefs.GetBool(GIZMO_VISIBILITY_KEY, true);
+        EditorGUI.BeginChangeCheck();
+        bool newGizmoVisibility = EditorGUILayout.Toggle(
+            "Show Custom Gizmos",
+            currentGizmoVisibility
+        );
+        if (EditorGUI.EndChangeCheck())
+        {
+            // 値が変更されたら保存し、シーンビューをすぐに更新
+            EditorPrefs.SetBool(GIZMO_VISIBILITY_KEY, newGizmoVisibility);
+            SceneView.RepaintAll();
         }
 
         EditorGUI.indentLevel--;

@@ -450,6 +450,14 @@ public class EnemyActivator : MonoBehaviour
 
     private void OnDrawGizmos()
     {
+#if UNITY_EDITOR
+        // 設定画面でカスタムギズモ表示がオフになっている場合は描画しない（デフォルトはtrue）
+        if (!UnityEditor.EditorPrefs.GetBool("MyGame_ShowCustomGizmos", true))
+        {
+            return;
+        }
+#endif
+
         // Awake前（編集中）でも動作するように、nullなら取得を試みる
         if (activationZone == null)
         {

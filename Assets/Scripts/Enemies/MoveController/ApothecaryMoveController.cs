@@ -1294,10 +1294,6 @@ public class ApothecaryMoveController : MonoBehaviour
 
     #region --- 回避アクション (テレポート) ---
 
-    /// <summary>
-    /// ダメージ蓄積をトリガーとしたテレポート回避の一連の動作。
-    /// 無敵化しつつ後方へダッシュで消滅し、ランダムなポイントから魔法陣とともに出現します。
-    /// </summary>
     private IEnumerator PerformTeleport()
     {
         CurrentState = ApothecaryState.Teleporting;
@@ -1318,6 +1314,13 @@ public class ApothecaryMoveController : MonoBehaviour
         // 向いている方向と反対へ少し下がる位置を計算
         float moveDir = isFacingRight ? -1f : 1f;
         Vector3 dashTargetPos = transform.position + new Vector3(moveDir * 2f, 0f, 0f);
+
+        // 変更：消滅時にも魔法陣を表示（出現時の逆の手順で、縦に閉じるように縮小）
+        if (magicCircleController != null)
+        {
+            magicCircleController.ChangeScaleX(1f, 0f); // 横幅を即時に1へ展開
+            magicCircleController.ChangeScaleY(0f, teleportOutDuration, 1f); // 縦幅を1から0へ徐々に縮小して消滅を演出
+        }
 
         // DOTweenのSequenceを用いて、後ろへの移動と透明化（フェードアウト）を同時に行う
         Sequence outSeq = DOTween.Sequence();

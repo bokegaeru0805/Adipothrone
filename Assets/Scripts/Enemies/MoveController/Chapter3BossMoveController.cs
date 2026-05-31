@@ -22,8 +22,8 @@ public class Chapter3BossMoveController : MonoBehaviour
         ThrustAttacking, // 突き攻撃中
         ShootAttacking, // 射撃攻撃中
         RetreatTeleporting, // 後退テレポート攻撃中
-        RushComboAttacking // 突進コンボ攻撃中 (新規追加)
-        ,
+        RushComboAttacking, // 突進コンボ攻撃中
+        MirageAssaultAttacking, // 幻影急襲攻撃中
     }
 
     /// <summary>
@@ -50,6 +50,10 @@ public class Chapter3BossMoveController : MonoBehaviour
 
     [SerializeField]
     private float areaTopBound = 10f;
+
+    [Tooltip("壁からのマージン（Retreat, Rush, Mirage等で共通使用）")]
+    [SerializeField]
+    private float wallMargin = 2.0f;
 
     [Header("Idle状態の設定")]
     [Tooltip("Idle時に下端（areaBottomBound）から維持する高さ")]
@@ -118,6 +122,27 @@ public class Chapter3BossMoveController : MonoBehaviour
     [Tooltip("上段攻撃時に使用するContactDamageController")]
     [SerializeField]
     private ContactDamageController highAttackDamageController;
+
+    [Header("HorizontalAttack(水平攻撃)状態の設定")]
+    [Tooltip("攻撃時に移動する下端からの高さ")]
+    [SerializeField]
+    private float horizontalAttackHeightFromBottom = 4.0f;
+
+    [Tooltip("攻撃時間（秒）")]
+    [SerializeField]
+    private float horizontalAttackDuration = 0.5f;
+
+    [Tooltip("攻撃後待機時間（秒）")]
+    [SerializeField]
+    private float postHorizontalAttackWaitDuration = 1.0f;
+
+    [Tooltip("水平攻撃の攻撃力")]
+    [SerializeField]
+    private int horizontalAttackDamage = 15;
+
+    [Tooltip("水平攻撃時に使用するContactDamageController")]
+    [SerializeField]
+    private ContactDamageController horizontalAttackDamageController;
 
     [Header("ThrustAttack(突き攻撃)状態の設定")]
     [Tooltip("剣の先のTransform（座標逆算用）")]
@@ -194,10 +219,6 @@ public class Chapter3BossMoveController : MonoBehaviour
     [SerializeField]
     private float retreatDistance = 10f;
 
-    [Tooltip("壁からのマージン")]
-    [SerializeField]
-    private float retreatWallMargin = 2f;
-
     [Tooltip("初期の消滅にかかる時間（秒）")]
     [SerializeField]
     private float retreatInitialFadeOutTime = 1.0f;
@@ -246,10 +267,6 @@ public class Chapter3BossMoveController : MonoBehaviour
     [SerializeField]
     private float advanceDistancePerHit = 3.0f;
 
-    [Tooltip("壁からのマージン")]
-    [SerializeField]
-    private float advanceWallMargin = 2.0f;
-
     [Tooltip("Y座標の高さ（areaBottomBoundからのオフセット）")]
     [SerializeField]
     private float advanceHeightFromBottom = 0.0f;
@@ -279,6 +296,73 @@ public class Chapter3BossMoveController : MonoBehaviour
     [SerializeField]
     private ContactDamageController upperAttackDamageController;
 
+    [Header("MirageAssault(幻影急襲)状態の設定")]
+    [Tooltip("初期の消滅にかかる時間（秒）")]
+    [SerializeField]
+    private float mirageInitialFadeOutTime = 0.5f;
+
+    [Tooltip("最小テレポート回数")]
+    [SerializeField]
+    private int mirageMinTeleportCount = 3;
+
+    [Tooltip("最大テレポート回数")]
+    [SerializeField]
+    private int mirageMaxTeleportCount = 5;
+
+    [Tooltip("プレイヤーからの最小距離")]
+    [SerializeField]
+    private float mirageMinDistanceFromPlayer = 3.0f;
+
+    [Tooltip("プレイヤーからの最大距離")]
+    [SerializeField]
+    private float mirageMaxDistanceFromPlayer = 8.0f;
+
+    [Tooltip("地面からの最小高さ（areaBottomBoundからのオフセット）")]
+    [SerializeField]
+    private float mirageMinHeightFromBottom = 1.0f;
+
+    [Tooltip("地面からの最大高さ（areaBottomBoundからのオフセット）")]
+    [SerializeField]
+    private float mirageMaxHeightFromBottom = 6.0f;
+
+    [Tooltip("ホログラムが現れるまでの時間（秒）")]
+    [SerializeField]
+    private float mirageAppearTime = 0.3f;
+
+    [Tooltip("ホログラムとして留まる中間時間（秒）")]
+    [SerializeField]
+    private float mirageStayTime = 0.4f;
+
+    [Tooltip("ホログラムが消えるまでの時間（秒）")]
+    [SerializeField]
+    private float mirageDisappearTime = 0.3f;
+
+    [Tooltip("消えてから次の場所に現れるまでの間隔（秒）")]
+    [SerializeField]
+    private float mirageIntervalTime = 0.2f;
+
+    [Tooltip("ホログラムの最大透明度（0.0～1.0）")]
+    [Range(0f, 1f)]
+    [SerializeField]
+    private float mirageMaxAlpha = 0.6f;
+
+    [Tooltip("最終攻撃時のプレイヤーからの距離")]
+    [SerializeField]
+    private float mirageFinalAttackDistance = 2.0f;
+
+    [Tooltip("最終攻撃でLowAttackを選択する確率(0.0～1.0)")]
+    [Range(0f, 1f)]
+    [SerializeField]
+    private float mirageLowAttackProbability = 0.5f;
+
+    [Tooltip("幻影急襲の攻撃力")]
+    [SerializeField]
+    private int mirageAttackDamage = 15;
+
+    [Tooltip("幻影急襲の最終攻撃終了後の専用待機時間（秒）")]
+    [SerializeField]
+    private float miragePostWaitDuration = 1.0f;
+
     // 内部管理用変数
     private Animator _animator;
     private Coroutine _actionLoopCoroutine;
@@ -307,7 +391,9 @@ public class Chapter3BossMoveController : MonoBehaviour
     private readonly int _comboHighAttackReadyTriggerHash = Animator.StringToHash(
         "ComboHighAttackReadyTrigger"
     );
-    private readonly int _normalHighAttackTriggerHash = Animator.StringToHash("NormalHighAttackTrigger");
+    private readonly int _normalHighAttackTriggerHash = Animator.StringToHash(
+        "NormalHighAttackTrigger"
+    );
     private readonly int _comboHighAttackTriggerHash = Animator.StringToHash(
         "ComboHighAttackTrigger"
     );
@@ -473,10 +559,10 @@ public class Chapter3BossMoveController : MonoBehaviour
     {
         while (true)
         {
-            // 本来は確率で攻撃を分岐させるが、今回はRushComboAttackで固定
-            bool forceRushComboAttack = true;
+            // 本来は確率で攻撃を分岐させるが、今回はMirageAssaultAttackで固定
+            bool forceMirageAssaultAttack = true;
 
-            if (!forceRushComboAttack)
+            if (!forceMirageAssaultAttack)
             {
                 // 次にHighAttackを行うかどうかを事前に判定
                 bool willDoHighAttack = Random.value <= highAttackProbability;
@@ -502,7 +588,7 @@ public class Chapter3BossMoveController : MonoBehaviour
             else
             {
                 // Shoot攻撃（ShootAttack）の実行（今回は3発発射を指定）
-                yield return StartCoroutine(PerformRushComboAttack());
+                yield return StartCoroutine(PerformMirageAssault());
             }
 
             // 3. 待機状態（Idle）への移行
@@ -1056,14 +1142,14 @@ public class Chapter3BossMoveController : MonoBehaviour
         if (retreatToRight)
         {
             float targetX = startX + retreatDistance;
-            float wallLimitX = areaRightBound - retreatWallMargin;
+            float wallLimitX = areaRightBound - wallMargin;
             // 右へ進むので、値が小さい（自分に近い）方を採用
             finalX = Mathf.Min(targetX, wallLimitX);
         }
         else
         {
             float targetX = startX - retreatDistance;
-            float wallLimitX = areaLeftBound + retreatWallMargin;
+            float wallLimitX = areaLeftBound + wallMargin;
             // 左へ進むので、値が大きい（自分に近い）方を採用
             finalX = Mathf.Max(targetX, wallLimitX);
         }
@@ -1219,6 +1305,11 @@ public class Chapter3BossMoveController : MonoBehaviour
     /// </summary>
     public void FireWindEffect()
     {
+        if (CurrentState != BossState.RetreatTeleporting)
+        {
+            return; // 現在の状態が後退瞬間移動中でない場合は発射しない
+        }
+
         GameObject effectObj = GetWindEffectFromPool();
         if (effectObj == null)
             return;
@@ -1297,12 +1388,12 @@ public class Chapter3BossMoveController : MonoBehaviour
         // 壁からのマージンを考慮し、近い方を最終座標として決定
         if (_isFacingRight)
         {
-            float wallLimitX = areaRightBound - advanceWallMargin;
+            float wallLimitX = areaRightBound - wallMargin;
             finalX = Mathf.Min(theoreticalFinalX, wallLimitX);
         }
         else
         {
-            float wallLimitX = areaLeftBound + advanceWallMargin;
+            float wallLimitX = areaLeftBound + wallMargin;
             finalX = Mathf.Max(theoreticalFinalX, wallLimitX);
         }
 
@@ -1386,6 +1477,240 @@ public class Chapter3BossMoveController : MonoBehaviour
 
         // 3撃目の後のリカバリー（インターバル）待機
         yield return new WaitForSeconds(waitDur);
+    }
+
+    /// <summary>
+    /// プレイヤーの周囲をテレポートで撹乱し、最終的にLowAttackまたはHorizontalAttackで奇襲するアクションを実行します。
+    /// </summary>
+    private IEnumerator PerformMirageAssault()
+    {
+        CurrentState = BossState.MirageAssaultAttacking;
+        UpdatePlayerTransformReference();
+
+        // 最終攻撃の種別を確率で決定
+        bool isLowAttack = Random.value <= mirageLowAttackProbability;
+
+        // テレポート回数の決定（構えフェーズと最終攻撃フェーズがあるため、最低2回以上にする）
+        int teleportCount = Random.Range(mirageMinTeleportCount, mirageMaxTeleportCount + 1);
+        if (teleportCount < 2)
+            teleportCount = 2;
+
+        float initialFadeTime = IsDebugNoWaitActive ? 0.1f : mirageInitialFadeOutTime;
+        if (initialFadeTime < 0.1f)
+            initialFadeTime = 0.1f;
+
+        Sequence initialFadeSeq = DOTween.Sequence();
+        foreach (var renderer in hologramTargetRenderers)
+        {
+            if (renderer != null && renderer.material != null)
+            {
+                renderer.material.EnableKeyword("_HOLOGRAM_ON");
+                renderer.material.SetFloat("_HologramBlend", 1.0f);
+                initialFadeSeq.Join(renderer.DOFade(0f, initialFadeTime));
+            }
+        }
+        yield return initialFadeSeq.SetEase(Ease.OutCubic).WaitForCompletion();
+
+        // 瞬間移動ループ
+        for (int i = 0; i < teleportCount; i++)
+        {
+            bool isFinalAttack = (i == teleportCount - 1);
+            bool isReadyPhase = (i == teleportCount - 2);
+
+            UpdatePlayerTransformReference();
+            float playerX =
+                _playerTransform != null ? _playerTransform.position.x : transform.position.x;
+
+            float targetX = 0f;
+            float targetY = 0f;
+
+            // X座標の決定（プレイヤーの左右どちらに出現するかをランダムに決定）
+            float dir = Random.value > 0.5f ? 1f : -1f;
+
+            if (isFinalAttack)
+            {
+                // 最終攻撃の座標計算（規定の距離と高さ）
+                targetX = playerX + (dir * mirageFinalAttackDistance);
+
+                // 壁際補正（めり込む場合は反対側に配置する）
+                if (targetX < areaLeftBound + wallMargin)
+                {
+                    targetX = playerX + mirageFinalAttackDistance;
+                }
+                else if (targetX > areaRightBound - wallMargin)
+                {
+                    targetX = playerX - mirageFinalAttackDistance;
+                }
+
+                targetY =
+                    areaBottomBound
+                    + (isLowAttack ? lowAttackHeightFromBottom : horizontalAttackHeightFromBottom);
+            }
+            else
+            {
+                // 通常テレポートおよび構えフェーズの座標計算（ランダムな距離と高さ）
+                float dist = Random.Range(mirageMinDistanceFromPlayer, mirageMaxDistanceFromPlayer);
+                targetX = playerX + (dir * dist);
+
+                // 壁際補正
+                if (targetX < areaLeftBound + wallMargin)
+                {
+                    targetX = playerX + dist;
+                }
+                else if (targetX > areaRightBound - wallMargin)
+                {
+                    targetX = playerX - dist;
+                }
+
+                targetY =
+                    areaBottomBound
+                    + Random.Range(mirageMinHeightFromBottom, mirageMaxHeightFromBottom);
+            }
+
+            // 座標の適用と向きの固定（常にプレイヤー側を向く）
+            transform.position = new Vector3(targetX, targetY, transform.position.z);
+            UpdateFacingDirection(playerX > transform.position.x);
+
+            if (isFinalAttack)
+            {
+                // --- 最終攻撃フェーズ ---
+
+                // ホログラムを解除し、透明度を1に戻して実体化する
+                foreach (var renderer in hologramTargetRenderers)
+                {
+                    if (renderer != null && renderer.material != null)
+                    {
+                        renderer.material.DisableKeyword("_HOLOGRAM_ON");
+                        Color c = renderer.color;
+                        c.a = 1f;
+                        renderer.color = c;
+                    }
+                }
+
+                // 決定していた攻撃を実行
+                if (isLowAttack)
+                {
+                    if (lowAttackDamageController != null)
+                        lowAttackDamageController.SetNormalDamage(mirageAttackDamage);
+                    if (_animator != null)
+                    {
+                        SetAnimatorSpeed(
+                            _lowAttackSpeedHash,
+                            IsDebugNoWaitActive ? 0.1f : lowAttackDuration
+                        );
+                        _animator.SetTrigger(_lowAttackTriggerHash);
+                    }
+                    yield return new WaitForSeconds(IsDebugNoWaitActive ? 0.1f : lowAttackDuration);
+                    yield return new WaitForSeconds(
+                        IsDebugNoWaitActive ? 0.1f : miragePostWaitDuration
+                    );
+                }
+                else
+                {
+                    if (horizontalAttackDamageController != null)
+                        horizontalAttackDamageController.SetNormalDamage(mirageAttackDamage);
+                    if (_animator != null)
+                    {
+                        SetAnimatorSpeed(
+                            _horizontalAttackSpeedHash,
+                            IsDebugNoWaitActive ? 0.1f : horizontalAttackDuration
+                        );
+                        _animator.SetTrigger(_horizontalAttackTriggerHash);
+                    }
+                    yield return new WaitForSeconds(
+                        IsDebugNoWaitActive ? 0.1f : horizontalAttackDuration
+                    );
+                    yield return new WaitForSeconds(
+                        IsDebugNoWaitActive ? 0.1f : miragePostWaitDuration
+                    );
+                }
+            }
+            else if (isReadyPhase)
+            {
+                // --- 構えフェーズ ---
+
+                float totalReadyTime = mirageAppearTime + mirageStayTime + mirageDisappearTime;
+                if (IsDebugNoWaitActive)
+                    totalReadyTime = 0.1f;
+
+                // 構えアニメーションの再生
+                if (_animator != null)
+                {
+                    if (isLowAttack)
+                    {
+                        SetAnimatorSpeed(_lowAttackReadySpeedHash, totalReadyTime);
+                        _animator.SetTrigger(_lowAttackReadyTriggerHash);
+                    }
+                    else
+                    {
+                        SetAnimatorSpeed(_horizontalAttackReadySpeedHash, totalReadyTime);
+                        _animator.SetTrigger(_horizontalAttackReadyTriggerHash);
+                    }
+                }
+
+                // 構え中のホログラム演出（現れる → 留まる → 消える）
+                Sequence readySeq = DOTween.Sequence();
+                foreach (var renderer in hologramTargetRenderers)
+                {
+                    if (renderer != null && renderer.material != null)
+                    {
+                        renderer.material.EnableKeyword("_HOLOGRAM_ON");
+                        renderer.material.SetFloat("_HologramBlend", 1.0f);
+
+                        float appearDur = IsDebugNoWaitActive ? 0.05f : mirageAppearTime;
+                        float disappearDur = IsDebugNoWaitActive ? 0.05f : mirageDisappearTime;
+                        float stayTime = IsDebugNoWaitActive ? 0.05f : mirageStayTime;
+
+                        readySeq.Insert(
+                            0f,
+                            renderer.DOFade(mirageMaxAlpha, appearDur).SetEase(Ease.OutQuad)
+                        );
+                        readySeq.Insert(
+                            appearDur + stayTime,
+                            renderer.DOFade(0f, disappearDur).SetEase(Ease.InQuad)
+                        );
+                    }
+                }
+                yield return readySeq.WaitForCompletion();
+
+                yield return new WaitForSeconds(IsDebugNoWaitActive ? 0.1f : mirageIntervalTime);
+            }
+            else
+            {
+                // --- 通常テレポートフェーズ ---
+
+                if (_animator != null)
+                {
+                    _animator.CrossFadeInFixedTime(_idleStateHash, 0f);
+                }
+
+                Sequence teleSeq = DOTween.Sequence();
+                foreach (var renderer in hologramTargetRenderers)
+                {
+                    if (renderer != null && renderer.material != null)
+                    {
+                        renderer.material.EnableKeyword("_HOLOGRAM_ON");
+                        renderer.material.SetFloat("_HologramBlend", 1.0f);
+
+                        float appearDur = IsDebugNoWaitActive ? 0.05f : mirageAppearTime;
+                        float disappearDur = IsDebugNoWaitActive ? 0.05f : mirageDisappearTime;
+                        float stayTime = IsDebugNoWaitActive ? 0.05f : mirageStayTime;
+
+                        teleSeq.Insert(
+                            0f,
+                            renderer.DOFade(mirageMaxAlpha, appearDur).SetEase(Ease.OutQuad)
+                        );
+                        teleSeq.Insert(
+                            appearDur + stayTime,
+                            renderer.DOFade(0f, disappearDur).SetEase(Ease.InQuad)
+                        );
+                    }
+                }
+                yield return teleSeq.WaitForCompletion();
+
+                yield return new WaitForSeconds(IsDebugNoWaitActive ? 0.1f : mirageIntervalTime);
+            }
+        }
     }
 
     /// <summary>

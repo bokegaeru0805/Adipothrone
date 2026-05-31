@@ -260,8 +260,6 @@ public class UIManager : MonoBehaviour, IPanelStackManager
             // 所持金が変わったときにUIに反映されるようイベントを登録し、現在の所持金を表示
             playerManager.OnChangePlayerMoney += SetCoinText;
             SetCoinText();
-
-            Debug.Log("UIManagerはMenuCanvasを開きました");
         }
         else
         {

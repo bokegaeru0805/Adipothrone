@@ -676,6 +676,14 @@ public class CameraMoveArea : MonoBehaviour
 
     private void OnDrawGizmos()
     {
+#if UNITY_EDITOR
+        // 設定画面でカスタムギズモ表示がオフになっている場合は描画しない（デフォルトはtrue）
+        if (!UnityEditor.EditorPrefs.GetBool("MyGame_ShowCustomGizmos", true))
+        {
+            return;
+        }
+#endif
+
         BoxCollider2D box2D = GetComponent<BoxCollider2D>();
         if (box2D == null)
             return;
