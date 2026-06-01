@@ -19,6 +19,7 @@ public class DoorOpener : MonoBehaviour
         DesertTempleDoor = 35,
         GuildStair = 40,
         Ladder_Wood = 50,
+        TeleportCrystal = 60,
     }
 
     /// <summary>

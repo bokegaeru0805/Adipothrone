@@ -24,11 +24,17 @@ public class CustomGridVisualizer : MonoBehaviour
     private Color hundredthGridColor = new Color(1f, 1f, 1f, 0.8f); // X座標100毎の色
 
     [SerializeField]
+    private Color fiftiethXGridColor = new Color(1f, 1f, 1f, 0.8f); // X座標50毎の色
+
+    [SerializeField]
     private Color fiftiethGridColor = new Color(1f, 1f, 1f, 0.8f); // Y座標50毎の色
 
     [Header("グリッドの太さ設定")]
     [SerializeField]
     private float hundredthThickness = 3f; // X座標100毎の太さ
+
+    [SerializeField]
+    private float fiftiethXThickness = 2f; // X座標50毎の太さ（通常より太く、100毎より細い）
 
     [SerializeField]
     private float fiftiethThickness = 3f; // Y座標50毎の太さ
@@ -71,6 +77,11 @@ public class CustomGridVisualizer : MonoBehaviour
             {
                 UnityEditor.Handles.color = hundredthGridColor;
                 thickness = hundredthThickness;
+            }
+            else if (isVertical && currentPos % 50 == 0)
+            {
+                UnityEditor.Handles.color = fiftiethXGridColor;
+                thickness = fiftiethXThickness;
             }
             else if (!isVertical && currentPos % 50 == 0)
             {

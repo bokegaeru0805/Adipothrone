@@ -123,17 +123,6 @@ public class TowerBatMoveController : MonoBehaviour, IEnemyResettable
 
     private void Awake()
     {
-        // バリアントに基づくダメージ設定
-        switch (_variantType)
-        {
-            case EnemyVariant.Tower:
-                _damage = 20;
-                break;
-            default:
-                Debug.LogError($"{this.name}のEnemyVariantが設定されていません。");
-                break;
-        }
-
         _animator = GetComponent<Animator>();
         _rbody = GetComponent<Rigidbody2D>();
         _enemyHP = GetComponent<EnemyHealth>();
@@ -244,6 +233,17 @@ public class TowerBatMoveController : MonoBehaviour, IEnemyResettable
                 if (playerObj != null)
                     _playerTransform = playerObj.transform;
             }
+        }
+
+        // バリアントに基づくダメージ設定
+        switch (_variantType)
+        {
+            case EnemyVariant.Tower:
+                _damage = 20;
+                break;
+            default:
+                Debug.LogError($"{this.name}のEnemyVariantが設定されていません。");
+                break;
         }
 
         if (_enemyHP != null)
