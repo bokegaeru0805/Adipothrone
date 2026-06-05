@@ -1,9 +1,12 @@
+using System.Collections.Generic;
 using DG.Tweening;
 using UnityEngine;
 
 /// <summary>
 /// プレイヤーに横から押されると、1マスずつ正確にスライド移動するブロックのコントローラー。
 /// IEnemyResettableを実装し、状態のリセットおよび地面へのスナップ機能を提供します。
+/// 複数のブロックが隣接している場合、連鎖して一緒に押し出すことが可能です。
+/// Collider2D.Castを使用し、L字などの複雑な形状（PolygonCollider2D等）にも対応しています。
 /// </summary>
 [RequireComponent(typeof(Rigidbody2D), typeof(Collider2D))]
 public class GridPushableBlock : MonoBehaviour, IEnemyResettable
@@ -28,6 +31,8 @@ public class GridPushableBlock : MonoBehaviour, IEnemyResettable
     private Vector3 _initialPosition; // 配置時の初期座標
     private bool _isMoving = false; // 移動中かどうかのフラグ
     private LayerMask _groundLayerMask; // 接地判定用のレイヤーマスク
+    private ContactFilter2D _contactFilter; // Cast用のフィルター
+    private RaycastHit2D[] _hitBuffer = new RaycastHit2D[16]; // Castの判定結果を格納するバッファ（メモリ確保用）
 
     // --- コンポーネント参照 ---
     private Rigidbody2D _rigidbody;
@@ -45,7 +50,7 @@ public class GridPushableBlock : MonoBehaviour, IEnemyResettable
 
     private void OnCollisionStay2D(Collision2D collision)
     {
-        // 移動中は新たな入力を受け付けない
+        // 自身が移動中の場合は新たな入力を受け付けない
         if (_isMoving)
             return;
 
@@ -72,16 +77,24 @@ public class GridPushableBlock : MonoBehaviour, IEnemyResettable
     }
 
     /// <summary>
-    /// 初期座標の保存と、物理演算の基本拘束設定を行います。
+    /// 初期座標の保存と、物理演算の基本拘束、判定フィルターの設定を行います。
     /// </summary>
     private void InitializeSettings()
     {
         _initialPosition = transform.position;
 
         // 基本状態はZ軸の回転に加え、X軸の移動も物理演算から固定する
-        // これにより、プレイヤーがただ接触した際の意図しないズレを完全に防ぐ
         _rigidbody.constraints =
             RigidbodyConstraints2D.FreezeRotation | RigidbodyConstraints2D.FreezePositionX;
+
+        // 障害物検知用のフィルター設定（トリガーは無視する）
+        _contactFilter = new ContactFilter2D
+        {
+            useTriggers = false,
+            useLayerMask =
+                false // 全レイヤーを対象とし、コード内で個別に弾く
+            ,
+        };
     }
 
     #endregion
@@ -125,16 +138,12 @@ public class GridPushableBlock : MonoBehaviour, IEnemyResettable
     {
         Vector3 targetPos = _initialPosition;
 
-        // 初期座標の少し上空から真下へ向かってレイ（光線）を飛ばし、地面を探す
         Vector2 rayOrigin = new Vector2(_initialPosition.x, _initialPosition.y + 2.0f);
         RaycastHit2D hit = Physics2D.Raycast(rayOrigin, Vector2.down, 10.0f, _groundLayerMask);
 
         if (hit.collider != null)
         {
-            // コライダーの底辺（Bounds.min.y）と、オブジェクトの原点（transform.position.y）の差分を計算
             float pivotOffset = transform.position.y - _collider.bounds.min.y;
-
-            // 地面の衝突ポイント(hit.point.y)に差分を足すことで、正確なY座標を算出
             targetPos.y = hit.point.y + pivotOffset;
         }
 
@@ -159,54 +168,118 @@ public class GridPushableBlock : MonoBehaviour, IEnemyResettable
         // 法線のY成分の絶対値が小さい場合、真横からの衝突と判定する
         if (Mathf.Abs(contact.normal.y) < 0.5f)
         {
-            // プレイヤーとブロックのX座標を比較して相対位置を判定
             bool isPlayerOnLeft = player.transform.position.x < transform.position.x;
             bool isPlayerOnRight = player.transform.position.x > transform.position.x;
 
-            // 左から右へ押している場合
             if (isPlayerOnLeft && player.rightFlag)
             {
-                ExecuteGridMovement(1f);
+                TryPushChain(1f);
             }
-            // 右から左へ押している場合
             else if (isPlayerOnRight && !player.rightFlag)
             {
-                ExecuteGridMovement(-1f);
+                TryPushChain(-1f);
             }
         }
     }
 
     /// <summary>
-    /// 指定された方向へブロックを1マス分スライド移動させます。
+    /// 進行方向にあるすべてのブロックの移動可否をチェックし、可能であれば一斉に動かします。
     /// </summary>
-    /// <param name="directionX">移動方向（右なら1、左なら-1）</param>
-    private void ExecuteGridMovement(float directionX)
+    private void TryPushChain(float directionX)
+    {
+        List<GridPushableBlock> pushChain = new List<GridPushableBlock>();
+
+        // 自身を起点に前方の空間を連鎖的にチェックする
+        if (BuildMoveChain(directionX, pushChain))
+        {
+            foreach (var block in pushChain)
+            {
+                block.ExecuteGridMovement(directionX);
+            }
+        }
+    }
+
+    /// <summary>
+    /// 前方に障害物がないか自身の形状を用いて確認し、ブロックがあれば再帰的にリストへ追加します。
+    /// </summary>
+    private bool BuildMoveChain(float directionX, List<GridPushableBlock> chain)
+    {
+        // 既に移動中の場合は連鎖不可
+        if (_isMoving)
+            return false;
+
+        chain.Add(this);
+
+        // 自身のコライダーの形状をそのまま進行方向へ1マス分キャストする
+        Vector2 castDirection = new Vector2(directionX, 0f);
+        float distance = 1.0f;
+        int hitCount = _collider.Cast(castDirection, _contactFilter, _hitBuffer, distance);
+
+        for (int i = 0; i < hitCount; i++)
+        {
+            RaycastHit2D hit = _hitBuffer[i];
+
+            // 自分自身やトリガーは無視する
+            if (hit.collider == _collider || hit.collider.isTrigger)
+                continue;
+
+            // プレイヤー自身も無視する
+            if (hit.collider.GetComponent<Heroin_move>() != null)
+                continue;
+
+            // 横へスライドした際に床や天井の面と擦れたことによる誤検知を防ぐ
+            // (法線が上下を向いている＝床か天井に乗っている/接しているだけ)
+            if (Mathf.Abs(hit.normal.y) > 0.5f)
+                continue;
+
+            GridPushableBlock nextBlock = hit.collider.GetComponent<GridPushableBlock>();
+            if (nextBlock != null)
+            {
+                // 次のブロックが既にリストにある場合は無視（無限ループ防止）
+                if (chain.Contains(nextBlock))
+                    continue;
+
+                // 次のブロックに対しても「さらに前へ進めるか」を再帰的にチェックする
+                bool nextCanMove = nextBlock.BuildMoveChain(directionX, chain);
+
+                if (!nextCanMove)
+                    return false;
+            }
+            else
+            {
+                // 別のブロックでもプレイヤーでもなく、床でもない障害物（敵、壁など）に当たった
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    /// <summary>
+    /// 連鎖移動の判定を通過したブロックに対し、実際にDOTweenを用いたスライド移動を実行します。
+    /// </summary>
+    public void ExecuteGridMovement(float directionX)
     {
         _isMoving = true;
 
-        // 現在のX座標から最も近い「整数 + 0.5」の基準座標を算出
         float baseX = Mathf.Round(transform.position.x - 0.5f) + 0.5f;
         float targetX = baseX + directionX;
 
-        // 移動中はX軸の固定を解除し、代わりにY軸の落下を防ぐ
         _rigidbody.constraints =
             RigidbodyConstraints2D.FreezeRotation | RigidbodyConstraints2D.FreezePositionY;
         _rigidbody.velocity = Vector2.zero;
 
-        // DOTweenによる滑らかな移動
         transform
             .DOMoveX(targetX, _moveDuration)
             .SetEase(Ease.InOutQuad)
             .OnComplete(() =>
             {
-                // 誤差補正
                 transform.position = new Vector3(
                     targetX,
                     transform.position.y,
                     transform.position.z
                 );
 
-                // 移動終了後、再びX軸を固定し、Y軸は重力で落下できるように戻す
                 _rigidbody.constraints =
                     RigidbodyConstraints2D.FreezeRotation | RigidbodyConstraints2D.FreezePositionX;
 

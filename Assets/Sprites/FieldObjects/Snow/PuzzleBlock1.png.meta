@@ -1,5 +1,5 @@
 fileFormatVersion: 2
-guid: 4643f7f1092c39f41ad5ebcce3ec7325
+guid: b68c19fe7b0f1114bb8073e1bc970eb6
 TextureImporter:
   internalIDToNameTable: []
   externalObjects: {}
@@ -110,127 +110,127 @@ TextureImporter:
     serializedVersion: 2
     sprites:
     - serializedVersion: 2
-      name: VillageHouse_Interior_Window
+      name: PuzzleBlock1_0
       rect:
         serializedVersion: 2
-        x: 17
-        y: 178
-        width: 61
-        height: 61
-      alignment: 0
-      pivot: {x: 0.5, y: 0.5}
-      border: {x: 0, y: 0, z: 0, w: 0}
-      outline: []
-      physicsShape: []
-      tessellationDetail: 0
-      bones: []
-      spriteID: 99c8ea874a14263419c538b216b3b61b
-      internalID: -114687187
-      vertices: []
-      indices: 
-      edges: []
-      weights: []
-    - serializedVersion: 2
-      name: VillageHouse_Interior_Bookshelf
-      rect:
-        serializedVersion: 2
-        x: 96
-        y: 144
-        width: 42
-        height: 75
-      alignment: 7
-      pivot: {x: 0.5, y: 0}
-      border: {x: 0, y: 0, z: 0, w: 0}
-      outline: []
-      physicsShape: []
-      tessellationDetail: 0
-      bones: []
-      spriteID: ff03fa4b77b19e5448b7f797c9426717
-      internalID: 1666526572
-      vertices: []
-      indices: 
-      edges: []
-      weights: []
-    - serializedVersion: 2
-      name: VillageHouse_Interior_Table
-      rect:
-        serializedVersion: 2
-        x: 176
-        y: 199
-        width: 64
-        height: 35
-      alignment: 7
-      pivot: {x: 0.5, y: 0}
-      border: {x: 0, y: 0, z: 0, w: 0}
-      outline: []
-      physicsShape: []
-      tessellationDetail: 0
-      bones: []
-      spriteID: 1adc4079398c3a44aa8f520484f95746
-      internalID: -1123511212
-      vertices: []
-      indices: 
-      edges: []
-      weights: []
-    - serializedVersion: 2
-      name: VillageHouse_Interior_Chair
-      rect:
-        serializedVersion: 2
-        x: 180
-        y: 147
-        width: 23
-        height: 43
-      alignment: 7
-      pivot: {x: 0.5, y: 0}
-      border: {x: 0, y: 0, z: 0, w: 0}
-      outline: []
-      physicsShape: []
-      tessellationDetail: 0
-      bones: []
-      spriteID: ac0d43fe03ae2b64e9989f40840767a8
-      internalID: 115316748
-      vertices: []
-      indices: 
-      edges: []
-      weights: []
-    - serializedVersion: 2
-      name: VillageHouse_Interior_Chest
-      rect:
-        serializedVersion: 2
-        x: 20
-        y: 102
-        width: 53
-        height: 53
-      alignment: 7
-      pivot: {x: 0.5, y: 0}
-      border: {x: 0, y: 0, z: 0, w: 0}
-      outline: []
-      physicsShape: []
-      tessellationDetail: 0
-      bones: []
-      spriteID: e0860fa040e659943b2edb6b19b45f0e
-      internalID: 1042847860
-      vertices: []
-      indices: 
-      edges: []
-      weights: []
-    - serializedVersion: 2
-      name: VillageHouse_Interior_Lantern
-      rect:
-        serializedVersion: 2
-        x: 98
-        y: 80
-        width: 28
+        x: 0
+        y: 0
+        width: 32
         height: 48
-      alignment: 0
-      pivot: {x: 0.5, y: 0.5}
+      alignment: 9
+      pivot: {x: 0.25, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
       outline: []
       physicsShape: []
       tessellationDetail: 0
       bones: []
-      spriteID: 99e133bbc344fb3448deeb04c4b5802f
-      internalID: 1407580513
+      spriteID: 3abfeffdbe0672a4cb8ff85cab8bbdcf
+      internalID: 1718852922
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: PuzzleBlock1_1
+      rect:
+        serializedVersion: 2
+        x: 32
+        y: 0
+        width: 32
+        height: 48
+      alignment: 9
+      pivot: {x: 0.75, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: b9e04a09c362e3b4ba93a07c676cfd27
+      internalID: 1516315210
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: PuzzleBlock1_2
+      rect:
+        serializedVersion: 2
+        x: 64
+        y: 0
+        width: 48
+        height: 48
+      alignment: 7
+      pivot: {x: 0.5, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 12997b1847d4ce24b960900d62f50a99
+      internalID: 1025069344
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: PuzzleBlock1_3
+      rect:
+        serializedVersion: 2
+        x: 112
+        y: 0
+        width: 48
+        height: 48
+      alignment: 7
+      pivot: {x: 0.5, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 43765f20efe8fc1409c534568b790020
+      internalID: 72008866
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: PuzzleBlock1_4
+      rect:
+        serializedVersion: 2
+        x: 160
+        y: 0
+        width: 32
+        height: 32
+      alignment: 9
+      pivot: {x: 0.75, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: c424b525cbb42bc4aa40518fd4a84520
+      internalID: 533447823
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: PuzzleBlock1_5
+      rect:
+        serializedVersion: 2
+        x: 192
+        y: 0
+        width: 32
+        height: 48
+      alignment: 9
+      pivot: {x: 0.75, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: be4961c828be1b240ac972d022938b0c
+      internalID: -1841508169
       vertices: []
       indices: 
       edges: []
@@ -246,12 +246,12 @@ TextureImporter:
     weights: []
     secondaryTextures: []
     nameFileIdTable:
-      VillageHouse_Interior_Bookshelf: 1666526572
-      VillageHouse_Interior_Chair: 115316748
-      VillageHouse_Interior_Chest: 1042847860
-      VillageHouse_Interior_Lantern: 1407580513
-      VillageHouse_Interior_Table: -1123511212
-      VillageHouse_Interior_Window: -114687187
+      PuzzleBlock1_0: 1718852922
+      PuzzleBlock1_1: 1516315210
+      PuzzleBlock1_2: 1025069344
+      PuzzleBlock1_3: 72008866
+      PuzzleBlock1_4: 533447823
+      PuzzleBlock1_5: -1841508169
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 
