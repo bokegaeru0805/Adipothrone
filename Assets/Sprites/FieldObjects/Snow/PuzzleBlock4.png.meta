@@ -1,5 +1,5 @@
 fileFormatVersion: 2
-guid: b68c19fe7b0f1114bb8073e1bc970eb6
+guid: 155440e010790cc49965be589ba0e9f5
 TextureImporter:
   internalIDToNameTable: []
   externalObjects: {}
@@ -110,127 +110,127 @@ TextureImporter:
     serializedVersion: 2
     sprites:
     - serializedVersion: 2
-      name: PuzzleBlock1_0
+      name: PuzzleBlock4_0
       rect:
         serializedVersion: 2
         x: 0
-        y: 0
-        width: 32
-        height: 48
+        y: 48
+        width: 64
+        height: 64
       alignment: 9
-      pivot: {x: 0.25, y: 0}
+      pivot: {x: 0.875, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
       outline: []
       physicsShape: []
       tessellationDetail: 0
       bones: []
-      spriteID: 3abfeffdbe0672a4cb8ff85cab8bbdcf
-      internalID: 1718852922
+      spriteID: 36da7be50dbbd1341bd4c180f6b55879
+      internalID: -834223363
       vertices: []
       indices: 
       edges: []
       weights: []
     - serializedVersion: 2
-      name: PuzzleBlock1_1
+      name: PuzzleBlock4_1
       rect:
         serializedVersion: 2
-        x: 32
-        y: 16
+        x: 16
+        y: 0
         width: 32
         height: 32
       alignment: 9
-      pivot: {x: 0.75, y: 0}
-      border: {x: 0, y: 0, z: 0, w: 0}
-      outline: []
-      physicsShape: []
-      tessellationDetail: 0
-      bones: []
-      spriteID: b9e04a09c362e3b4ba93a07c676cfd27
-      internalID: 1516315210
-      vertices: []
-      indices: 
-      edges: []
-      weights: []
-    - serializedVersion: 2
-      name: PuzzleBlock1_2
-      rect:
-        serializedVersion: 2
-        x: 64
-        y: 0
-        width: 48
-        height: 48
-      alignment: 7
       pivot: {x: 0.5, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
       outline: []
       physicsShape: []
       tessellationDetail: 0
       bones: []
-      spriteID: 12997b1847d4ce24b960900d62f50a99
-      internalID: 1025069344
+      spriteID: 751258fa967ce7646b0f91115263e0be
+      internalID: -1602401511
       vertices: []
       indices: 
       edges: []
       weights: []
     - serializedVersion: 2
-      name: PuzzleBlock1_3
+      name: PuzzleBlock4_5
       rect:
         serializedVersion: 2
         x: 112
         y: 0
+        width: 144
+        height: 112
+      alignment: 2
+      pivot: {x: 0.5, y: 1}
+      border: {x: 0, y: 16, z: 0, w: 80}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 5b766f94e2cd91e47bac762c82f70ab0
+      internalID: -1738706436
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: PuzzleBlock4_2
+      rect:
+        serializedVersion: 2
+        x: 64
+        y: 80
         width: 48
-        height: 48
-      alignment: 7
+        height: 32
+      alignment: 9
       pivot: {x: 0.5, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
       outline: []
       physicsShape: []
       tessellationDetail: 0
       bones: []
-      spriteID: 43765f20efe8fc1409c534568b790020
-      internalID: 72008866
+      spriteID: 3d0397a2eb4961b4f8f9dc8eb8b79a05
+      internalID: 1887390777
       vertices: []
       indices: 
       edges: []
       weights: []
     - serializedVersion: 2
-      name: PuzzleBlock1_4
+      name: PuzzleBlock4_3
       rect:
         serializedVersion: 2
-        x: 160
+        x: 64
+        y: 48
+        width: 48
+        height: 32
+      alignment: 9
+      pivot: {x: 0.5, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 444921edc1269264b83388c371a3eff2
+      internalID: -398318736
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: PuzzleBlock4_4
+      rect:
+        serializedVersion: 2
+        x: 64
         y: 0
         width: 32
         height: 32
       alignment: 9
-      pivot: {x: 0.75, y: 0}
+      pivot: {x: 0.5, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
       outline: []
       physicsShape: []
       tessellationDetail: 0
       bones: []
-      spriteID: c424b525cbb42bc4aa40518fd4a84520
-      internalID: 533447823
-      vertices: []
-      indices: 
-      edges: []
-      weights: []
-    - serializedVersion: 2
-      name: PuzzleBlock1_5
-      rect:
-        serializedVersion: 2
-        x: 192
-        y: 0
-        width: 32
-        height: 48
-      alignment: 9
-      pivot: {x: 0.75, y: 0}
-      border: {x: 0, y: 0, z: 0, w: 0}
-      outline: []
-      physicsShape: []
-      tessellationDetail: 0
-      bones: []
-      spriteID: be4961c828be1b240ac972d022938b0c
-      internalID: -1841508169
+      spriteID: 8fbf5bf6151a89f4f966181c28d914c2
+      internalID: 2055962016
       vertices: []
       indices: 
       edges: []
@@ -246,12 +246,12 @@ TextureImporter:
     weights: []
     secondaryTextures: []
     nameFileIdTable:
-      PuzzleBlock1_0: 1718852922
-      PuzzleBlock1_1: 1516315210
-      PuzzleBlock1_2: 1025069344
-      PuzzleBlock1_3: 72008866
-      PuzzleBlock1_4: 533447823
-      PuzzleBlock1_5: -1841508169
+      PuzzleBlock4_0: -834223363
+      PuzzleBlock4_1: -1602401511
+      PuzzleBlock4_2: 1887390777
+      PuzzleBlock4_3: -398318736
+      PuzzleBlock4_4: 2055962016
+      PuzzleBlock4_5: -1738706436
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 

@@ -1,5 +1,5 @@
 fileFormatVersion: 2
-guid: b68c19fe7b0f1114bb8073e1bc970eb6
+guid: 9e0ffad9fb7e1f94aa58a7ab54990a58
 TextureImporter:
   internalIDToNameTable: []
   externalObjects: {}
@@ -110,127 +110,43 @@ TextureImporter:
     serializedVersion: 2
     sprites:
     - serializedVersion: 2
-      name: PuzzleBlock1_0
+      name: Chapter3Boss_FaceFlash_0
       rect:
         serializedVersion: 2
         x: 0
         y: 0
-        width: 32
-        height: 48
-      alignment: 9
-      pivot: {x: 0.25, y: 0}
+        width: 22
+        height: 28
+      alignment: 0
+      pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
       outline: []
       physicsShape: []
       tessellationDetail: 0
       bones: []
-      spriteID: 3abfeffdbe0672a4cb8ff85cab8bbdcf
-      internalID: 1718852922
+      spriteID: b0620f72f72d0be489d3f6de571479c4
+      internalID: 1932053629
       vertices: []
       indices: 
       edges: []
       weights: []
     - serializedVersion: 2
-      name: PuzzleBlock1_1
+      name: Chapter3Boss_FaceFlash_1
       rect:
         serializedVersion: 2
-        x: 32
-        y: 16
-        width: 32
-        height: 32
-      alignment: 9
-      pivot: {x: 0.75, y: 0}
-      border: {x: 0, y: 0, z: 0, w: 0}
-      outline: []
-      physicsShape: []
-      tessellationDetail: 0
-      bones: []
-      spriteID: b9e04a09c362e3b4ba93a07c676cfd27
-      internalID: 1516315210
-      vertices: []
-      indices: 
-      edges: []
-      weights: []
-    - serializedVersion: 2
-      name: PuzzleBlock1_2
-      rect:
-        serializedVersion: 2
-        x: 64
+        x: 22
         y: 0
-        width: 48
-        height: 48
-      alignment: 7
-      pivot: {x: 0.5, y: 0}
+        width: 22
+        height: 28
+      alignment: 0
+      pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
       outline: []
       physicsShape: []
       tessellationDetail: 0
       bones: []
-      spriteID: 12997b1847d4ce24b960900d62f50a99
-      internalID: 1025069344
-      vertices: []
-      indices: 
-      edges: []
-      weights: []
-    - serializedVersion: 2
-      name: PuzzleBlock1_3
-      rect:
-        serializedVersion: 2
-        x: 112
-        y: 0
-        width: 48
-        height: 48
-      alignment: 7
-      pivot: {x: 0.5, y: 0}
-      border: {x: 0, y: 0, z: 0, w: 0}
-      outline: []
-      physicsShape: []
-      tessellationDetail: 0
-      bones: []
-      spriteID: 43765f20efe8fc1409c534568b790020
-      internalID: 72008866
-      vertices: []
-      indices: 
-      edges: []
-      weights: []
-    - serializedVersion: 2
-      name: PuzzleBlock1_4
-      rect:
-        serializedVersion: 2
-        x: 160
-        y: 0
-        width: 32
-        height: 32
-      alignment: 9
-      pivot: {x: 0.75, y: 0}
-      border: {x: 0, y: 0, z: 0, w: 0}
-      outline: []
-      physicsShape: []
-      tessellationDetail: 0
-      bones: []
-      spriteID: c424b525cbb42bc4aa40518fd4a84520
-      internalID: 533447823
-      vertices: []
-      indices: 
-      edges: []
-      weights: []
-    - serializedVersion: 2
-      name: PuzzleBlock1_5
-      rect:
-        serializedVersion: 2
-        x: 192
-        y: 0
-        width: 32
-        height: 48
-      alignment: 9
-      pivot: {x: 0.75, y: 0}
-      border: {x: 0, y: 0, z: 0, w: 0}
-      outline: []
-      physicsShape: []
-      tessellationDetail: 0
-      bones: []
-      spriteID: be4961c828be1b240ac972d022938b0c
-      internalID: -1841508169
+      spriteID: 3243ea36541cd284ab91a3506df1b151
+      internalID: 314255606
       vertices: []
       indices: 
       edges: []
@@ -246,12 +162,8 @@ TextureImporter:
     weights: []
     secondaryTextures: []
     nameFileIdTable:
-      PuzzleBlock1_0: 1718852922
-      PuzzleBlock1_1: 1516315210
-      PuzzleBlock1_2: 1025069344
-      PuzzleBlock1_3: 72008866
-      PuzzleBlock1_4: 533447823
-      PuzzleBlock1_5: -1841508169
+      Chapter3Boss_FaceFlash_0: 1932053629
+      Chapter3Boss_FaceFlash_1: 314255606
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 

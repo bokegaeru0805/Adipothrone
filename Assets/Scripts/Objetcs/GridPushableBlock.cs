@@ -23,6 +23,10 @@ public class GridPushableBlock : MonoBehaviour, IEnemyResettable
     [Tooltip("リセット機能（初期位置への復帰）を有効にするかどうか")]
     private bool _isResetEnabled = true;
 
+    [SerializeField]
+    [Tooltip("リセット時に地面へスナップさせるかどうか")]
+    private bool _isSnapToGroundEnabled = true;
+
     #endregion
 
     #region 内部変数・コンポーネント参照
@@ -127,27 +131,57 @@ public class GridPushableBlock : MonoBehaviour, IEnemyResettable
         _rigidbody.constraints =
             RigidbodyConstraints2D.FreezeRotation | RigidbodyConstraints2D.FreezePositionX;
 
-        // 初期座標に戻しつつ、地面に合わせて補正する
-        SnapToGround();
+        // スナップ設定が有効な場合は地面に合わせて補正し、無効な場合は純粋な初期座標へ戻す
+        if (_isSnapToGroundEnabled)
+        {
+            SnapToGround();
+        }
+        else
+        {
+            transform.position = _initialPosition;
+        }
     }
 
     /// <summary>
-    /// 初期座標のX軸を維持しつつ、真下の地面を探してコライダーの底辺をぴったり合わせます。
+    /// 初期座標を基準に、ブロックの形状をそのまま下へ滑らせて正確な地面の高さを割り出し、スナップします。
     /// </summary>
     private void SnapToGround()
     {
-        Vector3 targetPos = _initialPosition;
+        // 念のため初期座標から少し浮かせた位置を起点とし、エディタでのわずかな「めり込み」を解消する
+        Vector3 startPos = _initialPosition + Vector3.up * 0.5f;
+        transform.position = startPos;
 
-        Vector2 rayOrigin = new Vector2(_initialPosition.x, _initialPosition.y + 2.0f);
-        RaycastHit2D hit = Physics2D.Raycast(rayOrigin, Vector2.down, 10.0f, _groundLayerMask);
+        // 下方向へ最大10マス分まで地面を探す
+        float searchDistance = 10.0f;
+        int hitCount = _collider.Cast(Vector2.down, _contactFilter, _hitBuffer, searchDistance);
 
-        if (hit.collider != null)
+        bool foundGround = false;
+
+        for (int i = 0; i < hitCount; i++)
         {
-            float pivotOffset = transform.position.y - _collider.bounds.min.y;
-            targetPos.y = hit.point.y + pivotOffset;
+            RaycastHit2D hit = _hitBuffer[i];
+
+            // 自分自身やトリガーは無視
+            if (hit.collider == null || hit.collider == _collider || hit.collider.isTrigger)
+                continue;
+
+            // プレイヤーも無視
+            if (hit.collider.GetComponent<Heroin_move>() != null)
+                continue;
+
+            // Y軸の落下判定（着地）においては、すり抜け床（PlatformEffector2D）も上に乗るため無視せずに着地点とする
+
+            // 最初に見つかった有効な床に対して、ぶつかるまでの距離（hit.distance）分だけ下げる
+            transform.position = startPos + Vector3.down * hit.distance;
+            foundGround = true;
+            break;
         }
 
-        transform.position = targetPos;
+        // もし下に何も見つからなかった場合は、純粋な初期座標にリセットしておく
+        if (!foundGround)
+        {
+            transform.position = _initialPosition;
+        }
     }
 
     #endregion
@@ -225,6 +259,13 @@ public class GridPushableBlock : MonoBehaviour, IEnemyResettable
 
             // プレイヤー自身も無視する
             if (hit.collider.GetComponent<Heroin_move>() != null)
+                continue;
+
+            // 横移動時は、PlatformEffector2Dを持つ足場（すり抜け床）を障害物として扱わず無視する
+            if (
+                hit.collider.usedByEffector
+                && hit.collider.GetComponent<PlatformEffector2D>() != null
+            )
                 continue;
 
             // 横へスライドした際に床や天井の面と擦れたことによる誤検知を防ぐ
