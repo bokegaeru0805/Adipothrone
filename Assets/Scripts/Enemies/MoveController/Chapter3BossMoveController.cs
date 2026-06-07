@@ -8,6 +8,7 @@ using UnityEngine;
 /// </summary>
 public class Chapter3BossMoveController : MonoBehaviour
 {
+    #region 定数・列挙型
     private const string SHOOT_BULLET_POOLTAG = "Chapter3BossShoot";
 
     /// <summary>
@@ -25,12 +26,31 @@ public class Chapter3BossMoveController : MonoBehaviour
         RushComboAttacking, // 突進コンボ攻撃中
         MirageAssaultAttacking, // 幻影急襲攻撃中
     }
+    #endregion
 
+    #region プロパティ
     /// <summary>
     /// ボスの現在の状態
     /// </summary>
     public BossState CurrentState { get; private set; } = BossState.Intro;
 
+    /// <summary>
+    /// エディタ上かつisDebugNoWaitがtrueの場合のみ有効化されるデバッグ判定プロパティ
+    /// </summary>
+    private bool IsDebugNoWaitActive
+    {
+        get
+        {
+#if UNITY_EDITOR
+            return isDebugNoWait;
+#else
+            return false;
+#endif
+        }
+    }
+    #endregion
+
+    #region インスペクター設定（パラメータ設定）
     [Header("デバッグ機能")]
     [Tooltip(
         "trueの場合、各種待機時間や移動演出の時間を極短にしてデバッグを容易にします（エディタ上のみ有効）"
@@ -81,6 +101,10 @@ public class Chapter3BossMoveController : MonoBehaviour
     [SerializeField]
     private float postLowAttackWaitDuration = 1.0f;
 
+    [Tooltip("攻撃終了後、次の行動に移るまでの待機時間（秒）")]
+    [SerializeField]
+    private float lowAttackNextInterval = 1.0f;
+
     [Tooltip("下段攻撃の攻撃力")]
     [SerializeField]
     private int lowAttackDamage = 10;
@@ -114,6 +138,10 @@ public class Chapter3BossMoveController : MonoBehaviour
     [Tooltip("攻撃後待機時間（秒）")]
     [SerializeField]
     private float postHighAttackWaitDuration = 1.0f;
+
+    [Tooltip("攻撃終了後、次の行動に移るまでの待機時間（秒）")]
+    [SerializeField]
+    private float highAttackNextInterval = 1.0f;
 
     [Tooltip("上段攻撃の攻撃力")]
     [SerializeField]
@@ -169,6 +197,10 @@ public class Chapter3BossMoveController : MonoBehaviour
     [SerializeField]
     private float postThrustWaitDuration = 1.2f;
 
+    [Tooltip("攻撃終了後、次の行動に移るまでの待機時間（秒）")]
+    [SerializeField]
+    private float thrustAttackNextInterval = 1.0f;
+
     [Tooltip("突き攻撃の攻撃力")]
     [SerializeField]
     private int thrustDamage = 20;
@@ -210,6 +242,10 @@ public class Chapter3BossMoveController : MonoBehaviour
     [SerializeField]
     private float postShootWaitDuration = 1.0f;
 
+    [Tooltip("攻撃終了後、次の行動に移るまでの待機時間（秒）")]
+    [SerializeField]
+    private float shootAttackNextInterval = 1.0f;
+
     [Tooltip("Shoot攻撃時に再生するエフェクト（子オブジェクト）")]
     [SerializeField]
     private ParticleSystem shootEffect;
@@ -234,6 +270,10 @@ public class Chapter3BossMoveController : MonoBehaviour
     [Tooltip("ホログラム再消滅時間（秒）")]
     [SerializeField]
     private float retreatHologramDisappearTime = 0.5f;
+
+    [Tooltip("攻撃終了後、次の行動に移るまでの待機時間（秒）")]
+    [SerializeField]
+    private float retreatTeleportNextInterval = 1.0f;
 
     [Tooltip("予め指定する複数の地面からの高さ（areaBottomBoundからのオフセット値）")]
     [SerializeField]
@@ -287,6 +327,10 @@ public class Chapter3BossMoveController : MonoBehaviour
     [Range(0f, 1f)]
     [SerializeField]
     private float advanceMoveTimeRatio = 0.2f;
+
+    [Tooltip("攻撃終了後、次の行動に移るまでの待機時間（秒）")]
+    [SerializeField]
+    private float rushComboNextInterval = 1.0f;
 
     [Tooltip("Upper攻撃の攻撃力")]
     [SerializeField]
@@ -363,12 +407,19 @@ public class Chapter3BossMoveController : MonoBehaviour
     [SerializeField]
     private float miragePostWaitDuration = 1.0f;
 
+    [Tooltip("攻撃終了後、次の行動に移るまでの待機時間（秒）")]
+    [SerializeField]
+    private float mirageAssaultNextInterval = 1.0f;
+    #endregion
+
+    #region 内部管理変数・ハッシュ
     // 内部管理用変数
     private Animator _animator;
     private Coroutine _actionLoopCoroutine;
     private Tween _moveTween;
     private Transform _playerTransform;
     private bool _isFacingRight = false; // 現在右を向いているかどうかのフラグ（デフォルト左向き）
+    private float _currentNextInterval = 1.0f; // 攻撃終了後の次の行動までの待機時間を管理する変数
 
     // オブジェクトプール用キュー
     private Queue<GameObject> _windEffectPool;
@@ -431,22 +482,9 @@ public class Chapter3BossMoveController : MonoBehaviour
     // UpperAttack用ハッシュ (RushComboAttack内で使用)
     private readonly int _upperAttackTriggerHash = Animator.StringToHash("UpperAttackTrigger");
     private readonly int _upperAttackSpeedHash = Animator.StringToHash("UpperAttackSpeed");
+    #endregion
 
-    /// <summary>
-    /// エディタ上かつisDebugNoWaitがtrueの場合のみ有効化されるデバッグ判定プロパティ
-    /// </summary>
-    private bool IsDebugNoWaitActive
-    {
-        get
-        {
-#if UNITY_EDITOR
-            return isDebugNoWait;
-#else
-            return false;
-#endif
-        }
-    }
-
+    #region Unity ライフサイクル
     private void Awake()
     {
         _animator = GetComponent<Animator>();
@@ -457,6 +495,71 @@ public class Chapter3BossMoveController : MonoBehaviour
         ResetState();
     }
 
+    private void OnDestroy()
+    {
+        if (_moveTween != null && _moveTween.IsActive())
+        {
+            _moveTween.Kill();
+        }
+    }
+
+    private void OnDrawGizmos()
+    {
+        Vector3 center = new Vector3(
+            (areaLeftBound + areaRightBound) / 2f,
+            (areaTopBound + areaBottomBound) / 2f,
+            transform.position.z
+        );
+        Vector3 size = new Vector3(
+            areaRightBound - areaLeftBound,
+            areaTopBound - areaBottomBound,
+            0.1f
+        );
+
+        Gizmos.color = new Color(1f, 0f, 0f, 0.05f);
+        Gizmos.DrawCube(center, size);
+
+        Gizmos.color = new Color(1f, 0f, 0f, 0.4f);
+        Gizmos.DrawWireCube(center, size);
+
+        float drawLeft = areaLeftBound;
+        float drawRight = areaRightBound;
+
+        // Idle状態のキープ位置（青線）
+        Gizmos.color = Color.blue;
+        float idleY = areaBottomBound + idleHeightFromBottom;
+        Gizmos.DrawLine(
+            new Vector3(drawLeft, idleY, transform.position.z),
+            new Vector3(drawRight, idleY, transform.position.z)
+        );
+
+        // LowAttack時の位置（オレンジ線）
+        Gizmos.color = new Color(1f, 0.5f, 0f);
+        float lowAttackY = areaBottomBound + lowAttackHeightFromBottom;
+        Gizmos.DrawLine(
+            new Vector3(drawLeft, lowAttackY, transform.position.z),
+            new Vector3(drawRight, lowAttackY, transform.position.z)
+        );
+
+        // HighAttack時の位置（マゼンタ線）
+        Gizmos.color = Color.magenta;
+        float highAttackY = areaBottomBound + highAttackHeightFromBottom;
+        Gizmos.DrawLine(
+            new Vector3(drawLeft, highAttackY, transform.position.z),
+            new Vector3(drawRight, highAttackY, transform.position.z)
+        );
+
+        // ThrustAttackの準備位置（白線）
+        Gizmos.color = Color.white;
+        float thrustReadyY = areaBottomBound + thrustReadyHeightFromBottom;
+        Gizmos.DrawLine(
+            new Vector3(drawLeft, thrustReadyY, transform.position.z),
+            new Vector3(drawRight, thrustReadyY, transform.position.z)
+        );
+    }
+    #endregion
+
+    #region 初期化・状態管理
     /// <summary>
     /// ボスの状態をリセットし、初期行動（登場シーケンス）を開始します。
     /// </summary>
@@ -508,7 +611,6 @@ public class Chapter3BossMoveController : MonoBehaviour
         if (windEffectPrefab == null)
             return null;
 
-        // プール内に非アクティブなオブジェクトがあるか探す
         foreach (GameObject effect in _windEffectPool)
         {
             if (!effect.activeInHierarchy)
@@ -517,13 +619,106 @@ public class Chapter3BossMoveController : MonoBehaviour
             }
         }
 
-        // 足りない場合は新規作成してキューに追加
         GameObject newEffect = Instantiate(windEffectPrefab);
         newEffect.SetActive(false);
         _windEffectPool.Enqueue(newEffect);
         return newEffect;
     }
 
+    /// <summary>
+    /// プレイヤーのTransform参照を最新の状態に更新します。
+    /// </summary>
+    private void UpdatePlayerTransformReference()
+    {
+        if (_playerTransform == null)
+        {
+            if (PlayerManager.instance != null && PlayerManager.instance.PlayerGameObject != null)
+            {
+                _playerTransform = PlayerManager.instance.PlayerGameObject.transform;
+            }
+            else
+            {
+                GameObject playerObj = GameObject.FindGameObjectWithTag(
+                    GameConstants.PLAYER_TAG_NAME
+                );
+                if (playerObj != null)
+                    _playerTransform = playerObj.transform;
+            }
+        }
+    }
+
+    /// <summary>
+    /// ボスの左右の向きをRotation（Y軸回転）ベースで更新し、クラス内の向きフラグを保持します。
+    /// </summary>
+    public void UpdateFacingDirection(bool isFacingRight)
+    {
+        _isFacingRight = isFacingRight;
+
+        if (_isFacingRight)
+        {
+            transform.rotation = Quaternion.Euler(0f, 180f, 0f);
+        }
+        else
+        {
+            transform.rotation = Quaternion.identity;
+        }
+    }
+
+    /// <summary>
+    /// 正規化（1秒）されたアニメーションを指定時間で再生するための速度を設定します。
+    /// </summary>
+    private void SetAnimatorSpeed(int speedParamHash, float duration)
+    {
+        if (_animator == null)
+            return;
+
+        float safeDuration = Mathf.Max(0.1f, duration);
+        float speed = 1.0f / safeDuration;
+
+        _animator.SetFloat(speedParamHash, speed);
+    }
+
+    /// <summary>
+    /// 攻撃判定エリアのSpriteRendererの透明度を設定します。
+    /// </summary>
+    private void SetDamageAreaAlpha(float alpha)
+    {
+        if (lowAttackDamageController != null)
+        {
+            SpriteRenderer lowRenderer = lowAttackDamageController.GetComponent<SpriteRenderer>();
+            if (lowRenderer != null)
+            {
+                Color color = lowRenderer.color;
+                color.a = alpha;
+                lowRenderer.color = color;
+            }
+        }
+
+        if (highAttackDamageController != null)
+        {
+            SpriteRenderer highRenderer = highAttackDamageController.GetComponent<SpriteRenderer>();
+            if (highRenderer != null)
+            {
+                Color color = highRenderer.color;
+                color.a = alpha;
+                highRenderer.color = color;
+            }
+        }
+
+        if (thrustDamageController != null)
+        {
+            SpriteRenderer thrustRenderer = thrustDamageController.GetComponent<SpriteRenderer>();
+            if (thrustRenderer != null)
+            {
+                Color color = thrustRenderer.color;
+                color.a = alpha;
+                thrustRenderer.color = color;
+            }
+        }
+    }
+    #endregion
+
+    #region メインループ・状態推移
     /// <summary>
     /// 登場時のシーケンスです。演出完了後にメインの行動ループへ移行します。
     /// </summary>
@@ -588,14 +783,15 @@ public class Chapter3BossMoveController : MonoBehaviour
             else
             {
                 // Shoot攻撃（ShootAttack）の実行（今回は3発発射を指定）
-                yield return StartCoroutine(PerformMirageAssault());
+                yield return StartCoroutine(PerformShootAttack(3));
             }
 
             // 3. 待機状態（Idle）への移行
             yield return StartCoroutine(TransitionToIdle());
 
             // 4. 次の行動ループまでのインターバル待機
-            float waitTime = IsDebugNoWaitActive ? 0.1f : 1.0f;
+            // 固定値ではなく、直前の攻撃でセットされた_currentNextIntervalを使用する
+            float waitTime = IsDebugNoWaitActive ? 0.1f : _currentNextInterval;
             if (waitTime < 0.1f)
                 waitTime = 0.1f;
             yield return new WaitForSeconds(waitTime);
@@ -625,7 +821,9 @@ public class Chapter3BossMoveController : MonoBehaviour
         _moveTween = transform.DOMoveY(targetY, duration).SetEase(Ease.InOutQuad);
         yield return _moveTween.WaitForCompletion();
     }
+    #endregion
 
+    #region 攻撃処理：下段攻撃 (Low Attack)
     /// <summary>
     /// LowAttack（下段攻撃）の一連のアクションを実行します。
     /// </summary>
@@ -667,6 +865,13 @@ public class Chapter3BossMoveController : MonoBehaviour
             _animator.SetTrigger(_lowAttackTriggerHash);
         }
 
+        // エフェクトを再生（子オブジェクトのまま）
+        if (shootEffect != null)
+        {
+            shootEffect.Stop(); // 連射時に最初から再生されるよう一度停止する
+            shootEffect.Play();
+        }
+
         yield return new WaitForSeconds(attackDur);
 
         // --- 3. 攻撃後待機（リカバリー）フェーズ ---
@@ -674,8 +879,12 @@ public class Chapter3BossMoveController : MonoBehaviour
         {
             yield return new WaitForSeconds(postWait);
         }
-    }
 
+        _currentNextInterval = lowAttackNextInterval;
+    }
+    #endregion
+
+    #region 攻撃処理：上段攻撃 (High Attack)
     /// <summary>
     /// HighAttack（上段攻撃）の一連のアクションを実行します。
     /// </summary>
@@ -717,14 +926,25 @@ public class Chapter3BossMoveController : MonoBehaviour
             _animator.SetTrigger(_normalHighAttackTriggerHash);
         }
 
+        if (shootEffect != null)
+        {
+            shootEffect.Stop();
+            shootEffect.Play();
+        }
+
         yield return new WaitForSeconds(attackDur);
 
         // --- 3. 攻撃後待機（リカバリー）フェーズ ---
         yield return new WaitForSeconds(postWait);
-    }
 
+        _currentNextInterval = highAttackNextInterval;
+    }
+    #endregion
+
+    #region 攻撃処理：突き攻撃 (Thrust Attack)
     /// <summary>
     /// ThrustAttack（突き攻撃）の一連のアクションを実行します。
+    /// 剣先がプレイヤーに確実に当たるように、ボス本体の移動目標座標を逆算して突進します。
     /// </summary>
     private IEnumerator PerformThrustAttack()
     {
@@ -860,10 +1080,15 @@ public class Chapter3BossMoveController : MonoBehaviour
             thrustEffect.transform.localRotation = effectOriginalLocalRot;
             thrustEffect.transform.localScale = effectOriginalLocalScale;
         }
-    }
 
+        _currentNextInterval = thrustAttackNextInterval;
+    }
+    #endregion
+
+    #region 攻撃処理：射撃攻撃 (Shoot Attack)
     /// <summary>
     /// ShootAttack（射撃攻撃）の一連のアクションを実行します。
+    /// 指定された数の弾を、ランダムに生成した高さのオフセットから連射します。
     /// </summary>
     /// <param name="shootCount">発射する弾の最大個数</param>
     private IEnumerator PerformShootAttack(int shootCount)
@@ -903,7 +1128,7 @@ public class Chapter3BossMoveController : MonoBehaviour
             2f * shootBulletHeightOffset,
         };
 
-        // リストをランダムにシャッフル
+        // リストをランダムにシャッフルし、射撃パターンを多様化させる
         for (int i = 0; i < allOffsets.Count; i++)
         {
             int randomIndex = Random.Range(i, allOffsets.Count);
@@ -926,7 +1151,7 @@ public class Chapter3BossMoveController : MonoBehaviour
             float currentSwordTipX =
                 swordTipTransform != null ? swordTipTransform.position.x : transform.position.x;
 
-            // 懐判定
+            // 懐判定（プレイヤーがボスの背後に回った場合は射撃を中断する）
             bool shouldFire = true;
             if (_playerTransform != null)
             {
@@ -969,6 +1194,8 @@ public class Chapter3BossMoveController : MonoBehaviour
 
         // --- 4. 攻撃後待機（リカバリー）フェーズ ---
         yield return new WaitForSeconds(postWait);
+
+        _currentNextInterval = shootAttackNextInterval;
     }
 
     /// <summary>
@@ -1027,84 +1254,12 @@ public class Chapter3BossMoveController : MonoBehaviour
             }
         }
     }
+    #endregion
 
-    /// <summary>
-    /// プレイヤーのTransform参照を最新の状態に更新します。
-    /// </summary>
-    private void UpdatePlayerTransformReference()
-    {
-        if (_playerTransform == null)
-        {
-            if (PlayerManager.instance != null && PlayerManager.instance.PlayerGameObject != null)
-            {
-                _playerTransform = PlayerManager.instance.PlayerGameObject.transform;
-            }
-            else
-            {
-                GameObject playerObj = GameObject.FindGameObjectWithTag(
-                    GameConstants.PLAYER_TAG_NAME
-                );
-                if (playerObj != null)
-                    _playerTransform = playerObj.transform;
-            }
-        }
-    }
-
-    /// <summary>
-    /// 正規化（1秒）されたアニメーションを指定時間で再生するための速度を設定します。
-    /// </summary>
-    private void SetAnimatorSpeed(int speedParamHash, float duration)
-    {
-        if (_animator == null)
-            return;
-
-        float safeDuration = Mathf.Max(0.1f, duration);
-        float speed = 1.0f / safeDuration;
-
-        _animator.SetFloat(speedParamHash, speed);
-    }
-
-    /// <summary>
-    /// 攻撃判定エリアのSpriteRendererの透明度を設定します。
-    /// </summary>
-    private void SetDamageAreaAlpha(float alpha)
-    {
-        if (lowAttackDamageController != null)
-        {
-            SpriteRenderer lowRenderer = lowAttackDamageController.GetComponent<SpriteRenderer>();
-            if (lowRenderer != null)
-            {
-                Color color = lowRenderer.color;
-                color.a = alpha;
-                lowRenderer.color = color;
-            }
-        }
-
-        if (highAttackDamageController != null)
-        {
-            SpriteRenderer highRenderer = highAttackDamageController.GetComponent<SpriteRenderer>();
-            if (highRenderer != null)
-            {
-                Color color = highRenderer.color;
-                color.a = alpha;
-                highRenderer.color = color;
-            }
-        }
-
-        if (thrustDamageController != null)
-        {
-            SpriteRenderer thrustRenderer = thrustDamageController.GetComponent<SpriteRenderer>();
-            if (thrustRenderer != null)
-            {
-                Color color = thrustRenderer.color;
-                color.a = alpha;
-                thrustRenderer.color = color;
-            }
-        }
-    }
-
+    #region 攻撃処理：後退テレポート攻撃 (Retreat Teleport)
     /// <summary>
     /// 後退しながら瞬間移動し、中間地点で攻撃を行う一連のアクションを実行します。
+    /// 広い空間がある方向へ後退し、壁際に到達した場合はエリア内に留まるよう補正します。
     /// </summary>
     /// <param name="teleportCount">中間地点で攻撃を行う回数</param>
     private IEnumerator PerformRetreatTeleport(int teleportCount)
@@ -1139,18 +1294,19 @@ public class Chapter3BossMoveController : MonoBehaviour
         float startX = transform.position.x;
         float finalX;
 
+        // 規定の距離分だけ後退した座標を計算し、エリアの境界にマージンを加えた位置を越えないよう Clamp (Min/Max) を行います。
         if (retreatToRight)
         {
             float targetX = startX + retreatDistance;
             float wallLimitX = areaRightBound - wallMargin;
-            // 右へ進むので、値が小さい（自分に近い）方を採用
+            // 右へ進むので、値が小さい（エリア内に収まる）方を採用
             finalX = Mathf.Min(targetX, wallLimitX);
         }
         else
         {
             float targetX = startX - retreatDistance;
             float wallLimitX = areaLeftBound + wallMargin;
-            // 左へ進むので、値が大きい（自分に近い）方を採用
+            // 左へ進むので、値が大きい（エリア内に収まる）方を採用
             finalX = Mathf.Max(targetX, wallLimitX);
         }
 
@@ -1231,7 +1387,6 @@ public class Chapter3BossMoveController : MonoBehaviour
                 _animator.SetTrigger(_horizontalAttackTriggerHash);
             }
 
-            // shootの時と同じエフェクトを再生（子オブジェクトのまま）
             if (shootEffect != null)
             {
                 shootEffect.Stop();
@@ -1298,10 +1453,12 @@ public class Chapter3BossMoveController : MonoBehaviour
         }
 
         CurrentState = BossState.Idle;
+        _currentNextInterval = retreatTeleportNextInterval;
     }
 
     /// <summary>
     /// アニメーションイベントから呼び出され、WindEffectを発射します。
+    /// （後退テレポート攻撃中にのみ発動）
     /// </summary>
     public void FireWindEffect()
     {
@@ -1331,7 +1488,6 @@ public class Chapter3BossMoveController : MonoBehaviour
         float targetX = _isFacingRight ? areaRightBound : areaLeftBound;
 
         // 速度と距離から移動時間(Duration)を逆算する
-        // 現在地から目標地点までの絶対距離を計算
         float distance = Mathf.Abs(targetX - spawnPos.x);
 
         // 距離 ÷ 速度 ＝ 到達にかかる時間
@@ -1346,9 +1502,12 @@ public class Chapter3BossMoveController : MonoBehaviour
             isFacingRight: _isFacingRight
         );
     }
+    #endregion
 
+    #region 攻撃処理：突進コンボ攻撃 (Rush Combo)
     /// <summary>
     /// 前進しながら3連撃（High → Upper → High）を叩き込む一連のアクションを実行します。
+    /// 移動距離が壁を超える場合は補正し、その距離を3等分してステップ前進を行います。
     /// </summary>
     private IEnumerator PerformRushComboAttack()
     {
@@ -1381,11 +1540,11 @@ public class Chapter3BossMoveController : MonoBehaviour
         int facingDir = _isFacingRight ? 1 : -1;
 
         float startX = transform.position.x;
-        // 理論上の最終移動座標（3回分の前進）
+        // 理論上の最終移動座標（3回分の前進距離）
         float theoreticalFinalX = startX + (facingDir * advanceDistancePerHit * 3);
         float finalX;
 
-        // 壁からのマージンを考慮し、近い方を最終座標として決定
+        // 壁からのマージンを考慮し、近い方（壁を越えない位置）を最終座標として決定
         if (_isFacingRight)
         {
             float wallLimitX = areaRightBound - wallMargin;
@@ -1477,10 +1636,15 @@ public class Chapter3BossMoveController : MonoBehaviour
 
         // 3撃目の後のリカバリー（インターバル）待機
         yield return new WaitForSeconds(waitDur);
-    }
 
+        _currentNextInterval = rushComboNextInterval;
+    }
+    #endregion
+
+    #region 攻撃処理：幻影急襲攻撃 (Mirage Assault)
     /// <summary>
     /// プレイヤーの周囲をテレポートで撹乱し、最終的にLowAttackまたはHorizontalAttackで奇襲するアクションを実行します。
+    /// 最終攻撃の種別は確率（mirageLowAttackProbability）で分岐します。
     /// </summary>
     private IEnumerator PerformMirageAssault()
     {
@@ -1499,6 +1663,7 @@ public class Chapter3BossMoveController : MonoBehaviour
         if (initialFadeTime < 0.1f)
             initialFadeTime = 0.1f;
 
+        // 初期の消滅演出
         Sequence initialFadeSeq = DOTween.Sequence();
         foreach (var renderer in hologramTargetRenderers)
         {
@@ -1532,7 +1697,7 @@ public class Chapter3BossMoveController : MonoBehaviour
                 // 最終攻撃の座標計算（規定の距離と高さ）
                 targetX = playerX + (dir * mirageFinalAttackDistance);
 
-                // 壁際補正（めり込む場合は反対側に配置する）
+                // 壁際補正（エリア外にめり込む場合は反対側に配置する）
                 if (targetX < areaLeftBound + wallMargin)
                 {
                     targetX = playerX + mirageFinalAttackDistance;
@@ -1542,6 +1707,7 @@ public class Chapter3BossMoveController : MonoBehaviour
                     targetX = playerX - mirageFinalAttackDistance;
                 }
 
+                // 決定された攻撃方法に基づいて高さを適用
                 targetY =
                     areaBottomBound
                     + (isLowAttack ? lowAttackHeightFromBottom : horizontalAttackHeightFromBottom);
@@ -1633,7 +1799,7 @@ public class Chapter3BossMoveController : MonoBehaviour
                 if (IsDebugNoWaitActive)
                     totalReadyTime = 0.1f;
 
-                // 構えアニメーションの再生
+                // 構えアニメーションの再生（決定した最終攻撃に合わせて構えを変更）
                 if (_animator != null)
                 {
                     if (isLowAttack)
@@ -1711,85 +1877,8 @@ public class Chapter3BossMoveController : MonoBehaviour
                 yield return new WaitForSeconds(IsDebugNoWaitActive ? 0.1f : mirageIntervalTime);
             }
         }
+
+        _currentNextInterval = mirageAssaultNextInterval;
     }
-
-    /// <summary>
-    /// ボスの左右の向きをRotation（Y軸回転）ベースで更新し、クラス内の向きフラグを保持します。
-    /// </summary>
-    public void UpdateFacingDirection(bool isFacingRight)
-    {
-        _isFacingRight = isFacingRight;
-
-        if (_isFacingRight)
-        {
-            transform.rotation = Quaternion.Euler(0f, 180f, 0f);
-        }
-        else
-        {
-            transform.rotation = Quaternion.identity;
-        }
-    }
-
-    private void OnDestroy()
-    {
-        if (_moveTween != null && _moveTween.IsActive())
-        {
-            _moveTween.Kill();
-        }
-    }
-
-    private void OnDrawGizmos()
-    {
-        Vector3 center = new Vector3(
-            (areaLeftBound + areaRightBound) / 2f,
-            (areaTopBound + areaBottomBound) / 2f,
-            transform.position.z
-        );
-        Vector3 size = new Vector3(
-            areaRightBound - areaLeftBound,
-            areaTopBound - areaBottomBound,
-            0.1f
-        );
-
-        Gizmos.color = new Color(1f, 0f, 0f, 0.05f);
-        Gizmos.DrawCube(center, size);
-
-        Gizmos.color = new Color(1f, 0f, 0f, 0.4f);
-        Gizmos.DrawWireCube(center, size);
-
-        float drawLeft = areaLeftBound;
-        float drawRight = areaRightBound;
-
-        // Idle状態のキープ位置（青線）
-        Gizmos.color = Color.blue;
-        float idleY = areaBottomBound + idleHeightFromBottom;
-        Gizmos.DrawLine(
-            new Vector3(drawLeft, idleY, transform.position.z),
-            new Vector3(drawRight, idleY, transform.position.z)
-        );
-
-        // LowAttack時の位置（オレンジ線）
-        Gizmos.color = new Color(1f, 0.5f, 0f);
-        float lowAttackY = areaBottomBound + lowAttackHeightFromBottom;
-        Gizmos.DrawLine(
-            new Vector3(drawLeft, lowAttackY, transform.position.z),
-            new Vector3(drawRight, lowAttackY, transform.position.z)
-        );
-
-        // HighAttack時の位置（マゼンタ線）
-        Gizmos.color = Color.magenta;
-        float highAttackY = areaBottomBound + highAttackHeightFromBottom;
-        Gizmos.DrawLine(
-            new Vector3(drawLeft, highAttackY, transform.position.z),
-            new Vector3(drawRight, highAttackY, transform.position.z)
-        );
-
-        // ThrustAttackの準備位置（白線）
-        Gizmos.color = Color.white;
-        float thrustReadyY = areaBottomBound + thrustReadyHeightFromBottom;
-        Gizmos.DrawLine(
-            new Vector3(drawLeft, thrustReadyY, transform.position.z),
-            new Vector3(drawRight, thrustReadyY, transform.position.z)
-        );
-    }
+    #endregion
 }

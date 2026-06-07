@@ -215,7 +215,7 @@ TextureImporter:
       edges: []
       weights: []
     - serializedVersion: 2
-      name: VillageObjects_Poll_wpod
+      name: VillageObjects_Poll_wood
       rect:
         serializedVersion: 2
         x: 176
@@ -224,7 +224,7 @@ TextureImporter:
         height: 80
       alignment: 7
       pivot: {x: 0.5, y: 0}
-      border: {x: 0, y: 0, z: 0, w: 0}
+      border: {x: 0, y: 18, z: 0, w: 5}
       outline: []
       physicsShape: []
       tessellationDetail: 0
@@ -249,7 +249,7 @@ TextureImporter:
       VillageObjects_Box_wood: -1201551281
       VillageObjects_Bucket: 1709486951
       VillageObjects_Ladle: 1644144858
-      VillageObjects_Poll_wpod: 1558947400
+      VillageObjects_Poll_wood: 1558947400
       VillageObjects_Sign_wood: -1244959065
       VillageObjects_Well: -972245010
   mipmapLimitGroupName: 
