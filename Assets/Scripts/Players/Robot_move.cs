@@ -43,6 +43,11 @@ public class Robot_move : MonoBehaviour
     public event Action<bool> OnBladeSwingingChanged;
 
     /// <summary>
+    /// ロボットが攻撃（剣・弾）を実行した瞬間に発行されるイベント
+    /// </summary>
+    public event Action OnRobotAttackExecuted;
+
+    /// <summary>
     /// 現在、右を向いているかどうかのフラグ
     /// </summary>
     public bool rightFlag { get; private set; } = false;
@@ -235,6 +240,7 @@ public class Robot_move : MonoBehaviour
                 else if (isAttackInputWindowOpen)
                 {
                     queuedAttack = true;
+                    OnRobotAttackExecuted?.Invoke(); // 攻撃が実行されたことを外部に通知するイベントを発行
                 }
             }
         }
@@ -272,6 +278,7 @@ public class Robot_move : MonoBehaviour
     private void Shoot()
     {
         StopFloatingAndReturn(); // ゆらゆらを停止して元の位置へ
+        OnRobotAttackExecuted?.Invoke(); // 攻撃が実行されたことを外部に通知するイベントを発行
 
         Vector3 newPos = this.transform.position; //自分の座標を保存
         GameObject newGameObject = Instantiate(shoot_prefab) as GameObject; // 弾1のプレハブを生成
@@ -285,13 +292,15 @@ public class Robot_move : MonoBehaviour
         }
 
         float EnableMove_Sec =
-            newGameObject.GetComponent<FaboProjectileController>().vanishTime * EnableMoveTimeAcjuctment; //プレイヤーが動けない時間を設定
+            newGameObject.GetComponent<FaboProjectileController>().vanishTime
+            * EnableMoveTimeAcjuctment; //プレイヤーが動けない時間を設定
         StartCoroutine(AttackStart(EnableMove_Sec, currentShootData.shotInterval)); //待機
     }
 
     private void Blade()
     {
         StopFloatingAndReturn(0.05f); // ゆらゆらをほぼ即座に停止して元の位置へ
+        OnRobotAttackExecuted?.Invoke(); // 攻撃が実行されたことを外部に通知するイベントを発行
         isBladeSwinging = true; //剣の当たり判定を得る
         InstantsetRightFlag(); //即座にロボットの左右を変更する
         StartCoroutine(BladeAttack());
