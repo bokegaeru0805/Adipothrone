@@ -3,7 +3,7 @@ using DG.Tweening;
 using UnityEngine;
 
 [RequireComponent(typeof(Rigidbody2D))]
-[RequireComponent(typeof(BoxCollider2D))]
+[RequireComponent(typeof(Collider2D))]
 public class IcicleMoveController : MonoBehaviour, IEnemyResettable
 {
     #region 列挙型
@@ -16,13 +16,14 @@ public class IcicleMoveController : MonoBehaviour, IEnemyResettable
 
     private enum IcicleState
     {
-        Sleep, // 待機・プレイヤー検知
-        Shake, // 落下前の予備動作（微振動）
-        Fall, // 落下中
-        Fade, // 地面衝突後、フェードアウトして消える
-        Regenerate, // 指定時間後に初期位置から生えてくる
-        BossIdle // ボス召喚時の即時消滅を防ぐ空中静止状態
-        ,
+        Sleep = 0, // 待機・プレイヤー検知
+        Shake = 1, // 落下前の予備動作（微振動）
+        Fall = 2, // 落下中
+        Fade = 3, // 地面衝突後、フェードアウトして消える
+        Regenerate = 4, // 指定時間後に初期位置から生えてくる
+        BossIdle = 5, // ボス召喚時の即時消滅を防ぐ空中静止状態
+        ExternalIdle = 6, // 外部Controllerから落下許可を受けるまで空中で待機
+        ExternalDetecting = 7, // 外部から許可を受け、つららごとにプレイヤーを検知
     }
 
     private enum TagState
@@ -38,7 +39,7 @@ public class IcicleMoveController : MonoBehaviour, IEnemyResettable
     #region インスペクター設定
 
     [Header("敵のタイプ")]
-    [SerializeField]
+    [SerializeField, Tooltip("つららのバリエーションタイプ。ダメージ等の初期化に使用します。")]
     private EnemyVariant _variantType = EnemyVariant.Icicle;
 
     [Header("参照設定")]
@@ -132,6 +133,7 @@ public class IcicleMoveController : MonoBehaviour, IEnemyResettable
 
     // 時間停止対応のためのDOTweenキャッシュ
     private Tween _currentTween;
+    private bool _isExternalSummonPrepared;
 
     #endregion
 
@@ -210,7 +212,9 @@ public class IcicleMoveController : MonoBehaviour, IEnemyResettable
 
     private void Start()
     {
-        ResetState();
+        // Instantiate直後に外部Controllerが初期化済みの場合、その待機状態を上書きしません。
+        if (!_isExternalSummonPrepared)
+            ResetState();
     }
 
     private void FixedUpdate()
@@ -253,6 +257,15 @@ public class IcicleMoveController : MonoBehaviour, IEnemyResettable
                         ChangeState(IcicleState.Shake);
                     }
                 }
+                break;
+
+            case IcicleState.ExternalIdle:
+                _rbody.velocity = Vector2.zero;
+                break;
+
+            case IcicleState.ExternalDetecting:
+                _rbody.velocity = Vector2.zero;
+                TryStartExternalFall();
                 break;
 
             case IcicleState.Fall:
@@ -310,6 +323,40 @@ public class IcicleMoveController : MonoBehaviour, IEnemyResettable
         ResetState();
         ChangeState(IcicleState.BossIdle);
     }
+
+    /// <summary>
+    /// 外部Controllerから生成されたつららを、指定位置で落下待機状態にします。
+    /// </summary>
+    public void PrepareExternalSummon(Vector3 position)
+    {
+        _isExternalSummonPrepared = true;
+        _isSingleUse = true;
+        _initialPosition = position;
+        transform.position = position;
+
+        ResetState();
+        ChangeState(IcicleState.ExternalIdle);
+    }
+
+    /// <summary>
+    /// 外部Controllerから待機中のつららへ、個別のプレイヤー検知を許可します。
+    /// 許可後も即座には落下せず、このつらら自身の検知範囲へプレイヤーが入るまで待機します。
+    /// </summary>
+    public void AllowExternalFall()
+    {
+        if (_currentState != IcicleState.ExternalIdle)
+            return;
+
+        ChangeState(IcicleState.ExternalDetecting);
+    }
+
+    /// <summary>
+    /// 外部召喚されたつららが残存しているかを返します。
+    /// </summary>
+    public bool IsExternalSummonAlive =>
+        gameObject.activeInHierarchy
+        && _currentState != IcicleState.Fade
+        && _currentState != IcicleState.Regenerate;
 
     /// <summary>
     /// 外部からこのつららを安全に即時破壊し、ヒットエフェクトを再生しながら消滅させます。
@@ -449,6 +496,21 @@ public class IcicleMoveController : MonoBehaviour, IEnemyResettable
     }
 
     /// <summary>
+    /// Large Golemから感知を許可された後、このつらら単体の範囲だけを判定します。
+    /// </summary>
+    private void TryStartExternalFall()
+    {
+        if (_playerTransform == null)
+            return;
+
+        Vector3 playerPosition = _playerTransform.position;
+        float distanceX = Mathf.Abs(playerPosition.x - transform.position.x);
+
+        if (distanceX <= _detectRangeX && playerPosition.y < transform.position.y)
+            ChangeState(IcicleState.Shake);
+    }
+
+    /// <summary>
     /// 落下状態の処理を行います。徐々に加速しながら落下し、地面との衝突を検知します。
     /// </summary>
     private void UpdateFallState()
@@ -517,6 +579,8 @@ public class IcicleMoveController : MonoBehaviour, IEnemyResettable
         {
             case IcicleState.Sleep:
             case IcicleState.BossIdle:
+            case IcicleState.ExternalIdle:
+            case IcicleState.ExternalDetecting:
                 // 待機状態、ボス召喚時は無敵
                 SetTagState(TagState.Immune);
                 break;

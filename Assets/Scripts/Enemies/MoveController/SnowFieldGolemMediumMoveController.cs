@@ -258,7 +258,8 @@ public class SnowFieldGolemMediumMoveController : MonoBehaviour, IEnemyResettabl
 
     private float _moveVelocityX = 0f;
     private float _jumpStartTime = 0f;
-    private int _damage = 20;
+    private int _bodyDamage = 20;
+    private int _spearDamage = 20;
 
     private Vector3 _visualInitialLocalEulerAngles;
     private Vector2 _lastCheckedPosition;
@@ -437,7 +438,8 @@ public class SnowFieldGolemMediumMoveController : MonoBehaviour, IEnemyResettabl
         switch (_variantType)
         {
             case EnemyVariant.SnowField:
-                _damage = 20;
+                _bodyDamage = 20;
+                _spearDamage = 20;
                 break;
 
             default:
@@ -528,8 +530,8 @@ public class SnowFieldGolemMediumMoveController : MonoBehaviour, IEnemyResettabl
     private void ResetDamageControllers()
     {
         _enemyHP?.ResetState();
-        _contactDamageController?.SetNormalDamage(_damage);
-        _spearDamageController?.SetNormalDamage(_damage);
+        _contactDamageController?.SetNormalDamage(_bodyDamage);
+        _spearDamageController?.SetNormalDamage(_spearDamage);
     }
 
     private void ResetAttackObjects()
