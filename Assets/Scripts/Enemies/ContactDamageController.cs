@@ -6,6 +6,7 @@ using UnityEngine;
 /// このコンポーネントが正しく機能するには、物理イベントを受け取るために
 /// 自分自身もしくは親オブジェクトにRigidbody2Dがアタッチされている必要があります。
 /// </summary>
+[Icon("Assets/Sprites/SystemIcons/ContactDamageControllerIcon.png")]
 [RequireComponent(typeof(Collider2D))]
 public class ContactDamageController : MonoBehaviour
 {

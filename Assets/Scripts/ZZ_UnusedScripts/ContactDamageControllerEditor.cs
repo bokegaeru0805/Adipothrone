@@ -1,3 +1,4 @@
+/*
 using UnityEditor;
 
 [CustomEditor(typeof(ContactDamageController))]
@@ -15,3 +16,4 @@ public class ContactDamageControllerEditor : Editor
         DrawDefaultInspector();
     }
 }
+*/
