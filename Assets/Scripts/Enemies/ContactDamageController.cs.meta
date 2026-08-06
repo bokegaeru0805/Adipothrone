@@ -6,7 +6,7 @@ MonoImporter:
   defaultReferences:
   - materialSettings: {fileID: 2100000, guid: 250d12b8553ac1f4facd8689fa655c2b, type: 2}
   executionOrder: 0
-  icon: {instanceID: 0}
+  icon: {fileID: 2800000, guid: cadb26e972737764a986f63a652538c2, type: 3}
   userData: 
   assetBundleName: 
   assetBundleVariant: 
