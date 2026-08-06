@@ -3,10 +3,12 @@ using UnityEngine;
 [RequireComponent(typeof(Rigidbody2D))]
 [RequireComponent(typeof(Collider2D))]
 [RequireComponent(typeof(ContactDamageController))]
+[RequireComponent(typeof(SpriteRenderer))]
 public class SnowFairyCrystalProjectile : MonoBehaviour
 {
     private Rigidbody2D _rbody;
     private ContactDamageController _contactDamageController;
+    private SpriteRenderer _spriteRenderer;
     private Vector2 _forwardDirection;
     private Vector2 _perpendicularDirection;
     private Vector2 _startPosition;
@@ -35,6 +37,7 @@ public class SnowFairyCrystalProjectile : MonoBehaviour
     {
         _rbody = GetComponent<Rigidbody2D>();
         _contactDamageController = GetComponent<ContactDamageController>();
+        _spriteRenderer = GetComponent<SpriteRenderer>();
         _rbody.gravityScale = 0f;
         _initialScale = transform.localScale;
     }
@@ -104,6 +107,8 @@ public class SnowFairyCrystalProjectile : MonoBehaviour
     {
         _forwardDirection = direction.sqrMagnitude > 0f ? direction.normalized : Vector2.right;
         _perpendicularDirection = new Vector2(-_forwardDirection.y, _forwardDirection.x);
+        if (Mathf.Abs(_forwardDirection.x) > 0.001f)
+            _spriteRenderer.flipX = _forwardDirection.x < 0f;
         _startPosition = transform.position;
         _initialScale = transform.localScale;
         _currentSpeed = Mathf.Max(0f, speed);

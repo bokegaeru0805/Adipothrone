@@ -526,6 +526,10 @@ public class SnowFairyMoveController : MonoBehaviour, IEnemyResettable
         if (_playerTransform == null || _crystalProjectilePrefab == null)
             return;
 
+        float playerDeltaX = _playerTransform.position.x - transform.position.x;
+        if (Mathf.Abs(playerDeltaX) > 0.001f)
+            _spriteRenderer.flipX = playerDeltaX < 0f;
+
         float facingSign = _spriteRenderer.flipX ? -1f : 1f;
         Vector2 offset = new Vector2(
             _crystalShotSpawnOffset.x * facingSign,
