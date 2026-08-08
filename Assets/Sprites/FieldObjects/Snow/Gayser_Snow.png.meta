@@ -1,5 +1,5 @@
 fileFormatVersion: 2
-guid: 42597f6886ed8a34db2ea81374c82991
+guid: 154937b97b9f43a40ad1f112bc0f1208
 TextureImporter:
   internalIDToNameTable: []
   externalObjects: {}
@@ -110,64 +110,169 @@ TextureImporter:
     serializedVersion: 2
     sprites:
     - serializedVersion: 2
-      name: SnowBall_large
+      name: Gayser_Snow_0
       rect:
         serializedVersion: 2
         x: 0
         y: 0
         width: 48
         height: 48
-      alignment: 0
-      pivot: {x: 0, y: 0}
-      border: {x: 0, y: 0, z: 0, w: 0}
+      alignment: 9
+      pivot: {x: 0.5, y: 1}
+      border: {x: 16, y: 0, z: 16, w: 32}
       outline: []
       physicsShape: []
       tessellationDetail: 0
       bones: []
-      spriteID: ae95100ade525d3449cb922b30f18d46
-      internalID: 314569064
+      spriteID: 1de2eee7feb4f0f48aac613d59b8353f
+      internalID: 1755623407
       vertices: []
       indices: 
       edges: []
       weights: []
     - serializedVersion: 2
-      name: SnowBall_medium
+      name: Gayser_Snow_1
       rect:
         serializedVersion: 2
         x: 48
         y: 0
-        width: 32
-        height: 32
-      alignment: 0
-      pivot: {x: 0, y: 0}
-      border: {x: 0, y: 0, z: 0, w: 0}
+        width: 48
+        height: 48
+      alignment: 9
+      pivot: {x: 0.5, y: 1}
+      border: {x: 16, y: 0, z: 16, w: 32}
       outline: []
       physicsShape: []
       tessellationDetail: 0
       bones: []
-      spriteID: 0af6b0b864d10fd44b34e0ad76127805
-      internalID: 301494453
+      spriteID: 9cc0567452e1e2f428dd004b5b4848d0
+      internalID: 695554591
       vertices: []
       indices: 
       edges: []
       weights: []
     - serializedVersion: 2
-      name: SnowBall_small
+      name: Gayser_Snow_2
       rect:
         serializedVersion: 2
-        x: 80
+        x: 96
         y: 0
-        width: 16
-        height: 16
-      alignment: 0
-      pivot: {x: 0, y: 0}
-      border: {x: 0, y: 0, z: 0, w: 0}
+        width: 48
+        height: 48
+      alignment: 9
+      pivot: {x: 0.5, y: 1}
+      border: {x: 16, y: 0, z: 16, w: 32}
       outline: []
       physicsShape: []
       tessellationDetail: 0
       bones: []
-      spriteID: be9fb5ee59db9764a84caa7c7252f62e
-      internalID: 433729791
+      spriteID: 5ab7d198d75348a4e984fcccbdaec1c1
+      internalID: -2064043503
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Gayser_Snow_3
+      rect:
+        serializedVersion: 2
+        x: 144
+        y: 0
+        width: 48
+        height: 48
+      alignment: 9
+      pivot: {x: 0.5, y: 1}
+      border: {x: 16, y: 0, z: 16, w: 32}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 25edebb1e705bb54b88e76cb3c346e02
+      internalID: -731561024
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Gayser_Snow_4
+      rect:
+        serializedVersion: 2
+        x: 192
+        y: 0
+        width: 48
+        height: 48
+      alignment: 9
+      pivot: {x: 0.5, y: 1}
+      border: {x: 16, y: 0, z: 16, w: 32}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 3ca23fd9b1818d243a230ed248291b0a
+      internalID: -294152665
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Gayser_Snow_5
+      rect:
+        serializedVersion: 2
+        x: 240
+        y: 0
+        width: 48
+        height: 48
+      alignment: 9
+      pivot: {x: 0.5, y: 1}
+      border: {x: 16, y: 0, z: 16, w: 32}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 985594a8d25f46941a53a5ed783a59f1
+      internalID: -945473022
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Gayser_Snow_6
+      rect:
+        serializedVersion: 2
+        x: 288
+        y: 0
+        width: 48
+        height: 48
+      alignment: 9
+      pivot: {x: 0.5, y: 1}
+      border: {x: 16, y: 0, z: 16, w: 32}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: c030c7dd095f4bb47a6ba9e15b93a817
+      internalID: 1609951946
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Gayser_Snow_7
+      rect:
+        serializedVersion: 2
+        x: 336
+        y: 0
+        width: 48
+        height: 48
+      alignment: 9
+      pivot: {x: 0.5, y: 1}
+      border: {x: 16, y: 0, z: 16, w: 32}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 8f3fa0f5d49f6194f97abec067dc199e
+      internalID: -541763840
       vertices: []
       indices: 
       edges: []
@@ -183,9 +288,14 @@ TextureImporter:
     weights: []
     secondaryTextures: []
     nameFileIdTable:
-      SnowBall_large: 314569064
-      SnowBall_medium: 301494453
-      SnowBall_small: 433729791
+      Gayser_Snow_0: 1755623407
+      Gayser_Snow_1: 695554591
+      Gayser_Snow_2: -2064043503
+      Gayser_Snow_3: -731561024
+      Gayser_Snow_4: -294152665
+      Gayser_Snow_5: -945473022
+      Gayser_Snow_6: 1609951946
+      Gayser_Snow_7: -541763840
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 
