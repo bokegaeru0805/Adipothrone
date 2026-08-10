@@ -3,259 +3,279 @@ using System.Collections.Generic;
 using UnityEngine;
 
 /// <summary>
-/// オブジェクトの上に乗ったプレイヤーや物理オブジェクトを運ぶコンポーネント。
-/// プレイヤーには速度を加算し、物理オブジェクトには親子付けを行って対応します。
+/// 足場上のプレイヤーと物理オブジェクトを足場の移動に追従させます。
+/// プレイヤーには足場の移動速度を渡し、物理オブジェクトは足場の子として運搬します。
 /// </summary>
 [RequireComponent(typeof(BoxCollider2D))]
 [RequireComponent(typeof(SpriteRenderer))]
 public class PassengerCarrier : MonoBehaviour
 {
-    private SpriteRenderer spriteRenderer;
-    private Vector3 lastPosition;
-    private Vector2 currentVelocity;
+    private const float DetectionHeight = 0.2f;
+    private const float DetectionWidthShrink = 0.1f;
+    private const float DetectionOverlap = 0.05f;
+    private const float MinimumDetectionWidth = 0.1f;
+    private const float PlayerPositionTolerance = 0.3f;
 
+    #region Inspector設定
+
+    [SerializeField]
     [Tooltip(
         "Trueの場合、SpriteRendererのサイズに合わせてコライダーを自動調整します。Falseの場合は手動設定を使用します。"
     )]
-    [SerializeField]
     private bool autoAdjustCollider = true;
 
-    // 乗っているプレイヤーのリスト（マルチプレイ対応も考慮しリスト化）
-    private HashSet<Heroin_move> playerPassengers = new HashSet<Heroin_move>();
+    #endregion
 
-    // 離脱猶予を管理する辞書（プレイヤーごとのコルーチンを管理）
-    private Dictionary<Heroin_move, Coroutine> disconnectCoroutines =
+    #region フィールド
+
+    private SpriteRenderer _spriteRenderer;
+    private Vector3 _lastPosition;
+    private Vector2 _currentVelocity;
+
+    private readonly HashSet<Heroin_move> _playerPassengers = new HashSet<Heroin_move>();
+    private readonly Dictionary<Heroin_move, Coroutine> _disconnectCoroutines =
         new Dictionary<Heroin_move, Coroutine>();
 
-    // 離脱猶予時間（秒）。0.1〜0.2秒程度で、着地バウンドによる誤判定を防ぐ
-    private float disconnectDelay = 0f;
+    // 着地時にTriggerから一瞬外れた場合を考慮し、実際の離脱まで待機する時間。
+    private float _disconnectDelay = 0f;
+    private WaitForSeconds _disconnectWait;
 
-    // GC対策: WaitForSecondsのインスタンスをキャッシュする変数
-    private WaitForSeconds disconnectWait;
+    #endregion
 
-    void Awake()
+    #region 公開API
+
+    /// <summary>
+    /// 現在乗っているプレイヤーを取得します。乗っていない場合はnullを返します。
+    /// </summary>
+    public Heroin_move CurrentPlayerPassenger
     {
-        spriteRenderer = GetComponent<SpriteRenderer>();
-        UpdateColliderSize();
-        lastPosition = transform.position;
-        disconnectWait = new WaitForSeconds(disconnectDelay);
-    }
-
-    void FixedUpdate()
-    {
-        // 1. 自身の移動速度を計算 (位置の差分 / 時間)
-        Vector3 currentPos = transform.position;
-        // ゼロ除算回避のためdeltaTimeチェック
-        if (Time.fixedDeltaTime > 0)
+        get
         {
-            currentVelocity = (currentPos - lastPosition) / Time.fixedDeltaTime;
-        }
-        lastPosition = currentPos;
-
-        // 2. 乗っているプレイヤー全員に速度を伝達
-        if (playerPassengers.Count > 0)
-        {
-            // HashSetを回している間にRemoveされる可能性を考慮し、コピーして回すか、
-            // 安全な方法をとるが、SetCarrierVelocity内でリスト操作は発生しないためそのまま回す
-            foreach (var player in playerPassengers)
+            foreach (Heroin_move player in _playerPassengers)
             {
                 if (player != null)
-                {
-                    player.SetCarrierVelocity(currentVelocity);
-                }
+                    return player;
             }
+
+            return null;
         }
     }
 
     /// <summary>
-    /// SpriteRendererのサイズに合わせて、物理用と検知用(Trigger)のコライダーを調整する
-    /// </summary>
-    private void UpdateColliderSize()
-    {
-        // 自動調整が無効なら何もしない
-        if (!autoAdjustCollider)
-            return;
-
-        if (spriteRenderer == null)
-            return;
-
-        BoxCollider2D[] colliders = GetComponents<BoxCollider2D>();
-
-        foreach (var col in colliders)
-        {
-            if (col.isTrigger)
-            {
-                // 【検知用コライダー】
-                // 以前は全体を覆っていましたが、上部にだけ判定がある「帽子」のような形状に変更します。
-                // これにより、下や横からの接触で吸着するのを防ぎます。
-
-                float detectionHeight = 0.2f; // 検知エリアの厚み
-                float widthShrink = 0.1f; // 横からの誤接触防止用
-                float overlap = 0.05f; // 確実に足元を捉えるため、わずかにスプライト本体に食い込ませる量
-
-                // サイズ設定: 幅はスプライトより少し狭く、高さは薄く
-                col.size = new Vector2(
-                    Mathf.Max(0.1f, spriteRenderer.size.x - widthShrink),
-                    detectionHeight
-                );
-
-                // オフセット設定: スプライトの上辺付近に配置
-                // スプライト中心(0) + 半分の高さ = 上辺。そこから検知エリアの中心位置を計算
-                float topY = spriteRenderer.size.y * 0.5f;
-                float yOffset = topY + (detectionHeight * 0.5f) - overlap;
-
-                col.offset = new Vector2(0f, yOffset);
-            }
-            else
-            {
-                // 【物理用コライダー】
-                col.size = spriteRenderer.size;
-                col.offset = Vector2.zero;
-            }
-        }
-    }
-
-    private void OnTriggerEnter2D(Collider2D other)
-    {
-        // プレイヤーの場合
-        if (other.CompareTag(GameConstants.PLAYER_TAG_NAME))
-        {
-            // コライダー形状の変更でほぼ防げますが、念のため座標チェックも行います。
-            // プレイヤーのPivotはBottom（足元）なので、プレイヤーのY座標が
-            // リフトの上端（中心 + 高さ半分）より著しく低い場合は「乗っていない」とみなして無視します。
-
-            float carrierTopY = transform.position.y + (spriteRenderer.size.y * 0.5f);
-            float tolerance = 0.3f; // 許容誤差（少し食い込んでいてもOKにする）
-
-            if (other.transform.position.y < carrierTopY - tolerance)
-            {
-                return; // 下や横からの接触なので無視
-            }
-
-            var playerMove = other.GetComponent<Heroin_move>();
-            if (playerMove != null)
-            {
-                // 離脱待ちのコルーチンが動いていればキャンセルする（再着地とみなす）
-                if (disconnectCoroutines.ContainsKey(playerMove))
-                {
-                    if (disconnectCoroutines[playerMove] != null)
-                    {
-                        StopCoroutine(disconnectCoroutines[playerMove]);
-                    }
-                    disconnectCoroutines.Remove(playerMove);
-                }
-
-                // リストになければ追加
-                playerPassengers.Add(playerMove);
-            }
-        }
-        // その他の物理オブジェクトの場合：従来通り親子付けで運ぶ
-        else if (other.CompareTag(GameConstants.PHYSICS_OBJECT_TAG_NAME))
-        {
-            other.transform.SetParent(this.transform);
-        }
-    }
-
-    private void OnTriggerExit2D(Collider2D other)
-    {
-        /// プレイヤーの場合
-        if (other.CompareTag(GameConstants.PLAYER_TAG_NAME))
-        {
-            var playerMove = other.GetComponent<Heroin_move>();
-            if (playerMove != null)
-            {
-                // 即座に外さず、猶予コルーチンを開始する
-                if (playerPassengers.Contains(playerMove))
-                {
-                    // 既にコルーチンが走っていないか確認してから開始
-                    if (!disconnectCoroutines.ContainsKey(playerMove))
-                    {
-                        Coroutine co = StartCoroutine(DisconnectAfterDelay(playerMove));
-                        disconnectCoroutines.Add(playerMove, co);
-                    }
-                }
-            }
-        }
-        // その他の物理オブジェクトの場合：親子付け解除
-        else if (other.CompareTag(GameConstants.PHYSICS_OBJECT_TAG_NAME))
-        {
-            // 自身が非アクティブ化されている最中（activeInHierarchyがfalse）は
-            // SetParentを行うとエラーになるため、処理をスキップする
-            if (!gameObject.activeInHierarchy)
-                return;
-
-            if (other.transform.parent == this.transform)
-            {
-                other.transform.SetParent(null);
-            }
-        }
-    }
-
-    /// <summary>
-    /// プレイヤーの離脱猶予コルーチン
-    /// </summary>
-    /// <param name="player">離脱猶予を適用するプレイヤー</param>
-    /// <returns></returns>
-    private IEnumerator DisconnectAfterDelay(Heroin_move player)
-    {
-        // new せずにキャッシュを使用
-        yield return disconnectWait;
-
-        // 待機時間が終わってもまだ辞書に登録されている（＝再着地しなかった）場合
-        if (disconnectCoroutines.ContainsKey(player))
-        {
-            if (playerPassengers.Contains(player))
-            {
-                playerPassengers.Remove(player);
-                if (player != null)
-                {
-                    player.ExitCarrier(); // ここで初めて慣性モードへ移行
-                }
-            }
-            disconnectCoroutines.Remove(player);
-        }
-    }
-
-    /// <summary>
-    /// 強制的に全ての乗客を降ろす（プールに戻る際などに使用）
+    /// 登録中のプレイヤーと物理オブジェクトをすべて足場から降ろします。
+    /// プールへの返却など、足場を停止・破棄する前に使用します。
     /// </summary>
     public void EjectAllPassengers()
     {
-        // コルーチンも全て停止してクリーンアップ
-        foreach (var kvp in disconnectCoroutines)
+        foreach (Coroutine disconnectCoroutine in _disconnectCoroutines.Values)
         {
-            if (kvp.Value != null)
-                StopCoroutine(kvp.Value);
+            if (disconnectCoroutine != null)
+                StopCoroutine(disconnectCoroutine);
         }
-        disconnectCoroutines.Clear();
+        _disconnectCoroutines.Clear();
 
-        // プレイヤーの解放
-        foreach (var player in playerPassengers)
+        foreach (Heroin_move player in _playerPassengers)
         {
             if (player != null)
                 player.ExitCarrier();
         }
-        playerPassengers.Clear();
+        _playerPassengers.Clear();
 
-        // 物理オブジェクトの解放（親子解除）
         for (int i = transform.childCount - 1; i >= 0; i--)
         {
             Transform child = transform.GetChild(i);
             if (child.CompareTag(GameConstants.PHYSICS_OBJECT_TAG_NAME))
-            {
                 child.SetParent(null);
-            }
         }
+    }
+
+    #endregion
+
+    #region Unityイベント
+
+    private void Awake()
+    {
+        _spriteRenderer = GetComponent<SpriteRenderer>();
+        UpdateColliderSize();
+
+        _lastPosition = transform.position;
+        _disconnectWait = new WaitForSeconds(_disconnectDelay);
+    }
+
+    private void FixedUpdate()
+    {
+        UpdateCarrierVelocity();
+        ApplyVelocityToPlayers();
+    }
+
+    private void OnTriggerEnter2D(Collider2D other)
+    {
+        if (other.CompareTag(GameConstants.PLAYER_TAG_NAME))
+        {
+            RegisterPlayer(other);
+            return;
+        }
+
+        if (other.CompareTag(GameConstants.PHYSICS_OBJECT_TAG_NAME))
+            other.transform.SetParent(transform);
+    }
+
+    private void OnTriggerExit2D(Collider2D other)
+    {
+        if (other.CompareTag(GameConstants.PLAYER_TAG_NAME))
+        {
+            BeginPlayerDisconnect(other);
+            return;
+        }
+
+        if (!other.CompareTag(GameConstants.PHYSICS_OBJECT_TAG_NAME))
+            return;
+
+        // 非アクティブ化中の親子関係変更はUnityのエラーになるため行わない。
+        if (!gameObject.activeInHierarchy)
+            return;
+
+        if (other.transform.parent == transform)
+            other.transform.SetParent(null);
     }
 
     private void OnValidate()
     {
-        spriteRenderer = GetComponent<SpriteRenderer>();
+        _spriteRenderer = GetComponent<SpriteRenderer>();
         UpdateColliderSize();
-        // 遅延時間が変更されたら作り直す
+
         if (Application.isPlaying)
+            _disconnectWait = new WaitForSeconds(_disconnectDelay);
+    }
+
+    #endregion
+
+    #region プレイヤーの運搬・乗降管理
+
+    private void UpdateCarrierVelocity()
+    {
+        Vector3 currentPosition = transform.position;
+
+        if (Time.fixedDeltaTime > 0f)
+            _currentVelocity = (currentPosition - _lastPosition) / Time.fixedDeltaTime;
+
+        _lastPosition = currentPosition;
+    }
+
+    private void ApplyVelocityToPlayers()
+    {
+        foreach (Heroin_move player in _playerPassengers)
         {
-            disconnectWait = new WaitForSeconds(disconnectDelay);
+            if (player != null)
+                player.SetCarrierVelocity(_currentVelocity);
         }
     }
+
+    private void RegisterPlayer(Collider2D playerCollider)
+    {
+        // Triggerは足場上面に置くが、横や下からの接触も座標で除外する。
+        // ローカル座標で比較することで、SpriteのPivot位置や足場の傾きにも対応する。
+        Vector3 localPlayerPosition = transform.InverseTransformPoint(
+            playerCollider.transform.position
+        );
+        float platformTopPositionY = _spriteRenderer.localBounds.max.y;
+        if (localPlayerPosition.y < platformTopPositionY - PlayerPositionTolerance)
+            return;
+
+        Heroin_move player = playerCollider.GetComponent<Heroin_move>();
+        if (player == null)
+            return;
+
+        CancelPlayerDisconnect(player);
+        _playerPassengers.Add(player);
+    }
+
+    private void BeginPlayerDisconnect(Collider2D playerCollider)
+    {
+        Heroin_move player = playerCollider.GetComponent<Heroin_move>();
+        if (
+            player == null
+            || !_playerPassengers.Contains(player)
+            || _disconnectCoroutines.ContainsKey(player)
+        )
+        {
+            return;
+        }
+
+        Coroutine disconnectCoroutine = StartCoroutine(DisconnectAfterDelay(player));
+        _disconnectCoroutines.Add(player, disconnectCoroutine);
+    }
+
+    private void CancelPlayerDisconnect(Heroin_move player)
+    {
+        if (!_disconnectCoroutines.TryGetValue(player, out Coroutine disconnectCoroutine))
+            return;
+
+        if (disconnectCoroutine != null)
+            StopCoroutine(disconnectCoroutine);
+
+        _disconnectCoroutines.Remove(player);
+    }
+
+    /// <summary>
+    /// Triggerから一時的に外れただけなら再進入時にキャンセルできるよう、離脱を遅延させます。
+    /// </summary>
+    private IEnumerator DisconnectAfterDelay(Heroin_move player)
+    {
+        yield return _disconnectWait;
+
+        // 再進入時に辞書から削除されていれば、離脱処理は不要。
+        if (!_disconnectCoroutines.ContainsKey(player))
+            yield break;
+
+        if (_playerPassengers.Remove(player) && player != null)
+            player.ExitCarrier();
+
+        _disconnectCoroutines.Remove(player);
+    }
+
+    #endregion
+
+    #region Collider自動調整
+
+    /// <summary>
+    /// SpriteRendererに合わせて物理Colliderと上面の乗車検知Triggerを調整します。
+    /// </summary>
+    private void UpdateColliderSize()
+    {
+        if (!autoAdjustCollider || _spriteRenderer == null)
+            return;
+
+        foreach (BoxCollider2D targetCollider in GetComponents<BoxCollider2D>())
+        {
+            if (targetCollider.isTrigger)
+                UpdateDetectionCollider(targetCollider);
+            else
+                UpdatePlatformCollider(targetCollider);
+        }
+    }
+
+    private void UpdatePlatformCollider(BoxCollider2D platformCollider)
+    {
+        Bounds spriteBounds = _spriteRenderer.localBounds;
+        platformCollider.size = new Vector2(spriteBounds.size.x, spriteBounds.size.y);
+        platformCollider.offset = new Vector2(spriteBounds.center.x, spriteBounds.center.y);
+    }
+
+    private void UpdateDetectionCollider(BoxCollider2D detectionCollider)
+    {
+        Bounds spriteBounds = _spriteRenderer.localBounds;
+        detectionCollider.size = new Vector2(
+            Mathf.Max(MinimumDetectionWidth, spriteBounds.size.x - DetectionWidthShrink),
+            DetectionHeight
+        );
+
+        // Boundsの上辺を使い、中央以外のSprite Pivotでも正しい位置へ配置する。
+        // Triggerを足場へ少し重ね、接地中に検知が途切れにくくする。
+        float detectionOffsetY =
+            spriteBounds.max.y + (DetectionHeight * 0.5f) - DetectionOverlap;
+        detectionCollider.offset = new Vector2(spriteBounds.center.x, detectionOffsetY);
+    }
+
+    #endregion
 }

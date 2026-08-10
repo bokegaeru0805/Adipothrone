@@ -20,6 +20,7 @@ public class DoorOpener : MonoBehaviour
         GuildStair = 40,
         Ladder_Wood = 50,
         TeleportCrystal = 60,
+        Snow = 70,
     }
 
     /// <summary>
