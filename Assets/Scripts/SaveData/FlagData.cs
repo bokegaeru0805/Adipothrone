@@ -176,12 +176,31 @@ public enum Chapter2TriggeredEvent
     FirstMetLotteryManager = 2065, // くじ屋の店主と初めて会った
     AllOrbsPlacedInDevice = 2070, // 全てのオーブを装置に置いた
     TalkedToFillAfterAllOrbsPlaced = 2075, // 全てのオーブを置いた後にFillと話した
+    TempleBossDefeated = 2080, // 砂漠の神殿のボスを倒した
+    TalkedToFillBeforeParting = 2085, // 別れの前にFillと話した
+    TalkedToCoachmanBeforeLeavingDesert = 2086, // 砂漠を出発する前に御者と話した
+    LeftDesertForRoyalCapital = 2088, // 王都へ向けて砂漠を出発した
 }
 
 /// <summary>
 /// 第二章ステージのint型のフラグ
 /// </summary>
 public enum Chapter2CountedEvent { }
+
+/// <summary>
+/// 第三章ステージのbool型のフラグ
+/// </summary>
+public enum Chapter3TriggeredEvent
+{
+    None = 0, // 何も起こっていない状態を表すフラグ（デフォルト値として使用）
+    FirstEnteredGuild = 3001, // 初めてギルドに入った
+    FirstMetGuildReceptionist = 3004, // 初めてギルドの受付嬢に会った
+}
+
+/// <summary>
+/// 第三章ステージのint型のフラグ
+/// </summary>
+public enum Chapter3CountedEvent { }
 
 /// <summary>
 /// チュートリアルのbool型のフラグ

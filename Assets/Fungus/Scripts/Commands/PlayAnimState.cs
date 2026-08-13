@@ -8,9 +8,9 @@ namespace Fungus
     /// <summary>
     /// Plays a state of an animator according to the state name.
     /// </summary>
-    [CommandInfo("Animation", 
-                 "Play Anim State", 
-                 "Plays a state of an animator according to the state name")]
+    // [CommandInfo("Animation", 
+    //              "Play Anim State", 
+    //              "Plays a state of an animator according to the state name")]
     [AddComponentMenu("")]
     public class PlayAnimState : Command 
     {

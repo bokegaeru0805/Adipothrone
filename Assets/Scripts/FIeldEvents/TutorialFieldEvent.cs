@@ -1,8 +1,10 @@
 using System.Collections.Generic;
 using NaughtyAttributes;
 using UnityEngine;
+using UnityEngine.Scripting.APIUpdating;
 
-public class FieldEvent_Tutorial : BaseFieldEvent
+[MovedFrom(true, sourceClassName: "FieldEvent_Tutorial")]
+public class TutorialFieldEvent : BaseFieldEvent
 {
     [SerializeField]
     private FieldName fieldname = FieldName.None; // フィールド名を設定するための変数
@@ -47,7 +49,7 @@ public class FieldEvent_Tutorial : BaseFieldEvent
         if (fieldname == FieldName.None)
         {
             Debug.LogWarning(
-                $"{this.gameObject.name}のFieldEvent_Tutorialにフィールド名が設定されていません",
+                $"{this.gameObject.name}のTutorialFieldEventにフィールド名が設定されていません",
                 this
             );
         }

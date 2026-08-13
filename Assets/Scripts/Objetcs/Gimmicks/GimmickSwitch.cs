@@ -101,6 +101,13 @@ public class GimmickSwitch : MonoBehaviour
     [Label("Flag Name")]
     private Chapter2TriggeredEvent chapter2Flag;
 
+    [SerializeField]
+    [AllowNesting]
+    [ShowIf("IsChapter3Flag")]
+    [BoxGroup("Flag Settings")]
+    [Label("Flag Name")]
+    private Chapter3TriggeredEvent chapter3Flag;
+
     [Header("挙動設定")]
     [Tooltip("スイッチON時に自動でフラグ/KeyをSaveデータに書き込むか")]
     [SerializeField]

@@ -1,7 +1,9 @@
 using NaughtyAttributes;
 using UnityEngine;
+using UnityEngine.Scripting.APIUpdating;
 
-public class FieldEvent_Chapter2 : BaseFieldEvent
+[MovedFrom(true, sourceClassName: "FieldEvent_Chapter2")]
+public class Chapter2FieldEvent : BaseFieldEvent
 {
     [SerializeField]
     private FieldName fieldname = FieldName.None; // フィールド名を設定するための変数
@@ -53,7 +55,7 @@ public class FieldEvent_Chapter2 : BaseFieldEvent
         if (fieldname == FieldName.None)
         {
             Debug.LogWarning(
-                $"{this.gameObject.name} の FieldEvent_Chapter2 にフィールド名が設定されていません。",
+                $"{this.gameObject.name} の Chapter2FieldEvent にフィールド名が設定されていません。",
                 this
             );
         }
@@ -121,6 +123,22 @@ public class FieldEvent_Chapter2 : BaseFieldEvent
                         ProgressLogName.AttemptedToReportCoachmanQuest
                     ); //進行ログを登録
                     FungusHelper.ExecuteBlock(targetFlowchart, "AttemptedToReportCoachmanQuest");
+                }
+                else if (
+                    flagManager.GetBoolFlag(Chapter2TriggeredEvent.TempleBossDefeated)
+                    && !flagManager.GetBoolFlag(
+                        Chapter2TriggeredEvent.TalkedToCoachmanBeforeLeavingDesert
+                    )
+                )
+                {
+                    flagManager.SetBoolFlag(
+                        Chapter2TriggeredEvent.TalkedToCoachmanBeforeLeavingDesert,
+                        true
+                    );
+                    FungusHelper.ExecuteBlock(
+                        targetFlowchart,
+                        "TalkedToCoachmanBeforeLeavingDesert"
+                    );
                 }
                 break;
             case FieldName.AlchemistessField:

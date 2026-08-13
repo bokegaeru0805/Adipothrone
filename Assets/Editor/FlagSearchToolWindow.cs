@@ -25,6 +25,8 @@ public class FlagSearchToolWindow : EditorWindow
         "Chapter1CountedEvent",
         "Chapter2TriggeredEvent",
         "Chapter2CountedEvent",
+        "Chapter3TriggeredEvent",
+        "Chapter3CountedEvent",
         "TutorialEvent",
     };
 
@@ -354,6 +356,10 @@ public class FlagSearchToolWindow : EditorWindow
                             case 3: // Chapter2
                                 activeFlagPropName = "chapter2Flag";
                                 expectedEnumTypeName = "Chapter2TriggeredEvent";
+                                break;
+                            case 4: // Chapter3
+                                activeFlagPropName = "chapter3Flag";
+                                expectedEnumTypeName = "Chapter3TriggeredEvent";
                                 break;
                         }
 

@@ -14,12 +14,14 @@ public class FlagConditionDrawerPro : PropertyDrawer
         typeof(PrologueTriggeredEvent),
         typeof(Chapter1TriggeredEvent),
         typeof(Chapter2TriggeredEvent),
+        typeof(Chapter3TriggeredEvent),
     };
     private static readonly List<Type> intEnumTypes = new List<Type>
     {
         typeof(PrologueCountedEvent),
         typeof(Chapter1CountedEvent),
         typeof(Chapter2CountedEvent),
+        typeof(Chapter3CountedEvent),
     };
 
     // パフォーマンス向上のためのキャッシュ

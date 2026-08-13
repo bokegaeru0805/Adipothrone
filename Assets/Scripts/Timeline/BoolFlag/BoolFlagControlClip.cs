@@ -1,17 +1,19 @@
+using NaughtyAttributes;
 using UnityEngine;
 using UnityEngine.Playables;
 using UnityEngine.Timeline;
-using NaughtyAttributes; // コマンド同様、表示切り替えに使用
 
 [System.Serializable]
 public class BoolFlagControlClip : PlayableAsset, ITimelineClipAsset
 {
     // SetGameBoolFlagCommand.cs からEnum定義を流用
     // (FlagData.cs等で定義されているはずなので、ここではCommandと同じ型を使います)
-    
+
     [Header("Flag Settings")]
     [Tooltip("操作するフラグのカテゴリ（章）")]
-    public SetGameBoolFlagCommand.FlagCategory category = SetGameBoolFlagCommand.FlagCategory.Tutorial;
+    public SetGameBoolFlagCommand.FlagCategory category = SetGameBoolFlagCommand
+        .FlagCategory
+        .Tutorial;
 
     // --- 各章ごとのフラグ変数 (NaughtyAttributesで分岐表示) ---
 
@@ -34,6 +36,11 @@ public class BoolFlagControlClip : PlayableAsset, ITimelineClipAsset
     [ShowIf("category", SetGameBoolFlagCommand.FlagCategory.Chapter2)]
     [Label("Flag Name")]
     public Chapter2TriggeredEvent chapter2Flag;
+
+    [AllowNesting]
+    [ShowIf("category", SetGameBoolFlagCommand.FlagCategory.Chapter3)]
+    [Label("Flag Name")]
+    public Chapter3TriggeredEvent chapter3Flag;
 
     // ---------------------------
 

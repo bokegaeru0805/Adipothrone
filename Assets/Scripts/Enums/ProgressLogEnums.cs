@@ -21,25 +21,25 @@ public enum ProgressLogName
     // 第1章　15種類(2026/03/04現在)
     // =================================================================
 
-    Chapter1Start = 16009, // 第一章開始(FieldEvent_Chapter1.csで登録)
-    VillageTourStart = 16010, // 村の観光開始(FieldEvent_Chapter1.csで登録)
+    Chapter1Start = 16009, // 第一章開始(Chapter1FieldEvent.csで登録)
+    VillageTourStart = 16010, // 村の観光開始(Chapter1FieldEvent.csで登録)
 
     // --- 井戸のクエスト ---
-    WellQuestStart = 16011, // 井戸のクエスト受け取り(FieldEvent_Chapter1.csで登録)
-    WellQuestComplete = 16012, // 井戸のクエスト完了(FieldEvent_Chapter1.csで登録)
+    WellQuestStart = 16011, // 井戸のクエスト受け取り(Chapter1FieldEvent.csで登録)
+    WellQuestComplete = 16012, // 井戸のクエスト完了(Chapter1FieldEvent.csで登録)
 
     // --- 川のクエスト ---
-    RiverQuestStart = 16013, // 川のクエスト受け取り(FieldEvent_Chapter1.csで登録)
-    EncounterRiverRock = 16014, // 川の岩に遭遇(FieldEvent_Chapter1.csで登録)
-    RequestRockDestruction = 16015, // 岩の破壊依頼(FieldEvent_Chapter1.csで登録)
-    CompleteRockDestruction = 16016, // 岩の破壊依頼完了(FieldEvent_Chapter1.csで登録)
-    RiverBossAppear = 16017, // 川のボス出現(FieldEvent_Chapter1.csで登録)
+    RiverQuestStart = 16013, // 川のクエスト受け取り(Chapter1FieldEvent.csで登録)
+    EncounterRiverRock = 16014, // 川の岩に遭遇(Chapter1FieldEvent.csで登録)
+    RequestRockDestruction = 16015, // 岩の破壊依頼(Chapter1FieldEvent.csで登録)
+    CompleteRockDestruction = 16016, // 岩の破壊依頼完了(Chapter1FieldEvent.csで登録)
+    RiverBossAppear = 16017, // 川のボス出現(Chapter1FieldEvent.csで登録)
     DefeatRiverBoss = 16018, // 川のボス撃破(BossAfterDeath.csで登録)
 
     // --- 店の少女のクエスト ---
-    HeardShopGirlRumor = 16019, // ショップの女の子についての噂を聞いた(FieldEvent_Chapter1.csで登録)
-    StartShopGirlSearch = 16020, // 村の店の少女の探索を開始(FieldEvent_Chapter1.csで登録)
-    HouseCaveBossAppear = 16021, // 家の洞窟のボス出現(FieldEvent_Chapter1.csで登録)
+    HeardShopGirlRumor = 16019, // ショップの女の子についての噂を聞いた(Chapter1FieldEvent.csで登録)
+    StartShopGirlSearch = 16020, // 村の店の少女の探索を開始(Chapter1FieldEvent.csで登録)
+    HouseCaveBossAppear = 16021, // 家の洞窟のボス出現(Chapter1FieldEvent.csで登録)
     DefeatHouseCaveBoss = 16022, // 家の洞窟のボス撃破(BossAfterDeath.csで登録)
     ToDesert = 16023, // 砂漠へ向かう
 

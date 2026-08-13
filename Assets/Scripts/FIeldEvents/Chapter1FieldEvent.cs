@@ -1,6 +1,8 @@
 using UnityEngine;
+using UnityEngine.Scripting.APIUpdating;
 
-public class FieldEvent_Chapter1 : BaseFieldEvent
+[MovedFrom(true, sourceClassName: "FieldEvent_Chapter1")]
+public class Chapter1FieldEvent : BaseFieldEvent
 {
     [SerializeField]
     private FieldName fieldname = FieldName.None; // フィールド名を設定するための変数
@@ -28,7 +30,7 @@ public class FieldEvent_Chapter1 : BaseFieldEvent
         if (fieldname == FieldName.None)
         {
             Debug.LogWarning(
-                $"{this.gameObject.name} の FieldEvent_Chapter1 にフィールド名が設定されていません。",
+                $"{this.gameObject.name} の Chapter1FieldEvent にフィールド名が設定されていません。",
                 this
             );
         }

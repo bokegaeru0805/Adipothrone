@@ -1,4 +1,3 @@
-using UnityEngine;
 using UnityEngine.Playables;
 
 public class BoolFlagControlBehaviour : PlayableBehaviour
@@ -9,6 +8,7 @@ public class BoolFlagControlBehaviour : PlayableBehaviour
     public PrologueTriggeredEvent prologueFlag;
     public Chapter1TriggeredEvent chapter1Flag;
     public Chapter2TriggeredEvent chapter2Flag;
+    public Chapter3TriggeredEvent chapter3Flag;
 
     public bool valueToSet;
 

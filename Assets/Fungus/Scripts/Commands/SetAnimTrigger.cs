@@ -9,18 +9,20 @@ namespace Fungus
     /// <summary>
     /// Sets a trigger parameter on an Animator component to control a Unity animation.
     /// </summary>
-    [CommandInfo("Animation", 
-                 "Set Anim Trigger", 
-                 "Sets a trigger parameter on an Animator component to control a Unity animation")]
+    // [CommandInfo("Animation",
+    //              "Set Anim Trigger",
+    //              "Sets a trigger parameter on an Animator component to control a Unity animation")]
     [AddComponentMenu("")]
     [ExecuteInEditMode]
     public class SetAnimTrigger : Command
     {
         [Tooltip("Reference to an Animator component in a game object")]
-        [SerializeField] protected AnimatorData _animator;
+        [SerializeField]
+        protected AnimatorData _animator;
 
         [Tooltip("Name of the trigger Animator parameter that will have its value changed")]
-        [SerializeField] protected StringData _parameterName;
+        [SerializeField]
+        protected StringData _parameterName;
 
         #region Public members
 
@@ -51,15 +53,22 @@ namespace Fungus
 
         public override bool HasReference(Variable variable)
         {
-            return _animator.animatorRef == variable || _parameterName.stringRef == variable || base.HasReference(variable);
+            return _animator.animatorRef == variable
+                || _parameterName.stringRef == variable
+                || base.HasReference(variable);
         }
 
         #endregion
 
         #region Backwards compatibility
 
-        [HideInInspector] [FormerlySerializedAs("animator")] public Animator animatorOLD;
-        [HideInInspector] [FormerlySerializedAs("parameterName")] public string parameterNameOLD = "";
+        [HideInInspector]
+        [FormerlySerializedAs("animator")]
+        public Animator animatorOLD;
+
+        [HideInInspector]
+        [FormerlySerializedAs("parameterName")]
+        public string parameterNameOLD = "";
 
         protected virtual void OnEnable()
         {

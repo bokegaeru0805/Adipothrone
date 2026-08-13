@@ -5,19 +5,24 @@ using NaughtyAttributes;
 using UnityEngine;
 using UnityEngine.UI;
 
+/// <summary>
+/// ボス撃破時に再生する演出と、ボス固有の進行処理をまとめて扱うコンポーネント。
+/// 新しいボスを追加する場合は、BossHealth.BossName に列挙を追加し、
+/// ConfigureBossSpecificSettings() と ApplyBossDefeatResult() の switch に対応を追加する。
+/// </summary>
 public class BossAfterDeath : MonoBehaviour
 {
-    #region Constants
+    #region 定数
 
-    // パーティクルの出現範囲のオフセット
     private const float PARTICLE_RADIUS_OFFSET = 1f;
-
-    // 撃破時のフラッシュと明滅を繰り返す回数
     private const int DEFEAT_FLASH_COUNT = 3;
+    private const int DEFEAT_FADE_STEPS = 10;
+    private const float DEFEAT_FLASH_INTERVAL = 0.1f;
+    private const float DEFEAT_FADE_INTERVAL = 0.3f;
 
     #endregion
 
-    #region Inspector Settings & References
+    #region Inspector設定
 
     [Header("Fungus設定")]
     public Fungus.Flowchart flowchart = null;
@@ -27,20 +32,20 @@ public class BossAfterDeath : MonoBehaviour
     private float particleoffsetY;
 
     [SerializeField]
-    private GameObject FlashPanel; // 撃破時のフラッシュパネル
+    private GameObject FlashPanel;
 
     [SerializeField]
-    private GameObject BossDefeatParticle; // 撃破時のパーティクル
+    private GameObject BossDefeatParticle;
 
     [Header("ボス情報")]
     [SerializeField]
-    private bool isBossNamePreSet = false; //予めボスの名前を設定するか
+    private bool isBossNamePreSet = false;
 
     [SerializeField, ShowIf(nameof(isBossNamePreSet))]
-    private BossHealth.BossName bossName = BossHealth.BossName.None; // ボスの名前
+    private BossHealth.BossName bossName = BossHealth.BossName.None;
 
     [SerializeField, ShowIf(nameof(bossName), BossHealth.BossName.DustDevilBoss)]
-    private GameObject sandSmokeEffect; // 砂嵐のエフェクト(砂嵐のボス用)
+    private GameObject sandSmokeEffect;
 
     [Header("ボスの複数スプライト設定")]
     [SerializeField]
@@ -54,18 +59,20 @@ public class BossAfterDeath : MonoBehaviour
     [SerializeField, ShowIf(nameof(useMultipleSprites))]
     [Tooltip("自動追加以外に、手動で追加したいSpriteRendererがあれば登録します")]
     private List<SpriteRenderer> targetSpriteRenderers = new List<SpriteRenderer>();
+
     #endregion
 
-    #region Private Fields
-    private bool shouldHideAfterDefeat = true; //撃破後に非表示にするか
+    #region 実行時キャッシュ
+
+    private bool shouldHideAfterDefeat = true;
     private FlagManager flagManager;
     private SpriteRenderer spriteRenderer;
-    ParticleSystem[] psList = null;
-    private List<SpriteRenderer> allSpriteRenderers = new List<SpriteRenderer>(); // 演出対象となる全てのスプライト
-    // --- ここまで追加 --
+    private ParticleSystem[] psList = null;
+    private List<SpriteRenderer> allSpriteRenderers = new List<SpriteRenderer>();
+
     #endregion
 
-    #region Unity Lifecycle Methods
+    #region Unityライフサイクル
 
     private void Awake()
     {
@@ -74,49 +81,10 @@ public class BossAfterDeath : MonoBehaviour
             Debug.LogWarning($"{this.gameObject.name}にはFlowChartが設定されていません");
         }
 
-        spriteRenderer = GetComponent<SpriteRenderer>();
-        if (spriteRenderer != null)
-        {
-            allSpriteRenderers.Add(spriteRenderer); // 自身をリストに追加
-        }
-        else
-        {
-            Debug.LogError(
-                "SpriteRendererが見つかりません。ボス撃破後のスプライトが正しく設定されていない可能性があります。"
-            );
-        }
-
-        // 複数スプライト対応の初期化処理
-        if (useMultipleSprites)
-        {
-            // 1. 子オブジェクトからの自動取得
-            if (autoRegisterChildSprites)
-            {
-                SpriteRenderer[] childRenderers = GetComponentsInChildren<SpriteRenderer>();
-                foreach (var sr in childRenderers)
-                {
-                    if (sr != null && !allSpriteRenderers.Contains(sr))
-                    {
-                        allSpriteRenderers.Add(sr);
-                    }
-                }
-            }
-
-            // 2. 手動登録分の追加
-            if (targetSpriteRenderers != null)
-            {
-                foreach (var sr in targetSpriteRenderers)
-                {
-                    if (sr != null && !allSpriteRenderers.Contains(sr))
-                    {
-                        allSpriteRenderers.Add(sr);
-                    }
-                }
-            }
-        }
+        RegisterSpriteRenderers();
     }
 
-    public void Start()
+    private void Start()
     {
         flagManager = FlagManager.instance;
         if (flagManager == null)
@@ -125,6 +93,34 @@ public class BossAfterDeath : MonoBehaviour
             return;
         }
 
+        ConfigureBossSpecificSettings();
+        StartCoroutine(DefeatBoss());
+    }
+
+    #endregion
+
+    #region 公開API
+
+    /// <summary>
+    /// この撃破後イベントが処理するボス名を設定する。
+    /// </summary>
+    /// <param name="newBossName">設定するボスの種類</param>
+    public void SetBossName(BossHealth.BossName newBossName)
+    {
+        bossName = newBossName;
+    }
+
+    #endregion
+
+    #region ボス固有初期化
+
+    /// <summary>
+    /// ボス固有の初期設定を行う。
+    /// 新しい Boss を追加した場合は、この switch に対応を追加する。
+    /// ただし実際の列挙追加は BossHealth.BossName 側で行う。
+    /// </summary>
+    private void ConfigureBossSpecificSettings()
+    {
         switch (bossName)
         {
             case BossHealth.BossName.DustDevilBoss:
@@ -139,148 +135,119 @@ public class BossAfterDeath : MonoBehaviour
                     );
                 }
                 break;
+
             case BossHealth.BossName.DesertTempleBossSmoke:
                 shouldHideAfterDefeat = false;
                 break;
-            case BossHealth.BossName.DesertTempleBoss:
-                shouldHideAfterDefeat = false;
-                break;
         }
-        StartCoroutine(DefeatBoss());
     }
 
     #endregion
 
-    #region Public Methods
+    #region 撃破演出
 
     /// <summary>
-    /// この撃破後イベントが処理するボスの名前を設定します。
+    /// ボス撃破時の演出全体をまとめて管理するコルーチン。
+    /// 1. 初期色の記録
+    /// 2. フラッシュ演出
+    /// 3. 透明化演出
+    /// 4. ボス固有の結果反映
+    /// の順に処理する。
     /// </summary>
-    /// <param name="newBossName">設定したいボスの名前</param>
-    public void SetBossName(BossHealth.BossName newBossName)
-    {
-        this.bossName = newBossName;
-    }
-
-    #endregion
-
-    #region Core Logic (Coroutine)
-
     private IEnumerator DefeatBoss()
     {
-        // --- 初期設定とフラッシュ演出 ---
-
-        // 各SpriteRendererの初期色とHSV値を保存しておく辞書を作成
-        Dictionary<SpriteRenderer, Color> initialColors = new Dictionary<SpriteRenderer, Color>();
-        Dictionary<SpriteRenderer, Vector3> initialHSVs = new Dictionary<SpriteRenderer, Vector3>();
+        var initialColors = new Dictionary<SpriteRenderer, Color>();
+        var initialHSVs = new Dictionary<SpriteRenderer, Vector3>();
 
         foreach (var sr in allSpriteRenderers)
         {
-            Color col = sr.color;
-            initialColors[sr] = col;
-            Color.RGBToHSV(col, out float h, out float s, out float v);
-            initialHSVs[sr] = new Vector3(h, s, v); // X = Hue, Y = Saturation, Z = Value
+            Color color = sr.color;
+            initialColors[sr] = color;
+            Color.RGBToHSV(color, out float h, out float s, out float v);
+            initialHSVs[sr] = new Vector3(h, s, v);
         }
 
-        FlashPanel.SetActive(true); // FlashPanelを表示する
+        if (FlashPanel != null)
+        {
+            FlashPanel.SetActive(true);
+        }
 
-        // 仮
         if (bossName == BossHealth.BossName.DesertTempleBoss)
         {
-            FadeCanvas.instance?.FadeOut(3.0f); // フェードアウトする
-            BGMManager.instance?.FadeOut(3.0f); // BGMをフェードアウトする
+            FadeCanvas.instance?.FadeOut(3.0f);
+            BGMManager.instance?.FadeOut(3.0f);
         }
 
         for (int i = 0; i < DEFEAT_FLASH_COUNT; i++)
         {
-            SEManager.instance?.PlaySystemEventSE(SE_SystemEvent.Impact1); // 衝撃音を鳴らす
+            SEManager.instance?.PlaySystemEventSE(SE_SystemEvent.Impact1);
 
             for (int j = 0; j < 10; j++)
             {
-                // 全てのSpriteRendererの色を更新
                 foreach (var sr in allSpriteRenderers)
                 {
                     Vector3 hsv = initialHSVs[sr];
                     sr.color = Color.HSVToRGB(hsv.x, hsv.y, (j + 1) * (hsv.z / 10f));
                 }
 
-                FlashPanel.GetComponent<Image>().color = new Color(
-                    1,
-                    1,
-                    1,
-                    0.8f * (1f - (j + 1) / 10f)
-                );
-                yield return new WaitForSeconds(0.1f); // 0.1秒待つ
+                if (FlashPanel != null)
+                {
+                    FlashPanel.GetComponent<Image>().color = new Color(
+                        1f,
+                        1f,
+                        1f,
+                        0.8f * (1f - (j + 1) / 10f)
+                    );
+                }
+
+                yield return new WaitForSeconds(DEFEAT_FLASH_INTERVAL);
             }
         }
-        FlashPanel.SetActive(false); // FlashPanelを非表示にする
+
+        if (FlashPanel != null)
+        {
+            FlashPanel.SetActive(false);
+        }
 
         if (shouldHideAfterDefeat)
         {
-            // --- パーティクル生成 ---
+            SpawnDefeatParticle();
+            BGMManager.instance?.FadeOut(3.0f);
+            CameraManager.instance?.PlayCustomShake(3.0f, 0.5f, 0.3f * 10);
 
-            // SpriteRendererのboundsからワールド空間での実際の横幅を取得
-            float bossWidth = 1f;
-            if (spriteRenderer != null)
+            for (int i = 0; i < DEFEAT_FADE_STEPS; i++)
             {
-                Bounds bossBounds = spriteRenderer.bounds;
-                bossWidth = bossBounds.size.x;
-            }
+                float ratio = 1f - (i + 1) / DEFEAT_FADE_STEPS;
+                SetAllSpritesAlpha(initialColors, ratio);
+                UpdateBossSpecificDefeatEffect(ratio);
 
-            Vector3 newPos = this.transform.position; // 自分の座標を取得
-            GameObject newGameObject = Instantiate(BossDefeatParticle); // Particleを出現させる
-            newGameObject.transform.position = new Vector2(newPos.x, newPos.y + particleoffsetY); // Particleの座標を設定
+                yield return new WaitForSeconds(DEFEAT_FADE_INTERVAL);
 
-            ParticleSystem particleSystem = newGameObject.GetComponent<ParticleSystem>();
-            if (particleSystem != null)
-            {
-                // Shapeモジュールを取得
-                var shapeModule = particleSystem.shape;
-
-                // Shapeのスケール（出現範囲の大きさ）をボスの横幅に合わせる
-                // YとZのスケールは元の値を維持する
-                shapeModule.radius = bossWidth * 0.25f + PARTICLE_RADIUS_OFFSET; // ボスの横幅の半分を設定
-            }
-
-            // --- 演出と消滅 ---
-
-            BGMManager.instance?.FadeOut(3.0f); // BGMをフェードアウトする
-            CameraManager.instance?.PlayCustomShake(3.0f, 0.5f, 0.3f * 10); // カメラシェイクを再生
-
-            for (int i = 0; i < 10; i++)
-            {
-                float ratio = 1f - (i + 1) / 10f; // 現在の不透明度を計算
-
-                // 全てのBossの透明度を徐々に下げていく
-                foreach (var sr in allSpriteRenderers)
-                {
-                    Color origCol = initialColors[sr];
-                    sr.color = new Color(origCol.r, origCol.g, origCol.b, ratio);
-                }
-
-                switch (bossName)
-                {
-                    case BossHealth.BossName.DustDevilBoss:
-                        if (psList != null)
-                        {
-                            foreach (var ps in psList)
-                            {
-                                var emission = ps.emission;
-                                emission.rateOverTimeMultiplier = ratio;
-                            }
-                        }
-                        break;
-                }
-                yield return new WaitForSeconds(0.3f); // 0.3秒待つ
                 if (i % 2 == 0)
                 {
-                    SEManager.instance?.PlaySystemEventSE(SE_SystemEvent.Vanish1); // 消滅音を鳴らす
+                    SEManager.instance?.PlaySystemEventSE(SE_SystemEvent.Vanish1);
                 }
             }
         }
 
-        // --- 撃破後処理（フラグ更新・ログ登録） ---
+        ApplyBossDefeatResult();
 
+        if (shouldHideAfterDefeat)
+        {
+            Destroy(this.gameObject);
+        }
+    }
+
+    #endregion
+
+    #region ボス固有の結果処理
+
+    /// <summary>
+    /// ボス撃破後の各種処理をまとめて実行する。
+    /// 新しい Boss を追加した場合は、BossHealth.BossName の列挙とこの switch を同時に更新する。
+    /// </summary>
+    private void ApplyBossDefeatResult()
+    {
         switch (bossName)
         {
             case BossHealth.BossName.FirstBoss:
@@ -289,7 +256,7 @@ public class BossAfterDeath : MonoBehaviour
                 BGMManager.instance.Play(BGMCategory.Field_Quiet);
                 GameManager.instance.savedata.ProgressLogData.RegisterProgressData(
                     ProgressLogName.DefeatFirstBoss
-                ); // 進行ログを登録
+                );
                 break;
 
             case BossHealth.BossName.SlimeBoss:
@@ -298,7 +265,7 @@ public class BossAfterDeath : MonoBehaviour
                 BGMManager.instance.Play(BGMCategory.Env_Water_Stream1);
                 GameManager.instance.savedata.ProgressLogData.RegisterProgressData(
                     ProgressLogName.DefeatRiverBoss
-                ); // 進行ログを登録
+                );
                 break;
 
             case BossHealth.BossName.StoneGolemBoss:
@@ -306,41 +273,40 @@ public class BossAfterDeath : MonoBehaviour
                 FungusHelper.ExecuteBlock(flowchart, "CaveBossDefeat");
                 GameManager.instance.savedata.ProgressLogData.RegisterProgressData(
                     ProgressLogName.DefeatHouseCaveBoss
-                ); // 進行ログを登録
+                );
                 break;
 
             case BossHealth.BossName.DustDevilBoss:
-                //FlagはFlowchart側で立てるため、ここでは立てない
-                //flagManager.SetBoolFlag(Chapter2TriggeredEvent.DustDevilBossDefeated, true);
                 GameManager.instance.savedata.ProgressLogData.RegisterProgressData(
                     ProgressLogName.DustDevilBossDefeat
-                ); // 進行ログを登録
+                );
                 PlayerManager.instance.SetPlayerBoolStatus(
                     PlayerStatusBoolName.isCanUseShield,
                     true
-                ); // シールド機能を解放する
-                GameManager.instance.savedata.TipsData.RegisterTipsData(TipsName.Shield); // Tipsを登録する
+                );
+                GameManager.instance.savedata.TipsData.RegisterTipsData(TipsName.Shield);
                 FungusHelper.ExecuteBlock(flowchart, "DustDevilBossDefeat");
                 break;
+
             case BossHealth.BossName.DesertTempleBossSmoke:
-                BGMManager.instance?.FadeOut(3.0f); // BGMをフェードアウトする
-                // フラグはFlowchart側で立てるため、ここでは立てない
-                // flagManager.SetBoolFlag(Chapter2TriggeredEvent.TempleBossSmokeDefeated, true);
+                BGMManager.instance?.FadeOut(3.0f);
                 GameManager.instance.savedata.ProgressLogData.RegisterProgressData(
                     ProgressLogName.TempleBossSmokeDefeat
-                ); // 進行ログを登録
+                );
                 GameManager.instance.savedata.EnemyRecordData.RegisterEncounter(
                     EnemyName.DustDevil_Active
-                ); // 図鑑に砂嵐（アクティブ）を登録
+                );
                 GameManager.instance.savedata.EnemyRecordData.RegisterEncounter(
                     EnemyName.Golem_DesertTemple_Float
-                ); // 図鑑に浮遊ゴーレムを登録
+                );
                 GameManager.instance.savedata.EnemyRecordData.RegisterEncounter(
                     EnemyName.Golem_DesertTemple_Walk
-                ); // 図鑑に徘徊ゴーレムを登録
+                );
                 FungusHelper.ExecuteBlock(flowchart, "TempleBossSmokeDefeat");
                 break;
+
             case BossHealth.BossName.DesertTempleBoss:
+                flagManager.SetBoolFlag(Chapter2TriggeredEvent.TempleBossDefeated,true);
                 FungusHelper.ExecuteBlock(flowchart, "TempleBossDefeat");
                 break;
 
@@ -350,10 +316,120 @@ public class BossAfterDeath : MonoBehaviour
                 );
                 break;
         }
+    }
 
-        if (shouldHideAfterDefeat)
+    #endregion
+
+    #region 補助処理
+
+    /// <summary>
+    /// ボスの SpriteRenderer を演出対象として取得する。
+    /// 自身のSpriteRendererと、useMultipleSprites が有効な場合は子要素や手動登録分もまとめて扱う。
+    /// </summary>
+    private void RegisterSpriteRenderers()
+    {
+        spriteRenderer = GetComponent<SpriteRenderer>();
+        if (spriteRenderer != null)
         {
-            Destroy(this.gameObject); // 自分を消す
+            allSpriteRenderers.Add(spriteRenderer);
+        }
+        else
+        {
+            Debug.LogError(
+                "SpriteRendererが見つかりません。ボス撃破後のスプライトが正しく設定されていない可能性があります。"
+            );
+        }
+
+        if (useMultipleSprites)
+        {
+            if (autoRegisterChildSprites)
+            {
+                SpriteRenderer[] childRenderers = GetComponentsInChildren<SpriteRenderer>();
+                foreach (var sr in childRenderers)
+                {
+                    if (sr != null && !allSpriteRenderers.Contains(sr))
+                    {
+                        allSpriteRenderers.Add(sr);
+                    }
+                }
+            }
+
+            if (targetSpriteRenderers != null)
+            {
+                foreach (var sr in targetSpriteRenderers)
+                {
+                    if (sr != null && !allSpriteRenderers.Contains(sr))
+                    {
+                        allSpriteRenderers.Add(sr);
+                    }
+                }
+            }
+        }
+    }
+
+    /// <summary>
+    /// ボス破壊時に出現させるパーティクルを生成する。
+    /// 生成位置はボスの位置に合わせ、横幅に応じて放射範囲を調整する。
+    /// </summary>
+    private void SpawnDefeatParticle()
+    {
+        if (BossDefeatParticle == null)
+        {
+            return;
+        }
+
+        float bossWidth = 1f;
+        if (spriteRenderer != null)
+        {
+            Bounds bossBounds = spriteRenderer.bounds;
+            bossWidth = bossBounds.size.x;
+        }
+
+        Vector3 newPos = transform.position;
+        GameObject newGameObject = Instantiate(BossDefeatParticle);
+        newGameObject.transform.position = new Vector2(newPos.x, newPos.y + particleoffsetY);
+
+        ParticleSystem particleSystem = newGameObject.GetComponent<ParticleSystem>();
+        if (particleSystem != null)
+        {
+            var shapeModule = particleSystem.shape;
+            shapeModule.radius = bossWidth * 0.25f + PARTICLE_RADIUS_OFFSET;
+        }
+    }
+
+    /// <summary>
+    /// ボス固有の消滅演出を適用する。
+    /// 新しいボスで独自の破壊演出が必要な場合、ここに switch を追加する。
+    /// </summary>
+    /// <param name="ratio">現在の透明度割合</param>
+    private void UpdateBossSpecificDefeatEffect(float ratio)
+    {
+        switch (bossName)
+        {
+            case BossHealth.BossName.DustDevilBoss:
+                if (psList != null)
+                {
+                    foreach (var ps in psList)
+                    {
+                        var emission = ps.emission;
+                        emission.rateOverTimeMultiplier = ratio;
+                    }
+                }
+                break;
+        }
+    }
+
+    /// <summary>
+    /// 演出対象の全 SpriteRenderer のアルファ値をまとめて更新する。
+    /// </summary>
+    /// <param name="initialColors">初期のカラー情報</param>
+    /// <param name="ratio">現在の透明度</param>
+    private void SetAllSpritesAlpha(Dictionary<SpriteRenderer, Color> initialColors, float ratio)
+    {
+        foreach (var sr in allSpriteRenderers)
+        {
+            Color origCol = initialColors[sr];
+            sr.color = new Color(origCol.r, origCol.g, origCol.b, ratio);
         }
     }
 

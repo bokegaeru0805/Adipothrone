@@ -12,6 +12,7 @@ public class MovingPlatformAudio : MonoBehaviour
         None = 0,
         Wood = 1,
         DesertTemple = 2,
+        SnowMountain = 3,
         // 必要に応じて追加
     }
 

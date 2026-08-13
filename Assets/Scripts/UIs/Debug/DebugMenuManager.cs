@@ -41,9 +41,25 @@ public class DebugMenuManager : MonoBehaviour
     [SerializeField]
     private Toggle eventAreaToggle; // イベントエリアの表示・非表示を切り替えるトグル
 
+    [Header("実行時生成UI")]
+    [SerializeField, Tooltip("未指定の場合はTextMeshProのDefault Font Assetを使用します。")]
+    private TMP_FontAsset debugFont;
+
     public static bool isDebugModeUnlocked = false; // デバッグモードが解放されているか
     public static bool isShowEventArea { get; private set; } = false; // イベントエリアの表示・非表示状態
     public static System.Action<bool> OnEventAreaDisplayToggled; // イベントエリアの表示・非表示が切り替わったときに呼び出されるイベント
+
+    private DebugMenuUIBuilder.View _view;
+    private bool _isMenuOpen;
+    private StandaloneInputModule _standaloneInputModule;
+    private MouseOnlyInputModule _mouseOnlyInputModule;
+    private UIEventNavigationHandler _customNavigation;
+    private bool _wasStandaloneInputEnabled;
+    private bool _wasMouseOnlyInputEnabled;
+    private bool _wasCustomNavigationEnabled;
+    private GameObject _previousSelectedObject;
+    private float _fpsElapsed;
+    private int _fpsFrameCount;
 
     private void Awake()
     {
@@ -53,10 +69,26 @@ public class DebugMenuManager : MonoBehaviour
         // エディタ上でもビルド後でも状態が保存・復元されるようになります
         isDebugModeUnlocked = PlayerPrefs.GetInt("DebugModeUnlocked", 0) == 1;
         isShowEventArea = PlayerPrefs.GetInt("ShowEventArea", 0) == 1;
+
+        // Scene/Prefab上の手動構築UIには依存せず、実行時に新しいUIを生成する。
+        Transform uiParent = transform.parent != null ? transform.parent : transform;
+        TMP_FontAsset runtimeFont = debugFont;
+        if (runtimeFont == null && hpInput != null && hpInput.textComponent != null)
+            runtimeFont = hpInput.textComponent.font;
+        _view = new DebugMenuUIBuilder(uiParent, runtimeFont).Build();
+        hpInput = _view.HpInput;
+        wpInput = _view.WpInput;
+        moneyInput = _view.MoneyInput;
+        levelInput = _view.LevelInput;
+        posInput = _view.PositionInput;
+        itemAmountInput = _view.ItemAmountInput;
+        timeScaleInput = _view.TimeScaleInput;
+        eventAreaToggle = _view.EventAreaToggle;
     }
 
     private void Start()
     {
+        // 旧DebugCanvasは移行期間中もPrefabに残すが、表示には使用しない。
         if (debugCanvas != null)
         {
             debugCanvas.gameObject.SetActive(false);
@@ -85,7 +117,7 @@ public class DebugMenuManager : MonoBehaviour
         if (eventAreaToggle != null)
         {
             // セーブデータや初期状態に合わせてトグルの見た目を同期
-            eventAreaToggle.isOn = isShowEventArea;
+            eventAreaToggle.SetIsOnWithoutNotify(isShowEventArea);
             // トグルの値が変更された時に実行するメソッドを登録
             eventAreaToggle.onValueChanged.AddListener(OnToggleEventArea);
         }
@@ -94,6 +126,9 @@ public class DebugMenuManager : MonoBehaviour
         UpdateCurrentStatusToUI();
         if (itemAmountInput != null)
             itemAmountInput.text = "1"; // アイテム取得個数のデフォルト値
+
+        BindGeneratedUIEvents();
+        UpdateRuntimeInformation();
     }
 
     private void Update()
@@ -104,36 +139,153 @@ public class DebugMenuManager : MonoBehaviour
 
         if (Input.GetKeyDown(KeyCode.F2))
         {
-            if (debugCanvas != null)
-            {
-                // 現在の状態の反転を取得し、GameObjectのアクティブ状態を切り替える
-                bool nextState = !debugCanvas.gameObject.activeSelf;
-                debugCanvas.gameObject.SetActive(nextState);
-
-                // EventSystemが存在する場合、InputModuleを切り替える
-                if (EventSystem.current != null)
-                {
-                    // アタッチされている2つのモジュールを取得
-                    var standaloneModule =
-                        EventSystem.current.GetComponent<StandaloneInputModule>();
-                    var mouseOnlyModule = EventSystem.current.GetComponent<MouseOnlyInputModule>();
-
-                    if (standaloneModule != null && mouseOnlyModule != null)
-                    {
-                        // デバッグ画面が開いているときは標準モジュールをON、カスタムモジュールをOFFにする
-                        standaloneModule.enabled = debugCanvas.enabled;
-                        mouseOnlyModule.enabled = !debugCanvas.enabled;
-                    }
-                }
-
-                // デバッグ操作中にゲーム側のUIカーソルが勝手に動かないよう、UIEventNavigationHandlerも切り替える
-                var customNav = FindObjectOfType<UIEventNavigationHandler>();
-                if (customNav != null)
-                {
-                    customNav.enabled = !debugCanvas.enabled;
-                }
-            }
+            SetMenuOpen(!_isMenuOpen);
         }
+
+        if (_isMenuOpen && Input.GetKeyDown(KeyCode.Escape))
+            SetMenuOpen(false);
+
+        if (_isMenuOpen)
+            UpdateFpsDisplay();
+    }
+
+    private void OnDisable()
+    {
+        if (_isMenuOpen)
+            SetMenuOpen(false);
+    }
+
+    /// <summary>
+    /// 実行時生成したSelectableへDebugMenuManagerの処理を接続します。
+    /// </summary>
+    private void BindGeneratedUIEvents()
+    {
+        _view.CloseButton.onClick.AddListener(() => SetMenuOpen(false));
+        _view.RefreshButton.onClick.AddListener(UpdateCurrentStatusToUI);
+        _view.ApplyHpButton.onClick.AddListener(() => ApplyHP(hpInput.text));
+        _view.ApplyWpButton.onClick.AddListener(() => ApplyWP(wpInput.text));
+        _view.ApplyMoneyButton.onClick.AddListener(() => ApplyMoney(moneyInput.text));
+        _view.ApplyLevelButton.onClick.AddListener(() => ApplyLevel(levelInput.text));
+        _view.ApplyPositionButton.onClick.AddListener(() => ApplyPosition(posInput.text));
+        _view.GiveAllKeyItemsButton.onClick.AddListener(GiveAllKeyItems);
+        _view.GiveAllHealItemsButton.onClick.AddListener(GiveAllHealItems);
+        _view.GiveAllStatusEnhanceItemsButton.onClick.AddListener(GiveAllStatusEnhanceItems);
+        _view.GiveAllMaterialItemsButton.onClick.AddListener(GiveAllMaterialItems);
+        _view.GiveAllWeaponsButton.onClick.AddListener(GiveAllWeapons);
+        _view.GiveAllRecipeItemsButton.onClick.AddListener(GiveAllRecipeItems);
+        _view.UnlockAllSkillsButton.onClick.AddListener(UnlockAllSkills);
+        _view.ApplyTimeScaleButton.onClick.AddListener(() => ApplyTimeScale(timeScaleInput.text));
+
+        float[] presets = { 0.25f, 0.5f, 1f, 2f, 4f };
+        for (int i = 0; i < _view.TimeScalePresetButtons.Count; i++)
+        {
+            float preset = presets[i];
+            _view.TimeScalePresetButtons[i].onClick.AddListener(() =>
+            {
+                timeScaleInput.text = preset.ToString("0.##");
+                ApplyTimeScale(timeScaleInput.text);
+            });
+        }
+    }
+
+    private void SetMenuOpen(bool isOpen)
+    {
+        if (_view == null || _isMenuOpen == isOpen)
+            return;
+
+        _isMenuOpen = isOpen;
+        if (isOpen)
+        {
+            CacheAndOverrideInputState();
+            UpdateCurrentStatusToUI();
+            UpdateRuntimeInformation();
+            SetStatus("準備完了", false);
+            _view.Root.SetActive(true);
+            DebugMenuUIBuilder.SelectTab(_view, 0);
+        }
+        else
+        {
+            _view.Root.SetActive(false);
+            RestoreInputState();
+        }
+    }
+
+    private void CacheAndOverrideInputState()
+    {
+        if (EventSystem.current != null)
+        {
+            _previousSelectedObject = EventSystem.current.currentSelectedGameObject;
+            _standaloneInputModule = EventSystem.current.GetComponent<StandaloneInputModule>();
+            _mouseOnlyInputModule = EventSystem.current.GetComponent<MouseOnlyInputModule>();
+        }
+
+        _customNavigation = FindObjectOfType<UIEventNavigationHandler>();
+        if (_standaloneInputModule != null)
+        {
+            _wasStandaloneInputEnabled = _standaloneInputModule.enabled;
+            _standaloneInputModule.enabled = true;
+        }
+        if (_mouseOnlyInputModule != null)
+        {
+            _wasMouseOnlyInputEnabled = _mouseOnlyInputModule.enabled;
+            _mouseOnlyInputModule.enabled = false;
+        }
+        if (_customNavigation != null)
+        {
+            _wasCustomNavigationEnabled = _customNavigation.enabled;
+            _customNavigation.enabled = false;
+        }
+    }
+
+    private void RestoreInputState()
+    {
+        if (_standaloneInputModule != null)
+            _standaloneInputModule.enabled = _wasStandaloneInputEnabled;
+        if (_mouseOnlyInputModule != null)
+            _mouseOnlyInputModule.enabled = _wasMouseOnlyInputEnabled;
+        if (_customNavigation != null)
+            _customNavigation.enabled = _wasCustomNavigationEnabled;
+
+        if (EventSystem.current != null)
+        {
+            GameObject selection =
+                _previousSelectedObject != null && _previousSelectedObject.activeInHierarchy
+                    ? _previousSelectedObject
+                    : null;
+            EventSystem.current.SetSelectedGameObject(selection);
+        }
+    }
+
+    private void UpdateRuntimeInformation()
+    {
+        if (_view == null)
+            return;
+        _view.SceneText.text = $"シーン: {UnityEngine.SceneManagement.SceneManager.GetActiveScene().name}";
+        _fpsElapsed = 0f;
+        _fpsFrameCount = 0;
+    }
+
+    private void UpdateFpsDisplay()
+    {
+        _fpsElapsed += Time.unscaledDeltaTime;
+        _fpsFrameCount++;
+        if (_fpsElapsed < 0.5f)
+            return;
+
+        float fps = _fpsElapsed > 0f ? _fpsFrameCount / _fpsElapsed : 0f;
+        _view.FpsText.text = $"FPS: {fps:0}";
+        _fpsElapsed = 0f;
+        _fpsFrameCount = 0;
+    }
+
+    private void SetStatus(string message, bool isError)
+    {
+        if (_view == null || _view.StatusText == null)
+            return;
+        _view.StatusText.text = message;
+        _view.StatusText.color = isError
+            ? new Color32(255, 103, 103, 255)
+            : new Color32(105, 224, 151, 255);
     }
 
     /// <summary>
@@ -142,14 +294,20 @@ public class DebugMenuManager : MonoBehaviour
     private void ApplyHP(string text)
     {
         if (PlayerManager.instance == null)
+        {
+            SetStatus("エラー: PlayerManagerが存在しません。", true);
             return;
+        }
 
         if (int.TryParse(text, out int hp))
         {
             // 最大HPの制限を無視してHPを強制設定する専用メソッドを呼び出す
             PlayerManager.instance.ForceSetHP(hp);
             Debug.Log($"HPを {hp} に強制設定しました。");
+            SetStatus($"HPを {hp} に変更しました。", false);
         }
+        else
+            SetStatus("エラー: HPには整数を入力してください。", true);
     }
 
     /// <summary>
@@ -158,13 +316,19 @@ public class DebugMenuManager : MonoBehaviour
     private void ApplyWP(string text)
     {
         if (PlayerManager.instance == null)
+        {
+            SetStatus("エラー: PlayerManagerが存在しません。", true);
             return;
+        }
 
         if (int.TryParse(text, out int wp))
         {
             PlayerManager.instance.SetWP(wp);
             Debug.Log($"WPを {wp} に変更しました。");
+            SetStatus($"WPを {wp} に変更しました。", false);
         }
+        else
+            SetStatus("エラー: WPには整数を入力してください。", true);
     }
 
     /// <summary>
@@ -173,7 +337,10 @@ public class DebugMenuManager : MonoBehaviour
     private void ApplyMoney(string text)
     {
         if (PlayerManager.instance == null)
+        {
+            SetStatus("エラー: PlayerManagerが存在しません。", true);
             return;
+        }
 
         if (int.TryParse(text, out int money))
         {
@@ -184,7 +351,10 @@ public class DebugMenuManager : MonoBehaviour
             int difference = money - currentMoney;
             PlayerManager.instance.ChangeMoney(difference);
             Debug.Log($"所持金を {money} に変更しました。");
+            SetStatus($"所持金を {money} に変更しました。", false);
         }
+        else
+            SetStatus("エラー: 所持金には整数を入力してください。", true);
     }
 
     /// <summary>
@@ -195,6 +365,7 @@ public class DebugMenuManager : MonoBehaviour
         if (PlayerLevelManager.instance == null)
         {
             Debug.LogWarning("PlayerLevelManagerが存在しないため、レベルを変更できません。");
+            SetStatus("エラー: PlayerLevelManagerが存在しません。", true);
             return;
         }
 
@@ -202,7 +373,10 @@ public class DebugMenuManager : MonoBehaviour
         {
             PlayerLevelManager.instance.SetPlayerLevel(targetLevel);
             Debug.Log($"レベルを {targetLevel} に変更しました。");
+            SetStatus($"レベルを {targetLevel} に変更しました。", false);
         }
+        else
+            SetStatus("エラー: レベルには整数を入力してください。", true);
     }
 
     /// <summary>
@@ -227,7 +401,10 @@ public class DebugMenuManager : MonoBehaviour
             int amount = GetItemAmount();
             GameManager.instance.AddAllKeyItems(amount);
             Debug.Log($"すべての KeyItem を {amount} 個ずつ入手しました。");
+            SetStatus($"全キーアイテムを {amount} 個ずつ付与しました。", false);
         }
+        else
+            SetStatus("エラー: GameManagerが存在しません。", true);
     }
 
     /// <summary>
@@ -240,7 +417,10 @@ public class DebugMenuManager : MonoBehaviour
             int amount = GetItemAmount();
             GameManager.instance.AddAllHealItems(amount);
             Debug.Log($"すべての HealItem を {amount} 個ずつ入手しました。");
+            SetStatus($"全回復アイテムを {amount} 個ずつ付与しました。", false);
         }
+        else
+            SetStatus("エラー: GameManagerが存在しません。", true);
     }
 
     /// <summary>
@@ -253,7 +433,10 @@ public class DebugMenuManager : MonoBehaviour
             int amount = GetItemAmount();
             GameManager.instance.AddAllStatusEnhanceItems(amount);
             Debug.Log($"すべての StatusEnhanceItem を {amount} 個ずつ入手しました。");
+            SetStatus($"全強化アイテムを {amount} 個ずつ付与しました。", false);
         }
+        else
+            SetStatus("エラー: GameManagerが存在しません。", true);
     }
 
     /// <summary>
@@ -266,7 +449,10 @@ public class DebugMenuManager : MonoBehaviour
             int amount = GetItemAmount();
             GameManager.instance.AddAllMaterialItems(amount);
             Debug.Log($"すべての MaterialItem を {amount} 個ずつ入手しました。");
+            SetStatus($"全素材アイテムを {amount} 個ずつ付与しました。", false);
         }
+        else
+            SetStatus("エラー: GameManagerが存在しません。", true);
     }
 
     /// <summary>
@@ -279,7 +465,10 @@ public class DebugMenuManager : MonoBehaviour
             int amount = GetItemAmount();
             WeaponManager.instance.AddAllWeapons(amount);
             Debug.Log($"すべての Weapon を {amount} 個ずつ入手しました。");
+            SetStatus($"全武器を {amount} 個ずつ付与しました。", false);
         }
+        else
+            SetStatus("エラー: WeaponManagerが存在しません。", true);
     }
 
     /// <summary>
@@ -292,7 +481,10 @@ public class DebugMenuManager : MonoBehaviour
             int amount = GetItemAmount();
             GameManager.instance.AddAllRecipeItems(amount);
             Debug.Log($"すべての RecipeItem を {amount} 個ずつ入手しました。");
+            SetStatus($"全レシピを {amount} 個ずつ付与しました。", false);
         }
+        else
+            SetStatus("エラー: GameManagerが存在しません。", true);
     }
 
     /// <summary>
@@ -304,7 +496,10 @@ public class DebugMenuManager : MonoBehaviour
         {
             GameManager.instance.UnlockAllSkills();
             Debug.Log("すべての Skill を解放しました。");
+            SetStatus("全スキルを解放しました。", false);
         }
+        else
+            SetStatus("エラー: GameManagerが存在しません。", true);
     }
 
     /// <summary>
@@ -315,6 +510,7 @@ public class DebugMenuManager : MonoBehaviour
         if (TimeManager.instance == null)
         {
             Debug.LogWarning("TimeManagerが存在しないため、ゲームスピードを変更できません。");
+            SetStatus("エラー: TimeManagerが存在しません。", true);
             return;
         }
 
@@ -323,7 +519,11 @@ public class DebugMenuManager : MonoBehaviour
         {
             TimeManager.instance.SetDebugTimeScale(scale);
             Debug.Log($"ゲームスピードを {scale} 倍に変更しました。");
+            timeScaleInput.text = TimeManager.instance.DebugBaseTimeScale.ToString("0.##");
+            SetStatus($"ゲーム速度を {TimeManager.instance.DebugBaseTimeScale:0.##} 倍に変更しました。", false);
         }
+        else
+            SetStatus("エラー: ゲーム速度には数値を入力してください。", true);
     }
 
     /// <summary>
@@ -335,6 +535,7 @@ public class DebugMenuManager : MonoBehaviour
         if (PlayerManager.instance == null)
         {
             Debug.LogWarning("PlayerManagerが存在しないため、プレイヤーを移動できません。");
+            SetStatus("エラー: PlayerManagerが存在しません。", true);
             return;
         }
 
@@ -354,10 +555,12 @@ public class DebugMenuManager : MonoBehaviour
                 // PlayerManagerの強制移動コルーチンを呼び出す
                 PlayerManager.instance.StartCoroutine(PlayerManager.instance.PlayerMove(targetPos));
                 Debug.Log($"プレイヤーを ({targetX}, {targetY}) に一気に移動させました。");
+                SetStatus($"座標 ({targetX:0.##}, {targetY:0.##}) へ移動しました。", false);
             }
             else
             {
                 Debug.LogWarning("座標の数値解析に失敗しました。半角数字で入力してください。");
+                SetStatus("エラー: 座標には数値を入力してください。", true);
             }
         }
         else
@@ -365,6 +568,7 @@ public class DebugMenuManager : MonoBehaviour
             Debug.LogWarning(
                 "入力形式が正しくありません。「10.5, 20.0」のようにカンマで区切って入力してください。"
             );
+            SetStatus("エラー: 座標は「X, Y」の形式で入力してください。", true);
         }
     }
 
@@ -414,6 +618,8 @@ public class DebugMenuManager : MonoBehaviour
         {
             timeScaleInput.text = TimeManager.instance.DebugBaseTimeScale.ToString("F1");
         }
+
+        SetStatus("現在値を更新しました。", false);
     }
 
     /// <summary>

@@ -16,7 +16,7 @@ public class SetGameBoolFlagCommand : Command
         Prologue,
         Chapter1,
         Chapter2,
-        // 新しい章（Chapter3など）を追加する場合はここに追記してください
+        Chapter3,
     }
 
     [Tooltip("操作するフラグのカテゴリ（章）")]
@@ -50,6 +50,12 @@ public class SetGameBoolFlagCommand : Command
     [ShowIf("category", FlagCategory.Chapter2)]
     [Label("Flag Name")]
     private Chapter2TriggeredEvent chapter2Flag;
+
+    [SerializeField]
+    [AllowNesting]
+    [ShowIf("category", FlagCategory.Chapter3)]
+    [Label("Flag Name")]
+    private Chapter3TriggeredEvent chapter3Flag;
 
     // ---------------------------
 
