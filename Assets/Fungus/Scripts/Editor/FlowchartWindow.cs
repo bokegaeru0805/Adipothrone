@@ -830,6 +830,11 @@ namespace Fungus.EditorUtils
 
             HandleEarlyEvents(Event.current);
 
+            if (FlowchartConversationGroupEditor.HandleEvent(this, flowchart, Event.current))
+            {
+                return;
+            }
+
             // Draw background color / drop shadow
             if (Event.current.type == EventType.Repaint)
             {
@@ -1255,6 +1260,10 @@ namespace Fungus.EditorUtils
                             block._NodeRect = tempRect;
                         }
 
+                        FlowchartConversationGroupEditor.OnBlocksDragging(
+                            flowchart,
+                            flowchart.SelectedBlocks
+                        );
                         hasDraggedSelected = true;
                         e.Use();
                     }
@@ -1377,6 +1386,10 @@ namespace Fungus.EditorUtils
                             Repaint();
                         }
 
+                        FlowchartConversationGroupEditor.OnBlocksMoved(
+                            flowchart,
+                            flowchart.SelectedBlocks
+                        );
                         dragBlock = null;
                     }
 
@@ -1418,6 +1431,19 @@ namespace Fungus.EditorUtils
                 case MouseButton.Right:
                     if (rightClickDown != -Vector2.one)
                     {
+                        if (
+                            hitBlock == null
+                            && FlowchartConversationGroupEditor.TryShowGroupMenu(
+                                this,
+                                flowchart,
+                                rightClickDown
+                            )
+                        )
+                        {
+                            e.Use();
+                            break;
+                        }
+
                         var menu = new GenericMenu();
                         var mousePosition = rightClickDown;
 
@@ -1435,6 +1461,12 @@ namespace Fungus.EditorUtils
                                 new GUIContent("Delete"),
                                 false,
                                 () => AddToDeleteList(blockList)
+                            );
+                            FlowchartConversationGroupEditor.AddBlockMenuItems(
+                                menu,
+                                this,
+                                flowchart,
+                                hitBlock
                             );
                             menu.AddSeparator("");
                             if (Application.isPlaying)
@@ -1548,7 +1580,11 @@ namespace Fungus.EditorUtils
             if (e.type == EventType.Repaint)
             {
                 DrawGrid();
+            }
+            FlowchartConversationGroupEditor.Draw(flowchart);
 
+            if (e.type == EventType.Repaint)
+            {
                 //draw all non selected
                 for (int i = 0; i < blocks.Length; ++i)
                 {
@@ -1572,6 +1608,8 @@ namespace Fungus.EditorUtils
                     if (block.IsSelected)
                         DrawBlock(block, scriptViewRect);
                 }
+
+                FlowchartConversationGroupEditor.DrawInsertionPreview(flowchart);
             }
 
             // Draw play icons beside all executing blocks

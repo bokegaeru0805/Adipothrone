@@ -46,6 +46,7 @@ public class FlagDrivenStatePro : MonoBehaviour
     private Sprite pendingSprite;
     private bool pendingFlipX;
     private bool isInitialStateApplied = false; // 初回状態適用が完了したかどうかのフラグ
+    private StatePro lastAppliedState;
 
     // --- Unityライフサイクル ---
 
@@ -79,6 +80,7 @@ public class FlagDrivenStatePro : MonoBehaviour
 
         // コンポーネントが有効になるたび、初回フラグをリセット
         isInitialStateApplied = false;
+        lastAppliedState = null;
 
         // FlagManagerが存在する場合のみ、イベント購読を開始します。
         if (FlagManager.instance != null)
@@ -185,6 +187,8 @@ public class FlagDrivenStatePro : MonoBehaviour
         if (targetObject == null)
             return;
 
+        bool hasSelectedStateChanged = !ReferenceEquals(lastAppliedState, state);
+
         // 【アクティブ状態の変更】
         if (state.changeActiveState)
         {
@@ -248,57 +252,98 @@ public class FlagDrivenStatePro : MonoBehaviour
 
         // 【アニメーションステートの再生】
         // changeAnimationフラグがtrueの場合のみ、アニメーション関連の処理を行う
-        if (state.changeAnimation)
+        if (
+            state.changeAnimation
+            && hasSelectedStateChanged
+            && (
+                !string.IsNullOrEmpty(state.animationTriggerName)
+                || !string.IsNullOrEmpty(state.animationStateName)
+            )
+        )
         {
-            // アニメーションステート名が指定されている場合のみ、チェックと再生処理に進む
-            if (!string.IsNullOrEmpty(state.animationStateName))
+            if (targetAnimator == null)
             {
-                //エラーチェック1: Animatorコンポーネントの存在を確認
-                if (targetAnimator == null)
+                Debug.LogError(
+                    $"アニメーションを変更しようとしましたが、ターゲットオブジェクト '{targetObject.name}' にAnimatorコンポーネントがアタッチされていません。",
+                    targetObject
+                );
+            }
+            // Trigger Parameter名が指定されている場合は、ステート名より優先する
+            else if (!string.IsNullOrEmpty(state.animationTriggerName))
+            {
+                AnimatorControllerParameter triggerParameter = null;
+                foreach (AnimatorControllerParameter parameter in targetAnimator.parameters)
                 {
-                    // Animatorがないのにアニメーションを再生しようとした場合は、エラーを出す
+                    if (parameter.name == state.animationTriggerName)
+                    {
+                        triggerParameter = parameter;
+                        break;
+                    }
+                }
+
+                if (triggerParameter == null)
+                {
                     Debug.LogError(
-                        $"アニメーションステート '{state.animationStateName}' を再生しようとしましたが、"
-                            + $"ターゲットオブジェクト '{targetObject.name}' にAnimatorコンポーネントがアタッチされていません。",
+                        $"Animator Controllerに '{state.animationTriggerName}' という名前のParameterが見つかりません。"
+                            + $"ターゲットオブジェクト '{targetObject.name}' のAnimator設定を確認してください。",
+                        targetObject
+                    );
+                }
+                else if (triggerParameter.type != AnimatorControllerParameterType.Trigger)
+                {
+                    Debug.LogError(
+                        $"Animator Parameter '{state.animationTriggerName}' はTrigger型ではありません。"
+                            + $"ターゲットオブジェクト '{targetObject.name}' のAnimator設定を確認してください。",
                         targetObject
                     );
                 }
                 else
                 {
-                    //エラーチェック2: 指定されたアニメーションステートがAnimator内に存在するかを確認
-                    // Animator.HasStateはパフォーマンスのために文字列ではなくハッシュ値で比較するため、文字列をハッシュ値に変換する
-                    int stateHash = Animator.StringToHash(state.animationStateName);
-
-                    // HasState(レイヤー番号, ステートのハッシュ値) で存在をチェック
-                    if (targetAnimator.HasState(0, stateHash))
+                    if (state.randomizeAnimationStart)
                     {
-                        // 全てのチェックを通過した場合：アニメーションを再生
-                        if (state.randomizeAnimationStart)
-                        {
-                            // 0.0(0%) から 1.0(100%) の間でランダムな開始時間を生成
-                            float randomNormalizedTime = UnityEngine.Random.Range(0f, 1f);
+                        ApplyRandomAnimationCycleOffset(state);
+                    }
 
-                            // Play(ステートのハッシュ, レイヤー番号, 正規化された開始時間) を使って再生
-                            targetAnimator.Play(stateHash, 0, randomNormalizedTime);
-                        }
-                        else
-                        {
-                            // ランダム化しない場合は通常通り最初から再生
-                            targetAnimator.Play(stateHash); // 文字列よりハッシュで渡す方がわずかに高速です
-                        }
+                    int triggerHash = triggerParameter.nameHash;
+                    targetAnimator.ResetTrigger(triggerHash);
+                    targetAnimator.SetTrigger(triggerHash);
+                }
+            }
+            // Trigger Parameter名が未指定の場合は、従来どおりステートを直接再生する
+            else if (!string.IsNullOrEmpty(state.animationStateName))
+            {
+                // Animator.HasStateはパフォーマンスのために文字列ではなくハッシュ値で比較するため、文字列をハッシュ値に変換する
+                int stateHash = Animator.StringToHash(state.animationStateName);
+
+                // HasState(レイヤー番号, ステートのハッシュ値) で存在をチェック
+                if (targetAnimator.HasState(0, stateHash))
+                {
+                    // 全てのチェックを通過した場合：アニメーションを再生
+                    if (state.randomizeAnimationStart)
+                    {
+                        // 0.0(0%) から 1.0(100%) の間でランダムな開始時間を生成
+                        float randomNormalizedTime = UnityEngine.Random.Range(0f, 1f);
+
+                        // Play(ステートのハッシュ, レイヤー番号, 正規化された開始時間) を使って再生
+                        targetAnimator.Play(stateHash, 0, randomNormalizedTime);
                     }
                     else
                     {
-                        // Animator内に指定された名前のステートが存在しない場合は、エラーを出す
-                        Debug.LogError(
-                            $"Animator Controllerに '{state.animationStateName}' という名前のアニメーションステートが見つかりません。"
-                                + $"ターゲットオブジェクト '{targetObject.name}' のAnimator設定を確認してください。",
-                            targetObject
-                        );
+                        // ランダム化しない場合は通常通り最初から再生
+                        targetAnimator.Play(stateHash); // 文字列よりハッシュで渡す方がわずかに高速です
                     }
                 }
+                else
+                {
+                    // Animator内に指定された名前のステートが存在しない場合は、エラーを出す
+                    Debug.LogError(
+                        $"Animator Controllerに '{state.animationStateName}' という名前のアニメーションステートが見つかりません。"
+                            + $"ターゲットオブジェクト '{targetObject.name}' のAnimator設定を確認してください。",
+                        targetObject
+                    );
+                }
             }
-            // animationStateNameが空の場合は、再生するものがないので何もしない（これはエラーではない）
+            // Trigger Parameter名とanimationStateNameが空の場合は何もしない（これはエラーではない）
         }
 
         // // 【コライダーの状態】
@@ -321,5 +366,53 @@ public class FlagDrivenStatePro : MonoBehaviour
 
         // 最初の状態適用が完了したことを記録する
         isInitialStateApplied = true;
+        lastAppliedState = state;
+    }
+
+    /// <summary>
+    /// Triggerの遷移先Stateで使用するCycle Offset Parameterへランダム値を設定します。
+    /// </summary>
+    private void ApplyRandomAnimationCycleOffset(StatePro state)
+    {
+        if (string.IsNullOrEmpty(state.animationCycleOffsetParameterName))
+        {
+            Debug.LogError(
+                $"Trigger '{state.animationTriggerName}' のランダム開始が有効ですが、Cycle Offset Parameter名が設定されていません。",
+                targetObject
+            );
+            return;
+        }
+
+        AnimatorControllerParameter offsetParameter = null;
+        foreach (AnimatorControllerParameter parameter in targetAnimator.parameters)
+        {
+            if (parameter.name == state.animationCycleOffsetParameterName)
+            {
+                offsetParameter = parameter;
+                break;
+            }
+        }
+
+        if (offsetParameter == null)
+        {
+            Debug.LogError(
+                $"Animator ControllerにCycle Offset用Parameter '{state.animationCycleOffsetParameterName}' が見つかりません。"
+                    + $"ターゲットオブジェクト '{targetObject.name}' のAnimator設定を確認してください。",
+                targetObject
+            );
+            return;
+        }
+
+        if (offsetParameter.type != AnimatorControllerParameterType.Float)
+        {
+            Debug.LogError(
+                $"Cycle Offset用Animator Parameter '{state.animationCycleOffsetParameterName}' はFloat型ではありません。"
+                    + $"ターゲットオブジェクト '{targetObject.name}' のAnimator設定を確認してください。",
+                targetObject
+            );
+            return;
+        }
+
+        targetAnimator.SetFloat(offsetParameter.nameHash, UnityEngine.Random.Range(0f, 1f));
     }
 }

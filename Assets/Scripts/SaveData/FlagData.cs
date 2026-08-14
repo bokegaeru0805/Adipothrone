@@ -195,6 +195,9 @@ public enum Chapter3TriggeredEvent
     None = 0, // 何も起こっていない状態を表すフラグ（デフォルト値として使用）
     FirstEnteredGuild = 3001, // 初めてギルドに入った
     FirstMetGuildReceptionist = 3004, // 初めてギルドの受付嬢に会った
+    GuildInquiryComplete1 = 3007, // ギルドで聞き込みを完了した(1)
+    GuildInquiryComplete2 = 3008, // ギルドで聞き込みを完了した(2)
+    GuildInquiryComplete3 = 3009, // ギルドで聞き込みを完了した(3)
 }
 
 /// <summary>

@@ -128,16 +128,40 @@ public class StatePro
     public bool changeAnimation = false;
 
     [Tooltip(
-        "再生したいアニメーションステートの名前（Animator Controller内のステート名と完全に一致させる）"
+        "発火させるTrigger Parameter名。設定されている場合はアニメーションステート名より優先されます。"
     )]
-    [AllowNesting, ShowIf("changeAnimation")]
+    [AllowNesting, EnableIf("ShowAnimationTriggerName")]
+    public string animationTriggerName;
+
+    [Tooltip(
+        "直接再生したいアニメーションステートの名前（Animator Controller内のステート名と完全に一致させる）。Trigger Parameter名が未設定の場合に使用されます。"
+    )]
+    [AllowNesting, EnableIf("ShowAnimationStateSettings")]
     public string animationStateName;
 
     [Tooltip(
-        "Trueの場合、アニメーションの再生開始位置（0%〜100%）をランダムにずらし、複数オブジェクトの動きが完全に同期するのを防ぎます。"
+        "Trueの場合、アニメーションの再生開始位置（0%〜100%）をランダムにずらし、複数オブジェクトの動きが完全に同期するのを防ぎます。Trigger使用時は遷移先State側のCycle Offset Parameter設定が必要です。"
     )]
-    [AllowNesting, ShowIf("changeAnimation")]
+    [AllowNesting, EnableIf("changeAnimation")]
     public bool randomizeAnimationStart = false;
+
+    [InfoBox(
+        "Animator Controllerに同名のFloat Parameterを追加し、Triggerの遷移先StateでCycle Offset Parameterとして設定してください。"
+    )]
+    [Tooltip(
+        "Trigger再生時のランダムなCycle Offset（0〜1）を渡すFloat Parameter名。推奨名: animationCycleOffset"
+    )]
+    [AllowNesting, ShowIf("ShowTriggerRandomizationSettings")]
+    public string animationCycleOffsetParameterName = "animationCycleOffset";
+
+    private bool ShowAnimationTriggerName =>
+        changeAnimation && string.IsNullOrEmpty(animationStateName);
+
+    private bool ShowAnimationStateSettings =>
+        changeAnimation && string.IsNullOrEmpty(animationTriggerName);
+
+    private bool ShowTriggerRandomizationSettings =>
+        changeAnimation && !string.IsNullOrEmpty(animationTriggerName) && randomizeAnimationStart;
 
     // [Header("コライダー")]
     // public bool changeColliderState;
