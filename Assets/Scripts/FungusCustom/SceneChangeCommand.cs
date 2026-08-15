@@ -22,7 +22,8 @@ public class SceneChangeCommand : Command
         TutorialStart, // SCENE_NAME_TUTORIAL_START
         Chapter1, // SCENE_NAME_CHAPTER_1
         Desert, // SCENE_NAME_DESERT
-        ROYAL_CAPITAL // SCENE_NAME_ROYAL_CAPITAL
+        ROYAL_CAPITAL, // SCENE_NAME_ROYAL_CAPITAL
+        SNOWFIELD // SCENE_NAME_SNOWFIELD
     }
 
     [Tooltip("遷移先のシーンを選択")]
@@ -90,6 +91,8 @@ public class SceneChangeCommand : Command
                 return GameConstants.SCENE_NAME_DESERT;
             case SceneType.ROYAL_CAPITAL:
                 return GameConstants.SCENE_NAME_ROYAL_CAPITAL;
+            case SceneType.SNOWFIELD:
+                return GameConstants.SCENE_NAME_SNOW;
             default:
                 return "";
         }

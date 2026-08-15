@@ -1262,7 +1262,8 @@ namespace Fungus.EditorUtils
 
                         FlowchartConversationGroupEditor.OnBlocksDragging(
                             flowchart,
-                            flowchart.SelectedBlocks
+                            flowchart.SelectedBlocks,
+                            e.shift
                         );
                         hasDraggedSelected = true;
                         e.Use();
@@ -1388,7 +1389,8 @@ namespace Fungus.EditorUtils
 
                         FlowchartConversationGroupEditor.OnBlocksMoved(
                             flowchart,
-                            flowchart.SelectedBlocks
+                            flowchart.SelectedBlocks,
+                            e.shift
                         );
                         dragBlock = null;
                     }

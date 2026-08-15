@@ -16,9 +16,9 @@ namespace Fungus
     /// </summary>
     public class MenuDialog : MonoBehaviour
     {
-        [Tooltip("メニューが表示されたとき、操作可能な最初のボタンを自動で選択状態にするか")]
+        [Tooltip("メニューが表示されたとき、操作可能な最初のボタンを自動で選択状態にするか（実行時は常に有効）")]
         [SerializeField]
-        protected bool autoSelectFirstButton = false;
+        protected bool autoSelectFirstButton = true;
 
         [Header("カスタム設定")]
         [Tooltip("選択肢表示時に有効化する背景オブジェクト")]
@@ -122,6 +122,10 @@ namespace Fungus
 
         protected virtual void Awake()
         {
+            // Menuコマンドの表示時は、常に一番上の操作可能な選択肢へカーソルを合わせます。
+            // 既存Prefabに保存された値に関係なく有効にします。
+            autoSelectFirstButton = true;
+
             // 起動時に、子オブジェクトに含まれる全てのButtonとSliderを取得してキャッシュします
             Button[] optionButtons = GetComponentsInChildren<Button>();
             cachedButtons = optionButtons;
@@ -390,9 +394,16 @@ namespace Fungus
                 return false;
             }
 
-            // 最初の選択肢であれば、メニューが開始したことを通知します
+            // 最初の選択肢であれば、前回の選択状態を解除してメニュー開始を通知します
             if (nextOptionIndex == 0)
+            {
+                if (EventSystem.current != null)
+                {
+                    EventSystem.current.SetSelectedGameObject(null);
+                }
+
                 MenuSignals.DoMenuStart(this);
+            }
 
             var button = cachedButtons[nextOptionIndex];
 
@@ -408,7 +419,8 @@ namespace Fungus
 
             // もし自動選択が有効で、まだ何も選択されていない場合、このボタンを選択状態にする
             if (
-                interactable
+                EventSystem.current != null
+                && interactable
                 && autoSelectFirstButton
                 && !cachedButtons
                     .Select(x => x.gameObject)
@@ -481,7 +493,14 @@ namespace Fungus
 
             // (ボタンのセットアップ処理は変更なし) ...
             if (nextOptionIndex == 0)
+            {
+                if (EventSystem.current != null)
+                {
+                    EventSystem.current.SetSelectedGameObject(null);
+                }
+
                 MenuSignals.DoMenuStart(this);
+            }
 
             var button = cachedButtons[nextOptionIndex];
             nextOptionIndex++;
@@ -495,7 +514,8 @@ namespace Fungus
             button.interactable = interactable;
 
             if (
-                interactable
+                EventSystem.current != null
+                && interactable
                 && autoSelectFirstButton
                 && !cachedButtons
                     .Select(x => x.gameObject)

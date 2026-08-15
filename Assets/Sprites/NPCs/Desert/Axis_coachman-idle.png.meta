@@ -110,7 +110,7 @@ TextureImporter:
     serializedVersion: 2
     sprites:
     - serializedVersion: 2
-      name: Still_coachman-idle_0
+      name: Axis_coachman-idle_0
       rect:
         serializedVersion: 2
         x: 0
@@ -131,7 +131,7 @@ TextureImporter:
       edges: []
       weights: []
     - serializedVersion: 2
-      name: Still_coachman-idle_1
+      name: Axis_coachman-idle_1
       rect:
         serializedVersion: 2
         x: 32
@@ -152,7 +152,7 @@ TextureImporter:
       edges: []
       weights: []
     - serializedVersion: 2
-      name: Still_coachman-idle_2
+      name: Axis_coachman-idle_2
       rect:
         serializedVersion: 2
         x: 64
@@ -173,7 +173,7 @@ TextureImporter:
       edges: []
       weights: []
     - serializedVersion: 2
-      name: Still_coachman-idle_3
+      name: Axis_coachman-idle_3
       rect:
         serializedVersion: 2
         x: 96
@@ -204,10 +204,10 @@ TextureImporter:
     weights: []
     secondaryTextures: []
     nameFileIdTable:
-      Still_coachman-idle_0: -1637816331
-      Still_coachman-idle_1: -874152796
-      Still_coachman-idle_2: -1687978578
-      Still_coachman-idle_3: 1472060288
+      Axis_coachman-idle_0: -1637816331
+      Axis_coachman-idle_1: -874152796
+      Axis_coachman-idle_2: -1687978578
+      Axis_coachman-idle_3: 1472060288
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 

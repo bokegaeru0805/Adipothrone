@@ -16,11 +16,20 @@ namespace Fungus.EditorUtils
         // Block群とグループ枠の間に確保する余白です。
         private const float FramePadding = 20f;
 
-        // グループタイトルを表示する見出し部分の高さです。
+        // グループタイトルを表示する見出し部分の最小高さです。
         private const float HeaderHeight = 40f;
 
         // グループタイトルの文字サイズです。
         private const int TitleFontSize = 18;
+
+        // グループタイトルの左右に確保する余白です。
+        private const int TitleHorizontalPadding = 10;
+
+        // グループタイトルの上下に確保する余白です。
+        private const int TitleVerticalPadding = 6;
+
+        // タイトル高さ計算時に使用する最小幅です。
+        private const float TitleMinimumWidth = 1f;
 
         // グループ枠線の不透明度です。
         private const float FrameBorderAlpha = 0.9f;
@@ -46,6 +55,9 @@ namespace Fungus.EditorUtils
         // 挿入位置を示すガイド線の色です。
         private static readonly Color InsertionGuideColor = new Color(0.25f, 1f, 0.45f, 1f);
 
+        // Shiftドラッグで別グループへ移籍するときの挿入ガイド線の色です。
+        private static readonly Color GroupTransferGuideColor = new Color(0.25f, 0.75f, 1f, 1f);
+
         // 所属Blockがすべて選択され、グループ単位で移動できるときの枠色です。
         private static readonly Color SelectedGroupBorderColor = new Color(1f, 0.65f, 0.15f, 1f);
 
@@ -58,6 +70,7 @@ namespace Fungus.EditorUtils
         private static Block previewBlock;
         private static int previewColumn;
         private static int previewIndex;
+        private static bool isGroupTransferPreview;
         private static GUIStyle titleStyle;
 
         private static GUIStyle TitleStyle
@@ -70,7 +83,14 @@ namespace Fungus.EditorUtils
                     {
                         alignment = TextAnchor.MiddleCenter,
                         fontSize = TitleFontSize,
-                        fontStyle = FontStyle.Bold
+                        fontStyle = FontStyle.Bold,
+                        wordWrap = true,
+                        padding = new RectOffset(
+                            TitleHorizontalPadding,
+                            TitleHorizontalPadding,
+                            TitleVerticalPadding,
+                            TitleVerticalPadding
+                        )
                     };
                 }
                 return titleStyle;
@@ -103,7 +123,7 @@ namespace Fungus.EditorUtils
                 if (editingGroup == group)
                 {
                     GUI.SetNextControlName("ConversationGroupTitle");
-                    string newTitle = GUI.TextField(headerRect, group.title, TitleStyle);
+                    string newTitle = GUI.TextArea(headerRect, group.title, TitleStyle);
                     if (newTitle != group.title)
                     {
                         Undo.RecordObject(data, "Rename Conversation Group");
@@ -131,7 +151,10 @@ namespace Fungus.EditorUtils
                 InsertionGuideHeight
             );
             insertionRect.position += flowchart.ScrollPos;
-            EditorGUI.DrawRect(insertionRect, InsertionGuideColor);
+            EditorGUI.DrawRect(
+                insertionRect,
+                isGroupTransferPreview ? GroupTransferGuideColor : InsertionGuideColor
+            );
         }
 
         internal static bool HandleEvent(FlowchartWindow window, Flowchart flowchart, Event e)
@@ -297,7 +320,10 @@ namespace Fungus.EditorUtils
             });
         }
 
-        internal static void OnBlocksDragging(Flowchart flowchart, IList<Block> movedBlocks)
+        internal static void OnBlocksDragging(
+            Flowchart flowchart,
+            IList<Block> movedBlocks,
+            bool allowGroupTransfer)
         {
             ClearInsertionPreview();
             var data = flowchart.GetComponent<FlowchartConversationGroups>();
@@ -314,7 +340,12 @@ namespace Fungus.EditorUtils
             if (block == null) return;
 
             var sourceGroup = FindContainingGroup(data, block);
-            var targetGroup = FindDropGroup(data, block, sourceGroup) ?? sourceGroup;
+            var targetGroup = FindDropGroup(
+                data,
+                block,
+                sourceGroup,
+                allowGroupTransfer
+            ) ?? sourceGroup;
             if (targetGroup == null) return;
 
             previewFlowchart = flowchart;
@@ -322,9 +353,13 @@ namespace Fungus.EditorUtils
             previewBlock = block;
             previewColumn = GetDropColumn(targetGroup, block);
             previewIndex = GetDropRow(targetGroup, block);
+            isGroupTransferPreview = sourceGroup != null && targetGroup != sourceGroup;
         }
 
-        internal static void OnBlocksMoved(Flowchart flowchart, IList<Block> movedBlocks)
+        internal static void OnBlocksMoved(
+            Flowchart flowchart,
+            IList<Block> movedBlocks,
+            bool allowGroupTransfer)
         {
             ClearInsertionPreview();
             var data = flowchart.GetComponent<FlowchartConversationGroups>();
@@ -358,7 +393,12 @@ namespace Fungus.EditorUtils
             foreach (var block in validMovedBlocks)
             {
                 var sourceGroup = FindContainingGroup(data, block);
-                var targetGroup = FindDropGroup(data, block, sourceGroup) ?? sourceGroup;
+                var targetGroup = FindDropGroup(
+                    data,
+                    block,
+                    sourceGroup,
+                    allowGroupTransfer
+                ) ?? sourceGroup;
                 if (targetGroup == null) continue;
 
                 FlowchartConversationGroups.Member member = null;
@@ -520,8 +560,11 @@ namespace Fungus.EditorUtils
         private static FlowchartConversationGroups.Group FindDropGroup(
             FlowchartConversationGroups data,
             Block block,
-            FlowchartConversationGroups.Group sourceGroup)
+            FlowchartConversationGroups.Group sourceGroup,
+            bool allowGroupTransfer)
         {
+            if (sourceGroup != null && !allowGroupTransfer) return null;
+
             Vector2 center = block._NodeRect.center;
             for (int index = data.Groups.Count - 1; index >= 0; index--)
             {
@@ -608,6 +651,7 @@ namespace Fungus.EditorUtils
             previewBlock = null;
             previewColumn = 0;
             previewIndex = 0;
+            isGroupTransferPreview = false;
         }
 
         private static void CompactColumns(FlowchartConversationGroups.Group group)
@@ -629,7 +673,13 @@ namespace Fungus.EditorUtils
         private static Rect GetHeaderRect(FlowchartConversationGroups.Group group)
         {
             Rect frame = GetFrameRect(group);
-            return new Rect(frame.x, frame.y - HeaderHeight, frame.width, HeaderHeight);
+            float titleWidth = Mathf.Max(TitleMinimumWidth, frame.width);
+            float calculatedHeight = TitleStyle.CalcHeight(
+                new GUIContent(group.title ?? string.Empty),
+                titleWidth
+            );
+            float headerHeight = Mathf.Max(HeaderHeight, calculatedHeight);
+            return new Rect(frame.x, frame.y - headerHeight, frame.width, headerHeight);
         }
 
         private static Rect GetFrameRect(FlowchartConversationGroups.Group group)

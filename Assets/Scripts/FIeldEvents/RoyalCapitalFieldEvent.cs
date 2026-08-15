@@ -67,9 +67,48 @@ public class RoyalCapitalFieldEvent : BaseFieldEvent
                     flagManager.SetBoolFlag(Chapter3TriggeredEvent.FirstMetGuildReceptionist, true);
                     FungusHelper.ExecuteBlock(targetFlowchart, "FirstMetGuildReceptionist");
                 }
+                else if (
+                    flagManager.GetBoolFlag(Chapter3TriggeredEvent.GuildInquiryCompleteAll)
+                    && !flagManager.GetBoolFlag(
+                        Chapter3TriggeredEvent.AskedReceptionistAboutNextDestination
+                    )
+                )
+                {
+                    flagManager.SetBoolFlag(
+                        Chapter3TriggeredEvent.AskedReceptionistAboutNextDestination,
+                        true
+                    );
+                    FungusHelper.ExecuteBlock(
+                        targetFlowchart,
+                        "AskedReceptionistAboutNextDestination"
+                    );
+                }
                 break;
         }
     }
 
+    #endregion
+
+    #region 第3章のギルドでの聞き込み関連の共通処理
+    /// <summary>
+    /// ギルドでの聞き込みが全て完了しているかを確認し、完了していればフラグを立ててイベントを発火させます。
+    /// </summary>
+    public void CheckChapter3GuildInquiryComplete()
+    {
+        // 既に完了イベントが発火済みなら何もしない
+        if (flagManager.GetBoolFlag(Chapter3TriggeredEvent.GuildInquiryCompleteAll))
+            return;
+
+        // 全てのの聞き込みフラグがTrueか確認
+        bool isComplete =
+            flagManager.GetBoolFlag(Chapter3TriggeredEvent.GuildInquiryComplete1)
+            && flagManager.GetBoolFlag(Chapter3TriggeredEvent.GuildInquiryComplete2);
+
+        if (isComplete)
+        {
+            flagManager.SetBoolFlag(Chapter3TriggeredEvent.GuildInquiryCompleteAll, true);
+            FungusHelper.ExecuteBlock(targetFlowchart, "GuildInquiryCompleteAll");
+        }
+    }
     #endregion
 }

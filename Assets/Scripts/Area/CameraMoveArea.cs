@@ -7,32 +7,52 @@ using NaughtyAttributes;
 using UnityEngine;
 using UnityEngine.Rendering;
 using UnityEngine.Rendering.Universal;
+using UnityEngine.Serialization;
 #if UNITY_EDITOR
 using UnityEditor;
 using UnityEngine.SceneManagement;
 #endif
 
 /// <summary>
-/// プレイヤーが特定のエリアに入るとカメラの境界、Volume Profile、2Dライトの形状を設定します。
-/// エリア外に出ると元に戻します。
+/// プレイヤーの進入に応じて、カメラ境界、背景、Volume、BGM、2Dライトを切り替えるエリアです。
+/// Timelineからカメラだけを移動する場合の強制アクティブ化にも対応します。
 /// </summary>
 [RequireComponent(typeof(CompositeCollider2D))]
 public class CameraMoveArea : MonoBehaviour
 {
-    #region Static Members & Events
+    #region 列挙型・定数
 
     /// <summary>
-    /// 現在プレイヤーがいる、アクティブなCameraMoveAreaのインスタンス。
+    /// エリア上辺におけるFreeform Lightの配置基準点です。
+    /// </summary>
+    private enum AreaLightPositionOrigin
+    {
+        [InspectorName("左上")]
+        TopLeft = 0,
+        [InspectorName("中央上")]
+        TopCenter = 1,
+        [InspectorName("右上")]
+        TopRight = 2,
+    }
+
+    private const float LightShapePointToleranceSqr = 0.00000001f;
+
+    #endregion
+
+    #region 静的状態・イベント
+
+    /// <summary>
+    /// 現在アクティブなエリアです。
     /// </summary>
     private static CameraMoveArea activeArea = null;
 
     /// <summary>
-    /// プレイヤーが、いずれかのCameraMoveAreaに入ったときに発行されるイベント。
+    /// プレイヤーがエリアへ入ったときに通知します。
     /// </summary>
     public static event Action<CameraMoveArea> OnPlayerEnteredArea;
 
     /// <summary>
-    /// プレイヤーが、アクティブだったCameraMoveAreaから出たときに発行されるイベント。
+    /// アクティブだったエリアが終了したときに通知します。
     /// </summary>
     public static event Action<CameraMoveArea> OnPlayerExitedArea;
 
@@ -53,13 +73,12 @@ public class CameraMoveArea : MonoBehaviour
     }
 
     /// <summary>
-    /// エリア進入時の自動BGM再生をロックするかどうかのフラグ。
-    /// イベント中などに別のBGMで上書きされるのを防ぐために使用します。
+    /// イベント中などにエリアBGMで上書きされることを防ぎます。
     /// </summary>
     private static bool isAreaBgmLocked = false;
 
     /// <summary>
-    /// ドメインリロードが無効な場合や、シーン遷移時に静的変数が残るのを防ぐためのリセット処理
+    /// ドメインリロードを無効にしたEditor環境でも静的状態が残らないよう初期化します。
     /// </summary>
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
     private static void ResetStatics()
@@ -69,13 +88,12 @@ public class CameraMoveArea : MonoBehaviour
     }
 
     /// <summary>
-    /// ロードによるシーン遷移が行われた際、強制的に静的フラグや参照をリセットします。
-    /// これにより、前のシーンでのBGMロック状態やエリア判定が次のシーンに持ち越されるバグを防ぎます。
+    /// シーン遷移時にアクティブエリアとBGMロックをリセットするコールバックを登録します。
     /// </summary>
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
     private static void RegisterSceneChangeCallback()
     {
-        // エディタのドメインリロード無効時などでの多重登録を防ぐため、一度解除してから登録する
+        // ドメインリロード無効時の多重登録を防ぐ。
         UnityEngine.SceneManagement.SceneManager.activeSceneChanged -= OnActiveSceneChanged;
         UnityEngine.SceneManagement.SceneManager.activeSceneChanged += OnActiveSceneChanged;
     }
@@ -108,7 +126,7 @@ public class CameraMoveArea : MonoBehaviour
 
     #endregion
 
-    #region Inspector Settings
+    #region Inspector設定
 
     [Header("追従する背景オブジェクト")]
     [Tooltip("カメラに追従して動かしたい背景のGameObject")]
@@ -134,6 +152,20 @@ public class CameraMoveArea : MonoBehaviour
     [Tooltip("形状をこのエリアのコライダーに合わせたいFreeform Light 2D")]
     [SerializeField]
     private Light2D areaLight;
+
+    [Tooltip("Freeform Light 2Dの中心位置を配置する際の基準点")]
+    [SerializeField, EnableIf(nameof(IsAreaLightFreeform))]
+    private AreaLightPositionOrigin areaLightPositionOrigin = AreaLightPositionOrigin.TopLeft;
+
+    [Tooltip("選択した基準点からFreeform Light 2Dの中心位置に加えるオフセット")]
+    [SerializeField]
+    [EnableIf(nameof(IsAreaLightFreeform))]
+    [FormerlySerializedAs("areaLightOffsetFromLeft")]
+    [FormerlySerializedAs("areaLightOffsetFromTopLeft")]
+    private Vector2 areaLightPositionOffset = Vector2.zero;
+
+    private bool IsAreaLightFreeform =>
+        areaLight != null && areaLight.lightType == Light2D.LightType.Freeform;
 
     [Header("BGM設定")]
     [Tooltip("どのフラグ条件にも一致しない場合に再生される、デフォルトのBGM")]
@@ -181,22 +213,18 @@ public class CameraMoveArea : MonoBehaviour
 
     #endregion
 
-    #region Internal State & References
+    #region 内部状態・参照
 
-    // コンポーネント参照
     private CompositeCollider2D areaCollider;
     private Transform playerTransform;
 
-    // カメラ制御用
     private float cameraOffsetY;
     private float cameraHalfWidth;
     private float yDampingResetDuration = 0.2f;
 
-    // 背景制御用
     private Coroutine backgroundMoveCoroutine = null;
     private Vector2 defaultBackgroundPosition = Vector2.zero;
 
-    // 状態フラグ
     private bool isPlayerInArea = false;
 
 #if UNITY_EDITOR
@@ -205,7 +233,7 @@ public class CameraMoveArea : MonoBehaviour
 
     #endregion
 
-    #region Unity Lifecycle Methods
+    #region Unityイベント
 
     private void Awake()
     {
@@ -238,42 +266,34 @@ public class CameraMoveArea : MonoBehaviour
 
     private void OnTriggerEnter2D(Collider2D other)
     {
-        if (other.CompareTag(GameConstants.PLAYER_TAG_NAME))
+        if (!other.CompareTag(GameConstants.PLAYER_TAG_NAME) || activeArea == this)
+            return;
+
+        if (activeArea != null)
         {
-            // 多重実行防止
-            if (activeArea == this)
-                return;
-
-            // 他のエリアからの遷移処理
-            if (activeArea != null && activeArea != this)
-            {
-                activeArea.HandlePlayerExit();
-            }
-
-            HandlePlayerEnter(other);
+            activeArea.HandlePlayerExit();
         }
+
+        HandlePlayerEnter(other);
     }
 
     private void OnTriggerExit2D(Collider2D other)
     {
-        if (other.CompareTag(GameConstants.PLAYER_TAG_NAME))
-        {
-            // エリア内にいる判定だけはオフにする
-            isPlayerInArea = false;
+        if (!other.CompareTag(GameConstants.PLAYER_TAG_NAME))
+            return;
 
-            // 【重要】自分が現在アクティブなエリアだった場合でも、ここでは退出処理を行いません。
-            // プレイヤーがマージン（あそび）の隙間にいる間は、背景やカメラ制限、Lightを維持するためです。
-            // 実際に HandlePlayerExit() が呼ばれてLight等が消えるのは、
-            // 「次の新しいエリアの OnTriggerEnter2D に入った瞬間」になります。
-        }
+        isPlayerInArea = false;
+
+        // エリア間の余白で背景・カメラ境界・Lightが途切れないよう、ここでは終了処理を行わない。
+        // HandlePlayerExitは、次のエリアへ進入した時点で旧activeAreaに対して呼び出される。
     }
 
     #endregion
 
-    #region Core Logic (Enter / Exit)
+    #region 初期化・エリア進入退出
 
     /// <summary>
-    /// コンポーネントの取得と初期化
+    /// 必須コンポーネントを取得し、Light形状とカメラ幅を初期化します。
     /// </summary>
     private void InitializeComponents()
     {
@@ -281,7 +301,6 @@ public class CameraMoveArea : MonoBehaviour
 
         UpdateLightShapeToCollider();
 
-        // Main Cameraチェック
         if (Camera.main == null)
         {
             Debug.LogError("メインカメラが見つかりません。", this);
@@ -292,64 +311,55 @@ public class CameraMoveArea : MonoBehaviour
     }
 
     /// <summary>
-    /// プレイヤーがエリアに入った際のメイン処理
+    /// プレイヤー進入時に、このエリア固有の設定を有効化します。
     /// </summary>
     private void HandlePlayerEnter(Collider2D playerCollider)
     {
         activeArea = this;
         isPlayerInArea = true;
 
-        // プレイヤー情報のキャッシュ
         playerTransform = playerCollider.transform;
         cameraOffsetY = GameConstants.PLAYER_CAMERA_FOLLOW_OFFSET.y;
 
-        // カメラDampingのリセット（カメラが遅れて壁にめり込むのを防ぐ）
+        // Dampingによる追従遅れでカメラが新しい境界へめり込むことを防ぐ。
         if (yDampingResetDuration > 0 && CameraManager.instance != null)
         {
             CameraManager.instance.TriggerTemporaryDampingReset(yDampingResetDuration);
         }
 
-        // BGMロックがかかっていなければBGMを再生する
         if (!isAreaBgmLocked)
         {
             PlayBgmBasedOnFlags();
         }
 
-        // Light有効化
         if (areaLight != null)
             areaLight.gameObject.SetActive(true);
 
-        // 各種設定の適用
         ApplyAreaSettings();
 
-        // カメラの完全固定フラグがONなら、コライダーの中心座標を渡して固定する
         if (lockCameraToCenter && CameraManager.instance != null)
         {
             CameraManager.instance.SetAreaCameraLock(true, areaCollider.bounds.center);
         }
 
-        // 背景移動開始
         if (backgroundMoveCoroutine == null)
         {
             backgroundMoveCoroutine = StartCoroutine(MoveBackgroundWithCamera());
         }
 
-        // イベント発行
         OnPlayerEnteredArea?.Invoke(this);
     }
 
     /// <summary>
-    /// エリア設定（Volume, Camera, Confiner）を一括適用する
+    /// Volume、カメラ個別設定、Cinemachine Confinerを適用します。
     /// </summary>
     private void ApplyAreaSettings()
     {
-        // 1. Volume Profile
         if (GlobalVolumeManager.instance != null && areaVolumeProfile != null)
         {
             GlobalVolumeManager.instance.ChangeProfileImmediate(areaVolumeProfile);
         }
 
-        // 2. Camera Settings
         if (overrideCameraSettings && CameraManager.instance != null)
         {
             CameraManager.instance.SetCameraSettings(
@@ -361,54 +371,47 @@ public class CameraMoveArea : MonoBehaviour
             );
         }
 
-        // 3. Cinemachine Confiner
         StartCoroutine(SetBoundingShape());
     }
 
     /// <summary>
-    /// プレイヤーがエリアから出た際の処理
+    /// このエリアで有効化した設定を終了し、退出イベントを通知します。
     /// </summary>
     private void HandlePlayerExit()
     {
         isPlayerInArea = false;
 
-        // Light無効化
         if (areaLight != null)
             areaLight.gameObject.SetActive(false);
 
-        // 背景処理停止
         if (backgroundMoveCoroutine != null)
         {
             StopCoroutine(backgroundMoveCoroutine);
             backgroundMoveCoroutine = null;
         }
 
-        // 背景リセット
         if (backGround != null)
         {
             backGround.transform.position = defaultBackgroundPosition;
             backGround.SetActive(false);
         }
 
-        // カメラ設定リセット
         if (overrideCameraSettings && CameraManager.instance != null)
         {
             CameraManager.instance.ResetCameraSettings(settingsTransitionDuration);
         }
 
-        // カメラの完全固定フラグがONだった場合はロックを解除する
         if (lockCameraToCenter && CameraManager.instance != null)
         {
             CameraManager.instance.SetAreaCameraLock(false, Vector2.zero);
         }
 
-        // イベント発行
         OnPlayerExitedArea?.Invoke(this);
     }
 
     #endregion
 
-    #region Public Static Methods
+    #region 外部公開制御
 
     /// <summary>
     /// シーン内の全てのCameraMoveAreaを走査し、プレイヤーが現在いるエリアを強制的にアクティブにします。
@@ -416,7 +419,6 @@ public class CameraMoveArea : MonoBehaviour
     /// </summary>
     public static void RefreshActiveArea()
     {
-        // プレイヤーの取得
         GameObject player = GameObject.FindGameObjectWithTag(GameConstants.PLAYER_TAG_NAME);
         if (player == null)
             return;
@@ -427,32 +429,24 @@ public class CameraMoveArea : MonoBehaviour
 
         Vector2 playerPos = player.transform.position;
 
-        // シーン上の全てのアクティブなエリアを取得
-        // (重い処理なので毎フレーム呼ぶのはNGですが、ロード時1回なら問題ありません)
+        // 全エリアの探索を伴うため、ロードやワープ直後など必要なタイミングに限定して呼び出す。
         CameraMoveArea[] allAreas = FindObjectsOfType<CameraMoveArea>();
 
         foreach (var area in allAreas)
         {
-            // エリアのコライダーを取得
             if (area.areaCollider == null)
                 area.areaCollider = area.GetComponent<CompositeCollider2D>();
 
             if (area.areaCollider == null)
                 continue;
 
-            // プレイヤーの座標がエリア内にあるか判定
             if (area.areaCollider.OverlapPoint(playerPos))
             {
-                // エリア内なら強制的にEnter処理を実行
-                // (内部で activeArea == this のチェックがあるため、二重実行は防がれます)
                 area.HandlePlayerEnter(playerCollider);
-
-                // 1つのエリアに入ったら終了（エリアが重なっていない前提）
                 return;
             }
 
-            // どのエリアにも入っていない（かつワープ等で強制リフレッシュされた）場合、
-            // 古いアクティブエリアが残っていればここで破棄する
+            // ワープなどで以前のエリア外へ移動した場合は、残っている状態を終了する。
             if (activeArea != null)
             {
                 activeArea.HandlePlayerExit();
@@ -472,7 +466,6 @@ public class CameraMoveArea : MonoBehaviour
     {
         isAreaBgmLocked = isLocked;
 
-        // ロックが解除されたら、現在のエリアの正しいBGMを流し直す
         if (!isLocked && activeArea != null)
         {
             PlayCurrentAreaBgm(fadeDuration);
@@ -481,7 +474,7 @@ public class CameraMoveArea : MonoBehaviour
 
     #endregion
 
-    #region BGM Logic
+    #region BGM制御
 
     private void PlayBgmBasedOnFlags()
     {
@@ -495,9 +488,10 @@ public class CameraMoveArea : MonoBehaviour
     /// <summary>
     /// 現在のフラグ状況に基づいて、再生すべきBGMカテゴリを返します。
     /// </summary>
+    /// <returns>条件に一致するBGM。該当しない場合はデフォルトBGM。</returns>
     public BGMCategory GetBgmForCurrentFlags()
     {
-        // 条件リストを下から順（新しい/進行度が高い条件）に評価
+        // Inspectorでは進行度が高い条件を下へ置くため、末尾から評価する。
         for (int i = conditionalBgms.Count - 1; i >= 0; i--)
         {
             var condition = conditionalBgms[i];
@@ -511,7 +505,7 @@ public class CameraMoveArea : MonoBehaviour
 
     #endregion
 
-    #region Timeline Support
+    #region Timeline連携
 
     /// <summary>
     /// Timelineなどから強制的にこのエリアをアクティブにします。
@@ -529,7 +523,7 @@ public class CameraMoveArea : MonoBehaviour
 
         activeArea = this;
 
-        // 簡易的な進入処理（イベント発行などは省略）
+        // プレイヤー進入ではないため、BGM切替や進入イベントは発行しない。
         if (areaLight != null)
             areaLight.gameObject.SetActive(true);
 
@@ -547,25 +541,42 @@ public class CameraMoveArea : MonoBehaviour
 
     #endregion
 
-    #region Helper Methods & Coroutines
+    #region 2Dライト制御
 
     /// <summary>
-    /// areaLightの形状をareaColliderの形状に合わせる
+    /// Freeform Lightの中心位置と形状をエリアColliderへ同期します。
     /// </summary>
     public void UpdateLightShapeToCollider()
     {
-        // if (areaLight != null)
-        //     areaLight.gameObject.SetActive(true);
+        TryUpdateLightShapeToCollider();
+    }
 
+    /// <summary>
+    /// Freeform Lightの中心位置と形状をエリアColliderへ同期します。
+    /// </summary>
+    /// <returns>位置または形状を変更した場合はtrue。</returns>
+    public bool TryUpdateLightShapeToCollider()
+    {
         if (areaLight == null || areaCollider == null)
-            return;
+            return false;
 
-        // Global Lightの場合は形状を持たないためスキップ
-        if (areaLight.lightType == Light2D.LightType.Global)
-            return;
+        if (areaLight.lightType != Light2D.LightType.Freeform)
+            return false;
+
+        bool isChanged = false;
+        Bounds areaBounds = areaCollider.bounds;
+        Vector3 lightPosition = GetAreaLightPosition(areaBounds);
+
+        if (areaLight.transform.position != lightPosition)
+        {
+            areaLight.transform.position = lightPosition;
+            isChanged = true;
+        }
 
         if (areaCollider.pathCount > 0)
         {
+            // Colliderのローカル頂点を一度ワールド座標へ変換し、移動後のLightローカル座標へ変換する。
+            // これによりLightのTransformを基準点へ移しても、照明範囲はCollider全体と一致する。
             Vector2[] pathPoints = new Vector2[areaCollider.GetPathPointCount(0)];
             areaCollider.GetPath(0, pathPoints);
 
@@ -576,9 +587,62 @@ public class CameraMoveArea : MonoBehaviour
                 lightPath[i] = areaLight.transform.InverseTransformPoint(worldPoint);
             }
 
-            areaLight.SetShapePath(lightPath);
+            if (IsLightShapeChanged(areaLight.shapePath, lightPath))
+            {
+                areaLight.SetShapePath(lightPath);
+                isChanged = true;
+            }
         }
+
+        return isChanged;
     }
+
+    /// <summary>
+    /// 選択された上辺の基準点とオフセットから、Light中心のワールド座標を求めます。
+    /// Z座標は既存値を維持します。
+    /// </summary>
+    private Vector3 GetAreaLightPosition(Bounds areaBounds)
+    {
+        Vector3 lightPosition = areaLight.transform.position;
+
+        switch (areaLightPositionOrigin)
+        {
+            case AreaLightPositionOrigin.TopCenter:
+                lightPosition.x = areaBounds.center.x;
+                break;
+            case AreaLightPositionOrigin.TopRight:
+                lightPosition.x = areaBounds.max.x;
+                break;
+            default:
+                lightPosition.x = areaBounds.min.x;
+                break;
+        }
+
+        lightPosition.x += areaLightPositionOffset.x;
+        lightPosition.y = areaBounds.max.y + areaLightPositionOffset.y;
+        return lightPosition;
+    }
+
+    /// <summary>
+    /// 頂点数と各頂点の差から、Light形状の更新が必要か判定します。
+    /// </summary>
+    private static bool IsLightShapeChanged(Vector3[] currentPath, Vector3[] newPath)
+    {
+        if (currentPath == null || currentPath.Length != newPath.Length)
+            return true;
+
+        for (int i = 0; i < newPath.Length; i++)
+        {
+            if ((currentPath[i] - newPath[i]).sqrMagnitude > LightShapePointToleranceSqr)
+                return true;
+        }
+
+        return false;
+    }
+
+    #endregion
+
+    #region カメラ境界制御
 
     /// <summary>
     /// CinemachineConfiner2Dの境界をこのエリアのColliderに設定する
@@ -596,7 +660,7 @@ public class CameraMoveArea : MonoBehaviour
             yield break;
         }
 
-        // 成功するまで数回試行（初期化タイミング対策）
+        // 初期化順によって代入が反映されない場合に備え、フレームをまたいで再試行する。
         for (int i = 0; i < 10; i++)
         {
             confiner.m_BoundingShape2D = areaCollider;
@@ -610,8 +674,12 @@ public class CameraMoveArea : MonoBehaviour
         Debug.LogWarning("CinemachineConfiner2DのBounding Shape設定に失敗しました。");
     }
 
+    #endregion
+
+    #region 背景追従
+
     /// <summary>
-    /// カメラの位置に基づいて背景を追従移動させる
+    /// 通常時はプレイヤー、Timeline制御時はカメラに背景を追従させます。
     /// </summary>
     private IEnumerator MoveBackgroundWithCamera()
     {
@@ -631,7 +699,6 @@ public class CameraMoveArea : MonoBehaviour
                     CameraManager.instance != null && CameraManager.instance.IsTimelineControlMode
                 );
 
-                // 通常プレイ時はプレイヤー基準、Timeline時はカメラ基準
                 if (isBrainEnabled && !isTimelineMode)
                 {
                     string cameraAtEdge = Camera
@@ -643,7 +710,7 @@ public class CameraMoveArea : MonoBehaviour
                         Vector3 adjustedPlayerPos = playerPosition;
                         adjustedPlayerPos.y += cameraOffsetY;
 
-                        // エリア端での補正
+                        // カメラが境界へ達した後も背景だけがプレイヤーへ追従し続けないよう補正する。
                         if (cameraAtEdge == "left")
                             adjustedPlayerPos.x = areaCollider.bounds.min.x + cameraHalfWidth;
                         else if (cameraAtEdge == "right")
@@ -657,7 +724,6 @@ public class CameraMoveArea : MonoBehaviour
                 }
                 else
                 {
-                    // Timeline中などはカメラに直接追従
                     backGround.transform.position = new Vector2(
                         cameraPosition.x,
                         backGround.transform.position.y
@@ -672,12 +738,12 @@ public class CameraMoveArea : MonoBehaviour
 
     #endregion
 
-    #region Editor / Debug
+    #region Editor表示
 
     private void OnDrawGizmos()
     {
 #if UNITY_EDITOR
-        // 設定画面でカスタムギズモ表示がオフになっている場合は描画しない（デフォルトはtrue）
+        // Project独自設定からCameraMoveAreaを含むカスタムGizmoを一括で非表示にできる。
         if (!UnityEditor.EditorPrefs.GetBool("MyGame_ShowCustomGizmos", true))
         {
             return;
@@ -688,10 +754,10 @@ public class CameraMoveArea : MonoBehaviour
         if (box2D == null)
             return;
 
-        Color fillColor = new Color(1f, 0f, 1f, 0.2f); // 半透明のマゼンタ
+        Color fillColor = new Color(1f, 0f, 1f, 0.05f);
         Color borderColor = Color.magenta;
 
-        // BoxCollider2Dの正確なローカル情報とTransform行列を使って描画
+        // Colliderのoffset、回転、ScaleをGizmoへ反映する。
         Gizmos.matrix = transform.localToWorldMatrix;
 
         Gizmos.color = fillColor;
@@ -701,7 +767,6 @@ public class CameraMoveArea : MonoBehaviour
         Gizmos.DrawWireCube(box2D.offset, box2D.size);
 
 #if UNITY_EDITOR
-        // エディタ上でのラベル表示
         string labelText = gameObject.name;
         string[] splitName = labelText.Split('_');
         if (splitName.Length > 1)
@@ -713,7 +778,6 @@ public class CameraMoveArea : MonoBehaviour
         style.fontSize = 12;
         style.fontStyle = FontStyle.Bold;
 
-        // ラベルはワールド座標の中心に描画するため、TransformPointで取得
         Vector3 worldCenterPos = transform.TransformPoint((Vector3)box2D.offset);
         UnityEditor.Handles.Label(worldCenterPos, labelText, style);
 #endif

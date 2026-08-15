@@ -78,17 +78,22 @@ public static class MyGameSceneTools
                 if (light2D != null)
                 {
                     Undo.RecordObject(light2D, "Update Light Shape");
+                    Undo.RecordObject(light2D.transform, "Update Light Position");
 
-                    // publicに変更したメソッドを実行
-                    area.UpdateLightShapeToCollider();
+                    // 実際に位置または形状が変更された場合だけ件数に含める
+                    bool isChanged = area.TryUpdateLightShapeToCollider();
 
-                    EditorUtility.SetDirty(light2D);
-                    count++;
+                    if (isChanged)
+                    {
+                        EditorUtility.SetDirty(light2D);
+                        EditorUtility.SetDirty(light2D.transform);
+                        count++;
+                    }
                 }
             }
         }
         Debug.Log(
-            $"{count} 個のLight2Dの形状を更新しました。(CameraMoveArea)"
+            $"{count} 個のLight2Dの位置または形状を更新しました。(CameraMoveArea)"
         );
     }
 

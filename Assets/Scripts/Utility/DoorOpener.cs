@@ -10,6 +10,7 @@ public class DoorOpener : MonoBehaviour
     public enum DoorType
     {
         None = 0,
+        ParkTeleportPoint = 2,
         MetalDoor = 5,
         WoodenDoor = 10,
         WoodenGate = 25,

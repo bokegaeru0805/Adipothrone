@@ -15,7 +15,7 @@ public static class GameConstants
     #endregion
 
     #region セーブデータ設定
-    public static readonly int MaxSaveLoadFiles = 20; // 最大セーブデータ数
+    public static readonly int MaxSaveLoadFiles = 30; // 最大セーブデータ数
     public const int AUTO_SAVE_FILE_NUMBER = 0; // オートセーブ用のファイル番号
     public const int MAX_AUTOSAVE_FOLDERS = 1; //オートセーブ用のフォルダの個数
     public const int NEW_GAME_FILE_NUMBER = 10000; // 新規ゲーム用のファイル番号

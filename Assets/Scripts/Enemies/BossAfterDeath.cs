@@ -38,6 +38,7 @@ public class BossAfterDeath : MonoBehaviour
     private GameObject BossDefeatParticle;
 
     [Header("ボス情報")]
+    [Tooltip("このコンポーネントが処理するボスの種類を予め設定する。")]
     [SerializeField]
     private bool isBossNamePreSet = false;
 
@@ -172,12 +173,6 @@ public class BossAfterDeath : MonoBehaviour
             FlashPanel.SetActive(true);
         }
 
-        if (bossName == BossHealth.BossName.DesertTempleBoss)
-        {
-            FadeCanvas.instance?.FadeOut(3.0f);
-            BGMManager.instance?.FadeOut(3.0f);
-        }
-
         for (int i = 0; i < DEFEAT_FLASH_COUNT; i++)
         {
             SEManager.instance?.PlaySystemEventSE(SE_SystemEvent.Impact1);
@@ -217,7 +212,7 @@ public class BossAfterDeath : MonoBehaviour
 
             for (int i = 0; i < DEFEAT_FADE_STEPS; i++)
             {
-                float ratio = 1f - (i + 1) / DEFEAT_FADE_STEPS;
+                float ratio = 1f - (i + 1f) / DEFEAT_FADE_STEPS;
                 SetAllSpritesAlpha(initialColors, ratio);
                 UpdateBossSpecificDefeatEffect(ratio);
 

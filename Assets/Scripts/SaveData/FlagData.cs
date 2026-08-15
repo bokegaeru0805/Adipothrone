@@ -197,7 +197,9 @@ public enum Chapter3TriggeredEvent
     FirstMetGuildReceptionist = 3004, // 初めてギルドの受付嬢に会った
     GuildInquiryComplete1 = 3007, // ギルドで聞き込みを完了した(1)
     GuildInquiryComplete2 = 3008, // ギルドで聞き込みを完了した(2)
-    GuildInquiryComplete3 = 3009, // ギルドで聞き込みを完了した(3)
+    // GuildInquiryComplete3 = 3009, // ギルドで聞き込みを完了した(3)
+    GuildInquiryCompleteAll = 3010, // ギルドで聞き込みを完了した
+    AskedReceptionistAboutNextDestination = 3013, // 受付嬢に次の目的地について尋ねた
 }
 
 /// <summary>

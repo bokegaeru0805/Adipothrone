@@ -88,7 +88,12 @@ public class SetGameBoolFlagCommand : Command
             case FlagCategory.Chapter2:
                 FlagManager.instance.SetBoolFlag(chapter2Flag, valueToSet);
                 break;
+            case FlagCategory.Chapter3:
+                FlagManager.instance.SetBoolFlag(chapter3Flag, valueToSet);
+                break;
         }
+
+        Debug.Log($"SetGameBoolFlagCommand: {category} のフラグ {GetSummary()} を設定しました。");
 
         // 次のコマンドへ処理を続ける
         Continue();
@@ -111,6 +116,9 @@ public class SetGameBoolFlagCommand : Command
                 break;
             case FlagCategory.Chapter2:
                 flagName = chapter2Flag.ToString();
+                break;
+            case FlagCategory.Chapter3:
+                flagName = chapter3Flag.ToString();
                 break;
         }
 
