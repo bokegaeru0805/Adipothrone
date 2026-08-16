@@ -1,5 +1,5 @@
 fileFormatVersion: 2
-guid: 42bdc675facab934683509353ffb531e
+guid: 677605f16b8c1ec44bfbe1c6ca098e27
 TextureImporter:
   internalIDToNameTable: []
   externalObjects: {}
@@ -110,13 +110,13 @@ TextureImporter:
     serializedVersion: 2
     sprites:
     - serializedVersion: 2
-      name: SnowCountry_Man01_Front_Idle_0
+      name: SnowCountry_Boy1_Idle_0
       rect:
         serializedVersion: 2
         x: 0
         y: 0
         width: 24
-        height: 56
+        height: 52
       alignment: 7
       pivot: {x: 0.5, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -124,20 +124,20 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: 0
       bones: []
-      spriteID: bb892f749f1e8094a88be2a77c28c4d0
-      internalID: -352733645
+      spriteID: 7610c6b04422cb84fa70b773c320938e
+      internalID: -547954416
       vertices: []
       indices: 
       edges: []
       weights: []
     - serializedVersion: 2
-      name: SnowCountry_Man01_Front_Idle_1
+      name: SnowCountry_Boy1_Idle_1
       rect:
         serializedVersion: 2
         x: 24
         y: 0
         width: 24
-        height: 56
+        height: 52
       alignment: 7
       pivot: {x: 0.5, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -145,20 +145,20 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: 0
       bones: []
-      spriteID: caa65e7db91848b4aba630cca0a37f05
-      internalID: 514176071
+      spriteID: b11f0d34543d1af4ebda8199d7582e76
+      internalID: -542821375
       vertices: []
       indices: 
       edges: []
       weights: []
     - serializedVersion: 2
-      name: SnowCountry_Man01_Front_Idle_2
+      name: SnowCountry_Boy1_Idle_2
       rect:
         serializedVersion: 2
         x: 48
         y: 0
         width: 24
-        height: 56
+        height: 52
       alignment: 7
       pivot: {x: 0.5, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -166,20 +166,20 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: 0
       bones: []
-      spriteID: 363e6235e1a472648a9796c6cc0260a9
-      internalID: 1068928325
+      spriteID: 3f52b86622b93a24484957630ec43de5
+      internalID: -970797423
       vertices: []
       indices: 
       edges: []
       weights: []
     - serializedVersion: 2
-      name: SnowCountry_Man01_Front_Idle_3
+      name: SnowCountry_Boy1_Idle_3
       rect:
         serializedVersion: 2
         x: 72
         y: 0
         width: 24
-        height: 56
+        height: 52
       alignment: 7
       pivot: {x: 0.5, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -187,8 +187,8 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: 0
       bones: []
-      spriteID: 286e6b959417700489b4de915bd398b9
-      internalID: 712599766
+      spriteID: 35e7aaabe7f2d0a40955ebb890962307
+      internalID: -696813720
       vertices: []
       indices: 
       edges: []
@@ -204,10 +204,10 @@ TextureImporter:
     weights: []
     secondaryTextures: []
     nameFileIdTable:
-      SnowCountry_Man01_Front_Idle_0: -352733645
-      SnowCountry_Man01_Front_Idle_1: 514176071
-      SnowCountry_Man01_Front_Idle_2: 1068928325
-      SnowCountry_Man01_Front_Idle_3: 712599766
+      SnowCountry_Boy1_Idle_0: -547954416
+      SnowCountry_Boy1_Idle_1: -542821375
+      SnowCountry_Boy1_Idle_2: -970797423
+      SnowCountry_Boy1_Idle_3: -696813720
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 
