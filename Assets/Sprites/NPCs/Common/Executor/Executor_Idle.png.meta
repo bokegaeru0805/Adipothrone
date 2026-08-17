@@ -1,5 +1,5 @@
 fileFormatVersion: 2
-guid: 8c49b760fefcec84caa7d93bd62ff39b
+guid: 3a25fe22e5f0eb94ca3033fc874fd0c8
 TextureImporter:
   internalIDToNameTable: []
   externalObjects: {}
@@ -110,13 +110,13 @@ TextureImporter:
     serializedVersion: 2
     sprites:
     - serializedVersion: 2
-      name: Button_Snowman_OFF
+      name: Executor_Idle_0
       rect:
         serializedVersion: 2
         x: 0
         y: 0
-        width: 36
-        height: 32
+        width: 32
+        height: 48
       alignment: 7
       pivot: {x: 0.5, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -124,20 +124,20 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: 0
       bones: []
-      spriteID: ba704d4733d349749ab9c1b9bcec7b45
-      internalID: 875376202
+      spriteID: 6d3e9fb0970ba8c41a53bb1b269409cf
+      internalID: -685667856
       vertices: []
       indices: 
       edges: []
       weights: []
     - serializedVersion: 2
-      name: Button_Snowman_ON
+      name: Executor_Idle_1
       rect:
         serializedVersion: 2
-        x: 36
+        x: 32
         y: 0
-        width: 36
-        height: 32
+        width: 32
+        height: 48
       alignment: 7
       pivot: {x: 0.5, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -145,8 +145,50 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: 0
       bones: []
-      spriteID: 9e55ce8bb31ffcc4b94ad47603346706
-      internalID: -1059811815
+      spriteID: 400a0a1ff93691f4093f49d580ff6b7f
+      internalID: -1640320453
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Executor_Idle_2
+      rect:
+        serializedVersion: 2
+        x: 64
+        y: 0
+        width: 32
+        height: 48
+      alignment: 7
+      pivot: {x: 0.5, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 1700834685968204a8af61c17d023c09
+      internalID: -735153544
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Executor_Idle_3
+      rect:
+        serializedVersion: 2
+        x: 96
+        y: 0
+        width: 32
+        height: 48
+      alignment: 7
+      pivot: {x: 0.5, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: b7a17b18c16086b448a316fd3201f31b
+      internalID: -1443424316
       vertices: []
       indices: 
       edges: []
@@ -162,8 +204,10 @@ TextureImporter:
     weights: []
     secondaryTextures: []
     nameFileIdTable:
-      Button_Snowman_OFF: 875376202
-      Button_Snowman_ON: -1059811815
+      Executor_Idle_0: -685667856
+      Executor_Idle_1: -1640320453
+      Executor_Idle_2: -735153544
+      Executor_Idle_3: -1443424316
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 

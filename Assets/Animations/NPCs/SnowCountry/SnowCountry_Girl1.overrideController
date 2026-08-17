@@ -1,0 +1,17 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!221 &22100000
+AnimatorOverrideController:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: SnowCountry_Girl1
+  m_Controller: {fileID: 9100000, guid: 88494355f9452ed48a0045543cb77a24, type: 2}
+  m_Clips:
+  - m_OriginalClip: {fileID: 7400000, guid: 2dd9ad3f2dab9c544bf882f59f511ca0, type: 2}
+    m_OverrideClip: {fileID: 7400000, guid: bea31c122c5841e4bbf9b9c63ec98b27, type: 2}
+  - m_OriginalClip: {fileID: 7400000, guid: 738a3d98e5a849a40816eb6533bd7d7b, type: 2}
+    m_OverrideClip: {fileID: 7400000, guid: dc734572a816b5540a877974bd9a9590, type: 2}
+  - m_OriginalClip: {fileID: 7400000, guid: 2b2bd8362b95989469c8f878da9887d6, type: 2}
+    m_OverrideClip: {fileID: 7400000, guid: aec5ab6258870ef41a0f1d5de5f900d6, type: 2}

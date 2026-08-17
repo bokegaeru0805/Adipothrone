@@ -34,6 +34,12 @@ public enum KeyID
     K8 = 801,
     K9 = 901,
     K10 = 1001,
+
+    // --- 雪国の洞窟のキー ---
+    K11_1 = 1101,
+    K11_2 = 1102,
+    K11_3 = 1103,
+    K11_4 = 1104,
 }
 
 /// 【重要】
@@ -200,6 +206,10 @@ public enum Chapter3TriggeredEvent
     // GuildInquiryComplete3 = 3009, // ギルドで聞き込みを完了した(3)
     GuildInquiryCompleteAll = 3010, // ギルドで聞き込みを完了した
     AskedReceptionistAboutNextDestination = 3013, // 受付嬢に次の目的地について尋ねた
+    FirstEnteredSnowCountry = 3016, // 初めて雪国に入った
+    FirstEnteredSnowVillage = 3019, // 初めて雪国の村に入った
+    FirstTalkedToVillageChief = 3022, // 初めて村長と話した
+    FirstMetBoy = 3025, // 初めて少年に会った
 }
 
 /// <summary>

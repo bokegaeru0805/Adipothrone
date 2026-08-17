@@ -1,5 +1,5 @@
 fileFormatVersion: 2
-guid: 8c49b760fefcec84caa7d93bd62ff39b
+guid: 6ebf238cc81785340855ba401561743e
 TextureImporter:
   internalIDToNameTable: []
   externalObjects: {}
@@ -110,13 +110,13 @@ TextureImporter:
     serializedVersion: 2
     sprites:
     - serializedVersion: 2
-      name: Button_Snowman_OFF
+      name: Executor_Snow_Walking_0
       rect:
         serializedVersion: 2
         x: 0
         y: 0
-        width: 36
-        height: 32
+        width: 24
+        height: 56
       alignment: 7
       pivot: {x: 0.5, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -124,20 +124,20 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: 0
       bones: []
-      spriteID: ba704d4733d349749ab9c1b9bcec7b45
-      internalID: 875376202
+      spriteID: 745480ed7728756439b68ca176694c17
+      internalID: -414316604
       vertices: []
       indices: 
       edges: []
       weights: []
     - serializedVersion: 2
-      name: Button_Snowman_ON
+      name: Executor_Snow_Walking_1
       rect:
         serializedVersion: 2
-        x: 36
+        x: 24
         y: 0
-        width: 36
-        height: 32
+        width: 24
+        height: 56
       alignment: 7
       pivot: {x: 0.5, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -145,8 +145,50 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: 0
       bones: []
-      spriteID: 9e55ce8bb31ffcc4b94ad47603346706
-      internalID: -1059811815
+      spriteID: 34a04f83b6e91b641907b9996eb13d25
+      internalID: -967522993
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Executor_Snow_Walking_2
+      rect:
+        serializedVersion: 2
+        x: 48
+        y: 0
+        width: 24
+        height: 56
+      alignment: 7
+      pivot: {x: 0.5, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: be0a32409538b914a94d8247f864f033
+      internalID: -1318856869
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Executor_Snow_Walking_3
+      rect:
+        serializedVersion: 2
+        x: 72
+        y: 0
+        width: 24
+        height: 56
+      alignment: 7
+      pivot: {x: 0.5, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: eb279a7ffae57ab4e871e958e216493d
+      internalID: -862239855
       vertices: []
       indices: 
       edges: []
@@ -162,8 +204,10 @@ TextureImporter:
     weights: []
     secondaryTextures: []
     nameFileIdTable:
-      Button_Snowman_OFF: 875376202
-      Button_Snowman_ON: -1059811815
+      Executor_Snow_Walking_0: -414316604
+      Executor_Snow_Walking_1: -967522993
+      Executor_Snow_Walking_2: -1318856869
+      Executor_Snow_Walking_3: -862239855
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 

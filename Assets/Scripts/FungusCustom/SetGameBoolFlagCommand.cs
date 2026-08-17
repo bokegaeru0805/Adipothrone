@@ -93,8 +93,6 @@ public class SetGameBoolFlagCommand : Command
                 break;
         }
 
-        Debug.Log($"SetGameBoolFlagCommand: {category} のフラグ {GetSummary()} を設定しました。");
-
         // 次のコマンドへ処理を続ける
         Continue();
     }

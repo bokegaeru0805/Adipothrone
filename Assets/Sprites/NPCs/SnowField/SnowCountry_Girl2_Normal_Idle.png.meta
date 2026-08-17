@@ -1,5 +1,5 @@
 fileFormatVersion: 2
-guid: 8c49b760fefcec84caa7d93bd62ff39b
+guid: 9a76597dd83bbf341a96d9b58717df1b
 TextureImporter:
   internalIDToNameTable: []
   externalObjects: {}
@@ -110,13 +110,13 @@ TextureImporter:
     serializedVersion: 2
     sprites:
     - serializedVersion: 2
-      name: Button_Snowman_OFF
+      name: SnowCountry_Girl2_Normal_Idle_0
       rect:
         serializedVersion: 2
         x: 0
         y: 0
-        width: 36
-        height: 32
+        width: 24
+        height: 48
       alignment: 7
       pivot: {x: 0.5, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -124,20 +124,20 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: 0
       bones: []
-      spriteID: ba704d4733d349749ab9c1b9bcec7b45
-      internalID: 875376202
+      spriteID: 683355b846ab9f745a77cf8159632210
+      internalID: 282445902
       vertices: []
       indices: 
       edges: []
       weights: []
     - serializedVersion: 2
-      name: Button_Snowman_ON
+      name: SnowCountry_Girl2_Normal_Idle_1
       rect:
         serializedVersion: 2
-        x: 36
+        x: 24
         y: 0
-        width: 36
-        height: 32
+        width: 24
+        height: 48
       alignment: 7
       pivot: {x: 0.5, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -145,8 +145,50 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: 0
       bones: []
-      spriteID: 9e55ce8bb31ffcc4b94ad47603346706
-      internalID: -1059811815
+      spriteID: 94cf139fe96014b49b7eeabac942ba44
+      internalID: 145698562
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: SnowCountry_Girl2_Normal_Idle_2
+      rect:
+        serializedVersion: 2
+        x: 48
+        y: 0
+        width: 24
+        height: 48
+      alignment: 7
+      pivot: {x: 0.5, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: ac8b01a878848d640bf67cbe3ad1364c
+      internalID: 471584094
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: SnowCountry_Girl2_Normal_Idle_3
+      rect:
+        serializedVersion: 2
+        x: 72
+        y: 0
+        width: 24
+        height: 48
+      alignment: 7
+      pivot: {x: 0.5, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 0679ef7328ae91947bdd3b0b5af25cd9
+      internalID: -958527540
       vertices: []
       indices: 
       edges: []
@@ -162,8 +204,10 @@ TextureImporter:
     weights: []
     secondaryTextures: []
     nameFileIdTable:
-      Button_Snowman_OFF: 875376202
-      Button_Snowman_ON: -1059811815
+      SnowCountry_Girl2_Normal_Idle_0: 282445902
+      SnowCountry_Girl2_Normal_Idle_1: 145698562
+      SnowCountry_Girl2_Normal_Idle_2: 471584094
+      SnowCountry_Girl2_Normal_Idle_3: -958527540
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 

@@ -1,5 +1,5 @@
 fileFormatVersion: 2
-guid: 8c49b760fefcec84caa7d93bd62ff39b
+guid: d77fa4050770f4348ad67b9da4b3bbeb
 TextureImporter:
   internalIDToNameTable: []
   externalObjects: {}
@@ -46,8 +46,8 @@ TextureImporter:
   spriteMode: 2
   spriteExtrude: 1
   spriteMeshType: 0
-  alignment: 0
-  spritePivot: {x: 0.5, y: 0.5}
+  alignment: 7
+  spritePivot: {x: 0.5, y: 0}
   spritePixelsToUnits: 16
   spriteBorder: {x: 0, y: 0, z: 0, w: 0}
   spriteGenerateFallbackPhysicsShape: 1
@@ -110,13 +110,13 @@ TextureImporter:
     serializedVersion: 2
     sprites:
     - serializedVersion: 2
-      name: Button_Snowman_OFF
+      name: SnowCountry_Girl2_Immobile_Eating_Cake_0
       rect:
         serializedVersion: 2
         x: 0
         y: 0
-        width: 36
-        height: 32
+        width: 56
+        height: 48
       alignment: 7
       pivot: {x: 0.5, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -124,20 +124,20 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: 0
       bones: []
-      spriteID: ba704d4733d349749ab9c1b9bcec7b45
-      internalID: 875376202
+      spriteID: fd1c12c23f207f64499da98dde665251
+      internalID: 1755421257
       vertices: []
       indices: 
       edges: []
       weights: []
     - serializedVersion: 2
-      name: Button_Snowman_ON
+      name: SnowCountry_Girl2_Immobile_Eating_Cake_1
       rect:
         serializedVersion: 2
-        x: 36
+        x: 56
         y: 0
-        width: 36
-        height: 32
+        width: 56
+        height: 48
       alignment: 7
       pivot: {x: 0.5, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -145,8 +145,113 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: 0
       bones: []
-      spriteID: 9e55ce8bb31ffcc4b94ad47603346706
-      internalID: -1059811815
+      spriteID: e3a3d26c3ce4b39488e58c343b7962a3
+      internalID: 2126214310
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: SnowCountry_Girl2_Immobile_Eating_Cake_2
+      rect:
+        serializedVersion: 2
+        x: 112
+        y: 0
+        width: 56
+        height: 48
+      alignment: 7
+      pivot: {x: 0.5, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 7b9c3aaef57ef86479a589504419d230
+      internalID: 1887956531
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: SnowCountry_Girl2_Immobile_Eating_Cake_3
+      rect:
+        serializedVersion: 2
+        x: 168
+        y: 0
+        width: 56
+        height: 48
+      alignment: 7
+      pivot: {x: 0.5, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: f37213b66be12844bb1173f6837a61fa
+      internalID: 2130070026
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: SnowCountry_Girl2_Immobile_Eating_Cake_4
+      rect:
+        serializedVersion: 2
+        x: 224
+        y: 0
+        width: 56
+        height: 48
+      alignment: 7
+      pivot: {x: 0.5, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 940cc7550f3c35e4ca7d291b74943783
+      internalID: -668383090
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: SnowCountry_Girl2_Immobile_Eating_Cake_5
+      rect:
+        serializedVersion: 2
+        x: 280
+        y: 0
+        width: 56
+        height: 48
+      alignment: 7
+      pivot: {x: 0.5, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 29529797b6f67ef458f6614da08eecc3
+      internalID: 449830498
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: SnowCountry_Girl2_Immobile_Eating_Cake_6
+      rect:
+        serializedVersion: 2
+        x: 336
+        y: 0
+        width: 56
+        height: 48
+      alignment: 7
+      pivot: {x: 0.5, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: f70f333e33dc15847aaae508bb1dc5f7
+      internalID: 204841472
       vertices: []
       indices: 
       edges: []
@@ -162,8 +267,13 @@ TextureImporter:
     weights: []
     secondaryTextures: []
     nameFileIdTable:
-      Button_Snowman_OFF: 875376202
-      Button_Snowman_ON: -1059811815
+      SnowCountry_Girl2_Immobile_Eating_Cake_0: 1755421257
+      SnowCountry_Girl2_Immobile_Eating_Cake_1: 2126214310
+      SnowCountry_Girl2_Immobile_Eating_Cake_2: 1887956531
+      SnowCountry_Girl2_Immobile_Eating_Cake_3: 2130070026
+      SnowCountry_Girl2_Immobile_Eating_Cake_4: -668383090
+      SnowCountry_Girl2_Immobile_Eating_Cake_5: 449830498
+      SnowCountry_Girl2_Immobile_Eating_Cake_6: 204841472
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 

@@ -7,9 +7,9 @@ namespace Fungus
     // <summary>
     /// Get or Set a property of a Sprite component
     /// </summary>
-    [CommandInfo("Property",
-                 "Sprite",
-                 "Get or Set a property of a Sprite component")]
+    // [CommandInfo("Property",
+    //              "Sprite",
+    //              "Get or Set a property of a Sprite component")]
     [AddComponentMenu("")]
     public class SpriteProperty : BaseVariableProperty
     {

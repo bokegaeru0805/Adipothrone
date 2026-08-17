@@ -40,7 +40,7 @@ public class SpriteRendererPropertyCommand : Command
 
     [BoxGroup("Target Settings")]
     [SerializeField]
-    protected SpritePropertyMode propertyMode = SpritePropertyMode.Color;
+    protected SpritePropertyMode propertyMode = SpritePropertyMode.Flip;
 
     // --- Color 設定 ---
     [BoxGroup("Color Settings")]

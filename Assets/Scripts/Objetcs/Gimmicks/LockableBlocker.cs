@@ -10,14 +10,15 @@ using UnityEngine;
 public class LockableBlocker : MonoBehaviour
 {
     // --- 定義 ---
-    
+
     /// <summary>
     /// ドアの見た目や音のタイプを定義するEnum
     /// </summary>
     public enum BlockerType
     {
-        TutorialStage,  // チュートリアル（金属的）
-        DesertTemple,   // 砂漠（石、重い音）
+        TutorialStage, // チュートリアル（金属的）
+        DesertTemple, // 砂漠（石、重い音）
+        Tower, // タワー（ガラス的）
         // 必要に応じて追加（SciFi, Dungeon, Forest...）
     }
 
@@ -33,7 +34,9 @@ public class LockableBlocker : MonoBehaviour
     private BlockerType blockerType = BlockerType.TutorialStage;
 
     [Header("見た目の設定")]
-    [Tooltip("Trueの場合、開いた時にオブジェクトを非表示にします。\nFalseの場合、Spriteを開放状態のものに差し替えます。")]
+    [Tooltip(
+        "Trueの場合、開いた時にオブジェクトを非表示にします。\nFalseの場合、Spriteを開放状態のものに差し替えます。"
+    )]
     [SerializeField]
     private bool hideWhenOpen = true;
 
@@ -52,7 +55,6 @@ public class LockableBlocker : MonoBehaviour
     private BoxCollider2D boxCollider;
     private SpriteRenderer spriteRenderer;
     private Sprite closedSprite; // 初期（閉じている）スプライト
-
     #endregion
 
     #region Unity Lifecycle Methods
@@ -97,7 +99,7 @@ public class LockableBlocker : MonoBehaviour
     {
         boxCollider = GetComponent<BoxCollider2D>();
         spriteRenderer = GetComponent<SpriteRenderer>();
-        
+
         if (spriteRenderer != null)
         {
             closedSprite = spriteRenderer.sprite;
@@ -120,7 +122,8 @@ public class LockableBlocker : MonoBehaviour
     /// <param name="playEffect">SE再生などの演出を行うかどうか（Start時はfalse）</param>
     private void UpdateBlockerState(bool playEffect)
     {
-        if (FlagManager.instance == null) return;
+        if (FlagManager.instance == null)
+            return;
 
         // 1. 現在開くべき状態かを確認
         bool shouldBeOpen = FlagManager.instance.IsDoorUnlocked(blockerID);
@@ -155,7 +158,8 @@ public class LockableBlocker : MonoBehaviour
     /// </summary>
     private void UpdateVisuals()
     {
-        if (spriteRenderer == null) return;
+        if (spriteRenderer == null)
+            return;
 
         if (isBlockerOpen)
         {
@@ -187,7 +191,8 @@ public class LockableBlocker : MonoBehaviour
     /// </summary>
     private void PlayBlockerSE(bool isOpen)
     {
-        if (SEManager.instance == null) return;
+        if (SEManager.instance == null)
+            return;
 
         // 閉じる時の音（共通または別途定義）
         if (!isOpen)
@@ -206,9 +211,11 @@ public class LockableBlocker : MonoBehaviour
                 break;
 
             case BlockerType.DesertTemple:
-                // 石の重い音（未定義の場合はMetalなどで代用するか、SE_Fieldに定数を追加する）
-                // 例: SEManager.instance.PlayFieldSE(SE_Field.DoorOpen_Stone);
-                SEManager.instance.PlayFieldSE(SE_Field.DoorOpen_Metal); // 仮置き
+                SEManager.instance.PlayFieldSE(SE_Field.DoorOpen_Metal);
+                break;
+
+            case BlockerType.Tower:
+                SEManager.instance.PlayFieldSE(SE_Field.DoorOpen_Metal);
                 break;
 
             default:
