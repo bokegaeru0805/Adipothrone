@@ -72,7 +72,7 @@ public class FlagManager : MonoBehaviour
     private readonly Dictionary<Enum, bool> defaultBoolValues = new();
 
     // 大ドアの条件設定
-    private List<DoorUnlockCondition> doorConditions =
+    private static readonly List<DoorUnlockCondition> doorConditions =
         new()
         {
             new DoorUnlockCondition
@@ -129,8 +129,24 @@ public class FlagManager : MonoBehaviour
             {
                 doorId = 11,
                 requiredKeys = new List<KeyID> { KeyID.K11_1, KeyID.K11_2, KeyID.K11_3, KeyID.K11_4 },
+            },
+            new DoorUnlockCondition
+            {
+                doorId = 12,
+                requiredKeys = new List<KeyID> { KeyID.K12 },
             }
         };
+
+    /// <summary>
+    /// 登録されている大ドアのIDを列挙する。
+    /// </summary>
+    public static IEnumerable<int> GetDoorConditionIds()
+    {
+        foreach (var condition in doorConditions)
+        {
+            yield return condition.doorId;
+        }
+    }
 
     /// <summary>
     /// シングルトン初期化。重複インスタンスは破棄。

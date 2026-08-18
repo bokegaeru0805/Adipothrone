@@ -7,29 +7,29 @@ namespace Fungus
     // <summary>
     /// Get or Set a property of a ControllerColliderHit component
     /// </summary>
-    [CommandInfo("Property",
-                 "ControllerColliderHit",
-                 "Get or Set a property of a ControllerColliderHit component")]
+    // [CommandInfo("Property",
+    //              "ControllerColliderHit",
+    //              "Get or Set a property of a ControllerColliderHit component")]
     [AddComponentMenu("")]
     public class ControllerColliderHitProperty : BaseVariableProperty
     {
-		//generated property
-        public enum Property 
-        { 
-            Collider, 
-            Rigidbody, 
-            GameObject, 
-            Transform, 
-            Point, 
-            Normal, 
-            MoveDirection, 
-            MoveLength, 
+        //generated property
+        public enum Property
+        {
+            Collider,
+            Rigidbody,
+            GameObject,
+            Transform,
+            Point,
+            Normal,
+            MoveDirection,
+            MoveLength,
         }
 
-		
+
         [SerializeField]
         protected Property property;
-		
+
         [SerializeField]
         [VariableProperty(typeof(ControllerColliderHitVariable))]
         protected ControllerColliderHitVariable controllerColliderHitVar;

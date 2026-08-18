@@ -40,6 +40,9 @@ public enum KeyID
     K11_2 = 1102,
     K11_3 = 1103,
     K11_4 = 1104,
+
+    // --- 塔の扉のキー ---
+    K12 = 1201,
 }
 
 /// 【重要】
@@ -210,6 +213,14 @@ public enum Chapter3TriggeredEvent
     FirstEnteredSnowVillage = 3019, // 初めて雪国の村に入った
     FirstTalkedToVillageChief = 3022, // 初めて村長と話した
     FirstMetBoy = 3025, // 初めて少年に会った
+    ReachedCaveEntrance = 3028, // 洞窟の入口に到達した
+    ReachedTowerGate = 3031, // 塔の入り口に到達した
+    ReachedTowerEntrance = 3034, // 塔の入り口に到達した
+    ReachedTowerLanding1 = 3037, // 塔の中間地点1に到達した
+    ReachedTowerHallEntrance = 3040, // 塔のホールの入り口に到達した
+    ApothecaryDefeated = 3045, // 薬屋のボスを倒した
+    ApothecaryQuestComplete = 3050, // 薬屋のクエストを完了した
+    FellUnderground = 3053, // 地下に落ちた
 }
 
 /// <summary>

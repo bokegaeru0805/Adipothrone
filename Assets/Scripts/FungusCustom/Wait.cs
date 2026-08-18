@@ -19,6 +19,12 @@ public class Wait : Command
     [SerializeField]
     protected FloatData _duration = new FloatData(1);
 
+    // プロジェクト側の追加項目。実行処理には使用せず、Flowchart編集者向けのメモとして保存する。
+    [Tooltip("このWaitコマンドを置いた理由や、待機時間の意図を記述します。")]
+    [TextArea(2, 5)]
+    [SerializeField]
+    protected string _memo = "";
+
     #region Public Methods
 
     public override void OnEnter()

@@ -466,7 +466,7 @@ public class EnemyActivator : MonoBehaviour
 
         if (activationZone != null)
         {
-            Color fillColor = new Color(0f, 1f, 0f, 0.2f); // 半透明の緑
+            Color fillColor = new Color(0f, 1f, 0f, 0.1f); // 半透明の緑
             Color borderColor = Color.green;
 
             // BoxCollider2Dの範囲情報を使ってGizmoを描画

@@ -7,30 +7,30 @@ namespace Fungus
     // <summary>
     /// Get or Set a property of a Collider2D component
     /// </summary>
-    [CommandInfo("Property",
-                 "Collider2D",
-                 "Get or Set a property of a Collider2D component")]
+    // [CommandInfo("Property",
+    //              "Collider2D",
+    //              "Get or Set a property of a Collider2D component")]
     [AddComponentMenu("")]
     public class Collider2DProperty : BaseVariableProperty
     {
-		//generated property
-        public enum Property 
-        { 
-            Density, 
-            IsTrigger, 
-            UsedByEffector, 
-            UsedByComposite, 
-            Offset, 
-            AttachedRigidbody, 
-            ShapeCount, 
-            Friction, 
-            Bounciness, 
+        //generated property
+        public enum Property
+        {
+            Density,
+            IsTrigger,
+            UsedByEffector,
+            UsedByComposite,
+            Offset,
+            AttachedRigidbody,
+            ShapeCount,
+            Friction,
+            Bounciness,
         }
 
-		
+
         [SerializeField]
         protected Property property;
-		
+
         [SerializeField]
         protected Collider2DData collider2DData;
 

@@ -7,9 +7,9 @@ namespace Fungus
     // <summary>
     /// Get or Set a property of a Texture component
     /// </summary>
-    [CommandInfo("Property",
-                 "Texture",
-                 "Get or Set a property of a Texture component")]
+    // [CommandInfo("Property",
+    //              "Texture",
+    //              "Get or Set a property of a Texture component")]
     [AddComponentMenu("")]
     public class TextureProperty : BaseVariableProperty
     {

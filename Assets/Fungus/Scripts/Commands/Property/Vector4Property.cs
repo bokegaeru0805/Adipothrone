@@ -7,9 +7,9 @@ namespace Fungus
     // <summary>
     /// Get or Set a property of a Vector4 component
     /// </summary>
-    [CommandInfo("Property",
-                 "Vector4",
-                 "Get or Set a property of a Vector4 component")]
+    // [CommandInfo("Property",
+    //              "Vector4",
+    //              "Get or Set a property of a Vector4 component")]
     [AddComponentMenu("")]
     public class Vector4Property : BaseVariableProperty
     {

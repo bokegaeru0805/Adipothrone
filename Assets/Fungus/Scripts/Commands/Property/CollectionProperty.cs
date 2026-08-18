@@ -7,9 +7,9 @@ namespace Fungus
     // <summary>
     /// Get or Set a property of a Collection component
     /// </summary>
-    [CommandInfo("Property",
-                 "Collection",
-                 "Get or Set a property of a Collection component")]
+    // [CommandInfo("Property",
+    //              "Collection",
+    //              "Get or Set a property of a Collection component")]
     [AddComponentMenu("")]
     public class CollectionProperty : BaseVariableProperty
     {

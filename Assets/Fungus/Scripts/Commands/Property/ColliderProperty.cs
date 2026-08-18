@@ -7,9 +7,9 @@ namespace Fungus
     // <summary>
     /// Get or Set a property of a Collider component
     /// </summary>
-    [CommandInfo("Property",
-                 "Collider",
-                 "Get or Set a property of a Collider component")]
+    // [CommandInfo("Property",
+    //              "Collider",
+    //              "Get or Set a property of a Collider component")]
     [AddComponentMenu("")]
     public class ColliderProperty : BaseVariableProperty
     {

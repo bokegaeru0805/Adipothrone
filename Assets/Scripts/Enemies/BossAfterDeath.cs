@@ -138,6 +138,11 @@ public class BossAfterDeath : MonoBehaviour
                 break;
 
             case BossHealth.BossName.DesertTempleBossSmoke:
+                // 撃破後も残るため、非表示にしない
+                shouldHideAfterDefeat = false;
+                break;
+            case BossHealth.BossName.Apothecary:
+                // 撃破後も残るため、非表示にしない
                 shouldHideAfterDefeat = false;
                 break;
         }
@@ -301,8 +306,14 @@ public class BossAfterDeath : MonoBehaviour
                 break;
 
             case BossHealth.BossName.DesertTempleBoss:
-                flagManager.SetBoolFlag(Chapter2TriggeredEvent.TempleBossDefeated,true);
+                flagManager.SetBoolFlag(Chapter2TriggeredEvent.TempleBossDefeated, true);
                 FungusHelper.ExecuteBlock(flowchart, "TempleBossDefeat");
+                break;
+
+            case BossHealth.BossName.Apothecary:
+                BGMManager.instance?.FadeOut(3.0f);
+                flagManager.SetBoolFlag(Chapter3TriggeredEvent.ApothecaryDefeated, true);
+                FungusHelper.ExecuteBlock(flowchart, "ApothecaryDefeat");
                 break;
 
             case BossHealth.BossName.None:

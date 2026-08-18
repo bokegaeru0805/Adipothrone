@@ -68,6 +68,13 @@ public class FlagConditionDrawerPro : PropertyDrawer
         EditorGUI.PropertyField(typeSwitchRect, conditionTypeProp, GUIContent.none);
 
         var currentConditionType = (FlagConditionPro.ConditionType)conditionTypeProp.enumValueIndex;
+        if (currentConditionType == FlagConditionPro.ConditionType.Door)
+        {
+            DrawDoorCondition(enumTypeRect, line2Rect, property);
+            EditorGUI.EndProperty();
+            return;
+        }
+
         var relevantEnumTypes =
             currentConditionType == FlagConditionPro.ConditionType.Bool
                 ? boolEnumTypes
@@ -162,5 +169,52 @@ public class FlagConditionDrawerPro : PropertyDrawer
         }
 
         EditorGUI.EndProperty();
+    }
+
+    private static void DrawDoorCondition(
+        Rect labelRect,
+        Rect valueRect,
+        SerializedProperty property
+    )
+    {
+        EditorGUI.LabelField(labelRect, "ドア解放状態");
+
+        var doorIdProp = property.FindPropertyRelative("doorId");
+        var requiredBoolValueProp = property.FindPropertyRelative("requiredBoolValue");
+        int[] doorIds = FlagManager.GetDoorConditionIds().ToArray();
+
+        var doorRect = new Rect(
+            valueRect.x,
+            valueRect.y,
+            valueRect.width * 0.5f - 2,
+            valueRect.height
+        );
+        var stateRect = new Rect(
+            doorRect.xMax + 5,
+            valueRect.y,
+            valueRect.width * 0.5f - 3,
+            valueRect.height
+        );
+
+        if (doorIds.Length == 0)
+        {
+            EditorGUI.LabelField(doorRect, "ドア条件がありません");
+        }
+        else
+        {
+            string[] doorLabels = doorIds.Select(id => $"Door {id}").ToArray();
+            int currentDoorIndex = Array.IndexOf(doorIds, doorIdProp.intValue);
+            if (currentDoorIndex == -1)
+                currentDoorIndex = 0;
+
+            int newDoorIndex = EditorGUI.Popup(doorRect, currentDoorIndex, doorLabels);
+            doorIdProp.intValue = doorIds[newDoorIndex];
+        }
+
+        requiredBoolValueProp.boolValue = EditorGUI.Popup(
+            stateRect,
+            requiredBoolValueProp.boolValue ? 0 : 1,
+            new[] { "解放済み", "未解放" }
+        ) == 0;
     }
 }

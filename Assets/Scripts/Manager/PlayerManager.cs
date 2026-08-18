@@ -902,25 +902,23 @@ public class PlayerManager : MonoBehaviour
 
     /// <summary>
     /// プレイヤーの物理挙動（移動・ジャンプなど）を有効/無効に切り替えます。
-    /// Rigidbody2DのisKinematicを操作して物理演算の影響を制御します。
+    /// Heroin_moveに物理状態の切り替えを委譲します。
     /// </summary>
     /// <param name="isActive">trueで有効化、falseで無効化</param>
     public void SetPlayerPhysicsActive(bool isActive)
     {
-        var rb = PlayerGameObject?.GetComponent<Rigidbody2D>();
-        if (rb != null)
+        Heroin_move targetHeroinMove = heroinMove;
+        if (targetHeroinMove == null)
+            targetHeroinMove = PlayerGameObject?.GetComponent<Heroin_move>();
+
+        if (targetHeroinMove == null)
         {
-            if (!isActive)
-            {
-                rb.isKinematic = true;
-                rb.velocity = Vector2.zero;
-            }
-            else
-            {
-                rb.isKinematic = false; // 必要なら元の状態を保存して復元するロジックにする
-                rb.velocity = Vector2.zero;
-            }
+            Debug.LogWarning("Heroin_moveが見つからないため、物理動作を切り替えられません。");
+            return;
         }
+
+        heroinMove = targetHeroinMove;
+        heroinMove.SetPhysicsActive(isActive);
     }
 
     /// <summary>

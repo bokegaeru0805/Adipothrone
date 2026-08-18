@@ -7,29 +7,29 @@ namespace Fungus
     // <summary>
     /// Get or Set a property of a Color component
     /// </summary>
-    [CommandInfo("Property",
-                 "Color",
-                 "Get or Set a property of a Color component")]
+    // [CommandInfo("Property",
+    //              "Color",
+    //              "Get or Set a property of a Color component")]
     [AddComponentMenu("")]
     public class ColorProperty : BaseVariableProperty
     {
-		//generated property
-        public enum Property 
-        { 
-            R, 
-            G, 
-            B, 
-            A, 
-            Grayscale, 
-            Linear, 
-            Gamma, 
-            MaxColorComponent, 
+        //generated property
+        public enum Property
+        {
+            R,
+            G,
+            B,
+            A,
+            Grayscale,
+            Linear,
+            Gamma,
+            MaxColorComponent,
         }
 
-		
+
         [SerializeField]
         protected Property property;
-		
+
         [SerializeField]
         [VariableProperty(typeof(ColorVariable))]
         protected ColorVariable colorVar;

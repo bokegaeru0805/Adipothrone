@@ -752,6 +752,7 @@ public class Chapter3BossMoveController : MonoBehaviour
     /// </summary>
     private IEnumerator ActionLoopSequence()
     {
+        // TODO : 攻撃パターンを決める
         while (true)
         {
             // 本来は確率で攻撃を分岐させるが、今回はMirageAssaultAttackで固定
@@ -783,7 +784,7 @@ public class Chapter3BossMoveController : MonoBehaviour
             else
             {
                 // Shoot攻撃（ShootAttack）の実行（今回は3発発射を指定）
-                yield return StartCoroutine(PerformShootAttack(3));
+                yield return StartCoroutine(PerformMirageAssault());
             }
 
             // 3. 待機状態（Idle）への移行

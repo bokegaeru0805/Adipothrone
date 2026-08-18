@@ -7,29 +7,29 @@ namespace Fungus
     // <summary>
     /// Get or Set a property of a Material component
     /// </summary>
-    [CommandInfo("Property",
-                 "Material",
-                 "Get or Set a property of a Material component")]
+    // [CommandInfo("Property",
+    //              "Material",
+    //              "Get or Set a property of a Material component")]
     [AddComponentMenu("")]
     public class MaterialProperty : BaseVariableProperty
     {
-		//generated property
-        public enum Property 
-        { 
-            Color, 
-            MainTexture, 
-            MainTextureOffset, 
-            MainTextureScale, 
-            RenderQueue, 
-            DoubleSidedGI, 
-            EnableInstancing, 
-            PassCount, 
+        //generated property
+        public enum Property
+        {
+            Color,
+            MainTexture,
+            MainTextureOffset,
+            MainTextureScale,
+            RenderQueue,
+            DoubleSidedGI,
+            EnableInstancing,
+            PassCount,
         }
 
-		
+
         [SerializeField]
         protected Property property;
-		
+
         [SerializeField]
         [VariableProperty(typeof(MaterialVariable))]
         protected MaterialVariable materialVar;

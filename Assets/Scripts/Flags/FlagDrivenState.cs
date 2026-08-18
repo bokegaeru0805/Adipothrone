@@ -45,6 +45,8 @@ public class FlagDrivenStatePro : MonoBehaviour
     private bool isSpriteChangePending = false;
     private Sprite pendingSprite;
     private bool pendingFlipX;
+    private bool isAnimationChangePending = false;
+    private StatePro pendingAnimationState;
     private bool isInitialStateApplied = false; // 初回状態適用が完了したかどうかのフラグ
     private StatePro lastAppliedState;
 
@@ -151,6 +153,15 @@ public class FlagDrivenStatePro : MonoBehaviour
             targetObject.transform.position = pendingPosition;
             isPositionChangePending = false; // 保留状態を解除
         }
+
+        // アニメーション変更が保留されている場合
+        if (isAnimationChangePending)
+        {
+            StatePro stateToApply = pendingAnimationState;
+            isAnimationChangePending = false;
+            pendingAnimationState = null;
+            ApplyAnimation(stateToApply);
+        }
     }
 
     // --- コアロジック ---
@@ -253,6 +264,22 @@ public class FlagDrivenStatePro : MonoBehaviour
         // 【アニメーションステートの再生】
         // changeAnimationフラグがtrueの場合のみ、アニメーション関連の処理を行う
         if (
+            hasSelectedStateChanged
+            && (
+                !state.changeAnimation
+                || (
+                    string.IsNullOrEmpty(state.animationTriggerName)
+                    && string.IsNullOrEmpty(state.animationStateName)
+                )
+            )
+        )
+        {
+            // 選択された最新Stateにアニメーション指定がなければ、古い保留を破棄する
+            isAnimationChangePending = false;
+            pendingAnimationState = null;
+        }
+
+        if (
             state.changeAnimation
             && hasSelectedStateChanged
             && (
@@ -261,89 +288,18 @@ public class FlagDrivenStatePro : MonoBehaviour
             )
         )
         {
-            if (targetAnimator == null)
+            // 遅延条件：delayフラグがtrue かつ 初回実行が完了している場合
+            if (state.delayAnimationUntilAreaExit && isInitialStateApplied)
             {
-                Debug.LogError(
-                    $"アニメーションを変更しようとしましたが、ターゲットオブジェクト '{targetObject.name}' にAnimatorコンポーネントがアタッチされていません。",
-                    targetObject
-                );
+                pendingAnimationState = state;
+                isAnimationChangePending = true;
             }
-            // Trigger Parameter名が指定されている場合は、ステート名より優先する
-            else if (!string.IsNullOrEmpty(state.animationTriggerName))
+            else
             {
-                AnimatorControllerParameter triggerParameter = null;
-                foreach (AnimatorControllerParameter parameter in targetAnimator.parameters)
-                {
-                    if (parameter.name == state.animationTriggerName)
-                    {
-                        triggerParameter = parameter;
-                        break;
-                    }
-                }
-
-                if (triggerParameter == null)
-                {
-                    Debug.LogError(
-                        $"Animator Controllerに '{state.animationTriggerName}' という名前のParameterが見つかりません。"
-                            + $"ターゲットオブジェクト '{targetObject.name}' のAnimator設定を確認してください。",
-                        targetObject
-                    );
-                }
-                else if (triggerParameter.type != AnimatorControllerParameterType.Trigger)
-                {
-                    Debug.LogError(
-                        $"Animator Parameter '{state.animationTriggerName}' はTrigger型ではありません。"
-                            + $"ターゲットオブジェクト '{targetObject.name}' のAnimator設定を確認してください。",
-                        targetObject
-                    );
-                }
-                else
-                {
-                    if (state.randomizeAnimationStart)
-                    {
-                        ApplyRandomAnimationCycleOffset(state);
-                    }
-
-                    int triggerHash = triggerParameter.nameHash;
-                    targetAnimator.ResetTrigger(triggerHash);
-                    targetAnimator.SetTrigger(triggerHash);
-                }
+                ApplyAnimation(state);
+                isAnimationChangePending = false;
+                pendingAnimationState = null;
             }
-            // Trigger Parameter名が未指定の場合は、従来どおりステートを直接再生する
-            else if (!string.IsNullOrEmpty(state.animationStateName))
-            {
-                // Animator.HasStateはパフォーマンスのために文字列ではなくハッシュ値で比較するため、文字列をハッシュ値に変換する
-                int stateHash = Animator.StringToHash(state.animationStateName);
-
-                // HasState(レイヤー番号, ステートのハッシュ値) で存在をチェック
-                if (targetAnimator.HasState(0, stateHash))
-                {
-                    // 全てのチェックを通過した場合：アニメーションを再生
-                    if (state.randomizeAnimationStart)
-                    {
-                        // 0.0(0%) から 1.0(100%) の間でランダムな開始時間を生成
-                        float randomNormalizedTime = UnityEngine.Random.Range(0f, 1f);
-
-                        // Play(ステートのハッシュ, レイヤー番号, 正規化された開始時間) を使って再生
-                        targetAnimator.Play(stateHash, 0, randomNormalizedTime);
-                    }
-                    else
-                    {
-                        // ランダム化しない場合は通常通り最初から再生
-                        targetAnimator.Play(stateHash); // 文字列よりハッシュで渡す方がわずかに高速です
-                    }
-                }
-                else
-                {
-                    // Animator内に指定された名前のステートが存在しない場合は、エラーを出す
-                    Debug.LogError(
-                        $"Animator Controllerに '{state.animationStateName}' という名前のアニメーションステートが見つかりません。"
-                            + $"ターゲットオブジェクト '{targetObject.name}' のAnimator設定を確認してください。",
-                        targetObject
-                    );
-                }
-            }
-            // Trigger Parameter名とanimationStateNameが空の場合は何もしない（これはエラーではない）
         }
 
         // // 【コライダーの状態】
@@ -367,6 +323,93 @@ public class FlagDrivenStatePro : MonoBehaviour
         // 最初の状態適用が完了したことを記録する
         isInitialStateApplied = true;
         lastAppliedState = state;
+    }
+
+    /// <summary>
+    /// StateProに設定されたTriggerまたはアニメーションステートを適用します。
+    /// </summary>
+    private void ApplyAnimation(StatePro state)
+    {
+        if (state == null || targetAnimator == null)
+        {
+            if (state != null && targetAnimator == null)
+            {
+                Debug.LogError(
+                    $"アニメーションを変更しようとしましたが、ターゲットオブジェクト '{targetObject.name}' にAnimatorコンポーネントがアタッチされていません。",
+                    targetObject
+                );
+            }
+            return;
+        }
+
+        // Trigger Parameter名が指定されている場合は、ステート名より優先する
+        if (!string.IsNullOrEmpty(state.animationTriggerName))
+        {
+            AnimatorControllerParameter triggerParameter = null;
+            foreach (AnimatorControllerParameter parameter in targetAnimator.parameters)
+            {
+                if (parameter.name == state.animationTriggerName)
+                {
+                    triggerParameter = parameter;
+                    break;
+                }
+            }
+
+            if (triggerParameter == null)
+            {
+                Debug.LogError(
+                    $"Animator Controllerに '{state.animationTriggerName}' という名前のParameterが見つかりません。"
+                        + $"ターゲットオブジェクト '{targetObject.name}' のAnimator設定を確認してください。",
+                    targetObject
+                );
+            }
+            else if (triggerParameter.type != AnimatorControllerParameterType.Trigger)
+            {
+                Debug.LogError(
+                    $"Animator Parameter '{state.animationTriggerName}' はTrigger型ではありません。"
+                        + $"ターゲットオブジェクト '{targetObject.name}' のAnimator設定を確認してください。",
+                    targetObject
+                );
+            }
+            else
+            {
+                if (state.randomizeAnimationStart)
+                {
+                    ApplyRandomAnimationCycleOffset(state);
+                }
+
+                int triggerHash = triggerParameter.nameHash;
+                targetAnimator.ResetTrigger(triggerHash);
+                targetAnimator.SetTrigger(triggerHash);
+            }
+            return;
+        }
+
+        // Trigger Parameter名が未指定の場合は、従来どおりステートを直接再生する
+        if (string.IsNullOrEmpty(state.animationStateName))
+            return;
+
+        int stateHash = Animator.StringToHash(state.animationStateName);
+        if (targetAnimator.HasState(0, stateHash))
+        {
+            if (state.randomizeAnimationStart)
+            {
+                float randomNormalizedTime = UnityEngine.Random.Range(0f, 1f);
+                targetAnimator.Play(stateHash, 0, randomNormalizedTime);
+            }
+            else
+            {
+                targetAnimator.Play(stateHash);
+            }
+        }
+        else
+        {
+            Debug.LogError(
+                $"Animator Controllerに '{state.animationStateName}' という名前のアニメーションステートが見つかりません。"
+                    + $"ターゲットオブジェクト '{targetObject.name}' のAnimator設定を確認してください。",
+                targetObject
+            );
+        }
     }
 
     /// <summary>

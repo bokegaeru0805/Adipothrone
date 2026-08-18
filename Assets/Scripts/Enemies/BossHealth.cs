@@ -28,6 +28,7 @@ public class BossHealth : CharacterHealth
         DustDevilBoss = 40,
         DesertTempleBossSmoke = 50,
         DesertTempleBoss = 60,
+        Apothecary = 70,
     }
 
     /// <summary>

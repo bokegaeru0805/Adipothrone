@@ -90,6 +90,8 @@ public class Heroin_move : MonoBehaviour
     private bool wasGroundedLastFrame = true; //前のフレームで接地していたかどうかのフラグ
     private bool jumpRequested = false;
     private bool isDead = false; // プレイヤーが死亡しているかどうかのマスターフラグ
+    private bool isPhysicsActive = true; // 外部から物理動作を有効化されているかどうか
+    private RigidbodyType2D bodyTypeBeforePhysicsDisabled = RigidbodyType2D.Dynamic;
     private Vector2 currentCarrierVelocity = Vector2.zero; // 現在のリフト速度
     private bool isOnCarrier = false; // リフトに乗っているかどうかのフラグ
     private float currentHorizontalVelocity = 0f; // 現在の自力移動速度（滑る床の慣性計算用）
@@ -146,8 +148,8 @@ public class Heroin_move : MonoBehaviour
         // 初期化
         vx = 0;
 
-        // ポーズ中、会話中、死亡中は入力を受け付けない
-        if (Time.timeScale > 0f && !gameManager.IsTalking && !isDead)
+        // ポーズ中、会話中、死亡中、物理停止中は入力を受け付けない
+        if (Time.timeScale > 0f && !gameManager.IsTalking && !isDead && isPhysicsActive)
         {
             HandleFirstKeyInput();
             HandleMovementInput();
@@ -164,7 +166,7 @@ public class Heroin_move : MonoBehaviour
         UpdateAnimatorParameters();
         UpdateRobotStatus();
 
-        if (Time.timeScale > 0f)
+        if (Time.timeScale > 0f && isPhysicsActive)
         {
             ApplyEnvironmentEffects();
             ApplyMovement();
@@ -461,6 +463,48 @@ public class Heroin_move : MonoBehaviour
     #endregion
 
     #region Physics Logic Methods (Called from FixedUpdate)
+
+    /// <summary>
+    /// プレイヤーの物理動作を有効・無効に切り替えます。
+    /// 無効化中はその場で停止し、有効化時は速度ゼロから物理動作を再開します。
+    /// </summary>
+    /// <param name="isActive">trueで有効化、falseで無効化</param>
+    public void SetPhysicsActive(bool isActive)
+    {
+        if (_rbody == null || isPhysicsActive == isActive)
+            return;
+
+        // 死亡状態の物理停止を外部操作で解除しない。
+        if (isActive && isDead)
+            return;
+
+        if (!isActive)
+        {
+            bodyTypeBeforePhysicsDisabled = _rbody.bodyType;
+            isPhysicsActive = false;
+
+            vx = 0f;
+            currentHorizontalVelocity = 0f;
+            currentCarrierVelocity = Vector2.zero;
+            isOnCarrier = false;
+            jumpRequested = false;
+
+            _rbody.velocity = Vector2.zero;
+            _rbody.angularVelocity = 0f;
+            _rbody.bodyType = RigidbodyType2D.Kinematic;
+            return;
+        }
+
+        _rbody.bodyType = bodyTypeBeforePhysicsDisabled;
+        _rbody.velocity = Vector2.zero;
+        _rbody.angularVelocity = 0f;
+        isPhysicsActive = true;
+
+        // 復帰直後の誤った着地判定・着地演出を防ぐ。
+        CheckGroundStatus();
+        wasGroundedLastFrame = isGrounded;
+        ApplyEnvironmentEffects();
+    }
 
     private void UpdateAnimatorParameters()
     {
@@ -825,10 +869,7 @@ public class Heroin_move : MonoBehaviour
         move = false;
 
         if (_rbody != null)
-        {
-            _rbody.velocity = Vector2.zero;
-            _rbody.isKinematic = true;
-        }
+            SetPhysicsActive(false);
 
         if (_animator != null)
             _animator.enabled = false;
@@ -846,7 +887,7 @@ public class Heroin_move : MonoBehaviour
         move = true;
 
         if (_rbody != null)
-            _rbody.isKinematic = false;
+            SetPhysicsActive(true);
         if (_animator != null)
             _animator.enabled = true;
         if (_spriteRenderer != null)

@@ -281,6 +281,9 @@ public class ApothecaryMoveController : MonoBehaviour
     [SerializeField, Tooltip("魔法陣の展開と本体のフェードインにかかる時間")]
     private float teleportInDuration = 0.5f;
 
+    [SerializeField, Tooltip("登場演出にかかる時間（秒）")]
+    private float appearanceDuration = 1.0f;
+
     [SerializeField, Tooltip("テレポートの移動先として選ばれる座標のリスト")]
     private List<Vector2> teleportPoints = new List<Vector2>();
 
@@ -328,6 +331,7 @@ public class ApothecaryMoveController : MonoBehaviour
 
     // コンポーネントおよび状態キャッシュ
     private Coroutine attackLoopCoroutine;
+    private Coroutine appearanceCoroutine;
     private Animator _animator;
     private Transform _playerTransform;
     private SpriteRenderer _bodySpriteRenderer;
@@ -367,12 +371,6 @@ public class ApothecaryMoveController : MonoBehaviour
             potionSpriteRenderer.gameObject.SetActive(false);
     }
 
-    private void Start()
-    {
-        // シーン開始時に自動でボスの状態をリセットし起動
-        ResetState();
-    }
-
     private void OnEnable()
     {
         // 自身がダメージを受けた際のイベントを購読
@@ -393,7 +391,21 @@ public class ApothecaryMoveController : MonoBehaviour
 
     private void OnDestroy()
     {
-        // 破棄時、実行中のTweenなどがあればキルする処理を記述します
+        StopAllCoroutines();
+        attackLoopCoroutine = null;
+        appearanceCoroutine = null;
+
+        transform.DOKill();
+        _bodySpriteRenderer?.DOKill();
+        lightCoreSpriteRenderer?.DOKill();
+
+        DestroyPoolObjects(fireBulletPool);
+        DestroyPoolObjects(windBulletPool);
+        DestroyPoolObjects(iciclePool);
+        DestroyPoolObjects(thunderPool);
+        DestroyPoolObjects(lightLaserPool);
+
+        _reservedIcicles.Clear();
     }
 
     private void FixedUpdate()
@@ -437,9 +449,9 @@ public class ApothecaryMoveController : MonoBehaviour
     #region --- 初期化・状態管理 ---
 
     /// <summary>
-    /// ボスの状態をリセットし、プールや周辺環境を取得した上で初期行動を開始します
+    /// プールや周辺環境を初期化した上で、ボスの登場演出と行動を開始します
     /// </summary>
-    public void ResetState()
+    public void StartAction()
     {
         // プレイヤーの取得
         if (_playerTransform == null)
@@ -484,8 +496,8 @@ public class ApothecaryMoveController : MonoBehaviour
         _icePlatforms.Clear();
         _icePlatforms.AddRange(colliders);
 
-        // 登場シーケンスの開始
-        StartCoroutine(IntroSequence());
+        // 攻撃ループを開始
+        StartAttackLoop();
     }
 
     /// <summary>
@@ -522,17 +534,78 @@ public class ApothecaryMoveController : MonoBehaviour
     #region --- メイン行動ループ ---
 
     /// <summary>
-    /// 登場時のシーケンス。モーション完了後にメインの攻撃ループへ移行します。
+    /// 指定時間をかけて登場演出を再生し、完了後にメインの攻撃ループへ移行します。
     /// </summary>
-    private IEnumerator IntroSequence()
+    /// <param name="duration">登場演出にかける時間（秒）</param>
+    public void PlayAppearance(float duration)
+    {
+        if (attackLoopCoroutine != null)
+        {
+            StopCoroutine(attackLoopCoroutine);
+            attackLoopCoroutine = null;
+        }
+
+        if (appearanceCoroutine != null)
+        {
+            StopCoroutine(appearanceCoroutine);
+        }
+
+        appearanceCoroutine = StartCoroutine(AppearanceSequence(Mathf.Max(0f, duration)));
+    }
+
+    /// <summary>
+    /// 本体をフェードインさせ、途中からテレポートエフェクトをフェードアウトします。
+    /// </summary>
+    private IEnumerator AppearanceSequence(float duration)
     {
         CurrentState = ApothecaryState.Intro;
 
-        // 登場時の移動やアニメーションの待機処理などをここに記述します
-        yield return null;
+        if (_bodySpriteRenderer != null)
+        {
+            _bodySpriteRenderer.DOKill();
+            Color bodyColor = _bodySpriteRenderer.color;
+            bodyColor.a = 0f;
+            _bodySpriteRenderer.color = bodyColor;
+            _bodySpriteRenderer.DOFade(1f, duration).SetEase(Ease.Linear);
+        }
 
-        // 登場完了後、攻撃ループを開始
-        StartAttackLoop();
+        float halfDuration = duration * 0.5f;
+        if (magicCircleController != null)
+        {
+            magicCircleController.ChangeAlpha(1f, 0f, 1f);
+            magicCircleController.ChangeScaleX(1f, 0f);
+            magicCircleController.ChangeScaleY(1f, halfDuration, 0f);
+        }
+
+        if (halfDuration > 0f)
+        {
+            yield return new WaitForSeconds(halfDuration);
+        }
+
+        if (magicCircleController != null)
+        {
+            magicCircleController.ChangeAlpha(0f, halfDuration, 1f);
+        }
+
+        if (halfDuration > 0f)
+        {
+            yield return new WaitForSeconds(halfDuration);
+        }
+
+        if (_bodySpriteRenderer != null)
+        {
+            Color bodyColor = _bodySpriteRenderer.color;
+            bodyColor.a = 1f;
+            _bodySpriteRenderer.color = bodyColor;
+        }
+
+        if (magicCircleController != null)
+        {
+            magicCircleController.ChangeAlpha(0f, 0f, 0f);
+            magicCircleController.ChangeScaleXY(Vector2.zero, 0f);
+        }
+
+        appearanceCoroutine = null;
     }
 
     /// <summary>
@@ -571,6 +644,23 @@ public class ApothecaryMoveController : MonoBehaviour
 
 
     #region --- オブジェクトプール管理 ---
+
+    /// <summary>
+    /// このコントローラーが生成・管理しているプール内のオブジェクトをすべて破棄します。
+    /// </summary>
+    private void DestroyPoolObjects<T>(List<T> pool)
+        where T : Component
+    {
+        foreach (T poolObject in pool)
+        {
+            if (poolObject != null)
+            {
+                Destroy(poolObject.gameObject);
+            }
+        }
+
+        pool.Clear();
+    }
 
     /// <summary>
     /// 弾やエフェクトをあらかじめ生成し、非アクティブ状態で保持しておくプールを初期化します。

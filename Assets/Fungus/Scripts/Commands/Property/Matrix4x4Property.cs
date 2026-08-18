@@ -7,43 +7,43 @@ namespace Fungus
     // <summary>
     /// Get or Set a property of a Matrix4x4 component
     /// </summary>
-    [CommandInfo("Property",
-                 "Matrix4x4",
-                 "Get or Set a property of a Matrix4x4 component")]
+    // [CommandInfo("Property",
+    //              "Matrix4x4",
+    //              "Get or Set a property of a Matrix4x4 component")]
     [AddComponentMenu("")]
     public class Matrix4x4Property : BaseVariableProperty
     {
-		//generated property
-        public enum Property 
-        { 
-            M00, 
-            M10, 
-            M20, 
-            M30, 
-            M01, 
-            M11, 
-            M21, 
-            M31, 
-            M02, 
-            M12, 
-            M22, 
-            M32, 
-            M03, 
-            M13, 
-            M23, 
-            M33, 
-            Inverse, 
-            Transpose, 
-            Rotation, 
-            LossyScale, 
-            IsIdentity, 
-            Determinant, 
+        //generated property
+        public enum Property
+        {
+            M00,
+            M10,
+            M20,
+            M30,
+            M01,
+            M11,
+            M21,
+            M31,
+            M02,
+            M12,
+            M22,
+            M32,
+            M03,
+            M13,
+            M23,
+            M33,
+            Inverse,
+            Transpose,
+            Rotation,
+            LossyScale,
+            IsIdentity,
+            Determinant,
         }
 
-		
+
         [SerializeField]
         protected Property property;
-		
+
         [SerializeField]
         protected Matrix4x4Data matrix4x4Data;
 

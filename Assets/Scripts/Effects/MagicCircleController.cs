@@ -312,11 +312,6 @@ public class MagicCircleController : MonoBehaviour
             }
 
             ps.SetParticles(aliveParticles, count);
-
-            Debug.Log(
-                $"Updated alpha for ParticleSystem '{ps.gameObject.name}' to {alpha} (alive particles: {count})",
-                ps.gameObject
-            );
         }
     }
 

@@ -7,28 +7,28 @@ namespace Fungus
     // <summary>
     /// Get or Set a property of a GameObject component
     /// </summary>
-    [CommandInfo("Property",
-                 "GameObject",
-                 "Get or Set a property of a GameObject component")]
+    // [CommandInfo("Property",
+    //              "GameObject",
+    //              "Get or Set a property of a GameObject component")]
     [AddComponentMenu("")]
     public class GameObjectProperty : BaseVariableProperty
     {
-		//generated property
-        public enum Property 
-        { 
-            Transform, 
-            Layer, 
-            ActiveSelf, 
-            ActiveInHierarchy, 
-            IsStatic, 
-            Tag, 
-            GameObject, 
+        //generated property
+        public enum Property
+        {
+            Transform,
+            Layer,
+            ActiveSelf,
+            ActiveInHierarchy,
+            IsStatic,
+            Tag,
+            GameObject,
         }
 
-		
+
         [SerializeField]
         protected Property property;
-		
+
         [SerializeField]
         [VariableProperty(typeof(GameObjectVariable))]
         protected GameObjectVariable gameObjectVar;

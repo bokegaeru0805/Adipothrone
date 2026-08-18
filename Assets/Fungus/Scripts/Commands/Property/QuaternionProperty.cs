@@ -7,27 +7,27 @@ namespace Fungus
     // <summary>
     /// Get or Set a property of a Quaternion component
     /// </summary>
-    [CommandInfo("Property",
-                 "Quaternion",
-                 "Get or Set a property of a Quaternion component")]
+    // [CommandInfo("Property",
+    //              "Quaternion",
+    //              "Get or Set a property of a Quaternion component")]
     [AddComponentMenu("")]
     public class QuaternionProperty : BaseVariableProperty
     {
-		//generated property
-        public enum Property 
-        { 
-            X, 
-            Y, 
-            Z, 
-            W, 
-            EulerAngles, 
-            Normalized, 
+        //generated property
+        public enum Property
+        {
+            X,
+            Y,
+            Z,
+            W,
+            EulerAngles,
+            Normalized,
         }
 
-		
+
         [SerializeField]
         protected Property property;
-		
+
         [SerializeField]
         protected QuaternionData quaternionData;
 

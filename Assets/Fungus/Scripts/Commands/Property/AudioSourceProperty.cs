@@ -7,45 +7,45 @@ namespace Fungus
     // <summary>
     /// Get or Set a property of a AudioSource component
     /// </summary>
-    [CommandInfo("Property",
-                 "AudioSource",
-                 "Get or Set a property of a AudioSource component")]
+    // [CommandInfo("Property",
+    //              "AudioSource",
+    //              "Get or Set a property of a AudioSource component")]
     [AddComponentMenu("")]
     public class AudioSourceProperty : BaseVariableProperty
     {
-		//generated property
-        public enum Property 
-        { 
-            Volume, 
-            Pitch, 
-            Time, 
-            TimeSamples, 
-            IsPlaying, 
-            IsVirtual, 
-            Loop, 
-            IgnoreListenerVolume, 
-            PlayOnAwake, 
-            IgnoreListenerPause, 
-            PanStereo, 
-            SpatialBlend, 
-            Spatialize, 
-            SpatializePostEffects, 
-            ReverbZoneMix, 
-            BypassEffects, 
-            BypassListenerEffects, 
-            BypassReverbZones, 
-            DopplerLevel, 
-            Spread, 
-            Priority, 
-            Mute, 
-            MinDistance, 
-            MaxDistance, 
+        //generated property
+        public enum Property
+        {
+            Volume,
+            Pitch,
+            Time,
+            TimeSamples,
+            IsPlaying,
+            IsVirtual,
+            Loop,
+            IgnoreListenerVolume,
+            PlayOnAwake,
+            IgnoreListenerPause,
+            PanStereo,
+            SpatialBlend,
+            Spatialize,
+            SpatializePostEffects,
+            ReverbZoneMix,
+            BypassEffects,
+            BypassListenerEffects,
+            BypassReverbZones,
+            DopplerLevel,
+            Spread,
+            Priority,
+            Mute,
+            MinDistance,
+            MaxDistance,
         }
 
-		
+
         [SerializeField]
         protected Property property;
-		
+
         [SerializeField]
         [VariableProperty(typeof(AudioSourceVariable))]
         protected AudioSourceVariable audioSourceVar;

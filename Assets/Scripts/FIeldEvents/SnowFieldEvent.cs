@@ -18,8 +18,15 @@ public class SnowFieldEvent : BaseFieldEvent
     {
         None = 0,
         EventField1 = 1, // 雪原のイベントフィールド1
-        VillageEntrance = 2, // 雪原の村入口
-        VillageHouse = 3, // 雪原の村の家
+        VillageEntrance = 6, // 雪原の村入口
+        VillageHouse = 11, // 雪原の村の家
+        VillageCenter = 16, // 雪原の村の中心
+        CaveEntrance = 21, // 雪原の洞窟入口
+        TowerGate = 26, // 雪原の塔の入り口
+        TowerEntrance = 31, // 雪原の塔の入り口
+        TowerLobby = 32, // 雪原の塔のロビー
+        TowerLanding1 = 36, // 雪原の塔の中間地点1
+        TowerHall = 41, // 雪原の塔のホール
     }
 
     #endregion
@@ -67,12 +74,70 @@ public class SnowFieldEvent : BaseFieldEvent
             case FieldName.VillageHouse:
                 if (!flagManager.GetBoolFlag(Chapter3TriggeredEvent.FirstTalkedToVillageChief))
                 {
-                    flagManager.SetBoolFlag(Chapter3TriggeredEvent.FirstTalkedToVillageChief, true);
+                    // フラグを立てるのはFlowchart内で行う
+                    // flagManager.SetBoolFlag(Chapter3TriggeredEvent.FirstTalkedToVillageChief, true);
                     FungusHelper.ExecuteBlock(targetFlowchart, "FirstTalkedToVillageChief");
+                }
+                break;
+            case FieldName.VillageCenter:
+                if (!flagManager.GetBoolFlag(Chapter3TriggeredEvent.FirstMetBoy))
+                {
+                    // フラグを立てるのはFlowchart内で行う
+                    // flagManager.SetBoolFlag(Chapter3TriggeredEvent.FirstMetBoy, true);
+                    FungusHelper.ExecuteBlock(targetFlowchart, "FirstMetBoy");
+                }
+                break;
+            case FieldName.CaveEntrance:
+                // 通過記録だけを保存する
+                if (!flagManager.GetBoolFlag(Chapter3TriggeredEvent.ReachedCaveEntrance))
+                {
+                    flagManager.SetBoolFlag(Chapter3TriggeredEvent.ReachedCaveEntrance, true);
+                }
+                break;
+            case FieldName.TowerGate:
+                // 通過記録だけを保存する
+                if (!flagManager.GetBoolFlag(Chapter3TriggeredEvent.ReachedTowerGate))
+                {
+                    flagManager.SetBoolFlag(Chapter3TriggeredEvent.ReachedTowerGate, true);
+                }
+                break;
+            case FieldName.TowerEntrance:
+                if (!flagManager.GetBoolFlag(Chapter3TriggeredEvent.ReachedTowerEntrance))
+                {
+                    flagManager.SetBoolFlag(Chapter3TriggeredEvent.ReachedTowerEntrance, true);
+                    FungusHelper.ExecuteBlock(targetFlowchart, "ReachedTowerEntrance");
+                }
+                break;
+            case FieldName.TowerLobby:
+                if (!flagManager.GetBoolFlag(Chapter3TriggeredEvent.ReachedTowerHallEntrance))
+                {
+                    flagManager.SetBoolFlag(Chapter3TriggeredEvent.ReachedTowerHallEntrance, true);
+                    FungusHelper.ExecuteBlock(targetFlowchart, "ReachedTowerHallEntrance");
+                }
+                break;
+            case FieldName.TowerLanding1:
+                // 通過記録だけを保存する
+                if (!flagManager.GetBoolFlag(Chapter3TriggeredEvent.ReachedTowerLanding1))
+                {
+                    flagManager.SetBoolFlag(Chapter3TriggeredEvent.ReachedTowerLanding1, true);
+                }
+                break;
+            case FieldName.TowerHall:
+                if(!flagManager.GetBoolFlag(Chapter3TriggeredEvent.ApothecaryDefeated))
+                {
+                    FungusHelper.ExecuteBlock(targetFlowchart, "ApothecaryAppear");
+                    isEventTriggered = true; // イベントがトリガーされたことを記録
                 }
                 break;
         }
     }
 
+    #endregion
+
+    #region TowerLobbyの鍵を開ける処理
+    public void UnlockTowerLobby()
+    {
+        flagManager.SetKeyOpened(KeyID.K12, true);
+    }
     #endregion
 }

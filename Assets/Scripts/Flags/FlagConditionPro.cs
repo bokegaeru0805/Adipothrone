@@ -14,8 +14,9 @@ public class FlagConditionPro
 {
     public enum ConditionType
     {
-        Bool,
-        Int,
+        Bool = 0,
+        Int = 1,
+        Door = 2,
     }
 
     public enum IntComparison
@@ -39,13 +40,18 @@ public class FlagConditionPro
     public IntComparison intComparison;
     public int requiredIntValue;
 
+    [Header("Door Condition")]
+    public int doorId;
+
     public bool IsMet()
     {
-        if (
-            FlagManager.instance == null
-            || string.IsNullOrEmpty(enumTypeName)
-            || string.IsNullOrEmpty(enumValueName)
-        )
+        if (FlagManager.instance == null)
+            return false;
+
+        if (conditionType == ConditionType.Door)
+            return FlagManager.instance.IsDoorUnlocked(doorId) == requiredBoolValue;
+
+        if (string.IsNullOrEmpty(enumTypeName) || string.IsNullOrEmpty(enumValueName))
             return false;
 
         try
@@ -100,6 +106,7 @@ public class StatePro
     public bool isActive = true;
 
     [Tooltip("Trueの場合、次にいずれかのエリアを出るまでアクティブ状態の変更を遅らせます。")]
+    [AllowNesting, ShowIf("changeActiveState")]
     public bool delayActiveStateUntilAreaExit = false;
 
     [Header("スプライト")]
@@ -112,6 +119,7 @@ public class StatePro
     public bool flipX = false;
 
     [Tooltip("Trueの場合、次にいずれかのエリアを出るまでスプライトの変更を遅らせます。")]
+    [AllowNesting, ShowIf("changeSprite")]
     public bool delaySpriteUntilAreaExit = false;
 
     [Header("位置")]
@@ -121,28 +129,33 @@ public class StatePro
     public Vector3 position;
 
     [Tooltip("Trueの場合、次にいずれかのエリアを出るまで位置の変更を遅らせます。")]
+    [AllowNesting, ShowIf("changePosition")]
     public bool delayPositionUntilAreaExit = false;
 
     [Header("アニメーション")]
     [Tooltip("アニメーションの状態を変更するかどうか")]
     public bool changeAnimation = false;
 
+    [Tooltip("Trueの場合、次にいずれかのエリアを出るまでアニメーションの変更を遅らせます。")]
+    [AllowNesting, ShowIf("changeAnimation")]
+    public bool delayAnimationUntilAreaExit = false;
+
     [Tooltip(
         "発火させるTrigger Parameter名。設定されている場合はアニメーションステート名より優先されます。"
     )]
-    [AllowNesting, EnableIf("ShowAnimationTriggerName")]
+    [AllowNesting, EnableIf("ShowAnimationTriggerName"), ShowIf("changeAnimation")]
     public string animationTriggerName;
 
     [Tooltip(
         "直接再生したいアニメーションステートの名前（Animator Controller内のステート名と完全に一致させる）。Trigger Parameter名が未設定の場合に使用されます。"
     )]
-    [AllowNesting, EnableIf("ShowAnimationStateSettings")]
+    [AllowNesting, EnableIf("ShowAnimationStateSettings"), ShowIf("changeAnimation")]
     public string animationStateName;
 
     [Tooltip(
         "Trueの場合、アニメーションの再生開始位置（0%〜100%）をランダムにずらし、複数オブジェクトの動きが完全に同期するのを防ぎます。Trigger使用時は遷移先State側のCycle Offset Parameter設定が必要です。"
     )]
-    [AllowNesting, EnableIf("changeAnimation")]
+    [AllowNesting, EnableIf("changeAnimation"), ShowIf("changeAnimation")]
     public bool randomizeAnimationStart = false;
 
     [InfoBox(
