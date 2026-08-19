@@ -12,8 +12,8 @@ using UnityEditorInternal;
 [CustomEditor(typeof(FlagAction))]
 public class FlagActionEditor : Editor
 {
-    private static readonly List<Type> boolEnumTypes = new List<Type> { typeof(PrologueTriggeredEvent), typeof(Chapter1TriggeredEvent), typeof(TutorialEvent) };
-    private static readonly List<Type> intEnumTypes = new List<Type> { typeof(PrologueCountedEvent), typeof(Chapter1CountedEvent) };
+    private static readonly List<Type> boolEnumTypes = new List<Type> { typeof(PrologueTriggeredEvent), typeof(Chapter1TriggeredEvent), typeof(Chapter2TriggeredEvent), typeof(Chapter3TriggeredEvent), typeof(TutorialEvent) };
+    private static readonly List<Type> intEnumTypes = new List<Type> { typeof(PrologueCountedEvent), typeof(Chapter1CountedEvent), typeof(Chapter2CountedEvent), typeof(Chapter3CountedEvent) };
     private static Dictionary<string, string[]> valueNamesCache = new Dictionary<string, string[]>();
 
     private SerializedProperty operationsProp;
@@ -45,7 +45,7 @@ public class FlagActionEditor : Editor
                 // --- 1行目: [操作タイプ] [Enum型] ---
                 var opTypeRect = new Rect(line1Rect.x, line1Rect.y, 80, line1Rect.height);
                 var enumTypeRect = new Rect(opTypeRect.xMax + 5, line1Rect.y, line1Rect.width - 85, line1Rect.height);
-                
+
                 EditorGUI.BeginChangeCheck();
                 EditorGUI.PropertyField(opTypeRect, opTypeProp, GUIContent.none);
                 if (EditorGUI.EndChangeCheck())
@@ -53,7 +53,7 @@ public class FlagActionEditor : Editor
                     enumTypeNameProp.stringValue = null;
                     enumValueNameProp.stringValue = null;
                 }
-                
+
                 var currentOpType = (FlagOperation.OperationType)opTypeProp.enumValueIndex;
                 var relevantEnumTypes = currentOpType == FlagOperation.OperationType.SetBool ? boolEnumTypes : intEnumTypes;
                 var displayTypeNames = relevantEnumTypes.Select(t => t.Name).ToArray();
@@ -61,7 +61,7 @@ public class FlagActionEditor : Editor
 
                 int currentTypeIndex = Array.IndexOf(fullTypeNames, enumTypeNameProp.stringValue);
                 if (currentTypeIndex == -1) currentTypeIndex = 0;
-                
+
                 if (fullTypeNames.Length > 0)
                 {
                     int newTypeIndex = EditorGUI.Popup(enumTypeRect, currentTypeIndex, displayTypeNames);
@@ -82,10 +82,10 @@ public class FlagActionEditor : Editor
                     if (enumType != null) { valueNamesCache[selectedTypeName] = Enum.GetNames(enumType); }
                 }
                 string[] valueNames = valueNamesCache.GetValueOrDefault(selectedTypeName, Array.Empty<string>());
-                
+
                 int currentValueIndex = Array.IndexOf(valueNames, enumValueNameProp.stringValue);
                 if (currentValueIndex == -1) currentValueIndex = 0;
-                
+
                 if (valueNames.Length > 0)
                 {
                     int newValueIndex = EditorGUI.Popup(line2Rect, currentValueIndex, valueNames);

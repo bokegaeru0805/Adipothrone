@@ -135,8 +135,9 @@ public class FadeCommand : Command
 
     public override string GetSummary()
     {
-        string colorName = (colorType == FadeClip.FadeColorType.Black) ? "Black" : "White";
-        return $"{colorName} -> {targetAlpha} ({duration}s)";
+        string colorName = (colorType == FadeClip.FadeColorType.Black) ? "黒" : "白";
+        int alphaPercent = Mathf.RoundToInt(targetAlpha * 100f);
+        return $"{colorName}：覆い {alphaPercent}% / {duration:0.##}秒";
     }
 
     public override Color GetButtonColor()

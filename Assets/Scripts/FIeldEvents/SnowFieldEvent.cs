@@ -27,6 +27,7 @@ public class SnowFieldEvent : BaseFieldEvent
         TowerLobby = 32, // 雪原の塔のロビー
         TowerLanding1 = 36, // 雪原の塔の中間地点1
         TowerHall = 41, // 雪原の塔のホール
+        Under2Field = 46, // 地下施設2
     }
 
     #endregion
@@ -123,9 +124,17 @@ public class SnowFieldEvent : BaseFieldEvent
                 }
                 break;
             case FieldName.TowerHall:
-                if(!flagManager.GetBoolFlag(Chapter3TriggeredEvent.ApothecaryDefeated))
+                if (!flagManager.GetBoolFlag(Chapter3TriggeredEvent.ApothecaryDefeated))
                 {
                     FungusHelper.ExecuteBlock(targetFlowchart, "ApothecaryAppear");
+                    isEventTriggered = true; // イベントがトリガーされたことを記録
+                }
+                break;
+            case FieldName.Under2Field:
+                if (!flagManager.GetBoolFlag(Chapter3TriggeredEvent.FirstEnteredUnder2Field))
+                {
+                    flagManager.SetBoolFlag(Chapter3TriggeredEvent.FirstEnteredUnder2Field, true);
+                    FungusHelper.ExecuteBlock(targetFlowchart, "FirstEnteredUnder2Field");
                     isEventTriggered = true; // イベントがトリガーされたことを記録
                 }
                 break;

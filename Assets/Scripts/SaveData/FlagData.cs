@@ -221,6 +221,23 @@ public enum Chapter3TriggeredEvent
     ApothecaryDefeated = 3045, // 薬屋のボスを倒した
     ApothecaryQuestComplete = 3050, // 薬屋のクエストを完了した
     FellUnderground = 3053, // 地下に落ちた
+    UnderPrison1Food1Eaten = 3056, // 地下牢1で食べ物1を食べた
+    UnderPrison1Food2Eaten = 3057, // 地下牢1で食べ物2を食べた
+    UnderPrison1Food3Eaten = 3058, // 地下牢1で食べ物3を食べた
+    UnderPrison1EventComplete = 3059, // 地下牢1のイベントを完了した
+    UnderPrison2Food1Eaten = 3061, // 地下牢2で食べ物1を食べた
+    UnderPrison2Food2Eaten = 3062, // 地下牢2で食べ物2を食べた
+    UnderPrison2Food3Eaten = 3063, // 地下牢2で食べ物3を食べた
+    UnderPrison2EventComplete = 3064, // 地下牢2のイベントを完了した
+    UnderPrison3Food1Eaten = 3066, // 地下牢3で食べ物1を食べた
+    UnderPrison3Food2Eaten = 3067, // 地下牢3で食べ物2を食べた
+    UnderPrison3Food3Eaten = 3068, // 地下牢3で食べ物3を食べた
+    UnderPrison3EventComplete = 3069, // 地下牢3のイベントを完了した
+    FirstEnteredUnder2Field = 3072, // 初めて地下施設2に入った
+    Under2FieldComplete = 3075, // 地下施設2のイベントを完了した
+    Under3FieldComplete = 3088, // 地下施設3のイベントを完了した
+    Under4FieldComplete = 3091, // 地下施設4のイベントを完了した
+    ApothecaryCaptured = 3094, // 薬屋が捕まった
 }
 
 /// <summary>

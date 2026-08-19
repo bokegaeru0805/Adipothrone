@@ -226,17 +226,14 @@ public class FlagDrivenStatePro : MonoBehaviour
             // 遅延条件
             if (state.delaySpriteUntilAreaExit && isInitialStateApplied)
             {
-                pendingSprite = state.sprite;
+                pendingSprite = state?.sprite;
                 pendingFlipX = state.flipX;
                 isSpriteChangePending = true;
             }
             else
             {
                 // 即時実行
-                if (state.sprite != null)
-                {
-                    targetSpriteRenderer.sprite = state.sprite;
-                }
+                targetSpriteRenderer.sprite = state?.sprite;
                 targetSpriteRenderer.flipX = state.flipX;
                 isSpriteChangePending = false; // 保留キャンセル
             }
