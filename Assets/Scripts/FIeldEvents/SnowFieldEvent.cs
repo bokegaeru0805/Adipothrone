@@ -18,9 +18,11 @@ public class SnowFieldEvent : BaseFieldEvent
     {
         None = 0,
         EventField1 = 1, // 雪原のイベントフィールド1
+        LeftBridgeField = 3, // 雪原の橋の左側のフィールド
         VillageEntrance = 6, // 雪原の村入口
         VillageHouse = 11, // 雪原の村の家
         VillageCenter = 16, // 雪原の村の中心
+        MountainEntrance = 19, // 雪原の山入口
         CaveEntrance = 21, // 雪原の洞窟入口
         TowerGate = 26, // 雪原の塔の入り口
         TowerEntrance = 31, // 雪原の塔の入り口
@@ -28,6 +30,7 @@ public class SnowFieldEvent : BaseFieldEvent
         TowerLanding1 = 36, // 雪原の塔の中間地点1
         TowerHall = 41, // 雪原の塔のホール
         Under2Field = 46, // 地下施設2
+        UnderExit = 51, // 地下施設の出口
     }
 
     #endregion
@@ -65,6 +68,21 @@ public class SnowFieldEvent : BaseFieldEvent
                 FungusHelper.ExecuteBlock(targetFlowchart, "HeadToSnowCountry");
                 isEventTriggered = true; // イベントがトリガーされたことを記録
                 break;
+            case FieldName.LeftBridgeField:
+                if (
+                    !flagManager.GetBoolFlag(
+                        Chapter3TriggeredEvent.TalkedToCoachmanAboutVillageChange
+                    )
+                )
+                {
+                    flagManager.SetBoolFlag(
+                        Chapter3TriggeredEvent.TalkedToCoachmanAboutVillageChange,
+                        true
+                    );
+                    FungusHelper.ExecuteBlock(targetFlowchart, "TalkToCoachmanAboutVillageChange");
+                    isEventTriggered = true; // イベントがトリガーされたことを記録
+                }
+                break;
             case FieldName.VillageEntrance:
                 if (!flagManager.GetBoolFlag(Chapter3TriggeredEvent.FirstEnteredSnowVillage))
                 {
@@ -79,6 +97,11 @@ public class SnowFieldEvent : BaseFieldEvent
                     // flagManager.SetBoolFlag(Chapter3TriggeredEvent.FirstTalkedToVillageChief, true);
                     FungusHelper.ExecuteBlock(targetFlowchart, "FirstTalkedToVillageChief");
                 }
+                else if (!flagManager.GetBoolFlag(Chapter3TriggeredEvent.WitnessedVillageChange))
+                {
+                    flagManager.SetBoolFlag(Chapter3TriggeredEvent.WitnessedVillageChange, true);
+                    FungusHelper.ExecuteBlock(targetFlowchart, "WitnessedVillageChange");
+                }
                 break;
             case FieldName.VillageCenter:
                 if (!flagManager.GetBoolFlag(Chapter3TriggeredEvent.FirstMetBoy))
@@ -86,6 +109,17 @@ public class SnowFieldEvent : BaseFieldEvent
                     // フラグを立てるのはFlowchart内で行う
                     // flagManager.SetBoolFlag(Chapter3TriggeredEvent.FirstMetBoy, true);
                     FungusHelper.ExecuteBlock(targetFlowchart, "FirstMetBoy");
+                }
+                break;
+            case FieldName.MountainEntrance:
+                if (
+                    flagManager.GetBoolFlag(Chapter3TriggeredEvent.HeroineCapturedByVillagers)
+                    && !flagManager.GetBoolFlag(Chapter3TriggeredEvent.ReunitedWithRobot)
+                )
+                {
+                    flagManager.SetBoolFlag(Chapter3TriggeredEvent.ReunitedWithRobot, true);
+                    FungusHelper.ExecuteBlock(targetFlowchart, "ReunitedWithRobot");
+                    isEventTriggered = true; // イベントがトリガーされたことを記
                 }
                 break;
             case FieldName.CaveEntrance:
@@ -135,6 +169,17 @@ public class SnowFieldEvent : BaseFieldEvent
                 {
                     flagManager.SetBoolFlag(Chapter3TriggeredEvent.FirstEnteredUnder2Field, true);
                     FungusHelper.ExecuteBlock(targetFlowchart, "FirstEnteredUnder2Field");
+                    isEventTriggered = true; // イベントがトリガーされたことを記録
+                }
+                break;
+            case FieldName.UnderExit:
+                if (
+                    flagManager.GetBoolFlag(Chapter3TriggeredEvent.Under4FieldComplete)
+                    && !flagManager.GetBoolFlag(Chapter3TriggeredEvent.ApothecaryCaptured)
+                )
+                {
+                    flagManager.SetBoolFlag(Chapter3TriggeredEvent.ApothecaryCaptured, true);
+                    FungusHelper.ExecuteBlock(targetFlowchart, "ReachedUnderExit");
                     isEventTriggered = true; // イベントがトリガーされたことを記録
                 }
                 break;

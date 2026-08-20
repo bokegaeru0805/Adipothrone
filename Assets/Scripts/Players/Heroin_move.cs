@@ -645,7 +645,18 @@ public class Heroin_move : MonoBehaviour
             return;
 
         jumpRequested = false;
-        jumpForce = Mathf.Sqrt(2 * gravity * jumpHeight);
+
+        float finalJumpHeightMultiplier = 1.0f;
+        for (int i = 0; i < activeEnvironments.Count; i++)
+        {
+            if (activeEnvironments[i] != null)
+            {
+                finalJumpHeightMultiplier *= activeEnvironments[i].JumpHeightMultiplier;
+            }
+        }
+
+        float finalJumpHeight = jumpHeight * finalJumpHeightMultiplier;
+        jumpForce = Mathf.Sqrt(2 * gravity * finalJumpHeight);
         _rbody.velocity = new Vector2(_rbody.velocity.x, jumpForce);
 
         // 体型に応じたジャンプアニメーション

@@ -1,3 +1,6 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
 using UnityEditor;
 using UnityEngine;
 
@@ -13,6 +16,51 @@ public class MyGameSettingsProvider : SettingsProvider
 
     // ギズモ表示設定用の一括管理キー
     private const string GIZMO_VISIBILITY_KEY = "MyGame_ShowCustomGizmos";
+
+    private const string DEFAULT_BOOL_FLAG_TYPE_KEY = "MyGame_DefaultBoolFlagType";
+    private const string DEFAULT_INT_FLAG_TYPE_KEY = "MyGame_DefaultIntFlagType";
+    private const string DEFAULT_BOOL_FLAG_VALUE_KEY = "MyGame_DefaultBoolFlagValue";
+
+    //【重要】新しいEnumフラグを追加したら、対応するリストに追記してください
+    public static readonly IReadOnlyList<Type> BoolFlagEnumTypes = new List<Type>
+    {
+        typeof(TutorialEvent),
+        typeof(PrologueTriggeredEvent),
+        typeof(Chapter1TriggeredEvent),
+        typeof(Chapter2TriggeredEvent),
+        typeof(Chapter3TriggeredEvent),
+    };
+
+    public static readonly IReadOnlyList<Type> IntFlagEnumTypes = new List<Type>
+    {
+        typeof(PrologueCountedEvent),
+        typeof(Chapter1CountedEvent),
+        typeof(Chapter2CountedEvent),
+        typeof(Chapter3CountedEvent),
+    };
+
+    public static Type GetDefaultBoolFlagEnumType()
+    {
+        return GetDefaultFlagEnumType(
+            DEFAULT_BOOL_FLAG_TYPE_KEY,
+            BoolFlagEnumTypes,
+            typeof(Chapter3TriggeredEvent)
+        );
+    }
+
+    public static Type GetDefaultIntFlagEnumType()
+    {
+        return GetDefaultFlagEnumType(
+            DEFAULT_INT_FLAG_TYPE_KEY,
+            IntFlagEnumTypes,
+            typeof(Chapter3CountedEvent)
+        );
+    }
+
+    public static bool GetDefaultBoolFlagValue()
+    {
+        return EditorPrefs.GetBool(DEFAULT_BOOL_FLAG_VALUE_KEY, true);
+    }
 
     // コンストラクタ
     public MyGameSettingsProvider(string path, SettingsScope scope)
@@ -34,6 +82,10 @@ public class MyGameSettingsProvider : SettingsProvider
             "Play",
             "MyGame",
             "Gizmo",
+            "Flag",
+            "Bool",
+            "Int",
+            "Default",
         };
         return provider;
     }
@@ -87,7 +139,71 @@ public class MyGameSettingsProvider : SettingsProvider
             SceneView.RepaintAll();
         }
 
+        // --- 4. FlagConditionProの新規追加時設定 ---
+        EditorGUILayout.Space();
+        GUILayout.Label("フラグ条件設定 (Flag Condition Settings)", EditorStyles.boldLabel);
+        EditorGUILayout.Space();
+
+        DrawDefaultFlagTypePopup(
+            "Default Bool Flag Type",
+            DEFAULT_BOOL_FLAG_TYPE_KEY,
+            BoolFlagEnumTypes,
+            typeof(Chapter3TriggeredEvent)
+        );
+        DrawDefaultFlagTypePopup(
+            "Default Int Flag Type",
+            DEFAULT_INT_FLAG_TYPE_KEY,
+            IntFlagEnumTypes,
+            typeof(Chapter3CountedEvent)
+        );
+
+        bool currentDefaultBoolValue = GetDefaultBoolFlagValue();
+        EditorGUI.BeginChangeCheck();
+        bool newDefaultBoolValue = EditorGUILayout.Toggle(
+            "Default Bool Value",
+            currentDefaultBoolValue
+        );
+        if (EditorGUI.EndChangeCheck())
+        {
+            EditorPrefs.SetBool(DEFAULT_BOOL_FLAG_VALUE_KEY, newDefaultBoolValue);
+        }
+
+        EditorGUILayout.HelpBox(
+            "FlagConditionProを新しく追加したときだけ適用されます。既存の条件値は変更されません。",
+            MessageType.Info
+        );
+
         EditorGUI.indentLevel--;
+    }
+
+    private static void DrawDefaultFlagTypePopup(
+        string label,
+        string prefsKey,
+        IReadOnlyList<Type> enumTypes,
+        Type fallbackType
+    )
+    {
+        string[] displayNames = enumTypes.Select(type => type.Name).ToArray();
+        Type currentType = GetDefaultFlagEnumType(prefsKey, enumTypes, fallbackType);
+        int currentIndex = Math.Max(0, Array.IndexOf(enumTypes.ToArray(), currentType));
+
+        EditorGUI.BeginChangeCheck();
+        int newIndex = EditorGUILayout.Popup(label, currentIndex, displayNames);
+        if (EditorGUI.EndChangeCheck() && newIndex >= 0 && newIndex < enumTypes.Count)
+        {
+            EditorPrefs.SetString(prefsKey, enumTypes[newIndex].AssemblyQualifiedName);
+        }
+    }
+
+    private static Type GetDefaultFlagEnumType(
+        string prefsKey,
+        IReadOnlyList<Type> enumTypes,
+        Type fallbackType
+    )
+    {
+        string savedTypeName = EditorPrefs.GetString(prefsKey, fallbackType.AssemblyQualifiedName);
+        Type savedType = Type.GetType(savedTypeName);
+        return savedType != null && enumTypes.Contains(savedType) ? savedType : fallbackType;
     }
 
     // =====================================================================
@@ -110,7 +226,7 @@ public class MyGameSettingsProvider : SettingsProvider
         if (windowType != null)
         {
             // 既に開いているProject Settingsウィンドウが存在するか検索
-            Object[] openWindows = Resources.FindObjectsOfTypeAll(windowType);
+            UnityEngine.Object[] openWindows = Resources.FindObjectsOfTypeAll(windowType);
 
             // ウィンドウが見つかった場合は閉じて処理を終了する
             if (openWindows.Length > 0 && openWindows[0] is EditorWindow window)

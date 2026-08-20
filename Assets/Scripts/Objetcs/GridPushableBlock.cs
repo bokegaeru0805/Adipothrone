@@ -18,6 +18,15 @@ public class GridPushableBlock : MonoBehaviour, IEnemyResettable
     [Tooltip("1マスの移動にかかる時間（秒）")]
     private float _moveDuration = 0.4f;
 
+    [SerializeField]
+    [Tooltip("X方向グリッドの基準座標。0.5なら0.5, 1.5...、0なら0, 1, 2...に揃います")]
+    private float _gridOriginOffsetX = 0.5f;
+
+    [SerializeField]
+    [Min(0.01f)]
+    [Tooltip("X方向の1マスの幅")]
+    private float _gridCellSize = 1.0f;
+
     [Header("リセット設定")]
     [SerializeField]
     [Tooltip("リセット機能（初期位置への復帰）を有効にするかどうか")]
@@ -246,7 +255,7 @@ public class GridPushableBlock : MonoBehaviour, IEnemyResettable
 
         // 自身のコライダーの形状をそのまま進行方向へ1マス分キャストする
         Vector2 castDirection = new Vector2(directionX, 0f);
-        float distance = 1.0f;
+        float distance = GetGridCellSize();
         int hitCount = _collider.Cast(castDirection, _contactFilter, _hitBuffer, distance);
 
         for (int i = 0; i < hitCount; i++)
@@ -303,8 +312,12 @@ public class GridPushableBlock : MonoBehaviour, IEnemyResettable
     {
         _isMoving = true;
 
-        float baseX = Mathf.Round(transform.position.x - 0.5f) + 0.5f;
-        float targetX = baseX + directionX;
+        float gridCellSize = GetGridCellSize();
+        float baseX =
+            Mathf.Round((transform.position.x - _gridOriginOffsetX) / gridCellSize)
+                * gridCellSize
+            + _gridOriginOffsetX;
+        float targetX = baseX + directionX * gridCellSize;
 
         _rigidbody.constraints =
             RigidbodyConstraints2D.FreezeRotation | RigidbodyConstraints2D.FreezePositionY;
@@ -326,6 +339,14 @@ public class GridPushableBlock : MonoBehaviour, IEnemyResettable
 
                 _isMoving = false;
             });
+    }
+
+    /// <summary>
+    /// Inspector外から不正な値が設定された場合も、グリッド幅が0以下にならないよう保証します。
+    /// </summary>
+    private float GetGridCellSize()
+    {
+        return Mathf.Max(0.01f, _gridCellSize);
     }
 
     #endregion

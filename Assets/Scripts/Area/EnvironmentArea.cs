@@ -17,6 +17,10 @@ public class EnvironmentArea : MonoBehaviour
     [Range(0.0f, 5.0f)]
     public float GravityMultiplier = 1.0f;
 
+    [Tooltip("エリア内でのジャンプ到達高度倍率 (1.0 = 通常, 1.5 = 1.5倍の高さ)")]
+    [Min(0.0f)]
+    public float JumpHeightMultiplier = 1.0f;
+
     [Header("風・外力設定")]
     [Tooltip("風の強さと方向。\n(X=0, Y=0)なら無風。\n(X=-1, Y=0)なら左向きの風（抵抗）。")]
     public Vector2 WindVelocity = Vector2.zero;

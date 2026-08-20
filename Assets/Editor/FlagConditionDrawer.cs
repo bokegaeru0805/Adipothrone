@@ -7,22 +7,8 @@ using UnityEngine;
 [CustomPropertyDrawer(typeof(FlagConditionPro))]
 public class FlagConditionDrawerPro : PropertyDrawer
 {
-    //【重要】新しいEnumフラグを追加したら、このリストに追記してください
-    private static readonly List<Type> boolEnumTypes = new List<Type>
-    {
-        typeof(TutorialEvent),
-        typeof(PrologueTriggeredEvent),
-        typeof(Chapter1TriggeredEvent),
-        typeof(Chapter2TriggeredEvent),
-        typeof(Chapter3TriggeredEvent),
-    };
-    private static readonly List<Type> intEnumTypes = new List<Type>
-    {
-        typeof(PrologueCountedEvent),
-        typeof(Chapter1CountedEvent),
-        typeof(Chapter2CountedEvent),
-        typeof(Chapter3CountedEvent),
-    };
+    private static readonly Dictionary<string, int> arraySizeCache =
+        new Dictionary<string, int>();
 
     // パフォーマンス向上のためのキャッシュ
     private static Dictionary<string, string[]> valueNamesCache =
@@ -38,9 +24,21 @@ public class FlagConditionDrawerPro : PropertyDrawer
     {
         EditorGUI.BeginProperty(position, label, property);
 
+        InitializeNewArrayElements(property);
+
         var conditionTypeProp = property.FindPropertyRelative("conditionType");
         var enumTypeNameProp = property.FindPropertyRelative("enumTypeName");
         var enumValueNameProp = property.FindPropertyRelative("enumValueName");
+
+        // 空のListへ最初に追加した要素はサイズ比較で検出できないため、
+        // Enum型がまだ設定されていない新規要素をここで初期化する。
+        if (
+            conditionTypeProp.enumValueIndex == (int)FlagConditionPro.ConditionType.Bool
+            && string.IsNullOrEmpty(enumTypeNameProp.stringValue)
+        )
+        {
+            InitializeCondition(property);
+        }
 
         // --- レイアウトを計算 (2行に分割) ---
         var line1Rect = new Rect(
@@ -65,7 +63,9 @@ public class FlagConditionDrawerPro : PropertyDrawer
             line1Rect.height
         );
 
+        EditorGUI.BeginChangeCheck();
         EditorGUI.PropertyField(typeSwitchRect, conditionTypeProp, GUIContent.none);
+        bool conditionTypeChanged = EditorGUI.EndChangeCheck();
 
         var currentConditionType = (FlagConditionPro.ConditionType)conditionTypeProp.enumValueIndex;
         if (currentConditionType == FlagConditionPro.ConditionType.Door)
@@ -77,14 +77,24 @@ public class FlagConditionDrawerPro : PropertyDrawer
 
         var relevantEnumTypes =
             currentConditionType == FlagConditionPro.ConditionType.Bool
-                ? boolEnumTypes
-                : intEnumTypes;
+                ? MyGameSettingsProvider.BoolFlagEnumTypes
+                : MyGameSettingsProvider.IntFlagEnumTypes;
         var displayTypeNames = relevantEnumTypes.Select(t => t.Name).ToArray();
         var fullTypeNames = relevantEnumTypes.Select(t => t.AssemblyQualifiedName).ToArray();
 
+        if (conditionTypeChanged)
+        {
+            Type defaultType = GetDefaultEnumType(currentConditionType);
+            enumTypeNameProp.stringValue = defaultType.AssemblyQualifiedName;
+            enumValueNameProp.stringValue = Enum.GetNames(defaultType).FirstOrDefault() ?? string.Empty;
+        }
+
         int currentTypeIndex = Array.IndexOf(fullTypeNames, enumTypeNameProp.stringValue);
         if (currentTypeIndex == -1)
-            currentTypeIndex = 0;
+        {
+            Type defaultType = GetDefaultEnumType(currentConditionType);
+            currentTypeIndex = Math.Max(0, Array.IndexOf(fullTypeNames, defaultType.AssemblyQualifiedName));
+        }
 
         int newTypeIndex = EditorGUI.Popup(enumTypeRect, currentTypeIndex, displayTypeNames);
         if (newTypeIndex != currentTypeIndex || string.IsNullOrEmpty(enumTypeNameProp.stringValue))
@@ -169,6 +179,58 @@ public class FlagConditionDrawerPro : PropertyDrawer
         }
 
         EditorGUI.EndProperty();
+    }
+
+    private static void InitializeNewArrayElements(SerializedProperty property)
+    {
+        const string arrayElementMarker = ".Array.data[";
+        int markerIndex = property.propertyPath.LastIndexOf(arrayElementMarker, StringComparison.Ordinal);
+        if (markerIndex < 0)
+            return;
+
+        string arrayPath = property.propertyPath.Substring(0, markerIndex);
+        SerializedProperty arrayProperty = property.serializedObject.FindProperty(arrayPath);
+        if (arrayProperty == null || !arrayProperty.isArray)
+            return;
+
+        string cacheKey = property.serializedObject.targetObject.GetInstanceID() + ":" + arrayPath;
+        if (!arraySizeCache.TryGetValue(cacheKey, out int previousSize))
+        {
+            arraySizeCache[cacheKey] = arrayProperty.arraySize;
+            return;
+        }
+
+        if (arrayProperty.arraySize > previousSize)
+        {
+            for (int i = previousSize; i < arrayProperty.arraySize; i++)
+            {
+                InitializeCondition(arrayProperty.GetArrayElementAtIndex(i));
+            }
+        }
+
+        arraySizeCache[cacheKey] = arrayProperty.arraySize;
+    }
+
+    private static void InitializeCondition(SerializedProperty conditionProperty)
+    {
+        var conditionTypeProp = conditionProperty.FindPropertyRelative("conditionType");
+        var enumTypeNameProp = conditionProperty.FindPropertyRelative("enumTypeName");
+        var enumValueNameProp = conditionProperty.FindPropertyRelative("enumValueName");
+        var requiredBoolValueProp = conditionProperty.FindPropertyRelative("requiredBoolValue");
+
+        conditionTypeProp.enumValueIndex = (int)FlagConditionPro.ConditionType.Bool;
+        requiredBoolValueProp.boolValue = MyGameSettingsProvider.GetDefaultBoolFlagValue();
+
+        Type defaultType = MyGameSettingsProvider.GetDefaultBoolFlagEnumType();
+        enumTypeNameProp.stringValue = defaultType.AssemblyQualifiedName;
+        enumValueNameProp.stringValue = Enum.GetNames(defaultType).FirstOrDefault() ?? string.Empty;
+    }
+
+    private static Type GetDefaultEnumType(FlagConditionPro.ConditionType conditionType)
+    {
+        return conditionType == FlagConditionPro.ConditionType.Bool
+            ? MyGameSettingsProvider.GetDefaultBoolFlagEnumType()
+            : MyGameSettingsProvider.GetDefaultIntFlagEnumType();
     }
 
     private static void DrawDoorCondition(

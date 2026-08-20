@@ -237,7 +237,13 @@ public enum Chapter3TriggeredEvent
     Under2FieldComplete = 3075, // 地下施設2のイベントを完了した
     Under3FieldComplete = 3088, // 地下施設3のイベントを完了した
     Under4FieldComplete = 3091, // 地下施設4のイベントを完了した
-    ApothecaryCaptured = 3094, // 薬屋が捕まった
+    ApothecaryCaptured = 3094, // 薬屋が捕らわれた
+    WitnessedVillageChange = 3097, // 村の変化を目撃した
+    TalkedToCoachmanAboutVillageChange = 3100, // 村の変化について御者と話した
+    AskedVillageGirlAboutClue = 3103, // 村の女の子に手がかりについて尋ねた
+    GaveItemToVillageGirl = 3106, // 村の女の子にアイテムを渡した
+    HeroineCapturedByVillagers = 3109, // 村人にヒロインが捕らわれた
+    ReunitedWithRobot = 3112, // ロボットと再会した
 }
 
 /// <summary>
