@@ -14,6 +14,7 @@ public class FlagActionEditor : Editor
 {
     private static readonly List<Type> boolEnumTypes = new List<Type> { typeof(PrologueTriggeredEvent), typeof(Chapter1TriggeredEvent), typeof(Chapter2TriggeredEvent), typeof(Chapter3TriggeredEvent), typeof(TutorialEvent) };
     private static readonly List<Type> intEnumTypes = new List<Type> { typeof(PrologueCountedEvent), typeof(Chapter1CountedEvent), typeof(Chapter2CountedEvent), typeof(Chapter3CountedEvent) };
+    private static readonly List<Type> keyEnumTypes = new List<Type> { typeof(KeyID) };
     private static Dictionary<string, string[]> valueNamesCache = new Dictionary<string, string[]>();
 
     private SerializedProperty operationsProp;
@@ -55,17 +56,33 @@ public class FlagActionEditor : Editor
                 }
 
                 var currentOpType = (FlagOperation.OperationType)opTypeProp.enumValueIndex;
-                var relevantEnumTypes = currentOpType == FlagOperation.OperationType.SetBool ? boolEnumTypes : intEnumTypes;
+                IReadOnlyList<Type> relevantEnumTypes;
+                switch (currentOpType)
+                {
+                    case FlagOperation.OperationType.SetBool:
+                        relevantEnumTypes = boolEnumTypes;
+                        break;
+                    case FlagOperation.OperationType.SetInt:
+                        relevantEnumTypes = intEnumTypes;
+                        break;
+                    case FlagOperation.OperationType.SetKey:
+                        relevantEnumTypes = keyEnumTypes;
+                        break;
+                    default:
+                        relevantEnumTypes = Array.Empty<Type>();
+                        break;
+                }
                 var displayTypeNames = relevantEnumTypes.Select(t => t.Name).ToArray();
                 var fullTypeNames = relevantEnumTypes.Select(t => t.AssemblyQualifiedName).ToArray();
 
                 int currentTypeIndex = Array.IndexOf(fullTypeNames, enumTypeNameProp.stringValue);
-                if (currentTypeIndex == -1) currentTypeIndex = 0;
+                bool hasValidType = currentTypeIndex >= 0;
+                if (!hasValidType) currentTypeIndex = 0;
 
                 if (fullTypeNames.Length > 0)
                 {
                     int newTypeIndex = EditorGUI.Popup(enumTypeRect, currentTypeIndex, displayTypeNames);
-                    if (newTypeIndex != currentTypeIndex)
+                    if (!hasValidType || newTypeIndex != currentTypeIndex)
                     {
                         enumTypeNameProp.stringValue = fullTypeNames[newTypeIndex];
                         enumValueNameProp.stringValue = null;
@@ -93,7 +110,7 @@ public class FlagActionEditor : Editor
                 }
 
                 // --- 3行目: [設定する値] ---
-                if (currentOpType == FlagOperation.OperationType.SetBool)
+                if (currentOpType != FlagOperation.OperationType.SetInt)
                 {
                     var boolProp = element.FindPropertyRelative("boolValueToSet");
                     // PropertyFieldではなく、ラベル付きのToggleを直接描画

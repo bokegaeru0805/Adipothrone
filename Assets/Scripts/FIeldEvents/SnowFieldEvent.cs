@@ -119,7 +119,7 @@ public class SnowFieldEvent : BaseFieldEvent
                 {
                     flagManager.SetBoolFlag(Chapter3TriggeredEvent.ReunitedWithRobot, true);
                     FungusHelper.ExecuteBlock(targetFlowchart, "ReunitedWithRobot");
-                    isEventTriggered = true; // イベントがトリガーされたことを記
+                    isEventTriggered = true; // イベントがトリガーされたことを記録
                 }
                 break;
             case FieldName.CaveEntrance:

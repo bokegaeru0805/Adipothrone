@@ -531,6 +531,8 @@ public class Heroin_move : MonoBehaviour
         // --- 1. 環境効果の集計 ---
         float globalSpeedMult = 1.0f; // 地形による速度倍率
         Vector2 totalWindVelocity = Vector2.zero; // 風の合成ベクトル
+        float resistanceAgainstRight = 0f; // 右移動に対する向かい風の最大抵抗係数
+        float resistanceAgainstLeft = 0f; // 左移動に対する向かい風の最大抵抗係数
         float restrictFallSpeed = -1f; // 落下制限（-1は未設定を表す）
         float currentSlipAcceleration = 0f; // 滑る床の加速度（0なら滑らない）
 
@@ -545,6 +547,22 @@ public class Heroin_move : MonoBehaviour
 
             // 風ベクトルを加算（X軸だけでなくY軸も合成）
             totalWindVelocity += area.WindVelocity;
+
+            // 向かい風となる移動方向ごとに、最も強い抵抗係数を採用
+            if (area.WindVelocity.x < 0f)
+            {
+                resistanceAgainstRight = Mathf.Max(
+                    resistanceAgainstRight,
+                    Mathf.Clamp01(area.WindResistanceFactor)
+                );
+            }
+            else if (area.WindVelocity.x > 0f)
+            {
+                resistanceAgainstLeft = Mathf.Max(
+                    resistanceAgainstLeft,
+                    Mathf.Clamp01(area.WindResistanceFactor)
+                );
+            }
 
             // 落下制限の判定（最も「ゆっくり（値が小さい）」な制限を優先して採用する）
             if (area.MaxFallSpeed > 0f)
@@ -582,6 +600,16 @@ public class Heroin_move : MonoBehaviour
             targetVelocityX = (vx / attackMoveSlowRate) * globalSpeedMult;
         }
 
+        // 向かい風の場合のみ、自力移動速度を抵抗係数の割合だけ減少させる
+        if (targetVelocityX > 0f)
+        {
+            targetVelocityX *= 1f - resistanceAgainstRight;
+        }
+        else if (targetVelocityX < 0f)
+        {
+            targetVelocityX *= 1f - resistanceAgainstLeft;
+        }
+
         // 滑る環境（接地中のみ）の慣性計算
         if (isGrounded && currentSlipAcceleration > 0f)
         {
@@ -604,9 +632,13 @@ public class Heroin_move : MonoBehaviour
         float finalVelocityX =
             currentHorizontalVelocity + totalWindVelocity.x + currentCarrierVelocity.x;
 
-        // [Y軸] 現在の物理挙動(重力落下など) + 風(Y)
-        // ※風(Y)は、重力とは別に「外力」として加算します（上昇気流ならプラス、吹き下ろしならマイナス）
-        float finalVelocityY = _rbody.velocity.y + totalWindVelocity.y;
+        // [Y軸] 乗車中かつ上昇中でなければ、足場の上下速度に追従する。
+        // ジャンプなどで上昇している間はプレイヤー自身の速度を優先する。
+        float baseVelocityY =
+            isOnCarrier && _rbody.velocity.y <= 0f
+                ? currentCarrierVelocity.y
+                : _rbody.velocity.y;
+        float finalVelocityY = baseVelocityY + totalWindVelocity.y;
 
         // --- 4. ゆっくり落下ギミック（落下速度のクランプ） ---
         // 落下中（Yがマイナス）かつ、制限が設定されている場合

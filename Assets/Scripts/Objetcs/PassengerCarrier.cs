@@ -31,6 +31,8 @@ public class PassengerCarrier : MonoBehaviour
     private SpriteRenderer _spriteRenderer;
     private Vector3 _lastPosition;
     private Vector2 _currentVelocity;
+    private float _lastRotationAngle;
+    private float _angularVelocityRadians;
 
     private readonly HashSet<Heroin_move> _playerPassengers = new HashSet<Heroin_move>();
     private readonly Dictionary<Heroin_move, Coroutine> _disconnectCoroutines =
@@ -99,6 +101,7 @@ public class PassengerCarrier : MonoBehaviour
         UpdateColliderSize();
 
         _lastPosition = transform.position;
+        _lastRotationAngle = transform.eulerAngles.z;
         _disconnectWait = new WaitForSeconds(_disconnectDelay);
     }
 
@@ -155,11 +158,17 @@ public class PassengerCarrier : MonoBehaviour
     private void UpdateCarrierVelocity()
     {
         Vector3 currentPosition = transform.position;
+        float currentRotationAngle = transform.eulerAngles.z;
 
         if (Time.fixedDeltaTime > 0f)
+        {
             _currentVelocity = (currentPosition - _lastPosition) / Time.fixedDeltaTime;
+            float rotationDelta = Mathf.DeltaAngle(_lastRotationAngle, currentRotationAngle);
+            _angularVelocityRadians = rotationDelta * Mathf.Deg2Rad / Time.fixedDeltaTime;
+        }
 
         _lastPosition = currentPosition;
+        _lastRotationAngle = currentRotationAngle;
     }
 
     private void ApplyVelocityToPlayers()
@@ -167,8 +176,22 @@ public class PassengerCarrier : MonoBehaviour
         foreach (Heroin_move player in _playerPassengers)
         {
             if (player != null)
-                player.SetCarrierVelocity(_currentVelocity);
+                player.SetCarrierVelocity(GetVelocityAtPoint(player.transform.position));
         }
+    }
+
+    /// <summary>
+    /// 足場の並進速度と、回転によって指定地点に生じる接線速度を合成します。
+    /// </summary>
+    private Vector2 GetVelocityAtPoint(Vector3 worldPosition)
+    {
+        Vector2 offsetFromPivot = worldPosition - transform.position;
+        Vector2 tangentialVelocity = new Vector2(
+            -_angularVelocityRadians * offsetFromPivot.y,
+            _angularVelocityRadians * offsetFromPivot.x
+        );
+
+        return _currentVelocity + tangentialVelocity;
     }
 
     private void RegisterPlayer(Collider2D playerCollider)

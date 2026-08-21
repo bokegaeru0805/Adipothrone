@@ -44,7 +44,7 @@ public class GimmickSwitch : MonoBehaviour
         TutorialStage = 1, // チュートリアル（標準）
         DesertTemple = 2, // 砂漠の神殿（石っぽい音など）
         SnowMan = 3, // 雪だるま（雪っぽい音など）
-        // 必要に応じてここに追加
+        SnowMountain = 4, // 雪山（雪っぽい音など）
     }
 
     #region Inspector Settings
@@ -317,6 +317,9 @@ public class GimmickSwitch : MonoBehaviour
 
             case ButtonType.SnowMan:
                 // TODO: 雪だるまが崩れる音を再生
+                break;
+            case ButtonType.SnowMountain:
+                SEManager.instance.PlayFieldSE(SE_Field.LeverPull1);
                 break;
             default:
                 SEManager.instance.PlayFieldSE(SE_Field.SwitchOn);

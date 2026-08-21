@@ -28,7 +28,8 @@ public abstract class CharacterHealth : PoolableObject, IDamageable, IDroppable,
     protected bool useManualHP = false;
 
     [Tooltip("useManualHPがtrueの場合、この値が最大HPになります")]
-    [SerializeField, ShowIf(nameof(useManualHP))]
+    [AllowNesting, ShowIf(nameof(useManualHP))]
+    [SerializeField]
     protected int manualMaxHP = 0;
     #endregion
 
@@ -102,11 +103,11 @@ public abstract class CharacterHealth : PoolableObject, IDamageable, IDroppable,
     [SerializeField]
     protected bool useMultipleRenderers = false;
 
-    [AllowNesting]
     [Tooltip(
         "点滅やエフェクトを適用するすべてのSpriteRendererを登録してください（メイン本体含む）"
     )]
-    [SerializeField, ShowIf(nameof(useMultipleRenderers))]
+    [AllowNesting, ShowIf(nameof(useMultipleRenderers))]
+    [SerializeField]
     protected SpriteRenderer[] manualRenderers;
 
     [Header("シールド連携設定")]

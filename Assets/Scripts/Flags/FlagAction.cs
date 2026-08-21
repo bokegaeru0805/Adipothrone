@@ -45,6 +45,14 @@ public class FlagAction : MonoBehaviour
                 case FlagOperation.OperationType.SetInt:
                     FlagManager.instance.SetIntFlag(enumValue, op.intValueToSet);
                     break;
+                case FlagOperation.OperationType.SetKey:
+                    if (!(enumValue is KeyID keyId))
+                    {
+                        throw new InvalidOperationException($"SetKeyにはKeyIDを指定してください: {enumType.Name}");
+                    }
+
+                    FlagManager.instance.SetKeyOpened(keyId, op.boolValueToSet);
+                    break;
             }
         }
         catch (Exception e)

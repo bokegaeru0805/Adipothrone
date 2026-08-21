@@ -1,6 +1,7 @@
 public enum EnemyName
 {
     None = 0,
+
     Enemy1 = 15001,
     Enemy2 = 15002,
     Golem_Tutorial = 15003,
@@ -23,4 +24,20 @@ public enum EnemyName
     DustDevil_Boss = 15025,
     Levias_smoke = 15026,
     Levias = 15027,
+
+    Gargoyle = 15031,
+    Bat_Tower = 15032,
+    Golem_Tower = 15033,
+    Fairy_Rare = 15034,
+
+    Apothecary = 15038,
+
+    Slime_Snow = 15041,
+    Fairy_Snow = 15042,
+    Golem_Snowfield_Small = 15043,
+    Golem_Snowfield_Small_Snowman = 15044,
+    Golem_Snowfield_Medium = 15045,
+    Golem_Snowfield_Large = 15046,
+
+    Golem_Snowfield_Boss = 15050,
 }

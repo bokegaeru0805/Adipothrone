@@ -7,6 +7,9 @@ using UnityEngine;
 [RequireComponent(typeof(Rigidbody2D))]
 public class GroundSweepShockwaveMoveController : MonoBehaviour
 {
+    private const float WALL_NORMAL_THRESHOLD = 0.5f;
+    private const float START_INSIDE_HIT_EPSILON = 0.001f;
+
     [Header("壁検知")]
     [
         SerializeField,
@@ -21,11 +24,19 @@ public class GroundSweepShockwaveMoveController : MonoBehaviour
     ]
     private Vector2 _wallCheckOffset = Vector2.zero;
 
+    [
+        SerializeField,
+        Range(0f, 1f),
+        Tooltip("Collider下端を0、上端を1とした、前方壁検知Raycastの高さ。床の誤検知を避けるため中央より上を推奨します。")
+    ]
+    private float _wallCheckHeightRatio = 0.75f;
+
     private Rigidbody2D _rbody;
     private Collider2D _collider;
     private ContactDamageController _contactDamageController;
     private Animator _animator;
     private Renderer[] _renderers;
+    private SpriteRenderer[] _spriteRenderers;
     private LayerMask _groundLayer;
     private Coroutine _lifeCoroutine;
     private float _moveSpeedX;
@@ -53,6 +64,7 @@ public class GroundSweepShockwaveMoveController : MonoBehaviour
 
         _animator = GetComponent<Animator>();
         _renderers = GetComponentsInChildren<Renderer>(true);
+        _spriteRenderers = GetComponentsInChildren<SpriteRenderer>(true);
     }
 
     private void FixedUpdate()
@@ -81,7 +93,7 @@ public class GroundSweepShockwaveMoveController : MonoBehaviour
         foreach (ContactPoint2D contact in collision.contacts)
         {
             // 床の上向き法線は無視し、横向き法線を持つ壁との衝突だけで消去します。
-            if (Mathf.Abs(contact.normal.x) < 0.5f)
+            if (Mathf.Abs(contact.normal.x) < WALL_NORMAL_THRESHOLD)
                 continue;
 
             Hide();
@@ -119,6 +131,12 @@ public class GroundSweepShockwaveMoveController : MonoBehaviour
             foreach (Renderer targetRenderer in _renderers)
                 if (targetRenderer != null)
                     targetRenderer.enabled = true;
+
+        // 元画像は右向きのため、左へ進む場合だけSpriteRendererを水平反転します。
+        if (_spriteRenderers != null)
+            foreach (SpriteRenderer spriteRenderer in _spriteRenderers)
+                if (spriteRenderer != null)
+                    spriteRenderer.flipX = !isFacingRight;
 
         if (_animator != null)
         {
@@ -158,15 +176,31 @@ public class GroundSweepShockwaveMoveController : MonoBehaviour
             return false;
 
         float facingMultiplier = Mathf.Sign(_moveSpeedX);
+        Bounds bounds = _collider.bounds;
+        float originY = Mathf.Lerp(bounds.min.y, bounds.max.y, _wallCheckHeightRatio);
         Vector2 origin =
-            (Vector2)_collider.bounds.center
+            new Vector2(bounds.center.x, originY)
             + new Vector2(_wallCheckOffset.x * facingMultiplier, _wallCheckOffset.y);
         Vector2 direction = Vector2.right * facingMultiplier;
         float distance =
             Mathf.Abs(_moveSpeedX) * Time.fixedDeltaTime + Mathf.Max(0f, _wallCheckMargin);
 
-        RaycastHit2D hit = Physics2D.Raycast(origin, direction, distance, _groundLayer);
-        return hit.collider != null;
+        RaycastHit2D[] hits = Physics2D.RaycastAll(origin, direction, distance, _groundLayer);
+        foreach (RaycastHit2D hit in hits)
+        {
+            if (hit.collider == null)
+                continue;
+
+            // Ray開始点が床Collider内部にある場合に返る距離0のヒットは、壁判定に使用しません。
+            if (hit.distance <= START_INSIDE_HIT_EPSILON)
+                continue;
+
+            // 平地の上下向き法線を除外し、横向きの面だけを壁として扱います。
+            if (Mathf.Abs(hit.normal.x) >= WALL_NORMAL_THRESHOLD)
+                return true;
+        }
+
+        return false;
     }
 
     private void Hide()

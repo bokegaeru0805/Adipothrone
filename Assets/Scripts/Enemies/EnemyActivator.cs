@@ -104,6 +104,13 @@ public class EnemyActivator : MonoBehaviour
     [SerializeField]
     private List<RareEnemyInfo> rareEnemies;
 
+    [Header("追加の管理対象")]
+    [Tooltip(
+        "子オブジェクトではないものの、このEnemyActivatorによる有効化・無効化の対象にしたいゲームオブジェクト"
+    )]
+    [SerializeField]
+    private List<GameObject> additionalManagedObjects;
+
     #endregion
 
     #region 内部状態
@@ -254,6 +261,9 @@ public class EnemyActivator : MonoBehaviour
     /// <param name="isActive">有効にする場合はtrue、無効にする場合はfalse</param>
     private void SetChildrenActive(bool isActive)
     {
+        // 子オブジェクトと追加の管理対象が重複している場合の二重処理を防ぐ
+        var processedObjects = new HashSet<GameObject>();
+
         // Step 1: 親子関係の修復
         // 処理を開始する前に、すべての管理対象オブジェクトを親元に強制送還させる
         // これにより、リフトなどで親子関係が変わっていても、このActivatorの下に戻ってくる
@@ -293,6 +303,7 @@ public class EnemyActivator : MonoBehaviour
                 {
                     child.gameObject.SetActive(true);
                     ResetChildState(child);
+                    processedObjects.Add(child.gameObject);
                 }
             }
 
@@ -307,11 +318,25 @@ public class EnemyActivator : MonoBehaviour
                     // 0から100までの乱数を生成し、出現確率と比較
                     bool shouldSpawn = Random.Range(0f, 100f) <= rareInfo.spawnChance;
                     rareInfo.enemyObject.SetActive(shouldSpawn);
+                    processedObjects.Add(rareInfo.enemyObject);
 
                     if (shouldSpawn)
                     {
                         ResetChildState(rareInfo.enemyObject.transform);
                     }
+                }
+            }
+
+            // 子ではない追加の管理対象は、通常の敵と同様に必ず有効化する
+            if (additionalManagedObjects != null)
+            {
+                foreach (GameObject managedObject in additionalManagedObjects)
+                {
+                    if (managedObject == null || !processedObjects.Add(managedObject))
+                        continue;
+
+                    managedObject.SetActive(true);
+                    ResetChildState(managedObject.transform);
                 }
             }
         }
@@ -327,14 +352,14 @@ public class EnemyActivator : MonoBehaviour
                 if (child == null)
                     continue;
 
-                DropItem dropItem = child.GetComponent<DropItem>();
-                if (dropItem != null)
+                DeactivateManagedObject(child.gameObject, processedObjects, itemsToReturn);
+            }
+
+            if (additionalManagedObjects != null)
+            {
+                foreach (GameObject managedObject in additionalManagedObjects)
                 {
-                    itemsToReturn.Add(dropItem);
-                }
-                else
-                {
-                    child.gameObject.SetActive(false);
+                    DeactivateManagedObject(managedObject, processedObjects, itemsToReturn);
                 }
             }
 
@@ -346,6 +371,29 @@ public class EnemyActivator : MonoBehaviour
                     item.ReturnToPool();
                 }
             }
+        }
+    }
+
+    /// <summary>
+    /// 管理対象を無効化します。DropItemの場合は非アクティブ化の代わりにプールへ返却します。
+    /// </summary>
+    private void DeactivateManagedObject(
+        GameObject managedObject,
+        HashSet<GameObject> processedObjects,
+        List<DropItem> itemsToReturn
+    )
+    {
+        if (managedObject == null || !processedObjects.Add(managedObject))
+            return;
+
+        DropItem dropItem = managedObject.GetComponent<DropItem>();
+        if (dropItem != null)
+        {
+            itemsToReturn.Add(dropItem);
+        }
+        else
+        {
+            managedObject.SetActive(false);
         }
     }
 

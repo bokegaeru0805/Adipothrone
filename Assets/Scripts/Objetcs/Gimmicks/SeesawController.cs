@@ -36,6 +36,9 @@ public class SeesawController : MonoBehaviour
     [SerializeField, Tooltip("Pivotからの距離率を回転速度率へ変換するカーブ")]
     private AnimationCurve distanceSpeedCurve = AnimationCurve.Linear(0f, 0f, 1f, 1f);
 
+    [SerializeField, Min(0f), Tooltip("プレイヤーが連続して乗ってから傾斜を開始するまでの時間（秒）。0の場合は即座に傾斜します")]
+    private float tiltStartDelay = 0f;
+
     [Header("Reset設定")]
     [SerializeField, Min(0f), Tooltip("プレイヤーが降りてから初期角度へ戻り始めるまでの時間（秒）")]
     private float resetDelay = 0.3f;
@@ -46,6 +49,7 @@ public class SeesawController : MonoBehaviour
     private Vector3 _initialLocalEulerAngles;
     private float _initialLocalAngle;
     private Vector3 _pivotInitialLocalEulerAngles;
+    private float _occupiedElapsedTime;
     private float _unoccupiedElapsedTime;
     private bool _isInitialized;
 
@@ -90,11 +94,17 @@ public class SeesawController : MonoBehaviour
         Heroin_move player = _passengerCarrier.CurrentPlayerPassenger;
         if (player == null)
         {
+            _occupiedElapsedTime = 0f;
             UpdateReset();
             return;
         }
 
         _unoccupiedElapsedTime = 0f;
+
+        _occupiedElapsedTime += Time.fixedDeltaTime;
+        if (_occupiedElapsedTime < tiltStartDelay)
+            return;
+
         UpdateTilt(player.transform.position);
     }
 
@@ -169,6 +179,7 @@ public class SeesawController : MonoBehaviour
         maxEffectDistance = Mathf.Max(centerDeadZone + MinimumDistanceDifference, maxEffectDistance);
         minimumTiltSpeed = Mathf.Max(0f, minimumTiltSpeed);
         maximumTiltSpeed = Mathf.Max(minimumTiltSpeed, maximumTiltSpeed);
+        tiltStartDelay = Mathf.Max(0f, tiltStartDelay);
         resetDelay = Mathf.Max(0f, resetDelay);
         resetSpeed = Mathf.Max(0f, resetSpeed);
 

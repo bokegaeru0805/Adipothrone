@@ -9,7 +9,7 @@ using UnityEngine.Serialization;
 /// 音の再生は MovingPlatformAudio に委譲します。
 /// </summary>
 [RequireComponent(typeof(Rigidbody2D))]
-public class WaypointMover : MonoBehaviour
+public class WaypointMover : MonoBehaviour, IEnemyResettable
 {
     #region 定義・列挙型
 
@@ -122,6 +122,9 @@ public class WaypointMover : MonoBehaviour
     {
         _rb = GetComponent<Rigidbody2D>();
 
+        // Relativeモードの基準点は、再有効化されても変わらないよう初回のみ保存する
+        _startPosition = transform.localPosition;
+
         // リフトは重力や外部からの力の影響を受けないように Kinematic にする
         _rb.bodyType = RigidbodyType2D.Kinematic;
 
@@ -145,9 +148,6 @@ public class WaypointMover : MonoBehaviour
 
     private void OnEnable()
     {
-        // 自身の初期位置をRelativeモードの基準点としてキャッシュ
-        _startPosition = transform.localPosition;
-
         if (_startWithTimeOffset)
         {
             // 時間指定スタートの場合：0秒地点からシミュレーションして位置を決定
@@ -272,6 +272,24 @@ public class WaypointMover : MonoBehaviour
         _hasStarted = false;
         if (_platformAudio != null)
             _platformAudio.StopMoveSound();
+    }
+
+    /// <summary>
+    /// 移動状態を初期化し、ウェイポイント0へ戻します。
+    /// </summary>
+    public void ResetState()
+    {
+        if (_waypoints == null || _waypoints.Count < 2)
+            return;
+
+        _isWaiting = false;
+        _waitTimer = 0f;
+        _moveDirection = 1;
+        _currentTargetIndex = 1;
+
+        Vector2 initialWorldPosition = GetWorldPosition(_waypoints[0].localPosition);
+        _rb.position = initialWorldPosition;
+        Debug.Log($"{name}: WaypointMoverの状態をリセットしました。初期位置: {initialWorldPosition}", this);
     }
 
     #endregion

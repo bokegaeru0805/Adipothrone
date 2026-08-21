@@ -134,6 +134,11 @@ public class FlagManager : MonoBehaviour
             {
                 doorId = 12,
                 requiredKeys = new List<KeyID> { KeyID.K12 },
+            },
+            new DoorUnlockCondition
+            {
+                doorId = 13,
+                requiredKeys = new List<KeyID> { KeyID.K13 },
             }
         };
 

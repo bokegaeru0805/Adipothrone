@@ -159,6 +159,7 @@ public class SnowFieldGolemLargeMoveController : MonoBehaviour, IEnemyResettable
     private Sequence _icicleHologramSequence;
     private bool _canStartAttack = true;
     private bool _isIcicleAttackTimeReady = true;
+    private bool _isIcicleAttackReuseTimerRunning;
     private bool _hasProcessedImpactEvent;
     private float _icicleAttackReuseElapsed;
     private int _bodyDamage = 20;
@@ -240,7 +241,7 @@ public class SnowFieldGolemLargeMoveController : MonoBehaviour, IEnemyResettable
         }
 
         _icicleHologramSequence?.Play();
-        if (!_isIcicleAttackTimeReady)
+        if (_isIcicleAttackReuseTimerRunning && !_isIcicleAttackTimeReady)
             _icicleAttackReuseElapsed += Time.deltaTime;
         UpdateIcicleAttackAvailability();
         if (_currentState == GolemState.Idle && _canStartAttack)
@@ -292,6 +293,7 @@ public class SnowFieldGolemLargeMoveController : MonoBehaviour, IEnemyResettable
 
         _canStartAttack = true;
         _isIcicleAttackTimeReady = true;
+        _isIcicleAttackReuseTimerRunning = false;
         _icicleAttackReuseElapsed = 0f;
         _hasProcessedImpactEvent = false;
         ApplyFacingRotation();
@@ -374,8 +376,12 @@ public class SnowFieldGolemLargeMoveController : MonoBehaviour, IEnemyResettable
     {
         if (_visualRoot == null)
             return;
+
+        // 向きの基準はVisual Rootの初期Y回転ではなく、右向きに描かれた元スプライトです。
+        // 初期Y回転へ180度を加算すると、初期値が180度の場合に左向き指定が360度となるため、
+        // Y回転だけを右向き=0度、左向き=180度の絶対値で設定します。
         Vector3 angles = _visualInitialLocalEulerAngles;
-        angles.y += _isFacingRight ? 0f : 180f;
+        angles.y = _isFacingRight ? 0f : 180f;
         _visualRoot.localRotation = Quaternion.Euler(angles);
     }
 
@@ -389,6 +395,9 @@ public class SnowFieldGolemLargeMoveController : MonoBehaviour, IEnemyResettable
     /// </summary>
     private void TryStartAttack()
     {
+        if (_attackCoroutine != null)
+            return;
+
         if (_playerTransform == null)
         {
             ResolvePlayerTransform();
@@ -428,7 +437,10 @@ public class SnowFieldGolemLargeMoveController : MonoBehaviour, IEnemyResettable
             !_isIcicleAttackTimeReady
             && _icicleAttackReuseElapsed >= _icicleAttackReuseTime
         )
+        {
             _isIcicleAttackTimeReady = true;
+            _isIcicleAttackReuseTimerRunning = false;
+        }
     }
 
     #endregion
@@ -443,6 +455,8 @@ public class SnowFieldGolemLargeMoveController : MonoBehaviour, IEnemyResettable
     {
         _canStartAttack = false;
         _isIcicleAttackTimeReady = false;
+        _isIcicleAttackReuseTimerRunning = false;
+        _icicleAttackReuseElapsed = 0f;
         ChangeState(GolemState.IcicleAttacking);
         PlayAnimation(
             AnimIcicleAttackExecuteTrigger,
@@ -475,6 +489,9 @@ public class SnowFieldGolemLargeMoveController : MonoBehaviour, IEnemyResettable
             if (icicle != null)
                 icicle.AllowExternalFall();
 
+        // 再使用時間は、つららへ個別感知を許可したこの時点から計測します。
+        _isIcicleAttackTimeReady = false;
+        _isIcicleAttackReuseTimerRunning = true;
         _icicleAttackReuseElapsed = 0f;
 
         ChangeState(GolemState.Idle);
@@ -939,10 +956,44 @@ public class SnowFieldGolemLargeMoveController : MonoBehaviour, IEnemyResettable
         Gizmos.DrawLine(impactPosition + Vector3.left * 0.3f, impactPosition + Vector3.right * 0.3f);
         Gizmos.DrawLine(impactPosition + Vector3.down * 0.3f, impactPosition + Vector3.up * 0.3f);
 
-        Vector3 shockwaveEnd = impactPosition + Vector3.right * facingMultiplier * 1.5f;
+        Vector3 direction = Vector3.right * facingMultiplier;
+        Vector3 directionMarkerEnd = impactPosition + direction * 1.5f;
         Gizmos.color = new Color(1f, 0.45f, 0f, 1f);
-        Gizmos.DrawLine(impactPosition, shockwaveEnd);
-        Gizmos.DrawWireCube(shockwaveEnd, new Vector3(0.18f, 0.18f, 0.05f));
+        Gizmos.DrawLine(impactPosition, directionMarkerEnd);
+        Gizmos.DrawWireCube(directionMarkerEnd, new Vector3(0.18f, 0.18f, 0.05f));
+
+        DrawShockwaveTravelDistanceGizmo(impactPosition, direction);
+    }
+
+    /// <summary>
+    /// 壁に遮られなかった場合に、Shockwaveが寿命内で進める最大距離を表示します。
+    /// 他の攻撃範囲を隠さないよう、半透明の中心線と小さな目盛りだけを描画します。
+    /// </summary>
+    private void DrawShockwaveTravelDistanceGizmo(Vector3 startPosition, Vector3 direction)
+    {
+        float travelDistance = Mathf.Max(0f, _shockwaveSpeed) * Mathf.Max(0f, _shockwaveLifeTime);
+        if (travelDistance <= 0f)
+            return;
+
+        Vector3 endPosition = startPosition + direction * travelDistance;
+
+        Gizmos.color = new Color(1f, 0.45f, 0f, 0.45f);
+        Gizmos.DrawLine(startPosition, endPosition);
+
+        const float markerInterval = 2f;
+        const float markerHalfHeight = 0.1f;
+        for (float distance = markerInterval; distance < travelDistance; distance += markerInterval)
+        {
+            Vector3 markerPosition = startPosition + direction * distance;
+            Gizmos.DrawLine(
+                markerPosition + Vector3.down * markerHalfHeight,
+                markerPosition + Vector3.up * markerHalfHeight
+            );
+        }
+
+        Gizmos.color = new Color(1f, 0.3f, 0f, 0.9f);
+        Gizmos.DrawWireSphere(endPosition, 0.16f);
+        Gizmos.DrawLine(endPosition + Vector3.down * 0.3f, endPosition + Vector3.up * 0.3f);
     }
 
     #endregion

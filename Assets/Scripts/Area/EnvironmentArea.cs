@@ -1,11 +1,39 @@
+using NaughtyAttributes;
 using UnityEngine;
 
 /// <summary>
 /// プレイヤーが侵入した際に、移動速度や重力、風などの環境効果を与えるエリア。
 /// </summary>
-[RequireComponent(typeof(Collider2D))]
+[ExecuteAlways]
+[RequireComponent(typeof(BoxCollider2D))]
 public class EnvironmentArea : MonoBehaviour
 {
+    [Header("連携設定")]
+    [SerializeField]
+    [Tooltip("このEnvironmentAreaのコライダーを同期させるCameraMoveArea")]
+    private CameraMoveArea targetCameraArea;
+
+    [Tooltip("上端のオフセット（正の値で上へ、負の値で下へ移動）")]
+    [SerializeField, ShowIf(nameof(HasTargetCameraArea))]
+    private float offsetTop = 0f;
+
+    [Tooltip("下端のオフセット（正の値で下へ、負の値で上へ移動）")]
+    [SerializeField, ShowIf(nameof(HasTargetCameraArea))]
+    private float offsetBottom = 0f;
+
+    [Tooltip("左端のオフセット（正の値で右へ、負の値で左へ移動）")]
+    [SerializeField, ShowIf(nameof(HasTargetCameraArea))]
+    private float offsetLeft = 0f;
+
+    [Tooltip("右端のオフセット（正の値で左へ、負の値で右へ移動）")]
+    [SerializeField, ShowIf(nameof(HasTargetCameraArea))]
+    private float offsetRight = 0f;
+
+    private bool HasTargetCameraArea()
+    {
+        return targetCameraArea != null;
+    }
+
     [Header("基本環境設定")]
     [Tooltip(
         "エリア内での全体的な移動速度倍率 (1.0 = 通常, 0.5 = 半減)\n泥沼や水中などで使用します。"
@@ -41,6 +69,16 @@ public class EnvironmentArea : MonoBehaviour
     )]
     public float SlipAcceleration = 0f;
 
+    private void Update()
+    {
+#if UNITY_EDITOR
+        if (!Application.isPlaying)
+        {
+            SyncCollider();
+        }
+#endif
+    }
+
     /// <summary>
     /// プレイヤーがエリアに入ったときの処理
     /// </summary>
@@ -75,6 +113,56 @@ public class EnvironmentArea : MonoBehaviour
     }
 
 #if UNITY_EDITOR
+    /// <summary>
+    /// 対象のCameraMoveAreaのBoxCollider2Dに自身のコライダーを同期させます。
+    /// </summary>
+    private void SyncCollider()
+    {
+        if (targetCameraArea == null)
+            return;
+
+        BoxCollider2D environmentBox = GetComponent<BoxCollider2D>();
+        BoxCollider2D targetBox = targetCameraArea.GetComponent<BoxCollider2D>();
+        if (environmentBox == null || targetBox == null)
+            return;
+
+        Vector3 targetWorldCenter = targetCameraArea.transform.TransformPoint(
+            (Vector3)targetBox.offset
+        );
+        Vector2 targetWorldSize = new Vector2(
+            targetBox.size.x * Mathf.Abs(targetCameraArea.transform.lossyScale.x),
+            targetBox.size.y * Mathf.Abs(targetCameraArea.transform.lossyScale.y)
+        );
+
+        float left = targetWorldCenter.x - targetWorldSize.x / 2f + offsetLeft;
+        float right = targetWorldCenter.x + targetWorldSize.x / 2f - offsetRight;
+        float bottom = targetWorldCenter.y - targetWorldSize.y / 2f + offsetBottom;
+        float top = targetWorldCenter.y + targetWorldSize.y / 2f - offsetTop;
+
+        targetWorldCenter.x = (left + right) / 2f;
+        targetWorldCenter.y = (bottom + top) / 2f;
+        targetWorldSize.x = Mathf.Max(0.0001f, right - left);
+        targetWorldSize.y = Mathf.Max(0.0001f, top - bottom);
+
+        Vector3 localOffset = transform.InverseTransformPoint(targetWorldCenter);
+        Vector2 newOffset = new Vector2(localOffset.x, localOffset.y);
+
+        float scaleX = Mathf.Abs(transform.lossyScale.x);
+        float scaleY = Mathf.Abs(transform.lossyScale.y);
+        Vector2 newSize = new Vector2(
+            targetWorldSize.x / (scaleX != 0f ? scaleX : 1f),
+            targetWorldSize.y / (scaleY != 0f ? scaleY : 1f)
+        );
+
+        if (environmentBox.offset == newOffset && environmentBox.size == newSize)
+            return;
+
+        UnityEditor.Undo.RecordObject(environmentBox, "Sync Collider with CameraMoveArea");
+        environmentBox.offset = newOffset;
+        environmentBox.size = newSize;
+        UnityEditor.EditorUtility.SetDirty(environmentBox);
+    }
+
     /// <summary>
     /// エディタ上で風向きを可視化するためのギズモ描画
     /// </summary>

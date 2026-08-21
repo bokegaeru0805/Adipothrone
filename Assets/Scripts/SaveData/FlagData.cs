@@ -43,6 +43,9 @@ public enum KeyID
 
     // --- 塔の扉のキー ---
     K12 = 1201,
+
+    // --- 雪山のキー ---
+    K13 = 1301,
 }
 
 /// 【重要】
@@ -206,6 +209,7 @@ public enum Chapter3TriggeredEvent
     FirstMetGuildReceptionist = 3004, // 初めてギルドの受付嬢に会った
     GuildInquiryComplete1 = 3007, // ギルドで聞き込みを完了した(1)
     GuildInquiryComplete2 = 3008, // ギルドで聞き込みを完了した(2)
+
     // GuildInquiryComplete3 = 3009, // ギルドで聞き込みを完了した(3)
     GuildInquiryCompleteAll = 3010, // ギルドで聞き込みを完了した
     AskedReceptionistAboutNextDestination = 3013, // 受付嬢に次の目的地について尋ねた
@@ -244,6 +248,9 @@ public enum Chapter3TriggeredEvent
     GaveItemToVillageGirl = 3106, // 村の女の子にアイテムを渡した
     HeroineCapturedByVillagers = 3109, // 村人にヒロインが捕らわれた
     ReunitedWithRobot = 3112, // ロボットと再会した
+    SnowMountainBlocker1Defeated = 3116, // 雪山の敵1を倒した
+    SnowMountainBlocker2Defeated = 3119, // 雪山の敵2を倒した
+    SnowMountainBlocker3Defeated = 3122, // 雪山の敵3を倒した
 }
 
 /// <summary>

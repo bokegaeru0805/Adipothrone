@@ -259,8 +259,9 @@ public class FlagOperation
     // FlagConditionProの定義を流用
     public enum OperationType
     {
-        SetBool,
-        SetInt,
+        SetBool = 0,
+        SetInt = 1,
+        SetKey = 2,
     }
 
     public OperationType operationType;

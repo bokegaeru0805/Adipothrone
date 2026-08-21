@@ -87,9 +87,10 @@ public class FlagDrivenStatePro : MonoBehaviour
         // FlagManagerが存在する場合のみ、イベント購読を開始します。
         if (FlagManager.instance != null)
         {
-            // boolとint、両方のイベントを購読します。
+            // bool、int、keyのイベントを購読します。
             FlagManager.OnBoolFlagChanged += OnAnyFlagChanged;
             FlagManager.OnIntFlagChanged += OnAnyFlagChanged;
+            FlagManager.OnKeyFlagChanged += OnAnyFlagChanged;
         }
         else
         {
@@ -110,6 +111,7 @@ public class FlagDrivenStatePro : MonoBehaviour
         {
             FlagManager.OnBoolFlagChanged -= OnAnyFlagChanged;
             FlagManager.OnIntFlagChanged -= OnAnyFlagChanged;
+            FlagManager.OnKeyFlagChanged -= OnAnyFlagChanged;
         }
 
         // CameraMoveAreaからの退出イベントの購読を解除
@@ -118,10 +120,12 @@ public class FlagDrivenStatePro : MonoBehaviour
 
     // --- イベントハンドラ ---
 
-    // boolとintの変更を同じメソッドで受け取り、再評価を促す
+    // bool、int、keyの変更を同じメソッド名で受け取り、再評価を促す
     private void OnAnyFlagChanged(Enum flag, bool newValue) => EvaluateAndApplyState();
 
     private void OnAnyFlagChanged(Enum flag, int newValue) => EvaluateAndApplyState();
+
+    private void OnAnyFlagChanged(KeyID keyId, bool newValue) => EvaluateAndApplyState();
 
     // CameraMoveAreaから退出したときに呼び出されるメソッド
     private void HandlePlayerExitedCameraArea(CameraMoveArea _exitedArea)
