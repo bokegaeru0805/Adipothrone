@@ -31,6 +31,8 @@ public class SnowFieldEvent : BaseFieldEvent
         TowerHall = 41, // 雪原の塔のホール
         Under2Field = 46, // 地下施設2
         UnderExit = 51, // 地下施設の出口
+        LastBattleEntrance = 71, // 最終決戦の入り口
+        LastBattleField = 76, // 最終決戦のフィールド
     }
 
     #endregion
@@ -182,6 +184,21 @@ public class SnowFieldEvent : BaseFieldEvent
                     FungusHelper.ExecuteBlock(targetFlowchart, "ReachedUnderExit");
                     isEventTriggered = true; // イベントがトリガーされたことを記録
                 }
+                break;
+            case FieldName.LastBattleEntrance:
+                if (flagManager.GetBoolFlag(Chapter3TriggeredEvent.ReachedFinalBattleEntrance))
+                {
+                    flagManager.SetBoolFlag(
+                        Chapter3TriggeredEvent.ReachedFinalBattleEntrance,
+                        true
+                    );
+                    FungusHelper.ExecuteBlock(targetFlowchart, "BeforeChapter3BossBattle");
+                    isEventTriggered = true; // イベントがトリガーされたことを記録
+                }
+                break;
+            case FieldName.LastBattleField:
+                FungusHelper.ExecuteBlock(targetFlowchart, "Chapter3BossAppear");
+                isEventTriggered = true; // イベントがトリガーされたことを記録
                 break;
         }
     }

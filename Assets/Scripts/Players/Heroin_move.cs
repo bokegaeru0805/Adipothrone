@@ -66,6 +66,16 @@ public class Heroin_move : MonoBehaviour
     private bool isShadowEnabled = false; // 現在のエリアで影が有効かどうか
     private float shadowRayDistance = 20.0f; // 地面を探知する光線の長さ
     private List<EnvironmentArea> activeEnvironments = new List<EnvironmentArea>(); // 現在適用中の環境エリアリスト
+    private readonly List<FadingWindState> fadingWinds = new List<FadingWindState>();
+
+    private sealed class FadingWindState
+    {
+        public EnvironmentArea SourceArea;
+        public Vector2 WindVelocity;
+        public float WindResistanceFactor;
+        public float Duration;
+        public float StartTime;
+    }
     #endregion
 
     #region Internal State Variables
@@ -587,6 +597,12 @@ public class Heroin_move : MonoBehaviour
         }
 
         // --- 2. プレイヤー入力に基づく基本速度の計算 (X軸) ---
+        ApplyFadingWindEffects(
+            ref totalWindVelocity,
+            ref resistanceAgainstRight,
+            ref resistanceAgainstLeft
+        );
+
         float targetVelocityX = 0f; // 目標とする速度
 
         if (!isAttacking)
@@ -650,6 +666,48 @@ public class Heroin_move : MonoBehaviour
 
         // 速度を適用
         _rbody.velocity = new Vector2(finalVelocityX, finalVelocityY);
+    }
+
+    /// <summary>
+    /// 退出済みEnvironmentAreaの風と向かい風抵抗を徐々に減衰させます。
+    /// </summary>
+    private void ApplyFadingWindEffects(
+        ref Vector2 totalWindVelocity,
+        ref float resistanceAgainstRight,
+        ref float resistanceAgainstLeft
+    )
+    {
+        for (int i = fadingWinds.Count - 1; i >= 0; i--)
+        {
+            FadingWindState fadingWind = fadingWinds[i];
+            if (fadingWind.Duration <= 0f)
+            {
+                fadingWinds.RemoveAt(i);
+                continue;
+            }
+
+            float elapsedTime = Time.time - fadingWind.StartTime;
+            float remainingRate = 1f - elapsedTime / fadingWind.Duration;
+            if (remainingRate <= 0f)
+            {
+                fadingWinds.RemoveAt(i);
+                continue;
+            }
+
+            Vector2 currentWindVelocity = fadingWind.WindVelocity * remainingRate;
+            float currentResistance = fadingWind.WindResistanceFactor * remainingRate;
+
+            totalWindVelocity += currentWindVelocity;
+
+            if (currentWindVelocity.x < 0f)
+            {
+                resistanceAgainstRight = Mathf.Max(resistanceAgainstRight, currentResistance);
+            }
+            else if (currentWindVelocity.x > 0f)
+            {
+                resistanceAgainstLeft = Mathf.Max(resistanceAgainstLeft, currentResistance);
+            }
+        }
     }
 
     /// <summary>
@@ -1026,6 +1084,8 @@ public class Heroin_move : MonoBehaviour
     /// </summary>
     public void EnterEnvironmentArea(EnvironmentArea area)
     {
+        RemoveFadingWind(area);
+
         if (!activeEnvironments.Contains(area))
         {
             activeEnvironments.Add(area);
@@ -1037,9 +1097,42 @@ public class Heroin_move : MonoBehaviour
     /// </summary>
     public void ExitEnvironmentArea(EnvironmentArea area)
     {
-        if (activeEnvironments.Contains(area))
+        if (!activeEnvironments.Remove(area))
+            return;
+
+        RemoveFadingWind(area);
+
+        if (
+            area == null
+            || !area.IsWindFadeOutEnabled
+            || area.WindFadeOutDuration <= 0f
+            || area.WindVelocity == Vector2.zero
+        )
+            return;
+
+        fadingWinds.Add(
+            new FadingWindState
+            {
+                SourceArea = area,
+                WindVelocity = area.WindVelocity,
+                WindResistanceFactor = Mathf.Clamp01(area.WindResistanceFactor),
+                Duration = area.WindFadeOutDuration,
+                StartTime = Time.time,
+            }
+        );
+    }
+
+    /// <summary>
+    /// 指定したEnvironmentArea由来の減衰中の風を削除します。
+    /// </summary>
+    private void RemoveFadingWind(EnvironmentArea area)
+    {
+        for (int i = fadingWinds.Count - 1; i >= 0; i--)
         {
-            activeEnvironments.Remove(area);
+            if (fadingWinds[i].SourceArea == area)
+            {
+                fadingWinds.RemoveAt(i);
+            }
         }
     }
 

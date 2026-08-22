@@ -64,6 +64,10 @@ public class HeroController : MonoBehaviour
     [SerializeField, Tooltip("コンボ終了、または途切れた後のクールダウン時間")]
     private float _attackCooldown = 1.0f;
 
+    [Header("制御設定")]
+    [SerializeField, Tooltip("ゲーム開始時からHeroの制御（追従・攻撃・アニメーション）を有効にするか")]
+    private bool _isControlEnabled = false;
+
     #endregion
 
     #region 定数と内部変数
@@ -86,9 +90,11 @@ public class HeroController : MonoBehaviour
     private readonly int _hashIdleTrigger = Animator.StringToHash("IdleTrigger");
     private readonly int _hashAttack1Speed = Animator.StringToHash("Attack1Speed");
     private readonly int _hashAttack2Speed = Animator.StringToHash("Attack2Speed");
+    private readonly int _hashNormalIdleState = Animator.StringToHash(
+        "Base Layer.Hero_Normal_Idle"
+    );
 
     // 状態管理フラグ
-    private bool _isControlEnabled = false; // Heroの制御（追従やアニメーション）を行うかどうかのフラグ
     private bool _isGrounded; // 現在接地しているかどうか
 
     // 攻撃関連の状態管理
@@ -140,9 +146,6 @@ public class HeroController : MonoBehaviour
 
     private void Start()
     {
-        // 初期状態では制御を有効にする
-        SetControlEnabled(true);
-
         if (_player != null)
         {
             // スタート時にプレイヤーの現在位置へ即座に移動する
@@ -250,6 +253,12 @@ public class HeroController : MonoBehaviour
     public void SetControlEnabled(bool isEnabled)
     {
         _isControlEnabled = isEnabled;
+
+        if (isEnabled && _animator != null)
+        {
+            // 遷移条件に依存せず、特殊な待機状態などから通常の待機状態へ戻す
+            _animator.SetTrigger(_hashIdleTrigger);
+        }
     }
 
     /// <summary>

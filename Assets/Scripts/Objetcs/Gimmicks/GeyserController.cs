@@ -76,7 +76,7 @@ public class GeyserController : MonoBehaviour, IEnemyResettable
     private SpriteRenderer _spriteRenderer;
     private Animator _animator;
     private Animator _overlayAnimator;
-    private float _fixedBottomPositionY;
+    private Vector3 _fixedBottomPosition;
     private float _cycleElapsedTime;
     private bool _isInitialized;
 
@@ -88,8 +88,8 @@ public class GeyserController : MonoBehaviour, IEnemyResettable
         if (_overlaySpriteRenderer != null)
             _overlayAnimator = _overlaySpriteRenderer.GetComponent<Animator>();
 
-        _fixedBottomPositionY = transform.position.y
-            - (_spriteRenderer.size.y * Mathf.Abs(transform.lossyScale.y));
+        // Top Pivotからローカル下方向へ現在の高さ分進んだ位置を、伸縮時に動かさない底辺として保存する。
+        _fixedBottomPosition = transform.TransformPoint(Vector3.down * _spriteRenderer.size.y);
 
         UpdateChildWidths();
         InitializeOverlayAnimator();
@@ -239,9 +239,9 @@ public class GeyserController : MonoBehaviour, IEnemyResettable
         size.y = height;
         _spriteRenderer.size = size;
 
-        Vector3 position = transform.position;
-        position.y = _fixedBottomPositionY + (height * Mathf.Abs(transform.lossyScale.y));
-        transform.position = position;
+        // Rotation.zにかかわらず、保存した底辺からローカル上方向へ伸びるように本体位置を補正する。
+        Vector3 bottomOffset = transform.TransformVector(Vector3.down * height);
+        transform.position = _fixedBottomPosition - bottomOffset;
 
         SynchronizeEnvironmentArea(height);
     }

@@ -23,6 +23,7 @@ Shader "MyShaders/2D/SpriteLitFlash"
 
         // --- ホログラムプロパティ ---
         [Header(Hologram Effect)]
+        [Toggle(_HOLOGRAM_ON)] _HologramOn("Enable Hologram", Float) = 0
         _HologramStripesAmount("Stripes Amount", Range(0, 1)) = 0.1
         _HologramUnmodAmount("Unchanged Amount", Range(0, 1)) = 0.0
         _HologramStripesSpeed("Stripes Speed", Range(-20, 20)) = 4.5
@@ -37,6 +38,7 @@ Shader "MyShaders/2D/SpriteLitFlash"
         [HideInInspector] _Flip("Flip", Vector) = (1,1,1,1)
         [HideInInspector] _AlphaTex("External Alpha", 2D) = "white" {}
         [HideInInspector] _EnableExternalAlpha("Enable External Alpha", Float) = 0
+        [HideInInspector] _SpriteMaskStencilComp("Sprite Mask Stencil Comparison", Float) = 8
     }
 
     SubShader
@@ -50,6 +52,14 @@ Shader "MyShaders/2D/SpriteLitFlash"
         Pass
         {
             Tags { "LightMode" = "Universal2D" }
+
+            Stencil
+            {
+                Ref 1
+                ReadMask 1
+                Comp [_SpriteMaskStencilComp]
+                Pass Keep
+            }
 
             HLSLPROGRAM
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
@@ -228,6 +238,14 @@ Shader "MyShaders/2D/SpriteLitFlash"
         {
             Tags { "LightMode" = "NormalsRendering"}
 
+            Stencil
+            {
+                Ref 1
+                ReadMask 1
+                Comp [_SpriteMaskStencilComp]
+                Pass Keep
+            }
+
             HLSLPROGRAM
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
 
@@ -290,6 +308,14 @@ Shader "MyShaders/2D/SpriteLitFlash"
         Pass
         {
             Tags { "LightMode" = "UniversalForward" "Queue"="Transparent" "RenderType"="Transparent"}
+
+            Stencil
+            {
+                Ref 1
+                ReadMask 1
+                Comp [_SpriteMaskStencilComp]
+                Pass Keep
+            }
 
             HLSLPROGRAM
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"

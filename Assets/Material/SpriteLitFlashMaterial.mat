@@ -11,7 +11,8 @@ Material:
   m_Shader: {fileID: 4800000, guid: 24e1be8ef4e2dfd40982a02d31304931, type: 3}
   m_Parent: {fileID: 0}
   m_ModifiedSerializedProperties: 0
-  m_ValidKeywords: []
+  m_ValidKeywords:
+  - _HOLOGRAM_ON
   m_InvalidKeywords: []
   m_LightmapFlags: 4
   m_EnableInstancingVariants: 0
@@ -47,9 +48,10 @@ Material:
     m_Floats:
     - _EnableExternalAlpha: 0
     - _FlashAmount: 0
-    - _HologramBlend: 1
+    - _HologramBlend: 0
     - _HologramMaxAlpha: 0.75
     - _HologramMinAlpha: 0.1
+    - _HologramOn: 1
     - _HologramStripesAmount: 0.1
     - _HologramStripesSpeed: 4.5
     - _HologramUnmodAmount: 0
@@ -59,6 +61,7 @@ Material:
     - _OverlayOn: 0
     - _OverlayTextureScrollXSpeed: 0.25
     - _OverlayTextureScrollYSpeed: 0.25
+    - _SpriteMaskStencilComp: 8
     m_Colors:
     - _Color: {r: 1, g: 1, b: 1, a: 1}
     - _FlashColor: {r: 1, g: 1, b: 1, a: 1}

@@ -58,16 +58,53 @@ public class Chapter3BossMoveController : MonoBehaviour
     [SerializeField]
     private bool isDebugNoWait = false;
 
+    [Header("各攻撃のダメージ量")]
+    [Tooltip("下段攻撃でプレイヤーに与えるダメージ量")]
+    [SerializeField]
+    private int lowAttackDamage = 10;
+
+    [Tooltip("上段攻撃でプレイヤーに与えるダメージ量")]
+    [SerializeField]
+    private int highAttackDamage = 15;
+
+    [Tooltip("水平攻撃でプレイヤーに与えるダメージ量")]
+    [SerializeField]
+    private int horizontalAttackDamage = 15;
+
+    [Tooltip("突き攻撃でプレイヤーに与えるダメージ量")]
+    [SerializeField]
+    private int thrustDamage = 20;
+
+    [Tooltip("射撃の弾がプレイヤーに与えるダメージ量")]
+    [SerializeField]
+    private int shootDamage = 10;
+
+    [Tooltip("WindEffectがプレイヤーに与えるダメージ量")]
+    [SerializeField]
+    private int windEffectDamage = 15;
+
+    [Tooltip("Upper攻撃でプレイヤーに与えるダメージ量")]
+    [SerializeField]
+    private int upperAttackDamage = 15;
+
+    [Tooltip("幻影急襲でプレイヤーに与えるダメージ量")]
+    [SerializeField]
+    private int mirageAttackDamage = 15;
+
     [Header("エリア境界の設定")]
+    [Tooltip("ボスが行動できるエリアの左端X座標")]
     [SerializeField]
     private float areaLeftBound = -10f;
 
+    [Tooltip("ボスが行動できるエリアの右端X座標")]
     [SerializeField]
     private float areaRightBound = 10f;
 
+    [Tooltip("ボスが行動できるエリアの下端Y座標")]
     [SerializeField]
     private float areaBottomBound = -5f;
 
+    [Tooltip("ボスが行動できるエリアの上端Y座標")]
     [SerializeField]
     private float areaTopBound = 10f;
 
@@ -105,10 +142,6 @@ public class Chapter3BossMoveController : MonoBehaviour
     [SerializeField]
     private float lowAttackNextInterval = 1.0f;
 
-    [Tooltip("下段攻撃の攻撃力")]
-    [SerializeField]
-    private int lowAttackDamage = 10;
-
     [Tooltip("下段攻撃時に使用するContactDamageController")]
     [SerializeField]
     private ContactDamageController lowAttackDamageController;
@@ -143,10 +176,6 @@ public class Chapter3BossMoveController : MonoBehaviour
     [SerializeField]
     private float highAttackNextInterval = 1.0f;
 
-    [Tooltip("上段攻撃の攻撃力")]
-    [SerializeField]
-    private int highAttackDamage = 15;
-
     [Tooltip("上段攻撃時に使用するContactDamageController")]
     [SerializeField]
     private ContactDamageController highAttackDamageController;
@@ -163,10 +192,6 @@ public class Chapter3BossMoveController : MonoBehaviour
     [Tooltip("攻撃後待機時間（秒）")]
     [SerializeField]
     private float postHorizontalAttackWaitDuration = 1.0f;
-
-    [Tooltip("水平攻撃の攻撃力")]
-    [SerializeField]
-    private int horizontalAttackDamage = 15;
 
     [Tooltip("水平攻撃時に使用するContactDamageController")]
     [SerializeField]
@@ -201,10 +226,6 @@ public class Chapter3BossMoveController : MonoBehaviour
     [SerializeField]
     private float thrustAttackNextInterval = 1.0f;
 
-    [Tooltip("突き攻撃の攻撃力")]
-    [SerializeField]
-    private int thrustDamage = 20;
-
     [Tooltip("突き攻撃時に使用するContactDamageController")]
     [SerializeField]
     private ContactDamageController thrustDamageController;
@@ -225,10 +246,6 @@ public class Chapter3BossMoveController : MonoBehaviour
     [Tooltip("弾の速度")]
     [SerializeField]
     private float shootBulletSpeed = 10.0f;
-
-    [Tooltip("弾の攻撃力")]
-    [SerializeField]
-    private int shootDamage = 10;
 
     [Tooltip("Shoot攻撃フェーズ自体の時間（秒）")]
     [SerializeField]
@@ -294,10 +311,6 @@ public class Chapter3BossMoveController : MonoBehaviour
     [SerializeField]
     private int windEffectPoolSize = 5;
 
-    [Tooltip("WindEffectの攻撃力")]
-    [SerializeField]
-    private int windEffectDamage = 15;
-
     [Tooltip("WindEffectの移動速度（1秒間に進む距離）")]
     [SerializeField]
     private float windEffectSpeed = 20.0f;
@@ -331,10 +344,6 @@ public class Chapter3BossMoveController : MonoBehaviour
     [Tooltip("攻撃終了後、次の行動に移るまでの待機時間（秒）")]
     [SerializeField]
     private float rushComboNextInterval = 1.0f;
-
-    [Tooltip("Upper攻撃の攻撃力")]
-    [SerializeField]
-    private int upperAttackDamage = 15;
 
     [Tooltip("Upper攻撃時に使用するContactDamageController")]
     [SerializeField]
@@ -399,10 +408,6 @@ public class Chapter3BossMoveController : MonoBehaviour
     [SerializeField]
     private float mirageLowAttackProbability = 0.5f;
 
-    [Tooltip("幻影急襲の攻撃力")]
-    [SerializeField]
-    private int mirageAttackDamage = 15;
-
     [Tooltip("幻影急襲の最終攻撃終了後の専用待機時間（秒）")]
     [SerializeField]
     private float miragePostWaitDuration = 1.0f;
@@ -410,14 +415,45 @@ public class Chapter3BossMoveController : MonoBehaviour
     [Tooltip("攻撃終了後、次の行動に移るまでの待機時間（秒）")]
     [SerializeField]
     private float mirageAssaultNextInterval = 1.0f;
+
+    [Header("召喚演出の設定")]
+    [SerializeField, Tooltip("魔法陣と表示マスクをまとめたルート。ボスの子の場合のみ、演出中は切り離して地面に固定します。")]
+    private Transform summonEffectRoot;
+
+    [SerializeField, Tooltip("召喚時に展開する魔法陣のコントローラー")]
+    private MagicCircleController summonMagicCircleController;
+
+    [SerializeField, Tooltip("魔法陣より下側を隠すためのSpriteMask")]
+    private SpriteMask summonRevealMask;
+
+    [SerializeField, Tooltip("召喚時にSpriteMaskを適用する本体のSpriteRenderer。未設定時はホログラム対象を使用します。")]
+    private SpriteRenderer[] summonTargetRenderers;
+
+    [SerializeField, Tooltip("SummonEffectRootを基準にした、ボス本体の出現X座標オフセット")]
+    private float summonBodyOffsetX = 0f;
+
+    [SerializeField, Tooltip("SummonEffectRootを基準にした、出現前のボス本体の高さ")]
+    private float summonBodyStartHeightFromRoot = -6f;
+
+    [SerializeField, Tooltip("召喚エフェクトを表示してからボスが上昇を始めるまでの時間（秒）")]
+    private float summonCircleOpenDuration = 0.4f;
+
+    [SerializeField, Tooltip("ボスが地面から上昇する時間（秒）")]
+    private float summonRiseDuration = 1.8f;
+
+    [SerializeField, Tooltip("上昇完了後に魔法陣が消える時間（秒）")]
+    private float summonCircleCloseDuration = 0.5f;
     #endregion
 
     #region 内部管理変数・ハッシュ
     // 内部管理用変数
     private Animator _animator;
     private Coroutine _actionLoopCoroutine;
+    private Coroutine _summonAppearanceCoroutine;
     private Tween _moveTween;
     private Transform _playerTransform;
+    private readonly Dictionary<Sprite, Mesh> _summonGizmoMeshCache =
+        new Dictionary<Sprite, Mesh>();
     private bool _isFacingRight = false; // 現在右を向いているかどうかのフラグ（デフォルト左向き）
     private float _currentNextInterval = 1.0f; // 攻撃終了後の次の行動までの待機時間を管理する変数
 
@@ -482,6 +518,9 @@ public class Chapter3BossMoveController : MonoBehaviour
     // UpperAttack用ハッシュ (RushComboAttack内で使用)
     private readonly int _upperAttackTriggerHash = Animator.StringToHash("UpperAttackTrigger");
     private readonly int _upperAttackSpeedHash = Animator.StringToHash("UpperAttackSpeed");
+    private readonly int _spriteMaskStencilCompHash = Shader.PropertyToID(
+        "_SpriteMaskStencilComp"
+    );
     #endregion
 
     #region Unity ライフサイクル
@@ -501,6 +540,23 @@ public class Chapter3BossMoveController : MonoBehaviour
         {
             _moveTween.Kill();
         }
+
+        if (_summonAppearanceCoroutine != null)
+        {
+            StopCoroutine(_summonAppearanceCoroutine);
+        }
+
+        foreach (Mesh gizmoMesh in _summonGizmoMeshCache.Values)
+        {
+            if (gizmoMesh == null)
+                continue;
+
+            if (Application.isPlaying)
+                Destroy(gizmoMesh);
+            else
+                DestroyImmediate(gizmoMesh);
+        }
+        _summonGizmoMeshCache.Clear();
     }
 
     private void OnDrawGizmos()
@@ -556,12 +612,141 @@ public class Chapter3BossMoveController : MonoBehaviour
             new Vector3(drawLeft, thrustReadyY, transform.position.z),
             new Vector3(drawRight, thrustReadyY, transform.position.z)
         );
+
+        DrawSummonAppearanceGizmos();
+    }
+
+    /// <summary>
+    /// SummonEffectRootを基準に、召喚開始位置とIdle位置の本体シルエットを表示します。
+    /// </summary>
+    private void DrawSummonAppearanceGizmos()
+    {
+        if (summonEffectRoot == null)
+            return;
+
+        Vector3 startPosition = GetSummonStartPosition();
+        Vector3 finalPosition = GetSummonFinalPosition();
+        Vector3 rootPosition = summonEffectRoot.position;
+        rootPosition.z = transform.position.z;
+        Vector3 offsetCorner = new Vector3(startPosition.x, rootPosition.y, rootPosition.z);
+
+        Gizmos.color = new Color(1f, 0.8f, 0.1f, 0.9f);
+        Gizmos.DrawWireSphere(rootPosition, 0.25f);
+        Gizmos.DrawLine(rootPosition, offsetCorner);
+        Gizmos.DrawLine(offsetCorner, startPosition);
+
+        DrawSummonTargetSilhouette(startPosition, new Color(1f, 0.25f, 0.8f, 0.3f));
+        DrawSummonTargetSilhouette(finalPosition, new Color(0.1f, 1f, 1f, 0.3f));
+
+        Gizmos.color = new Color(0.1f, 1f, 1f, 0.7f);
+        Gizmos.DrawLine(startPosition, finalPosition);
+    }
+
+    private void DrawSummonTargetSilhouette(Vector3 bossPosition, Color color)
+    {
+        SpriteRenderer[] targetRenderers =
+            summonTargetRenderers != null && summonTargetRenderers.Length > 0
+                ? summonTargetRenderers
+                : hologramTargetRenderers;
+        if (targetRenderers == null)
+            return;
+
+        Vector3 positionOffset = bossPosition - transform.position;
+        Gizmos.color = color;
+
+        foreach (SpriteRenderer targetRenderer in targetRenderers)
+        {
+            if (targetRenderer == null || targetRenderer.sprite == null)
+                continue;
+
+            Mesh spriteMesh = GetOrCreateSummonGizmoMesh(targetRenderer.sprite);
+            if (spriteMesh == null)
+                continue;
+
+            Vector3 rendererScale = targetRenderer.transform.lossyScale;
+            if (targetRenderer.flipX)
+                rendererScale.x *= -1f;
+            if (targetRenderer.flipY)
+                rendererScale.y *= -1f;
+
+            Gizmos.DrawMesh(
+                spriteMesh,
+                targetRenderer.transform.position + positionOffset,
+                targetRenderer.transform.rotation,
+                rendererScale
+            );
+        }
+    }
+
+    private Mesh GetOrCreateSummonGizmoMesh(Sprite sprite)
+    {
+        if (sprite == null)
+            return null;
+
+        if (_summonGizmoMeshCache.TryGetValue(sprite, out Mesh cachedMesh))
+            return cachedMesh;
+
+        Vector2[] spriteVertices = sprite.vertices;
+        ushort[] spriteTriangles = sprite.triangles;
+        if (spriteVertices == null || spriteVertices.Length < 3)
+            return null;
+        if (spriteTriangles == null || spriteTriangles.Length < 3)
+            return null;
+
+        Vector3[] meshVertices = new Vector3[spriteVertices.Length];
+        for (int i = 0; i < spriteVertices.Length; i++)
+        {
+            meshVertices[i] = spriteVertices[i];
+        }
+
+        int[] meshTriangles = new int[spriteTriangles.Length];
+        for (int i = 0; i < spriteTriangles.Length; i++)
+        {
+            meshTriangles[i] = spriteTriangles[i];
+        }
+
+        Mesh mesh = new Mesh
+        {
+            name = $"{sprite.name}_SummonGizmoMesh",
+            hideFlags = HideFlags.HideAndDontSave,
+            vertices = meshVertices,
+            triangles = meshTriangles,
+        };
+        mesh.RecalculateBounds();
+        mesh.RecalculateNormals();
+
+        _summonGizmoMeshCache.Add(sprite, mesh);
+        return mesh;
+    }
+
+    private Vector3 GetSummonStartPosition()
+    {
+        Vector3 rootPosition =
+            summonEffectRoot != null ? summonEffectRoot.position : transform.position;
+        return new Vector3(
+            rootPosition.x + summonBodyOffsetX,
+            rootPosition.y + summonBodyStartHeightFromRoot,
+            transform.position.z
+        );
+    }
+
+    private Vector3 GetSummonFinalPosition()
+    {
+        float finalX =
+            summonEffectRoot != null
+                ? summonEffectRoot.position.x + summonBodyOffsetX
+                : transform.position.x;
+        return new Vector3(
+            finalX,
+            areaBottomBound + idleHeightFromBottom,
+            transform.position.z
+        );
     }
     #endregion
 
     #region 初期化・状態管理
     /// <summary>
-    /// ボスの状態をリセットし、初期行動（登場シーケンス）を開始します。
+    /// ボスの状態をリセットします。召喚演出と行動ループは開始しません。
     /// </summary>
     public void ResetState()
     {
@@ -578,7 +763,8 @@ public class Chapter3BossMoveController : MonoBehaviour
             _moveTween.Kill();
         }
 
-        StartCoroutine(IntroSequence());
+        CurrentState = BossState.Intro;
+        SetDamageAreaAlpha(0f);
     }
 
     /// <summary>
@@ -720,25 +906,208 @@ public class Chapter3BossMoveController : MonoBehaviour
 
     #region メインループ・状態推移
     /// <summary>
-    /// 登場時のシーケンスです。演出完了後にメインの行動ループへ移行します。
+    /// Fungusから呼び出し、魔法陣からボスが徐々に現れる召喚演出を開始します。
+    /// 行動ループは開始しないため、演出後にStartActionLoopを別途呼び出してください。
     /// </summary>
-    private IEnumerator IntroSequence()
+    public void PlaySummonAppearance()
+    {
+        if (_summonAppearanceCoroutine != null)
+        {
+            StopCoroutine(_summonAppearanceCoroutine);
+        }
+
+        _summonAppearanceCoroutine = StartCoroutine(SummonAppearanceSequence());
+    }
+
+    private IEnumerator SummonAppearanceSequence()
     {
         CurrentState = BossState.Intro;
+
+        if (_actionLoopCoroutine != null)
+        {
+            StopCoroutine(_actionLoopCoroutine);
+            _actionLoopCoroutine = null;
+        }
+
+        if (_moveTween != null && _moveTween.IsActive())
+        {
+            _moveTween.Kill();
+        }
 
         // Animatorの上書きに負けないタイミングで全攻撃判定の透明度を0に初期化
         SetDamageAreaAlpha(0f);
 
-        // 登場時の処理をここに記述（必要に応じて）
-        yield return null;
+        if (_animator != null)
+        {
+            _animator.CrossFadeInFixedTime(_idleStateHash, 0f);
+        }
 
-        StartActionLoop();
+        SpriteRenderer[] targetRenderers =
+            summonTargetRenderers != null && summonTargetRenderers.Length > 0
+                ? summonTargetRenderers
+                : hologramTargetRenderers;
+        var originalStencilComparisons = new Dictionary<Material, float>();
+
+        if (targetRenderers != null)
+        {
+            foreach (SpriteRenderer targetRenderer in targetRenderers)
+            {
+                if (targetRenderer == null)
+                    continue;
+
+                targetRenderer.maskInteraction = SpriteMaskInteraction.VisibleInsideMask;
+
+                if (targetRenderer.material != null)
+                {
+                    Material targetMaterial = targetRenderer.material;
+                    targetMaterial.EnableKeyword("_HOLOGRAM_ON");
+                    targetMaterial.SetFloat("_HologramBlend", 1f);
+
+                    if (targetMaterial.HasProperty(_spriteMaskStencilCompHash))
+                    {
+                        originalStencilComparisons[targetMaterial] = targetMaterial.GetFloat(
+                            _spriteMaskStencilCompHash
+                        );
+                        targetMaterial.SetFloat(
+                            _spriteMaskStencilCompHash,
+                            (float)UnityEngine.Rendering.CompareFunction.LessEqual
+                        );
+                    }
+                }
+
+                Color color = targetRenderer.color;
+                color.a = 1f;
+                targetRenderer.color = color;
+            }
+        }
+
+        Transform originalEffectParent = null;
+        int originalEffectSiblingIndex = 0;
+        Vector3 originalEffectLocalPosition = Vector3.zero;
+        Quaternion originalEffectLocalRotation = Quaternion.identity;
+        Vector3 originalEffectLocalScale = Vector3.one;
+        bool isEffectRootChildOfBoss = false;
+
+        if (summonEffectRoot != null)
+        {
+            summonEffectRoot.gameObject.SetActive(true);
+            isEffectRootChildOfBoss = summonEffectRoot.IsChildOf(transform);
+
+            if (isEffectRootChildOfBoss)
+            {
+                originalEffectParent = summonEffectRoot.parent;
+                originalEffectSiblingIndex = summonEffectRoot.GetSiblingIndex();
+                originalEffectLocalPosition = summonEffectRoot.localPosition;
+                originalEffectLocalRotation = summonEffectRoot.localRotation;
+                originalEffectLocalScale = summonEffectRoot.localScale;
+                summonEffectRoot.SetParent(null, true);
+            }
+        }
+
+        if (summonRevealMask != null)
+        {
+            summonRevealMask.enabled = true;
+        }
+
+        float openDuration = Mathf.Max(0f, summonCircleOpenDuration);
+        if (openDuration > 0f)
+        {
+            yield return new WaitForSeconds(openDuration);
+        }
+
+        Vector3 startPosition = GetSummonStartPosition();
+        Vector3 finalPosition = GetSummonFinalPosition();
+        transform.position = startPosition;
+
+        float riseDuration = Mathf.Max(0f, summonRiseDuration);
+        Sequence riseSequence = DOTween.Sequence();
+        riseSequence.Join(transform.DOMove(finalPosition, riseDuration).SetEase(Ease.OutCubic));
+
+        if (targetRenderers != null)
+        {
+            foreach (SpriteRenderer targetRenderer in targetRenderers)
+            {
+                if (targetRenderer != null && targetRenderer.material != null)
+                {
+                    riseSequence.Join(
+                        targetRenderer.material.DOFloat(0f, "_HologramBlend", riseDuration)
+                    );
+                }
+            }
+        }
+
+        yield return riseSequence.WaitForCompletion();
+
+        transform.position = finalPosition;
+
+        if (targetRenderers != null)
+        {
+            foreach (SpriteRenderer targetRenderer in targetRenderers)
+            {
+                if (targetRenderer == null)
+                    continue;
+
+                targetRenderer.material?.DisableKeyword("_HOLOGRAM_ON");
+                if (
+                    targetRenderer.material != null
+                    && originalStencilComparisons.TryGetValue(
+                        targetRenderer.material,
+                        out float stencilComparison
+                    )
+                )
+                {
+                    targetRenderer.material.SetFloat(
+                        _spriteMaskStencilCompHash,
+                        stencilComparison
+                    );
+                }
+                targetRenderer.maskInteraction = SpriteMaskInteraction.None;
+            }
+        }
+
+        if (summonRevealMask != null)
+        {
+            summonRevealMask.enabled = false;
+        }
+
+        float closeDuration = Mathf.Max(0f, summonCircleCloseDuration);
+        if (summonMagicCircleController != null)
+        {
+            summonMagicCircleController.ChangeScaleXY(
+                Vector2.zero,
+                closeDuration,
+                null,
+                Ease.InBack
+            );
+        }
+
+        if (closeDuration > 0f)
+        {
+            yield return new WaitForSeconds(closeDuration);
+        }
+
+        if (summonEffectRoot != null)
+        {
+            summonEffectRoot.gameObject.SetActive(false);
+
+            if (isEffectRootChildOfBoss)
+            {
+                summonEffectRoot.SetParent(originalEffectParent, false);
+                summonEffectRoot.SetSiblingIndex(originalEffectSiblingIndex);
+                summonEffectRoot.localPosition = originalEffectLocalPosition;
+                summonEffectRoot.localRotation = originalEffectLocalRotation;
+                summonEffectRoot.localScale = originalEffectLocalScale;
+            }
+        }
+
+        CurrentState = BossState.Idle;
+        _summonAppearanceCoroutine = null;
     }
 
     /// <summary>
     /// メイン行動ループのコルーチンを開始します。
     /// </summary>
-    private void StartActionLoop()
+    public void StartActionLoop()
     {
         if (_actionLoopCoroutine != null)
         {

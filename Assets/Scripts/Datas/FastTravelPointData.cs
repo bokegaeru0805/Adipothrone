@@ -10,7 +10,7 @@ public class FastTravelPointData : ScriptableObject, IItemIDProvider
         Chapter1 = 20,
         Desert = 30,
         ROYAL_CAPITAL = 40,
-        // 追加可能
+        SnowField = 50,
     }
 
     [Tooltip("ファストトラベル地点のID")]
@@ -45,6 +45,8 @@ public class FastTravelPointData : ScriptableObject, IItemIDProvider
                 return GameConstants.SCENE_NAME_DESERT;
             case SceneNameEnum.ROYAL_CAPITAL:
                 return GameConstants.SCENE_NAME_ROYAL_CAPITAL;
+            case SceneNameEnum.SnowField:
+                return GameConstants.SCENE_NAME_SNOW;
             case SceneNameEnum.None:
             default:
                 return string.Empty;

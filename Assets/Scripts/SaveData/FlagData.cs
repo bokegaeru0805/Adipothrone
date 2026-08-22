@@ -251,6 +251,7 @@ public enum Chapter3TriggeredEvent
     SnowMountainBlocker1Defeated = 3116, // 雪山の敵1を倒した
     SnowMountainBlocker2Defeated = 3119, // 雪山の敵2を倒した
     SnowMountainBlocker3Defeated = 3122, // 雪山の敵3を倒した
+    ReachedFinalBattleEntrance = 3131, // 最終決戦の入り口に到達した
 }
 
 /// <summary>

@@ -178,6 +178,13 @@ public class BossAfterDeath : MonoBehaviour
             FlashPanel.SetActive(true);
         }
 
+        // ゲーム終了時の仮処理
+        if (bossName == BossHealth.BossName.Chapter3Boss)
+        {
+            FadeCanvas.instance?.FadeOut(3.0f);
+            BGMManager.instance?.FadeOut(3.0f);
+        }
+
         for (int i = 0; i < DEFEAT_FLASH_COUNT; i++)
         {
             SEManager.instance?.PlaySystemEventSE(SE_SystemEvent.Impact1);
@@ -314,6 +321,13 @@ public class BossAfterDeath : MonoBehaviour
                 BGMManager.instance?.FadeOut(3.0f);
                 flagManager.SetBoolFlag(Chapter3TriggeredEvent.ApothecaryDefeated, true);
                 FungusHelper.ExecuteBlock(flowchart, "ApothecaryDefeat");
+                break;
+
+            case BossHealth.BossName.Chapter3Boss:
+                FungusHelper.ExecuteBlock(
+                    GlobalFlowchartController.instance.globalFlowchart,
+                    "GameClear"
+                );
                 break;
 
             case BossHealth.BossName.None:

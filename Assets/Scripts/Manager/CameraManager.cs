@@ -45,6 +45,11 @@ namespace MyGame.CameraControl
         private Tweener yDampingTween;
         public bool IsContinuousShakeActive { get; private set; } // 持続シェイクが実行中か
         private Tweener continuousShakeTween; // フェードアウト用のTween
+        private bool isManualContinuousShakeActive; // Cinemachine Brain停止中に実カメラを揺らしているか
+        private float manualShakeAmplitude;
+        private float manualShakeFrequency;
+        private Vector3 manualShakeStartPosition;
+        private Vector2 manualShakeEndPosition;
 
         // 現在設定されているDampingの基準値を保持する変数
         private float currentBaseXDamping = GameConstants.CAMERA_FOLLOW_DAMPING_X;
@@ -202,6 +207,22 @@ namespace MyGame.CameraControl
                 perlinNoise.m_AmplitudeGain = 0f;
                 perlinNoise.m_FrequencyGain = 0f;
             }
+        }
+
+        private void LateUpdate()
+        {
+            if (!isManualContinuousShakeActive || cam == null)
+                return;
+
+            float time = Time.unscaledTime * manualShakeFrequency;
+            float offsetX = (Mathf.PerlinNoise(time, 0f) * 2f - 1f) * manualShakeAmplitude;
+            float offsetY = (Mathf.PerlinNoise(0f, time) * 2f - 1f) * manualShakeAmplitude;
+
+            cam.transform.localPosition = new Vector3(
+                manualShakeStartPosition.x + offsetX,
+                manualShakeStartPosition.y + offsetY,
+                manualShakeStartPosition.z
+            );
         }
         #endregion
 
@@ -507,7 +528,25 @@ namespace MyGame.CameraControl
         /// </summary>
         public void PlayContinuousShake(float amplitude, float frequency)
         {
-            if (perlinNoise == null)
+            PlayContinuousShake(amplitude, frequency, false, Vector2.zero);
+        }
+
+        /// <summary>
+        /// 持続シェイクを開始し、停止後のカメラ座標を設定します。
+        /// Cinemachine Brain停止中は実カメラを直接揺らします。
+        /// </summary>
+        /// <param name="amplitude">揺れの強さ（振幅）</param>
+        /// <param name="frequency">揺れの速さ（周波数）</param>
+        /// <param name="isUseCustomEndPosition">停止後に任意座標を使用するか</param>
+        /// <param name="customEndPosition">停止後のX/Y座標。Z座標はシェイク開始時の値を維持します。</param>
+        public void PlayContinuousShake(
+            float amplitude,
+            float frequency,
+            bool isUseCustomEndPosition,
+            Vector2 customEndPosition
+        )
+        {
+            if (cam == null)
                 return;
 
             // 既存のシェイク処理があれば強制停止
@@ -517,6 +556,28 @@ namespace MyGame.CameraControl
 
             IsContinuousShakeActive = true;
             isPriorityShakeActive = true; // 他のヒットストップ等による上書きを防止
+
+            manualShakeStartPosition = cam.transform.localPosition;
+            manualShakeEndPosition = isUseCustomEndPosition
+                ? customEndPosition
+                : new Vector2(manualShakeStartPosition.x, manualShakeStartPosition.y);
+
+            var brain = cam.GetComponent<CinemachineBrain>();
+            isManualContinuousShakeActive = brain != null && !brain.enabled;
+
+            if (isManualContinuousShakeActive)
+            {
+                manualShakeAmplitude = amplitude;
+                manualShakeFrequency = frequency;
+                return;
+            }
+
+            if (perlinNoise == null)
+            {
+                IsContinuousShakeActive = false;
+                isPriorityShakeActive = false;
+                return;
+            }
 
             perlinNoise.m_NoiseProfile = takeHitNoiseSettings; // ヒット時と同じProfileを使用
             perlinNoise.m_AmplitudeGain = amplitude;
@@ -530,11 +591,38 @@ namespace MyGame.CameraControl
         public void StopContinuousShake(float fadeDuration)
         {
             // 実行中でなければ何もしない
-            if (perlinNoise == null || !IsContinuousShakeActive)
+            if (!IsContinuousShakeActive)
                 return;
 
             IsContinuousShakeActive = false; // フラグを即座に折り、多重実行を防止
             continuousShakeTween?.Kill();
+
+            if (isManualContinuousShakeActive)
+            {
+                if (fadeDuration <= 0f)
+                {
+                    CompleteManualContinuousShake();
+                }
+                else
+                {
+                    continuousShakeTween = DOTween
+                        .To(
+                            () => manualShakeAmplitude,
+                            x => manualShakeAmplitude = x,
+                            0f,
+                            fadeDuration
+                        )
+                        .SetUpdate(true)
+                        .OnComplete(CompleteManualContinuousShake);
+                }
+                return;
+            }
+
+            if (perlinNoise == null)
+            {
+                isPriorityShakeActive = false;
+                return;
+            }
 
             if (fadeDuration <= 0f)
             {
@@ -562,6 +650,22 @@ namespace MyGame.CameraControl
                         isPriorityShakeActive = false;
                     });
             }
+        }
+
+        private void CompleteManualContinuousShake()
+        {
+            isManualContinuousShakeActive = false;
+            manualShakeAmplitude = 0f;
+            isPriorityShakeActive = false;
+
+            if (cam == null)
+                return;
+
+            cam.transform.localPosition = new Vector3(
+                manualShakeEndPosition.x,
+                manualShakeEndPosition.y,
+                manualShakeStartPosition.z
+            );
         }
         #endregion
 

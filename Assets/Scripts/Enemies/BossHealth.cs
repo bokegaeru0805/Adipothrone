@@ -29,6 +29,7 @@ public class BossHealth : CharacterHealth
         DesertTempleBossSmoke = 50,
         DesertTempleBoss = 60,
         Apothecary = 70,
+        Chapter3Boss = 80,
     }
 
     /// <summary>

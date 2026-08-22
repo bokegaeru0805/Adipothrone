@@ -321,12 +321,6 @@ public class CameraMoveArea : MonoBehaviour
         playerTransform = playerCollider.transform;
         cameraOffsetY = GameConstants.PLAYER_CAMERA_FOLLOW_OFFSET.y;
 
-        // Dampingによる追従遅れでカメラが新しい境界へめり込むことを防ぐ。
-        if (yDampingResetDuration > 0 && CameraManager.instance != null)
-        {
-            CameraManager.instance.TriggerTemporaryDampingReset(yDampingResetDuration);
-        }
-
         if (!isAreaBgmLocked)
         {
             PlayBgmBasedOnFlags();
@@ -336,6 +330,12 @@ public class CameraMoveArea : MonoBehaviour
             areaLight.gameObject.SetActive(true);
 
         ApplyAreaSettings();
+
+        // 新エリアの基準Dampingを反映してから一時的に0へ変更し、進入直後の高さへ即座に追従させる。
+        if (yDampingResetDuration > 0 && CameraManager.instance != null)
+        {
+            CameraManager.instance.TriggerTemporaryDampingReset(yDampingResetDuration);
+        }
 
         if (lockCameraToCenter && CameraManager.instance != null)
         {

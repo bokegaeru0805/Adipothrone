@@ -55,7 +55,25 @@ public class EnvironmentArea : MonoBehaviour
 
     [Tooltip("風に向かって歩く際の抵抗係数。\n1.0に近いほど、向かい風で強く減速します。")]
     [Range(0.0f, 1.0f)]
-    public float WindResistanceFactor = 0.5f;
+    public float WindResistanceFactor = 0.0f;
+
+    [Tooltip("エリア退出後、風と向かい風抵抗を徐々に減衰させるかどうか")]
+    [SerializeField]
+    private bool isWindFadeOutEnabled = false;
+
+    [Tooltip("風と向かい風抵抗が完全になくなるまでの秒数")]
+    [SerializeField, ShowIf(nameof(isWindFadeOutEnabled)), Min(0f)]
+    private float windFadeOutDuration = 1f;
+
+    /// <summary>
+    /// エリア退出後に風を徐々に減衰させるかどうか。
+    /// </summary>
+    public bool IsWindFadeOutEnabled => isWindFadeOutEnabled;
+
+    /// <summary>
+    /// エリア退出後に風が完全になくなるまでの秒数。
+    /// </summary>
+    public float WindFadeOutDuration => windFadeOutDuration;
 
     [Header("落下制限")]
     [Tooltip(

@@ -19,6 +19,16 @@ public class StartCameraShakeCommand : Command
     [SerializeField]
     protected float frequency = 1.0f;
 
+    [Header("終了位置の設定")]
+    [Tooltip("シェイク終了後、開始時の座標ではなく任意の座標へ移動するか")]
+    [SerializeField]
+    protected bool isUseCustomEndPosition = false;
+
+    [Tooltip("シェイク終了後のX/Y座標。Z座標はシェイク開始時の値を維持します。")]
+    [AllowNesting]
+    [SerializeField, ShowIf(nameof(isUseCustomEndPosition))]
+    protected Vector2 customEndPosition;
+
     [Header("停止条件の設定")]
     [Tooltip("時間経過で自動停止するかどうか")]
     [SerializeField]
@@ -62,7 +72,12 @@ public class StartCameraShakeCommand : Command
         }
 
         // 1. 揺れを開始
-        MyGame.CameraControl.CameraManager.instance.PlayContinuousShake(amplitude, frequency);
+        MyGame.CameraControl.CameraManager.instance.PlayContinuousShake(
+            amplitude,
+            frequency,
+            isUseCustomEndPosition,
+            customEndPosition
+        );
 
         // 2. 時間経過での停止が有効な場合、タイマーを開始
         if (stopByTime)
@@ -129,7 +144,10 @@ public class StartCameraShakeCommand : Command
     public override string GetSummary()
     {
         string stopType = stopByTime ? $"Time({timeToStop}s)" : "Manual Stop Only";
-        return $"Amp:{amplitude}, Freq:{frequency} | {stopType}";
+        string endPosition = isUseCustomEndPosition
+            ? $"End:{customEndPosition}"
+            : "End:Start Position";
+        return $"Amp:{amplitude}, Freq:{frequency} | {stopType} | {endPosition}";
     }
 
     public override Color GetButtonColor()
