@@ -10,6 +10,10 @@ using UnityEngine;
 [RequireComponent(typeof(Collider2D))]
 public class ContactDamageController : MonoBehaviour
 {
+#if UNITY_EDITOR
+    private const string CONTACT_DAMAGE_LOG_KEY = "MyGame_ShowContactDamageLogs";
+#endif
+
     /// <summary>
     /// ダメージの種類を定義する列挙型
     /// </summary>
@@ -260,6 +264,17 @@ public class ContactDamageController : MonoBehaviour
             cachedKnockbackData.sourcePosition = this.transform.position; // 衝突時の自分の位置を使用
             cachedKnockbackData.fixedDirection = currentFixedDirection;
             cachedKnockbackData.force = currentKnockbackForce;
+
+#if UNITY_EDITOR
+            if (UnityEditor.EditorPrefs.GetBool(CONTACT_DAMAGE_LOG_KEY, false))
+            {
+                Debug.Log(
+                    $"<color=#FFA500>[{gameObject.name}]</color> "
+                        + $"プレイヤーへの接触ダメージを呼び出します。"
+                        + $" 種類: {currentDamageType}, 設定値: {currentDamageValue}"
+                );
+            }
+#endif
 
             // 現在の設定値(current~)を使ってダメージ処理を実行
             switch (currentDamageType)

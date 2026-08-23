@@ -7,6 +7,8 @@ using UnityEngine;
 [CustomPropertyDrawer(typeof(FlagConditionPro))]
 public class FlagConditionDrawerPro : PropertyDrawer
 {
+    private const float NarrowInspectorWidth = 420f;
+
     private static readonly Dictionary<string, int> arraySizeCache =
         new Dictionary<string, int>();
 
@@ -14,10 +16,11 @@ public class FlagConditionDrawerPro : PropertyDrawer
     private static Dictionary<string, string[]> valueNamesCache =
         new Dictionary<string, string[]>();
 
-    // 常に2行分の高さを返す
     public override float GetPropertyHeight(SerializedProperty property, GUIContent label)
     {
-        return EditorGUIUtility.singleLineHeight * 2 + EditorGUIUtility.standardVerticalSpacing;
+        int lineCount = IsNarrowLayout() ? 3 : 2;
+        return EditorGUIUtility.singleLineHeight * lineCount
+            + EditorGUIUtility.standardVerticalSpacing * (lineCount - 1);
     }
 
     public override void OnGUI(Rect position, SerializedProperty property, GUIContent label)
@@ -40,7 +43,9 @@ public class FlagConditionDrawerPro : PropertyDrawer
             InitializeCondition(property);
         }
 
-        // --- レイアウトを計算 (2行に分割) ---
+        bool isNarrowLayout = IsNarrowLayout();
+
+        // --- Inspector幅に応じてレイアウトを2行または3行に分割 ---
         var line1Rect = new Rect(
             position.x,
             position.y,
@@ -50,6 +55,12 @@ public class FlagConditionDrawerPro : PropertyDrawer
         var line2Rect = new Rect(
             position.x,
             line1Rect.yMax + EditorGUIUtility.standardVerticalSpacing,
+            position.width,
+            EditorGUIUtility.singleLineHeight
+        );
+        var line3Rect = new Rect(
+            position.x,
+            line2Rect.yMax + EditorGUIUtility.standardVerticalSpacing,
             position.width,
             EditorGUIUtility.singleLineHeight
         );
@@ -70,7 +81,7 @@ public class FlagConditionDrawerPro : PropertyDrawer
         var currentConditionType = (FlagConditionPro.ConditionType)conditionTypeProp.enumValueIndex;
         if (currentConditionType == FlagConditionPro.ConditionType.Door)
         {
-            DrawDoorCondition(enumTypeRect, line2Rect, property);
+            DrawDoorCondition(enumTypeRect, line2Rect, line3Rect, property, isNarrowLayout);
             EditorGUI.EndProperty();
             return;
         }
@@ -96,7 +107,10 @@ public class FlagConditionDrawerPro : PropertyDrawer
             currentTypeIndex = Math.Max(0, Array.IndexOf(fullTypeNames, defaultType.AssemblyQualifiedName));
         }
 
-        int newTypeIndex = EditorGUI.Popup(enumTypeRect, currentTypeIndex, displayTypeNames);
+        GUIContent[] enumTypeLabels = displayTypeNames
+            .Select(typeName => new GUIContent(typeName, typeName))
+            .ToArray();
+        int newTypeIndex = EditorGUI.Popup(enumTypeRect, currentTypeIndex, enumTypeLabels);
         if (newTypeIndex != currentTypeIndex || string.IsNullOrEmpty(enumTypeNameProp.stringValue))
         {
             if (fullTypeNames.Length > 0)
@@ -127,17 +141,22 @@ public class FlagConditionDrawerPro : PropertyDrawer
             Array.Empty<string>()
         );
 
-        var valueNameRect = new Rect(
-            line2Rect.x,
-            line2Rect.y,
-            line2Rect.width * 0.5f - 2,
-            line2Rect.height
-        );
+        var valueNameRect = isNarrowLayout
+            ? line2Rect
+            : new Rect(
+                line2Rect.x,
+                line2Rect.y,
+                line2Rect.width * 0.5f - 2,
+                line2Rect.height
+            );
         int currentValueIndex = Array.IndexOf(valueNames, enumValueNameProp.stringValue);
         if (currentValueIndex == -1)
             currentValueIndex = 0;
 
-        int newValueIndex = EditorGUI.Popup(valueNameRect, currentValueIndex, valueNames);
+        GUIContent[] valueLabels = valueNames
+            .Select(valueName => new GUIContent(valueName, valueName))
+            .ToArray();
+        int newValueIndex = EditorGUI.Popup(valueNameRect, currentValueIndex, valueLabels);
         if (valueNames.Length > 0)
         {
             enumValueNameProp.stringValue = valueNames[newValueIndex];
@@ -145,24 +164,39 @@ public class FlagConditionDrawerPro : PropertyDrawer
 
         if (currentConditionType == FlagConditionPro.ConditionType.Bool)
         {
-            var boolRect = new Rect(valueNameRect.xMax + 5, line2Rect.y, 20, line2Rect.height);
             var boolProp = property.FindPropertyRelative("requiredBoolValue");
-            boolProp.boolValue = EditorGUI.Toggle(boolRect, boolProp.boolValue);
+            if (isNarrowLayout)
+            {
+                boolProp.boolValue = EditorGUI.Popup(
+                    line3Rect,
+                    boolProp.boolValue ? 0 : 1,
+                    new[] { "True", "False" }
+                ) == 0;
+            }
+            else
+            {
+                var boolRect = new Rect(valueNameRect.xMax + 5, line2Rect.y, 20, line2Rect.height);
+                boolProp.boolValue = EditorGUI.Toggle(boolRect, boolProp.boolValue);
+            }
         }
         else // Int
         {
-            // レイアウト計算をよりシンプルで正確なものに変更
+            Rect intSettingsRect = isNarrowLayout ? line3Rect : line2Rect;
+            float settingsStartX = isNarrowLayout ? intSettingsRect.x : valueNameRect.xMax + 5;
+            float settingsWidth = isNarrowLayout
+                ? intSettingsRect.width
+                : line2Rect.width - (settingsStartX - line2Rect.x);
             var comparisonRect = new Rect(
-                valueNameRect.xMax + 5,
-                line2Rect.y,
-                line2Rect.width * 0.25f - 2,
-                line2Rect.height
+                settingsStartX,
+                intSettingsRect.y,
+                settingsWidth * 0.5f - 2,
+                intSettingsRect.height
             );
             var intRect = new Rect(
                 comparisonRect.xMax + 5,
-                line2Rect.y,
-                line2Rect.width * 0.25f - 3,
-                line2Rect.height
+                intSettingsRect.y,
+                settingsWidth * 0.5f - 3,
+                intSettingsRect.height
             );
 
             var comparisonProp = property.FindPropertyRelative("intComparison");
@@ -236,7 +270,9 @@ public class FlagConditionDrawerPro : PropertyDrawer
     private static void DrawDoorCondition(
         Rect labelRect,
         Rect valueRect,
-        SerializedProperty property
+        Rect narrowStateRect,
+        SerializedProperty property,
+        bool isNarrowLayout
     )
     {
         EditorGUI.LabelField(labelRect, "ドア解放状態");
@@ -245,18 +281,22 @@ public class FlagConditionDrawerPro : PropertyDrawer
         var requiredBoolValueProp = property.FindPropertyRelative("requiredBoolValue");
         int[] doorIds = FlagManager.GetDoorConditionIds().ToArray();
 
-        var doorRect = new Rect(
-            valueRect.x,
-            valueRect.y,
-            valueRect.width * 0.5f - 2,
-            valueRect.height
-        );
-        var stateRect = new Rect(
-            doorRect.xMax + 5,
-            valueRect.y,
-            valueRect.width * 0.5f - 3,
-            valueRect.height
-        );
+        var doorRect = isNarrowLayout
+            ? valueRect
+            : new Rect(
+                valueRect.x,
+                valueRect.y,
+                valueRect.width * 0.5f - 2,
+                valueRect.height
+            );
+        var stateRect = isNarrowLayout
+            ? narrowStateRect
+            : new Rect(
+                doorRect.xMax + 5,
+                valueRect.y,
+                valueRect.width * 0.5f - 3,
+                valueRect.height
+            );
 
         if (doorIds.Length == 0)
         {
@@ -278,5 +318,10 @@ public class FlagConditionDrawerPro : PropertyDrawer
             requiredBoolValueProp.boolValue ? 0 : 1,
             new[] { "解放済み", "未解放" }
         ) == 0;
+    }
+
+    private static bool IsNarrowLayout()
+    {
+        return EditorGUIUtility.currentViewWidth < NarrowInspectorWidth;
     }
 }

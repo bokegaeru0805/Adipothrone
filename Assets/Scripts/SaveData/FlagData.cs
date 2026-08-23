@@ -46,6 +46,10 @@ public enum KeyID
 
     // --- 雪山のキー ---
     K13 = 1301,
+    // --- 塔のギミックのキー1 ---
+    K14 = 1401,
+    // --- 塔のギミックのキー2 ---
+    K15 = 1501,
 }
 
 /// 【重要】
@@ -217,6 +221,8 @@ public enum Chapter3TriggeredEvent
     FirstEnteredSnowVillage = 3019, // 初めて雪国の村に入った
     FirstTalkedToVillageChief = 3022, // 初めて村長と話した
     FirstMetBoy = 3025, // 初めて少年に会った
+    DiscoveredParkEntrance = 3026, // 公園の入り口を発見した
+    FirstTalkedToFrogShopManager = 3027, // 初めてカエルの店長と話した
     ReachedCaveEntrance = 3028, // 洞窟の入口に到達した
     ReachedTowerGate = 3031, // 塔の入り口に到達した
     ReachedTowerEntrance = 3034, // 塔の入り口に到達した

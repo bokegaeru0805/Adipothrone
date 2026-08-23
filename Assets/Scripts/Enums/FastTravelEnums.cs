@@ -7,4 +7,7 @@ public enum FastTravelName
     DesertVillage = 20020, //砂漠の村
     DesertHinterland = 20025, // 砂漠の奥地
     DesertTemple = 20030, // 砂漠の神殿
+    SnowVillage = 20040, //雪の村
+    Tower = 20045, //塔
+    MountainCave = 20050, //山の洞窟
 }

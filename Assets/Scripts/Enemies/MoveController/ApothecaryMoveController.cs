@@ -6,6 +6,15 @@ using UnityEngine;
 /// <summary>
 /// ボスキャラクター「Apothecary」の移動、各種攻撃パターンの実行、
 /// テレポート回避、およびオブジェクトプールを統合管理するコントローラークラスです。
+///
+/// 攻撃方法一覧:
+/// ・炎攻撃: 確率ですり抜けるバウンド炎弾を連射する
+/// ・風攻撃: プレイヤーを狙い、角度にブレのある直進弾を発射する
+/// ・氷攻撃: 薄い足場につららを配置し、時間差で落下させる
+/// ・雷攻撃: 互いに近すぎないランダムな位置へ複数の球状の雷を発生させる
+/// ・光攻撃: 回転する予測線でチャージした後、複数のレーザーを放つ
+///
+/// 現在HPに応じた確率で攻撃方法を抽選し、同じ攻撃は連続で実行しません。
 /// </summary>
 public class ApothecaryMoveController : MonoBehaviour
 {
@@ -25,6 +34,16 @@ public class ApothecaryMoveController : MonoBehaviour
         ThunderAttacking, // 雷攻撃状態
         LightAttacking, // 光攻撃状態
         Teleporting, // ダメージ蓄積による瞬間移動状態
+    }
+
+    private enum AttackType
+    {
+        None = 0,
+        Fire = 1,
+        Wind = 2,
+        Ice = 3,
+        Thunder = 4,
+        Light = 5,
     }
 
     public ApothecaryState CurrentState { get; private set; } = ApothecaryState.Intro;
@@ -336,6 +355,7 @@ public class ApothecaryMoveController : MonoBehaviour
     private Transform _playerTransform;
     private SpriteRenderer _bodySpriteRenderer;
     private bool isFacingRight = true;
+    private AttackType _lastAttackType = AttackType.None;
 
     // テレポート（ダメージ監視）用の内部変数
     private CharacterHealth _characterHealth;
@@ -453,6 +473,10 @@ public class ApothecaryMoveController : MonoBehaviour
     /// </summary>
     public void StartAction()
     {
+        // ボス起動前のFungus演出で変更されたflipXを、右向きが基準の初期状態へ戻す
+        if (_bodySpriteRenderer != null)
+            _bodySpriteRenderer.flipX = false;
+
         // プレイヤーの取得
         if (_playerTransform == null)
         {
@@ -495,6 +519,11 @@ public class ApothecaryMoveController : MonoBehaviour
         );
         _icePlatforms.Clear();
         _icePlatforms.AddRange(colliders);
+
+        if (_characterHealth is BossHealth bossHealth)
+        {
+            bossHealth.InitializeBossSpecifics();
+        }
 
         // 攻撃ループを開始
         StartAttackLoop();
@@ -627,17 +656,128 @@ public class ApothecaryMoveController : MonoBehaviour
     {
         while (true)
         {
-            // 1. 攻撃方法の選択（現状はテストのため、光攻撃を例に記述）
-            // 実際はランダム抽選等で PerformFireAttack() や PerformIceAttack() 等に分岐させます
-            yield return StartCoroutine(PerformLightAttack());
+            // 1. 攻撃開始時点のプレイヤー位置に合わせて向きを更新する。
+            UpdateFacingDirection();
 
-            // 2. 待機状態への移行
+            // 2. 現在HPに応じて攻撃方法を抽選する。同じ攻撃は連続で選ばない。
+            AttackType attackType = SelectAttackType();
+            _lastAttackType = attackType;
+
+            switch (attackType)
+            {
+                case AttackType.Fire:
+                    yield return StartCoroutine(PerformFireAttack());
+                    break;
+                case AttackType.Wind:
+                    yield return StartCoroutine(PerformWindAttack());
+                    break;
+                case AttackType.Ice:
+                    yield return StartCoroutine(PerformIceAttack());
+                    break;
+                case AttackType.Thunder:
+                    yield return StartCoroutine(PerformThunderAttack());
+                    break;
+                case AttackType.Light:
+                    yield return StartCoroutine(PerformLightAttack());
+                    break;
+            }
+
+            // 3. 待機状態への移行
             CurrentState = ApothecaryState.Idle;
 
-            // 3. 次の攻撃までのインターバル待機
+            // 4. 次の攻撃までのインターバル待機
             float waitTime = IsDebugNoWaitActive ? 0f : 3.0f;
             yield return new WaitForSeconds(waitTime);
         }
+    }
+
+    /// <summary>
+    /// 現在HPに対応する重みから、直前に使用した攻撃を除外して次の攻撃を抽選します。
+    /// </summary>
+    private AttackType SelectAttackType()
+    {
+        float normalizedHP = _characterHealth != null ? _characterHealth.NormalizedHP : 1f;
+
+        float fireWeight;
+        float windWeight;
+        float iceWeight;
+        float thunderWeight;
+        float lightWeight;
+
+        if (normalizedHP >= 0.75f)
+        {
+            fireWeight = 50f;
+            windWeight = 50f;
+            iceWeight = 0f;
+            thunderWeight = 0f;
+            lightWeight = 0f;
+        }
+        else if (normalizedHP >= 0.5f)
+        {
+            fireWeight = 35f;
+            windWeight = 35f;
+            iceWeight = 30f;
+            thunderWeight = 0f;
+            lightWeight = 0f;
+        }
+        else if (normalizedHP >= 0.25f)
+        {
+            fireWeight = 33f;
+            windWeight = 33f;
+            iceWeight = 17f;
+            thunderWeight = 17f;
+            lightWeight = 0f;
+        }
+        else
+        {
+            fireWeight = 22.5f;
+            windWeight = 22.5f;
+            iceWeight = 22.5f;
+            thunderWeight = 22.5f;
+            lightWeight = 10f;
+        }
+
+        if (_lastAttackType == AttackType.Fire)
+            fireWeight = 0f;
+        else if (_lastAttackType == AttackType.Wind)
+            windWeight = 0f;
+        else if (_lastAttackType == AttackType.Ice)
+            iceWeight = 0f;
+        else if (_lastAttackType == AttackType.Thunder)
+            thunderWeight = 0f;
+        else if (_lastAttackType == AttackType.Light)
+            lightWeight = 0f;
+
+        float randomValue = Random.Range(
+            0f,
+            fireWeight + windWeight + iceWeight + thunderWeight + lightWeight
+        );
+
+        if (randomValue < fireWeight)
+            return AttackType.Fire;
+
+        randomValue -= fireWeight;
+        if (randomValue < windWeight)
+            return AttackType.Wind;
+
+        randomValue -= windWeight;
+        if (randomValue < iceWeight)
+            return AttackType.Ice;
+
+        randomValue -= iceWeight;
+        if (randomValue < thunderWeight)
+            return AttackType.Thunder;
+
+        if (lightWeight > 0f)
+            return AttackType.Light;
+        if (thunderWeight > 0f)
+            return AttackType.Thunder;
+        if (iceWeight > 0f)
+            return AttackType.Ice;
+        if (windWeight > 0f)
+            return AttackType.Wind;
+
+        return AttackType.Fire;
     }
 
     #endregion --- メイン行動ループ ---
@@ -1408,6 +1548,8 @@ public class ApothecaryMoveController : MonoBehaviour
         // 変更：消滅時にも魔法陣を表示（出現時の逆の手順で、縦に閉じるように縮小）
         if (magicCircleController != null)
         {
+            // 登場演出後は透明度が0になっているため、テレポート演出用に再表示する
+            magicCircleController.ChangeAlpha(1f, 0f, 1f);
             magicCircleController.ChangeScaleX(1f, 0f); // 横幅を即時に1へ展開
             magicCircleController.ChangeScaleY(0f, teleportOutDuration, 1f); // 縦幅を1から0へ徐々に縮小して消滅を演出
         }

@@ -112,6 +112,11 @@ public class GargoyleMoveController : MonoBehaviour, IEnemyResettable
     [Tooltip("大きい弾の設定")]
     private BulletSettings largeBulletSettings;
 
+    [Header("着地エフェクト設定")]
+    [SerializeField]
+    [Tooltip("弾がバウンドした地点に表示するエフェクトのプレハブ")]
+    private GameObject boundEffectPrefab;
+
     [Header("弾の発射パターン")]
     [SerializeField]
     [Tooltip("trueの場合、大と小の弾を交互に発射します。falseの場合はランダム（等確率）です。")]
@@ -136,6 +141,12 @@ public class GargoyleMoveController : MonoBehaviour, IEnemyResettable
     // 使い回すための弾インスタンス
     private GameObject pooledSmallBullet;
     private GameObject pooledLargeBullet;
+
+    private const int BoundEffectPoolSize = 3;
+    private readonly GameObject[] pooledBoundEffects = new GameObject[BoundEffectPoolSize];
+    private readonly Animator[] pooledBoundEffectAnimators = new Animator[BoundEffectPoolSize];
+    private readonly Coroutine[] boundEffectDisableCoroutines = new Coroutine[BoundEffectPoolSize];
+    private int nextBoundEffectIndex = 0;
 
     private bool fireSmallBulletNext = true; // 交互発射時に次に小さい弾を撃つかどうかのフラグ
 
@@ -195,6 +206,9 @@ public class GargoyleMoveController : MonoBehaviour, IEnemyResettable
         {
             Debug.LogError("大きい弾のプレハブがアサインされていません。");
         }
+
+        CreateBoundEffectPool();
+        SubscribeToBulletBounceEvents();
 
         ResetState();
     }
@@ -262,6 +276,8 @@ public class GargoyleMoveController : MonoBehaviour, IEnemyResettable
             pooledSmallBullet.SetActive(false);
         if (pooledLargeBullet != null)
             pooledLargeBullet.SetActive(false);
+
+        ResetBoundEffects();
 
         // 交互発射の順番をリセット（最初は小さい弾から）
         fireSmallBulletNext = true;
@@ -418,6 +434,136 @@ public class GargoyleMoveController : MonoBehaviour, IEnemyResettable
     }
     #endregion
 
+    #region 着地エフェクト処理
+    /// <summary>
+    /// 着地エフェクトを固定数だけ事前生成します。
+    /// </summary>
+    private void CreateBoundEffectPool()
+    {
+        if (boundEffectPrefab == null)
+        {
+            Debug.LogError("着地エフェクトのプレハブがアサインされていません。", this);
+            return;
+        }
+
+        for (int i = 0; i < BoundEffectPoolSize; i++)
+        {
+            GameObject effect = Instantiate(boundEffectPrefab, transform);
+            effect.SetActive(false);
+
+            pooledBoundEffects[i] = effect;
+            pooledBoundEffectAnimators[i] = effect.GetComponent<Animator>();
+
+            if (pooledBoundEffectAnimators[i] == null)
+            {
+                Debug.LogWarning($"{boundEffectPrefab.name}にAnimatorが見つかりません。", effect);
+            }
+        }
+    }
+
+    /// <summary>
+    /// 事前生成した弾からバウンド地点の通知を受け取れるようにします。
+    /// </summary>
+    private void SubscribeToBulletBounceEvents()
+    {
+        SubscribeToBulletBounceEvent(pooledSmallBullet);
+        SubscribeToBulletBounceEvent(pooledLargeBullet);
+    }
+
+    private void SubscribeToBulletBounceEvent(GameObject bullet)
+    {
+        if (bullet == null)
+            return;
+
+        BouncingBulletController bounceController = bullet.GetComponent<BouncingBulletController>();
+        if (bounceController != null)
+        {
+            bounceController.Bounced += PlayBoundEffect;
+        }
+    }
+
+    /// <summary>
+    /// 最も古い着地エフェクトを再利用し、指定位置で先頭から再生します。
+    /// </summary>
+    private void PlayBoundEffect(Vector2 position)
+    {
+        int effectIndex = nextBoundEffectIndex;
+        nextBoundEffectIndex = (nextBoundEffectIndex + 1) % BoundEffectPoolSize;
+
+        GameObject effect = pooledBoundEffects[effectIndex];
+        if (effect == null)
+            return;
+
+        if (boundEffectDisableCoroutines[effectIndex] != null)
+        {
+            StopCoroutine(boundEffectDisableCoroutines[effectIndex]);
+            boundEffectDisableCoroutines[effectIndex] = null;
+        }
+
+        effect.SetActive(false);
+        effect.transform.position = new Vector3(position.x, position.y, transform.position.z);
+        effect.SetActive(true);
+
+        Animator animator = pooledBoundEffectAnimators[effectIndex];
+        if (animator == null)
+        {
+            effect.SetActive(false);
+            return;
+        }
+
+        animator.Play(0, 0, 0f);
+        boundEffectDisableCoroutines[effectIndex] = StartCoroutine(
+            DisableBoundEffectAfterOneLoop(effectIndex)
+        );
+    }
+
+    /// <summary>
+    /// Animatorの現在のステートを1周再生した後、エフェクトを非アクティブ化します。
+    /// </summary>
+    private IEnumerator DisableBoundEffectAfterOneLoop(int effectIndex)
+    {
+        Animator animator = pooledBoundEffectAnimators[effectIndex];
+
+        // Animatorが再生状態を更新するまで1フレーム待つ
+        yield return null;
+
+        while (
+            pooledBoundEffects[effectIndex] != null
+            && pooledBoundEffects[effectIndex].activeSelf
+            && animator.GetCurrentAnimatorStateInfo(0).normalizedTime < 1f
+        )
+        {
+            yield return null;
+        }
+
+        if (pooledBoundEffects[effectIndex] != null)
+        {
+            pooledBoundEffects[effectIndex].SetActive(false);
+        }
+
+        boundEffectDisableCoroutines[effectIndex] = null;
+    }
+
+    private void ResetBoundEffects()
+    {
+        nextBoundEffectIndex = 0;
+
+        for (int i = 0; i < BoundEffectPoolSize; i++)
+        {
+            if (boundEffectDisableCoroutines[i] != null)
+            {
+                StopCoroutine(boundEffectDisableCoroutines[i]);
+                boundEffectDisableCoroutines[i] = null;
+            }
+
+            if (pooledBoundEffects[i] != null)
+            {
+                pooledBoundEffects[i].SetActive(false);
+            }
+        }
+    }
+    #endregion
+
     #region 補助・調整処理
     /// <summary>
     /// 配置時に地面に埋まっている場合、埋まらない位置までY座標を上方向に調整します
@@ -464,6 +610,8 @@ public class GargoyleMoveController : MonoBehaviour, IEnemyResettable
             pooledSmallBullet.SetActive(false);
         if (pooledLargeBullet != null)
             pooledLargeBullet.SetActive(false);
+
+        ResetBoundEffects();
     }
 
     private void OnDrawGizmosSelected()
@@ -478,9 +626,13 @@ public class GargoyleMoveController : MonoBehaviour, IEnemyResettable
 
     private void OnDrawGizmos()
     {
+        // Editor上ではrightFlagがまだ初期化されていないため、手動設定時はInspectorの向きを使用する
+        bool isGizmoFacingRight = isManualInitialDirection ? initialFacingRight : rightFlag;
+
         // 攻撃範囲の描画（赤色の半透明な矩形）
         Gizmos.color = new Color(1f, 0f, 0f, 0.3f);
-        float attackCenterX = transform.position.x + (rightFlag ? 1 : -1) * (attackRangeX / 2);
+        float attackCenterX =
+            transform.position.x + (isGizmoFacingRight ? 1 : -1) * (attackRangeX / 2);
         Vector3 attackCenter = new Vector3(
             attackCenterX,
             transform.position.y,
@@ -497,7 +649,9 @@ public class GargoyleMoveController : MonoBehaviour, IEnemyResettable
             Vector3 gizmoSpawnPos =
                 transform.position
                 + new Vector3(
-                    rightFlag ? smallBulletSettings.offset.x : -smallBulletSettings.offset.x,
+                    isGizmoFacingRight
+                        ? smallBulletSettings.offset.x
+                        : -smallBulletSettings.offset.x,
                     smallBulletSettings.offset.y,
                     0
                 );

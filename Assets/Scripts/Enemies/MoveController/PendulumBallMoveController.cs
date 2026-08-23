@@ -15,6 +15,18 @@ public class PendulumBallMoveController : MonoBehaviour, IEnemyResettable
         Tower = 1,
     }
 
+    private enum MoveType
+    {
+        Pendulum = 0,
+        ContinuousRotation = 1,
+    }
+
+    private enum RotationDirection
+    {
+        Clockwise = 0,
+        Counterclockwise = 1,
+    }
+
     #endregion
 
     #region インスペクター設定
@@ -27,14 +39,22 @@ public class PendulumBallMoveController : MonoBehaviour, IEnemyResettable
     [SerializeField, Tooltip("接触ダメージを与える鉄球のコントローラー")]
     private ContactDamageController _contactDamageController = null;
 
-    [Header("振り子運動の設定")]
+    [SerializeField, Min(0f), Tooltip("親SpriteRendererの幅から差し引く鉄球位置の補正値")]
+    private float _contactDamagePositionOffset = 1.25f;
+
+    [Header("回転運動の設定")]
+    [SerializeField, Tooltip("振り子運動または360度の連続回転を選択します")]
+    private MoveType _moveType = MoveType.Pendulum;
+
     [SerializeField, Tooltip("運動の起点となる角度（度数法：右真横が0度）")]
+    [ShowIf(nameof(IsPendulumMovement))]
     private float _startAngle = -45f;
 
     [SerializeField, Tooltip("運動の終点となる角度（度数法：右真横が0度）")]
+    [ShowIf(nameof(IsPendulumMovement))]
     private float _endAngle = 45f;
 
-    [SerializeField, Tooltip("振り子の平均移動速度（度/秒）")]
+    [SerializeField, Tooltip("回転運動の速度（度/秒）")]
     private float _moveSpeed = 90f;
 
     [
@@ -44,14 +64,20 @@ public class PendulumBallMoveController : MonoBehaviour, IEnemyResettable
             "端点での減速の強さ（0: 一定速度で折り返し, 1: 標準的な加減速, 大きいほど端で長く止まる）"
         )
     ]
+    [ShowIf(nameof(IsPendulumMovement))]
     private float _decelerationPower = 1.0f;
+
+    [SerializeField, ShowIf(nameof(IsContinuousRotation))]
+    [Tooltip("360度回転時の回転方向")]
+    private RotationDirection _rotationDirection = RotationDirection.Clockwise;
 
     [Header("初期位置タイミング設定")]
     [SerializeField, Tooltip("有効にすると、配置時やリセット時の開始位置を完全にランダムにします")]
+    [ShowIf(nameof(IsPendulumMovement))]
     private bool _isRandomStart = false;
 
     [SerializeField, Range(0f, 1f)]
-    [HideIf(nameof(_isRandomStart))]
+    [ShowIf(nameof(ShowNormalizedStartTime))]
     [Tooltip(
         "1周期内における開始位置のタイミング（0:起点角度, 0.25:中間から終点へ, 0.5:終点角度, 0.75:中間から起点へ）"
     )]
@@ -63,6 +89,11 @@ public class PendulumBallMoveController : MonoBehaviour, IEnemyResettable
     private int _damageValue = 20;
     private float _initialOffsetAngle;
     private float _elapsedTime;
+    private SpriteRenderer _spriteRenderer;
+
+    private bool IsPendulumMovement => _moveType == MoveType.Pendulum;
+    private bool IsContinuousRotation => _moveType == MoveType.ContinuousRotation;
+    private bool ShowNormalizedStartTime => IsPendulumMovement && !_isRandomStart;
 
     #endregion
 
@@ -70,6 +101,12 @@ public class PendulumBallMoveController : MonoBehaviour, IEnemyResettable
 
     private void Awake()
     {
+        // EnemyActivatorはStartより先にResetStateを呼ぶ場合があるため、配置時の角度はAwakeで保存する
+        _initialOffsetAngle = transform.eulerAngles.z;
+
+        _spriteRenderer = GetComponent<SpriteRenderer>();
+        UpdateContactDamagePosition();
+
         // バリアントに基づく設定の再現（必要に応じて拡張可能）
         switch (_variantType)
         {
@@ -84,13 +121,13 @@ public class PendulumBallMoveController : MonoBehaviour, IEnemyResettable
 
     private void Start()
     {
-        // エディタ上で配置された初期のZ軸回転を基準オフセットとして保存
-        _initialOffsetAngle = transform.eulerAngles.z;
         ResetState();
     }
 
     private void FixedUpdate()
     {
+        UpdateContactDamagePosition();
+
         // ゲーム内時間停止マネージャーの状況を確認
         if (TimeManager.instance != null && TimeManager.instance.isEnemyMovePaused)
         {
@@ -107,7 +144,7 @@ public class PendulumBallMoveController : MonoBehaviour, IEnemyResettable
         _elapsedTime += Time.fixedDeltaTime;
 
         // 現在の角度を計算して適用
-        UpdatePendulumRotation();
+        UpdateMovementRotation();
     }
 
     #endregion
@@ -119,6 +156,8 @@ public class PendulumBallMoveController : MonoBehaviour, IEnemyResettable
     /// </summary>
     public void ResetState()
     {
+        UpdateContactDamagePosition();
+
         // 鉄球部分の ContactDamageController にダメージ値を適用
         if (_contactDamageController != null)
         {
@@ -135,7 +174,14 @@ public class PendulumBallMoveController : MonoBehaviour, IEnemyResettable
         if (fullCycleDuration <= 0f)
         {
             _elapsedTime = 0f;
-            UpdatePendulumRotation();
+            UpdateMovementRotation();
+            return;
+        }
+
+        if (IsContinuousRotation)
+        {
+            _elapsedTime = 0f;
+            UpdateMovementRotation();
             return;
         }
 
@@ -146,12 +192,74 @@ public class PendulumBallMoveController : MonoBehaviour, IEnemyResettable
         _elapsedTime = startTimeRatio * fullCycleDuration;
 
         // 即座に計算上の回転角度を適用
-        UpdatePendulumRotation();
+        UpdateMovementRotation();
     }
 
     #endregion
 
+    #region 鉄球位置の更新
+
+    /// <summary>
+    /// 親SpriteRendererの幅に合わせて、接触ダメージを持つ鉄球のローカルX座標を更新します。
+    /// </summary>
+    private void UpdateContactDamagePosition()
+    {
+        if (_contactDamageController == null)
+        {
+            return;
+        }
+
+        if (_spriteRenderer == null)
+        {
+            _spriteRenderer = GetComponent<SpriteRenderer>();
+        }
+
+        if (_spriteRenderer == null)
+        {
+            return;
+        }
+
+        Transform contactDamageTransform = _contactDamageController.transform;
+        Vector3 localPosition = contactDamageTransform.localPosition;
+        localPosition.x = _spriteRenderer.size.x - _contactDamagePositionOffset;
+        contactDamageTransform.localPosition = localPosition;
+    }
+
+#if UNITY_EDITOR
+    private void OnValidate()
+    {
+        _spriteRenderer = GetComponent<SpriteRenderer>();
+        UpdateContactDamagePosition();
+    }
+#endif
+
+    #endregion
+
     #region 振り子計算・更新処理
+
+    /// <summary>
+    /// 選択されている移動タイプに応じたZ軸回転を適用します。
+    /// </summary>
+    private void UpdateMovementRotation()
+    {
+        if (IsContinuousRotation)
+        {
+            UpdateContinuousRotation();
+            return;
+        }
+
+        UpdatePendulumRotation();
+    }
+
+    /// <summary>
+    /// 指定方向へ360度回転し続ける角度を適用します。
+    /// </summary>
+    private void UpdateContinuousRotation()
+    {
+        float direction = _rotationDirection == RotationDirection.Clockwise ? -1f : 1f;
+        float angle = Mathf.Repeat(_elapsedTime * _moveSpeed, 360f) * direction;
+        ApplyZRotation(angle);
+    }
 
     /// <summary>
     /// 現在の経過時間から正確な回転角度を算出し、Transformに適用します。
@@ -258,18 +366,42 @@ public class PendulumBallMoveController : MonoBehaviour, IEnemyResettable
     /// </summary>
     private void OnDrawGizmosSelected()
     {
-        // ゲーム実行中はStart時にキャッシュした初期オフセットを使い、エディタ編集時は現在のZ軸回転を基準にする
+        // SpriteRenderer側のWidth変更はOnValidateで検知できない場合があるため、
+        // 選択中はSceneビューの再描画に合わせて鉄球位置を同期する
+        UpdateContactDamagePosition();
+
+        // ゲーム実行中はAwake時にキャッシュした初期オフセットを使い、エディタ編集時は現在のZ軸回転を基準にする
         float offset = Application.isPlaying ? _initialOffsetAngle : transform.eulerAngles.z;
 
-        // 半径としてSpriteRendererのTiledのWidth（size.x）を取得（取得できない場合は1.0をデフォルト値とする）
-        float radius = 1.0f;
+        // SpriteRendererのTiledのWidthを、TransformのScaleを含むワールド距離へ変換する
+        float localRadius = 1.0f;
         SpriteRenderer spriteRenderer = GetComponent<SpriteRenderer>();
         if (spriteRenderer != null)
         {
-            radius = spriteRenderer.size.x;
+            localRadius = spriteRenderer.size.x;
         }
 
+        float outerRadius = GetWorldRadius(localRadius);
+        float contactCenterRadius = GetWorldRadius(
+            Mathf.Max(0f, localRadius - _contactDamagePositionOffset)
+        );
+        float innerRadius = GetWorldRadius(
+            Mathf.Max(0f, localRadius - _contactDamagePositionOffset * 2f)
+        );
+
         Vector3 center = transform.position;
+
+        if (IsContinuousRotation)
+        {
+            DrawContinuousRotationGizmo(
+                center,
+                contactCenterRadius,
+                innerRadius,
+                outerRadius
+            );
+            return;
+        }
+
         float finalStartAngle = offset + _startAngle;
         float totalAngle = _endAngle - _startAngle;
 
@@ -280,7 +412,7 @@ public class PendulumBallMoveController : MonoBehaviour, IEnemyResettable
             Vector3.forward,
             GetDirectionFromAngle(finalStartAngle),
             totalAngle,
-            radius
+            outerRadius
         );
 
         // 2. 扇形の外枠（円弧）を描画
@@ -290,13 +422,25 @@ public class PendulumBallMoveController : MonoBehaviour, IEnemyResettable
             Vector3.forward,
             GetDirectionFromAngle(finalStartAngle),
             totalAngle,
-            radius
+            outerRadius
+        );
+
+        DrawContactDamageRangeGizmo(
+            center,
+            finalStartAngle,
+            totalAngle,
+            innerRadius,
+            contactCenterRadius,
+            outerRadius
         );
 
         // 起点と終点の境界線を描画
         Gizmos.color = new Color(0f, 1f, 0f, 0.6f);
-        Gizmos.DrawLine(center, center + GetDirectionFromAngle(finalStartAngle) * radius);
-        Gizmos.DrawLine(center, center + GetDirectionFromAngle(offset + _endAngle) * radius);
+        Gizmos.DrawLine(center, center + GetDirectionFromAngle(finalStartAngle) * outerRadius);
+        Gizmos.DrawLine(
+            center,
+            center + GetDirectionFromAngle(offset + _endAngle) * outerRadius
+        );
 
         // 3. ランダム開始でない場合、ResetState時の初期角度を赤線で目立たせて描画
         if (!_isRandomStart)
@@ -309,7 +453,7 @@ public class PendulumBallMoveController : MonoBehaviour, IEnemyResettable
 
             // 初期位置を太い赤線で強調描画
             UnityEditor.Handles.color = Color.red;
-            UnityEditor.Handles.DrawLine(center, center + initialDir * radius, 3f);
+            UnityEditor.Handles.DrawLine(center, center + initialDir * outerRadius, 3f);
         }
     }
 
@@ -322,6 +466,124 @@ public class PendulumBallMoveController : MonoBehaviour, IEnemyResettable
     {
         float rad = angleDegrees * Mathf.Deg2Rad;
         return new Vector3(Mathf.Cos(rad), Mathf.Sin(rad), 0f);
+    }
+
+    /// <summary>
+    /// ローカルX軸上の半径を、TransformのScaleを含むワールド距離へ変換します。
+    /// </summary>
+    private float GetWorldRadius(float localRadius)
+    {
+        return transform.TransformVector(Vector3.right * localRadius).magnitude;
+    }
+
+    /// <summary>
+    /// 360度回転の軌道と回転方向を示す矢印を描画します。
+    /// </summary>
+    private void DrawContinuousRotationGizmo(
+        Vector3 center,
+        float contactCenterRadius,
+        float innerRadius,
+        float outerRadius
+    )
+    {
+        Color gizmoColor =
+            _rotationDirection == RotationDirection.Clockwise
+                ? new Color(1f, 0.6f, 0f, 0.9f)
+                : new Color(0f, 0.7f, 1f, 0.9f);
+
+        UnityEditor.Handles.color = gizmoColor;
+        UnityEditor.Handles.DrawWireDisc(center, Vector3.forward, outerRadius);
+
+        DrawContactDamageRangeGizmo(
+            center,
+            0f,
+            360f,
+            innerRadius,
+            contactCenterRadius,
+            outerRadius
+        );
+
+        // 円の右端に、回転方向を示す接線方向の矢印を描く
+        Vector3 arrowTip = center + Vector3.right * contactCenterRadius;
+        Vector3 tangent =
+            _rotationDirection == RotationDirection.Clockwise ? Vector3.down : Vector3.up;
+        float arrowLength = Mathf.Max(contactCenterRadius * 0.2f, 0.25f);
+        Vector3 arrowBase = arrowTip - tangent * arrowLength;
+        Vector3 arrowSideA = Quaternion.Euler(0f, 0f, 30f) * -tangent;
+        Vector3 arrowSideB = Quaternion.Euler(0f, 0f, -30f) * -tangent;
+
+        UnityEditor.Handles.DrawLine(arrowBase, arrowTip, 3f);
+        UnityEditor.Handles.DrawLine(
+            arrowTip,
+            arrowTip + arrowSideA * arrowLength * 0.5f,
+            3f
+        );
+        UnityEditor.Handles.DrawLine(
+            arrowTip,
+            arrowTip + arrowSideB * arrowLength * 0.5f,
+            3f
+        );
+    }
+
+    /// <summary>
+    /// 鉄球本体が通過する範囲を、内周から外周までの半透明の帯として描画します。
+    /// </summary>
+    private void DrawContactDamageRangeGizmo(
+        Vector3 center,
+        float startAngle,
+        float sweepAngle,
+        float innerRadius,
+        float contactCenterRadius,
+        float outerRadius
+    )
+    {
+        const int FullCircleSegments = 72;
+        int segmentCount = Mathf.Max(
+            1,
+            Mathf.CeilToInt(Mathf.Abs(sweepAngle) / 360f * FullCircleSegments)
+        );
+        Color rangeColor = new Color(1f, 0.2f, 0.1f, 0.18f);
+
+        UnityEditor.Handles.color = rangeColor;
+        for (int i = 0; i < segmentCount; i++)
+        {
+            float angleA = startAngle + sweepAngle * i / segmentCount;
+            float angleB = startAngle + sweepAngle * (i + 1) / segmentCount;
+            Vector3 directionA = GetDirectionFromAngle(angleA);
+            Vector3 directionB = GetDirectionFromAngle(angleB);
+
+            UnityEditor.Handles.DrawAAConvexPolygon(
+                center + directionA * innerRadius,
+                center + directionA * outerRadius,
+                center + directionB * outerRadius,
+                center + directionB * innerRadius
+            );
+        }
+
+        UnityEditor.Handles.color = new Color(1f, 0.2f, 0.1f, 0.8f);
+        UnityEditor.Handles.DrawWireArc(
+            center,
+            Vector3.forward,
+            GetDirectionFromAngle(startAngle),
+            sweepAngle,
+            innerRadius
+        );
+        UnityEditor.Handles.DrawWireArc(
+            center,
+            Vector3.forward,
+            GetDirectionFromAngle(startAngle),
+            sweepAngle,
+            outerRadius
+        );
+
+        UnityEditor.Handles.color = new Color(1f, 1f, 0f, 0.9f);
+        UnityEditor.Handles.DrawWireArc(
+            center,
+            Vector3.forward,
+            GetDirectionFromAngle(startAngle),
+            sweepAngle,
+            contactCenterRadius
+        );
     }
 #endif
 

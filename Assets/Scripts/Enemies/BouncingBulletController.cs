@@ -10,12 +10,15 @@ using UnityEngine;
 [RequireComponent(typeof(SpriteRenderer))]
 public class BouncingBulletController : MonoBehaviour
 {
+    /// <summary>
+    /// 弾が地面へ着地（バウンド）した地点を通知します。
+    /// </summary>
+    public event System.Action<Vector2> Bounced;
+
     #region 設定項目
-    [Header("バウンド設定")]
-    [SerializeField]
-    [Tooltip("地面と判定するレイヤーマスク")]
     private LayerMask groundLayer;
 
+    [Header("バウンド設定")]
     [SerializeField]
     [Tooltip("最大バウンド回数")]
     private int maxBounces = 3;
@@ -44,6 +47,11 @@ public class BouncingBulletController : MonoBehaviour
     #region 初期化処理
     private void Awake()
     {
+        groundLayer = LayerMask.GetMask(
+            GameConstants.PHYSICS_LAYER_NAME_GROUND,
+            GameConstants.PHYSICS_LAYER_NAME_OBJECT_GROUND
+        );
+
         myCollider = GetComponent<Collider2D>();
         rb = GetComponent<Rigidbody2D>();
         spriteRenderer = GetComponent<SpriteRenderer>();
@@ -114,6 +122,7 @@ public class BouncingBulletController : MonoBehaviour
                         transform.position.z
                     );
 
+                    Bounced?.Invoke(hit.point);
                     Bounce();
                 }
                 else

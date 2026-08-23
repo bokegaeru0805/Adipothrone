@@ -161,14 +161,14 @@ public class UIManager : MonoBehaviour, IPanelStackManager
             && // メニューを開く入力があった
             !playerManager.isControlLocked; // プレイヤーが操作不能状態ではない
 
-        if (inputManager.MenuUIOpen() && !canOpenMenu)
-        {
-            Debug.Log(
-                "メニューを開く条件を満たしていないため、入力は無視されました。条件詳細: "
-                    + $"isTalking={isTalking}, MenuPanel.activeSelf={uiRefs.MenuPanel.activeSelf}, Time.timeScale={Time.timeScale}, "
-                    + $"playerManager.isControlLocked={playerManager.isControlLocked}"
-            );
-        }
+        // if (inputManager.MenuUIOpen() && !canOpenMenu)
+        // {
+        //     Debug.Log(
+        //         "メニューを開く条件を満たしていないため、入力は無視されました。条件詳細: "
+        //             + $"isTalking={isTalking}, MenuPanel.activeSelf={uiRefs.MenuPanel.activeSelf}, Time.timeScale={Time.timeScale}, "
+        //             + $"playerManager.isControlLocked={playerManager.isControlLocked}"
+        //     );
+        // }
 
         if (canOpenMenu)
         {

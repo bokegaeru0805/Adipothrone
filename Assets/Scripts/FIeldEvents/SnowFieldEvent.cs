@@ -114,14 +114,18 @@ public class SnowFieldEvent : BaseFieldEvent
                 }
                 break;
             case FieldName.MountainEntrance:
-                if (
+                if (flagManager.GetBoolFlag(Chapter3TriggeredEvent.DiscoveredParkEntrance))
+                {
+                    flagManager.SetBoolFlag(Chapter3TriggeredEvent.DiscoveredParkEntrance, true);
+                    FungusHelper.ExecuteBlock(targetFlowchart, "DiscoveredParkEntrance");
+                }
+                else if (
                     flagManager.GetBoolFlag(Chapter3TriggeredEvent.HeroineCapturedByVillagers)
                     && !flagManager.GetBoolFlag(Chapter3TriggeredEvent.ReunitedWithRobot)
                 )
                 {
                     flagManager.SetBoolFlag(Chapter3TriggeredEvent.ReunitedWithRobot, true);
                     FungusHelper.ExecuteBlock(targetFlowchart, "ReunitedWithRobot");
-                    isEventTriggered = true; // イベントがトリガーされたことを記録
                 }
                 break;
             case FieldName.CaveEntrance:
@@ -182,6 +186,9 @@ public class SnowFieldEvent : BaseFieldEvent
                 {
                     flagManager.SetBoolFlag(Chapter3TriggeredEvent.ApothecaryCaptured, true);
                     FungusHelper.ExecuteBlock(targetFlowchart, "ReachedUnderExit");
+                    GameManager.instance.savedata.FastTravelData.RegisterFastTravelData(
+                        FastTravelName.Tower
+                    ); // タワーのファストトラベル地点を解放(詰み防止)
                     isEventTriggered = true; // イベントがトリガーされたことを記録
                 }
                 break;

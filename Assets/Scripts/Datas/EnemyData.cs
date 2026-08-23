@@ -24,7 +24,7 @@ public class EnemyData : ScriptableObject, IItemIDProvider
 
     [TextArea]
     public string description; // 説明文
-    public int enemyHP; // 最大HP
+    public int enemyHP = 1; // 最大HP
     public int rewardExp; // 倒したときに獲得できる経験値
     public int dropMoney; // 落とす金額
     public int requiredLevel; // 所要レベル

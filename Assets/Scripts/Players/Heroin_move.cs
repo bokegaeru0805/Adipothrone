@@ -41,6 +41,16 @@ public class Heroin_move : MonoBehaviour
     /// </summary>
     public bool IsImmune => immunity;
 
+    /// <summary>
+    /// 現在の水平方向の移動入力意図。左は-1、入力なしは0、右は1を返します。
+    /// </summary>
+    public float HorizontalMoveIntent { get; private set; }
+
+    /// <summary>
+    /// 現在接地しているかどうかを返します。
+    /// </summary>
+    public bool IsGrounded => isGrounded;
+
     public float m_defaultSpeed { get; private set; } = 4.0f; // 通常の歩行速度
 
     // プレイヤーの可視状態が変化したときに呼び出されるイベント
@@ -157,6 +167,7 @@ public class Heroin_move : MonoBehaviour
 
         // 初期化
         vx = 0;
+        HorizontalMoveIntent = GetHorizontalMoveIntent();
 
         // ポーズ中、会話中、死亡中、物理停止中は入力を受け付けない
         if (Time.timeScale > 0f && !gameManager.IsTalking && !isDead && isPhysicsActive)
@@ -373,9 +384,9 @@ public class Heroin_move : MonoBehaviour
     /// </summary>
     private void HandleMovementInput()
     {
-        if ((inputManager.GetPlayerMoveRight() || inputManager.GetPlayerMoveLeft()) && move)
+        if (HorizontalMoveIntent != 0f && move)
         {
-            bool movingRight = inputManager.GetPlayerMoveRight();
+            bool movingRight = HorizontalMoveIntent > 0f;
 
             // 画像の向きとアニメーション設定
             _spriteRenderer.flipX = movingRight;
@@ -708,6 +719,19 @@ public class Heroin_move : MonoBehaviour
                 resistanceAgainstLeft = Mathf.Max(resistanceAgainstLeft, currentResistance);
             }
         }
+    }
+
+    /// <summary>
+    /// 左右同時入力時は、既存挙動と同じく右入力を優先します。
+    /// </summary>
+    private float GetHorizontalMoveIntent()
+    {
+        if (inputManager.GetPlayerMoveRight())
+            return 1f;
+        if (inputManager.GetPlayerMoveLeft())
+            return -1f;
+
+        return 0f;
     }
 
     /// <summary>

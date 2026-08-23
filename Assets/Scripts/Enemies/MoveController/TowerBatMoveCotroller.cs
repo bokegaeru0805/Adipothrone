@@ -126,6 +126,7 @@ public class TowerBatMoveController : MonoBehaviour, IEnemyResettable
         _animator = GetComponent<Animator>();
         _rbody = GetComponent<Rigidbody2D>();
         _enemyHP = GetComponent<EnemyHealth>();
+        _initialPosition = transform.position;
 
         if (_rbody != null)
         {
@@ -152,7 +153,6 @@ public class TowerBatMoveController : MonoBehaviour, IEnemyResettable
 
     private void Start()
     {
-        _initialPosition = transform.position;
         ResetState();
     }
 

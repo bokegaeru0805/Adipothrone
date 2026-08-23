@@ -867,9 +867,14 @@ namespace Fungus.EditorUtils
             {
                 DrawOverlay(Event.current);
             }
-            catch (Exception)
+            catch (ExitGUIException)
             {
-                //Debug.Log("Failed to draw overlay in some way");
+                throw;
+            }
+            catch (Exception exception)
+            {
+                Debug.LogException(exception);
+                GUIUtility.ExitGUI();
             }
 
             // Handle events for custom GUI
@@ -1578,65 +1583,69 @@ namespace Fungus.EditorUtils
             Rect scriptViewRect = CalcFlowchartWindowViewRect();
 
             EditorZoomArea.Begin(flowchart.Zoom, scriptViewRect);
-
-            if (e.type == EventType.Repaint)
+            try
             {
-                DrawGrid();
-            }
-            FlowchartConversationGroupEditor.Draw(flowchart);
+                if (e.type == EventType.Repaint)
+                {
+                    DrawGrid();
+                }
+                FlowchartConversationGroupEditor.Draw(flowchart);
 
-            if (e.type == EventType.Repaint)
+                if (e.type == EventType.Repaint)
+                {
+                    //draw all non selected
+                    for (int i = 0; i < blocks.Length; ++i)
+                    {
+                        var block = blocks[i];
+                        if (!block.IsSelected && !block.IsControlSelected)
+                            DrawBlock(block, scriptViewRect);
+                    }
+
+                    //draw all held
+                    for (int i = 0; i < blocks.Length; ++i)
+                    {
+                        var block = blocks[i];
+                        if (block.IsControlSelected)
+                            DrawBlock(block, scriptViewRect);
+                    }
+
+                    //draw all selected
+                    for (int i = 0; i < blocks.Length; ++i)
+                    {
+                        var block = blocks[i];
+                        if (block.IsSelected)
+                            DrawBlock(block, scriptViewRect);
+                    }
+
+                    FlowchartConversationGroupEditor.DrawInsertionPreview(flowchart);
+                }
+
+                // Draw play icons beside all executing blocks
+                if (Application.isPlaying)
+                {
+                    var emptyStyle = new GUIStyle();
+
+                    //cache these once as they can end up being called thousands of times per frame otherwise
+                    var curRealTime = Time.realtimeSinceStartup;
+
+                    for (int i = 0; i < blocks.Length; ++i)
+                    {
+                        var b = blocks[i];
+                        DrawExecutingBlockIcon(
+                            b,
+                            scriptViewRect,
+                            (b.ExecutingIconTimer - curRealTime)
+                                / FungusConstants.ExecutingIconFadeTime,
+                            emptyStyle
+                        );
+                    }
+                    GUI.color = Color.white;
+                }
+            }
+            finally
             {
-                //draw all non selected
-                for (int i = 0; i < blocks.Length; ++i)
-                {
-                    var block = blocks[i];
-                    if (!block.IsSelected && !block.IsControlSelected)
-                        DrawBlock(block, scriptViewRect);
-                }
-
-                //draw all held
-                for (int i = 0; i < blocks.Length; ++i)
-                {
-                    var block = blocks[i];
-                    if (block.IsControlSelected)
-                        DrawBlock(block, scriptViewRect);
-                }
-
-                //draw all selected
-                for (int i = 0; i < blocks.Length; ++i)
-                {
-                    var block = blocks[i];
-                    if (block.IsSelected)
-                        DrawBlock(block, scriptViewRect);
-                }
-
-                FlowchartConversationGroupEditor.DrawInsertionPreview(flowchart);
+                EditorZoomArea.End();
             }
-
-            // Draw play icons beside all executing blocks
-            if (Application.isPlaying)
-            {
-                var emptyStyle = new GUIStyle();
-
-                //cache these once as they can end up being called thousands of times per frame otherwise
-                var curRealTime = Time.realtimeSinceStartup;
-
-                for (int i = 0; i < blocks.Length; ++i)
-                {
-                    var b = blocks[i];
-                    DrawExecutingBlockIcon(
-                        b,
-                        scriptViewRect,
-                        (b.ExecutingIconTimer - curRealTime)
-                            / FungusConstants.ExecutingIconFadeTime,
-                        emptyStyle
-                    );
-                }
-                GUI.color = Color.white;
-            }
-
-            EditorZoomArea.End();
         }
 
         private void DrawExecutingBlockIcon(

@@ -57,6 +57,13 @@ public class TowerGolemMoveController : MonoBehaviour, IEnemyResettable
     [SerializeField, Tooltip("手動で移動範囲を設定するかどうか")]
     private bool isUseManualBounds = false;
 
+    [
+        SerializeField,
+        ShowIf(nameof(isUseManualBounds)),
+        Tooltip("leftBoundとrightBoundを現在位置からの相対座標として扱うかどうか")
+    ]
+    private bool isUseRelativeBounds = false;
+
     [SerializeField, ShowIf(nameof(isUseManualBounds))]
     private float leftBound;
 
@@ -144,6 +151,8 @@ public class TowerGolemMoveController : MonoBehaviour, IEnemyResettable
     private float currentVx = 0f;
     private bool rightFlag = false;
     private float dashDustTimer = 0f;
+    private float _resolvedLeftBound;
+    private float _resolvedRightBound;
 
     #endregion
 
@@ -236,7 +245,7 @@ public class TowerGolemMoveController : MonoBehaviour, IEnemyResettable
             foreach (ContactPoint2D contact in collision.contacts)
             {
                 // 横からの衝突（壁）を検知
-                if (Mathf.Abs(contact.normal.y) < 0.1f)
+                if (Mathf.Abs(contact.normal.y) < 0.1f && IsMovingTowardContact(contact))
                 {
                     HandleObstacleEncountered();
                     return;
@@ -258,7 +267,7 @@ public class TowerGolemMoveController : MonoBehaviour, IEnemyResettable
             foreach (ContactPoint2D contact in collision.contacts)
             {
                 // 横からの接触（壁）を検知
-                if (Mathf.Abs(contact.normal.y) < 0.1f)
+                if (Mathf.Abs(contact.normal.y) < 0.1f && IsMovingTowardContact(contact))
                 {
                     HandleObstacleEncountered();
                     return;
@@ -315,7 +324,7 @@ public class TowerGolemMoveController : MonoBehaviour, IEnemyResettable
         Vector3 startPos = transform.position;
         if (!keepInitialPosition)
         {
-            float randomX = Random.Range(leftBound, rightBound);
+            float randomX = Random.Range(_resolvedLeftBound, _resolvedRightBound);
             transform.position = new Vector2(randomX, startPos.y);
         }
 
@@ -331,7 +340,20 @@ public class TowerGolemMoveController : MonoBehaviour, IEnemyResettable
     /// </summary>
     private void SetupMovementBounds()
     {
-        if (_activator != null && !isUseManualBounds)
+        if (isUseManualBounds)
+        {
+            float originX = isUseRelativeBounds ? transform.position.x : 0f;
+            float firstBound = originX + leftBound;
+            float secondBound = originX + rightBound;
+            _resolvedLeftBound = Mathf.Min(firstBound, secondBound);
+            _resolvedRightBound = Mathf.Max(firstBound, secondBound);
+            return;
+        }
+
+        _resolvedLeftBound = Mathf.Min(leftBound, rightBound);
+        _resolvedRightBound = Mathf.Max(leftBound, rightBound);
+
+        if (_activator != null)
         {
             var activatorCollider = _activator.GetComponent<Collider2D>();
             if (activatorCollider != null)
@@ -340,22 +362,28 @@ public class TowerGolemMoveController : MonoBehaviour, IEnemyResettable
                 float activatorRightBound = activatorCollider.bounds.max.x;
                 float randomCenter = Random.Range(activatorLeftBound, activatorRightBound);
 
-                leftBound = randomCenter - moveRange / 2.0f;
-                rightBound = randomCenter + moveRange / 2.0f;
+                _resolvedLeftBound = randomCenter - moveRange / 2.0f;
+                _resolvedRightBound = randomCenter + moveRange / 2.0f;
 
-                leftBound = Mathf.Max(leftBound, activatorLeftBound);
-                rightBound = Mathf.Min(rightBound, activatorRightBound);
+                _resolvedLeftBound = Mathf.Max(_resolvedLeftBound, activatorLeftBound);
+                _resolvedRightBound = Mathf.Min(_resolvedRightBound, activatorRightBound);
 
                 // 範囲が狭すぎる場合の補正
-                if (rightBound - leftBound < moveRange)
+                if (_resolvedRightBound - _resolvedLeftBound < moveRange)
                 {
-                    if (leftBound == activatorLeftBound)
+                    if (_resolvedLeftBound == activatorLeftBound)
                     {
-                        rightBound = Mathf.Min(activatorRightBound, leftBound + moveRange);
+                        _resolvedRightBound = Mathf.Min(
+                            activatorRightBound,
+                            _resolvedLeftBound + moveRange
+                        );
                     }
                     else
                     {
-                        leftBound = Mathf.Max(activatorLeftBound, rightBound - moveRange);
+                        _resolvedLeftBound = Mathf.Max(
+                            activatorLeftBound,
+                            _resolvedRightBound - moveRange
+                        );
                     }
                 }
             }
@@ -421,8 +449,8 @@ public class TowerGolemMoveController : MonoBehaviour, IEnemyResettable
         {
             // Walk状態: 範囲端での反転チェック
             bool hasReachedBound =
-                (currentPos.x <= leftBound && currentVx < 0f)
-                || (rightBound <= currentPos.x && currentVx > 0f);
+                (currentPos.x <= _resolvedLeftBound && currentVx < 0f)
+                || (_resolvedRightBound <= currentPos.x && currentVx > 0f);
             if (hasReachedBound)
             {
                 ReverseDirection();
@@ -437,8 +465,8 @@ public class TowerGolemMoveController : MonoBehaviour, IEnemyResettable
         else if (currentState == GolemState.Tackle)
         {
             // Tackle状態: 範囲+余白の超過チェック
-            float limitLeft = leftBound - tackleMargin;
-            float limitRight = rightBound + tackleMargin;
+            float limitLeft = _resolvedLeftBound - tackleMargin;
+            float limitRight = _resolvedRightBound + tackleMargin;
             bool isOverMargin =
                 (currentPos.x <= limitLeft && currentVx < 0f)
                 || (limitRight <= currentPos.x && currentVx > 0f);
@@ -525,6 +553,15 @@ public class TowerGolemMoveController : MonoBehaviour, IEnemyResettable
             // タックル中に壁や崖に到達したら即座に攻撃
             StartCoroutine(AttackSequenceCoroutine());
         }
+    }
+
+    /// <summary>
+    /// 現在の水平方向の移動が接触面に向かっているかを判定します。
+    /// </summary>
+    private bool IsMovingTowardContact(ContactPoint2D contact)
+    {
+        Vector2 horizontalVelocity = new Vector2(currentVx, 0f);
+        return Vector2.Dot(horizontalVelocity, contact.normal) < 0f;
     }
 
     /// <summary>
@@ -680,12 +717,27 @@ public class TowerGolemMoveController : MonoBehaviour, IEnemyResettable
 
         if (isUseManualBounds)
         {
+            float gizmoLeftBound;
+            float gizmoRightBound;
+
+            if (Application.isPlaying)
+            {
+                gizmoLeftBound = _resolvedLeftBound;
+                gizmoRightBound = _resolvedRightBound;
+            }
+            else
+            {
+                float originX = isUseRelativeBounds ? transform.position.x : 0f;
+                gizmoLeftBound = originX + leftBound;
+                gizmoRightBound = originX + rightBound;
+            }
+
             center = new Vector3(
-                (leftBound + rightBound) / 2.0f,
+                (gizmoLeftBound + gizmoRightBound) / 2.0f,
                 transform.position.y + 2.0f,
                 transform.position.z
             );
-            size = new Vector3(Mathf.Abs(rightBound - leftBound), 4.5f, 0.1f);
+            size = new Vector3(Mathf.Abs(gizmoRightBound - gizmoLeftBound), 4.5f, 0.1f);
         }
         else
         {

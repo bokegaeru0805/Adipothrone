@@ -17,6 +17,9 @@ public class MyGameSettingsProvider : SettingsProvider
     // ギズモ表示設定用の一括管理キー
     private const string GIZMO_VISIBILITY_KEY = "MyGame_ShowCustomGizmos";
 
+    // 接触ダメージのデバッグログ表示設定キー
+    private const string CONTACT_DAMAGE_LOG_KEY = "MyGame_ShowContactDamageLogs";
+
     private const string DEFAULT_BOOL_FLAG_TYPE_KEY = "MyGame_DefaultBoolFlagType";
     private const string DEFAULT_INT_FLAG_TYPE_KEY = "MyGame_DefaultIntFlagType";
     private const string DEFAULT_BOOL_FLAG_VALUE_KEY = "MyGame_DefaultBoolFlagValue";
@@ -86,6 +89,9 @@ public class MyGameSettingsProvider : SettingsProvider
             "Bool",
             "Int",
             "Default",
+            "Contact",
+            "Damage",
+            "Log",
         };
         return provider;
     }
@@ -139,7 +145,23 @@ public class MyGameSettingsProvider : SettingsProvider
             SceneView.RepaintAll();
         }
 
-        // --- 4. FlagConditionProの新規追加時設定 ---
+        // --- 4. デバッグログ設定 ---
+        EditorGUILayout.Space();
+        GUILayout.Label("デバッグ設定 (Debug Settings)", EditorStyles.boldLabel);
+        EditorGUILayout.Space();
+
+        bool currentContactDamageLog = EditorPrefs.GetBool(CONTACT_DAMAGE_LOG_KEY, false);
+        EditorGUI.BeginChangeCheck();
+        bool newContactDamageLog = EditorGUILayout.Toggle(
+            "Show Contact Damage Logs",
+            currentContactDamageLog
+        );
+        if (EditorGUI.EndChangeCheck())
+        {
+            EditorPrefs.SetBool(CONTACT_DAMAGE_LOG_KEY, newContactDamageLog);
+        }
+
+        // --- 5. FlagConditionProの新規追加時設定 ---
         EditorGUILayout.Space();
         GUILayout.Label("フラグ条件設定 (Flag Condition Settings)", EditorStyles.boldLabel);
         EditorGUILayout.Space();

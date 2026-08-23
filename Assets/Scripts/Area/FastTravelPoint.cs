@@ -1,173 +1,248 @@
 using DG.Tweening;
+using NaughtyAttributes;
 using UnityEngine;
+#if UNITY_EDITOR
+using UnityEditor;
+#endif
 
 public class FastTravelPoint : MonoBehaviour
 {
+    #region Inspector設定
+
     [Header("ファストトラベルポイントのデータ")]
     [SerializeField]
     private FastTravelPointData fastTravelPointData;
+
+    /// <summary>
+    /// Inspectorで確認するため、参照中のDataが持つ移動先座標を読み取り専用で表示します。
+    /// </summary>
+    [ShowNativeProperty]
+    private string DataTargetPosition =>
+        fastTravelPointData != null
+            ? fastTravelPointData.targetPosition.ToString("F1")
+            : "FastTravelPointData 未設定";
+
+    #endregion
+
+    #region 表示設定
+
+    // 未解放時は淡い青、解放後は白で表示する。
+    private Color inactiveColor = new Color(150f / 255f, 180f / 255f, 255f / 255f);
+    private Color activeColor = new Color(1f, 1f, 1f);
+    private float floatingHeight = 1f;
+    private float floatingDuration = 2.0f;
+
+    #endregion
+
+    #region 内部状態
+
     private bool isUnLocked = false;
     private Animator animator;
     private SpriteRenderer spriteRenderer;
-
-    // 起動前：淡い青（透明感のある未起動状態）
-    private Color inactiveColor = new Color(150f / 255f, 180f / 255f, 255f / 255f);
-
-    // 起動後：白（使用可能）
-    private Color activeColor = new Color(1f, 1f, 1f);
-    private float floatingHeight = 1f; //上下に浮遊する移動幅
-    private float floatingDuration = 2.0f; //浮遊アニメーションの片道にかかる時間（秒）
-    private Vector3 initialPosition; // 浮遊アニメーションの基準となる初期座標
+    private Vector3 initialPosition;
     private GameManager gameManager;
+
+    #endregion
+
+    #region Unityライフサイクル
 
     private void Awake()
     {
         animator = GetComponent<Animator>();
         spriteRenderer = GetComponent<SpriteRenderer>();
-        initialPosition = transform.position; // 初期位置を保存
+        initialPosition = transform.position;
 
         if (fastTravelPointData == null)
         {
-            Debug.LogError($"{this.name} の FastTravelPointData が設定されていません。");
+            Debug.LogError($"{name} の FastTravelPointData が設定されていません。", this);
             return;
         }
-        else
+
+        if ((Vector2)transform.position != fastTravelPointData.targetPosition)
         {
-            Vector3 fastTravelPointPosition = fastTravelPointData.targetPosition;
-            if (fastTravelPointPosition != null)
-            {
-                if (this.transform.position != fastTravelPointPosition)
-                {
-                    Debug.LogWarning(
-                        $"{this.name} の位置が FastTravelPointData の targetPosition と一致しません。"
-                    );
-                }
-            }
+            Debug.LogWarning(
+                $"{name} の位置が FastTravelPointData の targetPosition と一致しません。",
+                this
+            );
         }
-    }
-
-    private void Start()
-    {
-        // OnEnableでも呼ばれるが、Startでも念のため呼び出すことで、
-        // 実行順の問題を回避し、確実に初期状態が設定されるようにする。
-        UpdateUnlockState();
-
-        gameManager = GameManager.instance;
     }
 
     private void OnEnable()
     {
-        // セーブデータに基づいて表示状態を更新
         UpdateUnlockState();
     }
 
+    private void Start()
+    {
+        gameManager = GameManager.instance;
+
+        // OnEnable時点でManagerの準備が完了していない場合に備えて再同期する。
+        UpdateUnlockState();
+    }
+
+    private void OnDisable()
+    {
+        // 無効化後もオブジェクトに紐づくTweenが残らないよう停止する。
+        transform.DOKill();
+    }
+
+    #endregion
+
+    #region プレイヤー操作
+
+    private void OnTriggerStay2D(Collider2D collision)
+    {
+        if (Time.timeScale <= 0)
+        {
+            return;
+        }
+
+        if (
+            !InputManager.instance.GetInteract()
+            || !collision.CompareTag(GameConstants.PLAYER_TAG_NAME)
+            || gameManager.IsTalking
+        )
+        {
+            return;
+        }
+
+        if (!isUnLocked)
+        {
+            GameManager.instance.savedata.FastTravelData.RegisterFastTravelData(
+                fastTravelPointData.fastTravelId
+            );
+            SetActiveState();
+            isUnLocked = true;
+        }
+
+        GameUIManager.instance.OpenFastTravelPanel();
+    }
+
+    #endregion
+
+    #region 解放状態と表示
+
     /// <summary>
-    /// 現在のセーブデータに基づいて、ファストトラベルポイントの表示状態（アクティブ/非アクティブ）を更新します。
+    /// 現在のセーブデータを参照し、解放状態と見た目を同期します。
     /// </summary>
     private void UpdateUnlockState()
     {
         if (!GameManager.isFirstGameSceneOpen)
         {
-            //ゲームシーンがまだ開かれていない場合は何もしない
             return;
         }
 
-        // --- 安全対策（ガード節） ---
-        // GameManagerやセーブデータがまだ準備できていない場合は、エラーを防ぐために処理を中断する。
-        // OnEnableはStartより先に呼ばれる可能性があるため、このチェックは非常に重要。
+        // OnEnableは各Managerの初期化より先に呼ばれる可能性がある。
         var fastTravelData = GameManager.instance?.savedata?.FastTravelData;
         if (fastTravelData == null || fastTravelPointData == null)
         {
-            // 準備ができていない場合は、デフォルトの非アクティブ状態にしておく
             SetInactiveState();
             return;
         }
 
-        // --- 元のロジックをここに移動 ---
-        if (
+        isUnLocked =
             fastTravelData.unlockedFastTravels != null
             && fastTravelData.unlockedFastTravels.Count > 0
-        )
-        {
-            // このファストトラベルポイントが登録されているか確認
-            isUnLocked = fastTravelData.IsFastTravelDataRegistered(
-                fastTravelPointData.fastTravelId
-            );
+            && fastTravelData.IsFastTravelDataRegistered(fastTravelPointData.fastTravelId);
 
-            if (isUnLocked)
-            {
-                SetActiveState(); //アクティブ状態にする
-            }
-            else
-            {
-                SetInactiveState(); //非アクティブ状態にする
-            }
+        if (isUnLocked)
+        {
+            SetActiveState();
         }
         else
         {
-            // まだ一つもファストトラベルポイントが解放されていない場合
             SetInactiveState();
         }
     }
 
-    private void OnTriggerStay2D(Collider2D collision)
-    {
-        if (Time.timeScale > 0)
-        {
-            if (
-                InputManager.instance.GetInteract()
-                && collision.CompareTag(GameConstants.PLAYER_TAG_NAME)
-                && !gameManager.IsTalking
-            )
-            {
-                if (!isUnLocked)
-                {
-                    //ファストトラベルポイントが未登録の場合、登録する
-                    GameManager.instance.savedata.FastTravelData.RegisterFastTravelData(
-                        fastTravelPointData.fastTravelId
-                    );
-                    SetActiveState(); //アクティブ状態にする
-                    isUnLocked = true;
-                }
-                GameUIManager.instance.OpenFastTravelPanel();
-            }
-        }
-    }
-
+    /// <summary>
+    /// 未解放時の色へ戻し、浮遊アニメーションを停止します。
+    /// </summary>
     private void SetInactiveState()
     {
-        // このオブジェクトに紐づくDOTweenの動作をすべて停止
         transform.DOKill();
-        // 座標をアニメーション開始前の初期位置に戻す
         transform.position = initialPosition;
 
         spriteRenderer.color = inactiveColor;
-        animator.SetBool("IsCrystalActive", false); //アニメーションを停止
-    }
-
-    private void SetActiveState()
-    {
-        spriteRenderer.color = activeColor;
-        animator.SetBool("IsCrystalActive", true); //アニメーションを開始
-
-        // 既存のTweenがあれば停止してから新しいTweenを開始する（安全のため）
-        transform.DOKill();
-
-        // DOMoveYを使って、Y軸方向にアニメーションさせる
-        transform
-            .DOMoveY(initialPosition.y + floatingHeight, floatingDuration)
-            .SetEase(Ease.InOutSine) // 動きの緩急をサインカーブのように滑らかにする
-            .SetLoops(-1, LoopType.Yoyo) // 無限に（-1）、行って戻ってくる（Yoyo）ループを設定
-            .SetUpdate(UpdateType.Normal); // Time.timeScaleの影響を受けるように設定（デフォルト）
+        animator.SetBool("IsCrystalActive", false);
     }
 
     /// <summary>
-    /// このコンポーネントが無効になる、またはオブジェクトが破棄される際に呼び出されます。
-    /// 確実にDOTweenアニメーションを停止させ、エラーを防ぎます。
+    /// 解放後の色とアニメーションを適用し、上下の浮遊を開始します。
     /// </summary>
-    private void OnDisable()
+    private void SetActiveState()
     {
-        // OnDestroyよりも早く、かつオブジェクトが無効になるだけでも呼ばれるOnDisableでKillするのが、より安全な停止方法です。
+        spriteRenderer.color = activeColor;
+        animator.SetBool("IsCrystalActive", true);
+
+        // 状態の再同期が複数回行われてもTweenが重複しないよう、既存Tweenを先に停止する。
         transform.DOKill();
+        transform
+            .DOMoveY(initialPosition.y + floatingHeight, floatingDuration)
+            .SetEase(Ease.InOutSine)
+            .SetLoops(-1, LoopType.Yoyo)
+            .SetUpdate(UpdateType.Normal);
     }
+
+    #endregion
+
+    #region エディター補助
+
+    private bool HasFastTravelPointData => fastTravelPointData != null;
+
+    /// <summary>
+    /// このオブジェクトの現在のXY座標を、参照中の移動先データへ保存します。
+    /// </summary>
+    [Button("現在位置を移動先に設定")]
+    [ShowIf(nameof(HasFastTravelPointData))]
+    private void SetCurrentPositionToTargetPosition()
+    {
+        if (fastTravelPointData == null)
+        {
+            return;
+        }
+
+        Vector2 previousPosition = fastTravelPointData.targetPosition;
+        Vector2 currentPosition = transform.position;
+
+#if UNITY_EDITOR
+        // ScriptableObjectへの変更をUndo対象にし、アセットの保存対象としてマークする。
+        Undo.RecordObject(fastTravelPointData, "Set Fast Travel Target Position");
+#endif
+
+        fastTravelPointData.targetPosition = currentPosition;
+
+#if UNITY_EDITOR
+        EditorUtility.SetDirty(fastTravelPointData);
+#endif
+
+        Debug.Log(
+            $"{fastTravelPointData.name} の 設定座標を {currentPosition} に更新しました。",
+            fastTravelPointData
+        );
+    }
+
+    /// <summary>
+    /// 選択中のシーンビューに、現在位置から設定済みの移動先までの線と目印を表示します。
+    /// </summary>
+    private void OnDrawGizmosSelected()
+    {
+        if (fastTravelPointData == null)
+        {
+            return;
+        }
+
+        // targetPositionはVector2のため、シーン上で見やすいよう本体と同じZ平面に描画する。
+        Vector3 targetPosition = new Vector3(
+            fastTravelPointData.targetPosition.x,
+            fastTravelPointData.targetPosition.y,
+            transform.position.z
+        );
+
+        Gizmos.color = Color.cyan;
+        Gizmos.DrawLine(transform.position, targetPosition);
+        Gizmos.DrawWireSphere(targetPosition, 0.5f);
+    }
+
+    #endregion
 }
