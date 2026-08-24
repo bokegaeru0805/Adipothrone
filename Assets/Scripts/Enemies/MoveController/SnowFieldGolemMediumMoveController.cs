@@ -4,6 +4,15 @@ using UnityEngine;
 /// <summary>
 /// 中型雪原ゴーレムの巡回移動、近距離攻撃、ジャンプ攻撃を制御します。
 /// 物理ルートと表示用Visual Rootを分離し、左右反転はVisual RootのY回転だけで行います。
+///
+/// 攻撃AIの概要:
+/// ・歩行中かつ攻撃可能なときだけ、現在向いている正面側にいるプレイヤーを攻撃対象として判定します。
+/// ・近距離攻撃範囲に入った場合は、ジャンプ攻撃の条件も満たしていても近距離攻撃を優先します。
+/// ・近距離攻撃は上段または下段を確率で選び、Animation Eventで槍のダメージ判定を有効化します。
+/// ・ジャンプ攻撃はResetState時と近距離攻撃後に確率で予約され、専用距離内かつ頭上に必要な空間がある場合に開始します。
+/// ・ジャンプ開始時のAnimation Eventで槍のダメージ判定を有効化し、着地後はエフェクトを再生して歩行へ戻ります。
+/// ・各攻撃後は槍の判定を無効化し、歩行復帰後のクールダウンが終わるまで次の攻撃を行いません。
+/// ・敵の移動停止中は、攻撃演出、復帰待ち、クールダウンの経過時間も停止します。
 /// </summary>
 [RequireComponent(typeof(Rigidbody2D))]
 public class SnowFieldGolemMediumMoveController : MonoBehaviour, IEnemyResettable
@@ -82,7 +91,11 @@ public class SnowFieldGolemMediumMoveController : MonoBehaviour, IEnemyResettabl
     private float _speedX = 3.0f;
 
     [SerializeField]
-    [Tooltip("巡回範囲の左端のワールドX座標。左右とも0の場合はActivatorから自動設定します。")]
+    [Tooltip("trueの場合、巡回範囲をAwake時点のPivotのX座標からの相対座標として扱います。")]
+    private bool _isUseRelativeBounds = false;
+
+    [SerializeField]
+    [Tooltip("巡回範囲の左端のX座標。左右とも0の場合はActivatorから自動設定します。")]
     private float _leftBound = 0f;
 
     [SerializeField]
@@ -256,6 +269,10 @@ public class SnowFieldGolemMediumMoveController : MonoBehaviour, IEnemyResettabl
     private bool _isUseAutoBounds = false;
     private bool _hasProcessedAttackEvent = false;
 
+    private Vector3 _initialPosition = Vector3.zero;
+    private float _initialPivotPositionX = 0f;
+    private float _resolvedLeftBound = 0f;
+    private float _resolvedRightBound = 0f;
     private float _moveVelocityX = 0f;
     private float _jumpStartTime = 0f;
     private int _bodyDamage = 20;
@@ -319,6 +336,9 @@ public class SnowFieldGolemMediumMoveController : MonoBehaviour, IEnemyResettabl
 
     private void Awake()
     {
+        _initialPosition = transform.position;
+        _initialPivotPositionX = PivotPosition.x;
+
         CacheComponents();
         ResolveVisualReferences();
         InitializeGroundLayer();
@@ -403,6 +423,7 @@ public class SnowFieldGolemMediumMoveController : MonoBehaviour, IEnemyResettabl
         ResetDamageControllers(); // 敵本体と槍のダメージ量・HP状態を初期化します。
         ResetAttackObjects(); // 槍の攻撃判定と着地エフェクトを初期状態へ戻します。
         ResetRigidbody(); // Rigidbody2Dの速度・拘束・シミュレーション状態を初期化します。
+        RestoreInitialPosition(); // 落下などで変化した座標をAwake時点の位置へ戻します。
 
         InitializeMoveBounds(); // Activatorを基準に左右の移動範囲を設定します。
         SetRandomInitialPosition(); // 移動範囲内のランダムなX座標へ配置します。
@@ -550,6 +571,11 @@ public class SnowFieldGolemMediumMoveController : MonoBehaviour, IEnemyResettabl
         _rbody.velocity = Vector2.zero;
     }
 
+    private void RestoreInitialPosition()
+    {
+        transform.position = _initialPosition;
+    }
+
     private void InitializeMovementState()
     {
         SetRandomInitialMoveDirection();
@@ -587,7 +613,20 @@ public class SnowFieldGolemMediumMoveController : MonoBehaviour, IEnemyResettabl
 
     private void InitializeMoveBounds()
     {
-        if (!_isUseAutoBounds || _activator == null)
+        if (!_isUseAutoBounds)
+        {
+            float originX = _isUseRelativeBounds ? _initialPivotPositionX : 0f;
+            float firstBound = originX + _leftBound;
+            float secondBound = originX + _rightBound;
+            _resolvedLeftBound = Mathf.Min(firstBound, secondBound);
+            _resolvedRightBound = Mathf.Max(firstBound, secondBound);
+            return;
+        }
+
+        _resolvedLeftBound = 0f;
+        _resolvedRightBound = 0f;
+
+        if (_activator == null)
             return;
 
         Collider2D activatorCollider = _activator.GetComponent<Collider2D>();
@@ -598,28 +637,34 @@ public class SnowFieldGolemMediumMoveController : MonoBehaviour, IEnemyResettabl
         float activatorRightBound = activatorCollider.bounds.max.x;
         float randomCenter = Random.Range(activatorLeftBound, activatorRightBound);
 
-        _leftBound = Mathf.Max(randomCenter - MOVE_RANGE / 2f, activatorLeftBound);
-        _rightBound = Mathf.Min(randomCenter + MOVE_RANGE / 2f, activatorRightBound);
+        _resolvedLeftBound = Mathf.Max(randomCenter - MOVE_RANGE / 2f, activatorLeftBound);
+        _resolvedRightBound = Mathf.Min(randomCenter + MOVE_RANGE / 2f, activatorRightBound);
 
-        if (_rightBound - _leftBound >= MOVE_RANGE)
+        if (_resolvedRightBound - _resolvedLeftBound >= MOVE_RANGE)
             return;
 
-        if (Mathf.Approximately(_leftBound, activatorLeftBound))
+        if (Mathf.Approximately(_resolvedLeftBound, activatorLeftBound))
         {
-            _rightBound = Mathf.Min(activatorRightBound, _leftBound + MOVE_RANGE);
+            _resolvedRightBound = Mathf.Min(
+                activatorRightBound,
+                _resolvedLeftBound + MOVE_RANGE
+            );
         }
         else
         {
-            _leftBound = Mathf.Max(activatorLeftBound, _rightBound - MOVE_RANGE);
+            _resolvedLeftBound = Mathf.Max(
+                activatorLeftBound,
+                _resolvedRightBound - MOVE_RANGE
+            );
         }
     }
 
     private void SetRandomInitialPosition()
     {
-        if (_isUseManualInitialPosition || _rightBound <= _leftBound)
+        if (_isUseManualInitialPosition || _resolvedRightBound <= _resolvedLeftBound)
             return;
 
-        float targetPivotX = Random.Range(_leftBound, _rightBound);
+        float targetPivotX = Random.Range(_resolvedLeftBound, _resolvedRightBound);
         float differenceX = targetPivotX - PivotPosition.x;
         transform.position += new Vector3(differenceX, 0f, 0f);
     }
@@ -682,8 +727,8 @@ public class SnowFieldGolemMediumMoveController : MonoBehaviour, IEnemyResettabl
     {
         float pivotX = PivotPosition.x;
 
-        bool reachedLeftBound = pivotX <= _leftBound && _moveVelocityX < 0f;
-        bool reachedRightBound = pivotX >= _rightBound && _moveVelocityX > 0f;
+        bool reachedLeftBound = pivotX <= _resolvedLeftBound && _moveVelocityX < 0f;
+        bool reachedRightBound = pivotX >= _resolvedRightBound && _moveVelocityX > 0f;
 
         if (reachedLeftBound || reachedRightBound)
             ReverseMoveDirection();
@@ -1250,7 +1295,25 @@ public class SnowFieldGolemMediumMoveController : MonoBehaviour, IEnemyResettabl
 
     private void OnDrawGizmos()
     {
-        if (_rightBound <= _leftBound)
+        float gizmoLeftBound;
+        float gizmoRightBound;
+
+        if (Application.isPlaying)
+        {
+            gizmoLeftBound = _resolvedLeftBound;
+            gizmoRightBound = _resolvedRightBound;
+        }
+        else
+        {
+            if (Mathf.Approximately(_leftBound, 0f) && Mathf.Approximately(_rightBound, 0f))
+                return;
+
+            float originX = _isUseRelativeBounds ? PivotPosition.x : 0f;
+            gizmoLeftBound = Mathf.Min(originX + _leftBound, originX + _rightBound);
+            gizmoRightBound = Mathf.Max(originX + _leftBound, originX + _rightBound);
+        }
+
+        if (gizmoRightBound <= gizmoLeftBound)
             return;
 
         Vector3 pivotPosition =
@@ -1258,11 +1321,11 @@ public class SnowFieldGolemMediumMoveController : MonoBehaviour, IEnemyResettabl
 
         Gizmos.color = new Color(1f, 0f, 0f, 0.15f);
         Vector3 center = new Vector3(
-            (_leftBound + _rightBound) / 2f,
+            (gizmoLeftBound + gizmoRightBound) / 2f,
             pivotPosition.y,
             pivotPosition.z
         );
-        Vector3 size = new Vector3(_rightBound - _leftBound, 2f, 0.1f);
+        Vector3 size = new Vector3(gizmoRightBound - gizmoLeftBound, 2f, 0.1f);
         Gizmos.DrawCube(center, size);
     }
 

@@ -180,9 +180,10 @@ public class ObjectPooler : MonoBehaviour
                 // 初期状態を保存
                 RegisterInitialSettings(obj);
 
-                // PoolableObjectコンポーネントがあれば、プールタグとタイプ（永続かシーンか）を設定
-                var poolable = obj.GetComponent<PoolableObject>();
-                if (poolable != null)
+                // PoolableObject派生コンポーネントすべてに、プールタグとタイプを設定
+                // EnemyHealthとPoolableObjectLifecycleが同居する場合も両方を初期化する
+                PoolableObject[] poolables = obj.GetComponents<PoolableObject>();
+                foreach (PoolableObject poolable in poolables)
                 {
                     poolable.SetPoolTag(pool.tag);
                     poolable.SetPoolType(isPersistent ? PoolType.Persistent : PoolType.Scene);
@@ -263,9 +264,9 @@ public class ObjectPooler : MonoBehaviour
                 // 動的に生成した場合も初期状態を登録しておく
                 RegisterInitialSettings(objectToSpawn);
 
-                // 動的生成時もPoolableObjectの初期化を行う
-                var poolable = objectToSpawn.GetComponent<PoolableObject>();
-                if (poolable != null)
+                // 動的生成時もPoolableObject派生コンポーネントすべてを初期化する
+                PoolableObject[] poolables = objectToSpawn.GetComponents<PoolableObject>();
+                foreach (PoolableObject poolable in poolables)
                 {
                     poolable.SetPoolTag(pool.tag);
                     poolable.SetPoolType(isPersistent ? PoolType.Persistent : PoolType.Scene);

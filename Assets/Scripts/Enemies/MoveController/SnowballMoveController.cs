@@ -67,6 +67,10 @@ public class SnowballMoveController : MonoBehaviour, IEnemyResettable
     [SerializeField, Min(0f), Tooltip("雪玉へ適用するRigidbody2Dの重力倍率")]
     private float _gravityScale = 1f;
 
+    [BoxGroup("物理設定")]
+    [SerializeField, Tooltip("EnemyPhysicsレイヤーの子オブジェクトに配置する地形衝突用Collider")]
+    private CircleCollider2D _physicsCollider = null;
+
     [BoxGroup("リセット時の大きさ")]
     [SerializeField, Tooltip("固定倍率または1～3倍のランダム倍率から開始します")]
     private InitialSizeMode _initialSizeMode = InitialSizeMode.Fixed;
@@ -129,6 +133,7 @@ public class SnowballMoveController : MonoBehaviour, IEnemyResettable
     private float _currentSize = MINIMUM_SIZE;
     private float _moveDirection = 1f;
     private int _damage = 20;
+    private bool _isStarted = false;
 
     #endregion
 
@@ -141,6 +146,14 @@ public class SnowballMoveController : MonoBehaviour, IEnemyResettable
         _spriteRenderer = GetComponent<SpriteRenderer>();
         _contactDamageController = GetComponent<ContactDamageController>();
         _initialLocalScale = transform.localScale;
+
+        if (_physicsCollider == null)
+        {
+            Debug.LogError(
+                $"{name}の地形衝突用CircleCollider2Dが設定されていません。",
+                this
+            );
+        }
 
         _groundLayer = LayerMask.GetMask(
             GameConstants.PHYSICS_LAYER_NAME_GROUND,
@@ -161,7 +174,18 @@ public class SnowballMoveController : MonoBehaviour, IEnemyResettable
     private void Start()
     {
         _initialPosition = transform.position;
+        _isStarted = true;
         ResetState();
+    }
+
+    private void OnEnable()
+    {
+        // Startはインスタンス生成後の1回しか呼ばれないため、
+        // プールから再取得された際は明示的に状態を初期化します。
+        if (_isStarted)
+        {
+            ResetState();
+        }
     }
 
     private void FixedUpdate()
@@ -287,7 +311,13 @@ public class SnowballMoveController : MonoBehaviour, IEnemyResettable
         // 16px・PPU 16では1倍時の直径が1 Unity unit（半径0.5）になります。
         // Transformの表示倍率補正を考慮し、ワールド上の半径が常に現在倍率の半分になるよう、
         // 使用中スプライトの基準倍率に合わせてColliderのローカル半径を更新します。
-        _circleCollider.radius = BASE_COLLIDER_RADIUS * spriteBaseSize;
+        float colliderRadius = BASE_COLLIDER_RADIUS * spriteBaseSize;
+        _circleCollider.radius = colliderRadius;
+
+        if (_physicsCollider != null)
+        {
+            _physicsCollider.radius = colliderRadius;
+        }
     }
 
     private void UpdateRotation(float currentSpeed)

@@ -4,6 +4,17 @@ using NaughtyAttributes;
 using UnityEngine;
 using UnityEngine.Events;
 
+[AttributeUsage(AttributeTargets.Field)]
+public sealed class CopyableReadOnlyStringAttribute : PropertyAttribute
+{
+    public string FixedValue { get; }
+
+    public CopyableReadOnlyStringAttribute(string fixedValue)
+    {
+        FixedValue = fixedValue;
+    }
+}
+
 #region ### フラグ条件定義 ###
 
 /// <summary>
@@ -99,6 +110,8 @@ public class FlagConditionPro
 [Serializable]
 public class StatePro
 {
+    public const string AnimationCycleOffsetParameterName = "animationCycleOffset";
+
     [Header("アクティブ状態")]
     public bool changeActiveState;
 
@@ -162,10 +175,11 @@ public class StatePro
         "Animator Controllerに同名のFloat Parameterを追加し、Triggerの遷移先StateでCycle Offset Parameterとして設定してください。"
     )]
     [Tooltip(
-        "Trigger再生時のランダムなCycle Offset（0〜1）を渡すFloat Parameter名。推奨名: animationCycleOffset"
+        "Trigger再生時のランダムなCycle Offset（0〜1）を渡す固定のFloat Parameter名。右側のボタンからコピーできます。"
     )]
+    [CopyableReadOnlyString(AnimationCycleOffsetParameterName)]
     [AllowNesting, ShowIf("ShowTriggerRandomizationSettings")]
-    public string animationCycleOffsetParameterName = "animationCycleOffset";
+    public string animationCycleOffsetParameterName = AnimationCycleOffsetParameterName;
 
     private bool ShowAnimationTriggerName =>
         changeAnimation && string.IsNullOrEmpty(animationStateName);

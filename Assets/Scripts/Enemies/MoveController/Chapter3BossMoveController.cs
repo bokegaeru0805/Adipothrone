@@ -8,6 +8,62 @@ using UnityEngine;
 /// </summary>
 public class Chapter3BossMoveController : MonoBehaviour
 {
+    #region 攻撃仕様概要
+    /*
+     * ■ 共通フロー
+     * 1. 攻撃開始時にCurrentStateを更新する。
+     * 2. 構えアニメーションと攻撃位置への移動を行う。
+     * 3. 対応するContactDamageControllerへ、その攻撃のダメージ量を設定する。
+     * 4. 攻撃アニメーションを再生する。
+     * 5. Chapter3BossAnimationEventRelayがAnimation Eventを受け取り、
+     *    SetAttackDamageEnabled()を介して攻撃部位のTagを切り替える。
+     *      - 攻撃判定中: DamageableEnemy
+     *      - 攻撃判定外: Untagged
+     * 6. 攻撃後の待機を経てIdleへ戻る。Idle移行時には全攻撃判定を無効化する。
+     *
+     * Collider2Dは原則として常時有効にし、ダメージの有効期間はTagで管理する。
+     * ResetState、OnDisable、Idle移行時にも全攻撃判定を無効化し、
+     * Animation Eventが中断された場合に判定が残らないようにする。
+     *
+     * ■ ① 通常攻撃 (Normal Attack)
+     * - 下段攻撃用の高さへ移動し、構えの後にLowAttackSlashで攻撃する。
+     * - 下段攻撃後、highAttackProbabilityの確率で上段攻撃へ派生する。
+     * - 派生時は待機時間を挟み、HighAttackSlashで追撃する。
+     * - 下段判定: lowAttackDamageController
+     * - 上段判定: highAttackDamageController
+     *
+     * ■ ② 突き攻撃 (Thrust Attack)
+     * - 剣先とプレイヤーの位置からボス本体の移動先を逆算し、前方へ突進する。
+     * - 壁際と最小接近距離を考慮して移動先を補正する。
+     * - 判定: thrustDamageController
+     *
+     * ■ ③ 射撃攻撃 (Shoot Attack)
+     * - 構えた後、ランダムな高さオフセットから指定数の弾を連射する。
+     * - 弾はObjectPoolerから取得し、弾側のContactDamageControllerへダメージを設定する。
+     * - 本体の攻撃部位Tagは使用しない。
+     *
+     * ■ ④ 後退テレポート攻撃 (Retreat Teleport Attack)
+     * - 空間の広い方向へ後退しながら複数回テレポートする。
+     * - 中間地点で水平攻撃を行い、Animation EventのFireWindEffect()で風攻撃を発射する。
+     * - 壁際では行動可能エリア内に収まるよう位置を補正する。
+     * - 水平攻撃判定: horizontalAttackDamageController
+     *
+     * ■ ⑤ 突進コンボ (Rush Combo)
+     * - High → Upper → Highの順で3連撃を行う。
+     * - 壁までの移動可能距離を3分割し、各攻撃に合わせて段階的に前進する。
+     * - 各打撃の開始時に対応する攻撃判定へ切り替える。
+     * - 上段判定: highAttackDamageController
+     * - 切り上げ判定: upperAttackDamageController
+     *
+     * ■ ⑥ 幻影強襲攻撃 (Mirage Assault)
+     * - プレイヤー周辺へ複数回テレポートし、出現と消失を繰り返す。
+     * - 最後の出現時にLow AttackまたはHorizontal Attackで攻撃する。
+     * - 最終攻撃のダメージにはmirageAttackDamageを使用する。
+     * - 下段判定: lowAttackDamageController
+     * - 水平攻撃判定: horizontalAttackDamageController
+     */
+    #endregion
+
     #region 定数・列挙型
     private const string SHOOT_BULLET_POOLTAG = "Chapter3BossShoot";
 
@@ -25,6 +81,25 @@ public class Chapter3BossMoveController : MonoBehaviour
         RetreatTeleporting, // 後退テレポート攻撃中
         RushComboAttacking, // 突進コンボ攻撃中
         MirageAssaultAttacking, // 幻影急襲攻撃中
+    }
+
+    private enum AttackPattern
+    {
+        NormalAttack = 0,
+        ThrustAttack = 1,
+        ShootAttack = 2,
+        RetreatTeleportAttack = 3,
+        RushCombo = 4,
+        MirageAssault = 5,
+    }
+
+    internal enum AttackDamageType
+    {
+        Low = 0,
+        High = 1,
+        Horizontal = 2,
+        Thrust = 3,
+        Upper = 4,
     }
     #endregion
 
@@ -57,6 +132,17 @@ public class Chapter3BossMoveController : MonoBehaviour
     )]
     [SerializeField]
     private bool isDebugNoWait = false;
+
+#if UNITY_EDITOR
+    [Header("攻撃パターン固定（Editor限定）")]
+    [SerializeField]
+    [Tooltip("有効にすると、選択した攻撃パターンだけを行動ループで繰り返します。")]
+    private bool isDebugFixedAttackPattern = false;
+
+    [SerializeField]
+    [Tooltip("デバッグ中に繰り返す攻撃パターン")]
+    private AttackPattern debugAttackPattern = AttackPattern.NormalAttack;
+#endif
 
     [Header("各攻撃のダメージ量")]
     [Tooltip("下段攻撃でプレイヤーに与えるダメージ量")]
@@ -235,6 +321,10 @@ public class Chapter3BossMoveController : MonoBehaviour
     private ParticleSystem thrustEffect;
 
     [Header("ShootAttack(射撃攻撃)状態の設定")]
+    [Tooltip("1回の射撃攻撃で発射する弾数")]
+    [SerializeField, Min(1)]
+    private int shootBulletCount = 3;
+
     [Tooltip("攻撃準備時間（秒）")]
     [SerializeField]
     private float shootReadyDuration = 1.0f;
@@ -268,6 +358,10 @@ public class Chapter3BossMoveController : MonoBehaviour
     private ParticleSystem shootEffect;
 
     [Header("後退テレポート(RetreatTeleport)状態の設定")]
+    [Tooltip("1回の後退テレポート攻撃で中間攻撃を行う回数")]
+    [SerializeField, Min(1)]
+    private int retreatTeleportCount = 3;
+
     [Tooltip("背後への指定距離")]
     [SerializeField]
     private float retreatDistance = 10f;
@@ -534,6 +628,11 @@ public class Chapter3BossMoveController : MonoBehaviour
         ResetState();
     }
 
+    private void OnDisable()
+    {
+        DisableAllAttackDamage();
+    }
+
     private void OnDestroy()
     {
         if (_moveTween != null && _moveTween.IsActive())
@@ -752,6 +851,8 @@ public class Chapter3BossMoveController : MonoBehaviour
     {
         InitializeWindEffectPool();
 
+        DisableAllAttackDamage();
+
         if (_actionLoopCoroutine != null)
         {
             StopCoroutine(_actionLoopCoroutine);
@@ -765,6 +866,62 @@ public class Chapter3BossMoveController : MonoBehaviour
 
         CurrentState = BossState.Intro;
         SetDamageAreaAlpha(0f);
+    }
+
+    /// <summary>
+    /// 攻撃中断や状態リセット時に、すべての接触ダメージを確実に無効化します。
+    /// </summary>
+    private void DisableAllAttackDamage()
+    {
+        DisableAttackDamage(lowAttackDamageController);
+        DisableAttackDamage(highAttackDamageController);
+        DisableAttackDamage(horizontalAttackDamageController);
+        DisableAttackDamage(thrustDamageController);
+        DisableAttackDamage(upperAttackDamageController);
+    }
+
+    /// <summary>
+    /// Animation Event Relayから指定された攻撃部位の接触ダメージを切り替えます。
+    /// </summary>
+    internal void SetAttackDamageEnabled(AttackDamageType attackType, bool isEnabled)
+    {
+        ContactDamageController damageController = GetAttackDamageController(attackType);
+        if (!isEnabled)
+        {
+            DisableAttackDamage(damageController);
+            return;
+        }
+
+        DisableAllAttackDamage();
+        damageController?.EnableContactDamage();
+    }
+
+    private ContactDamageController GetAttackDamageController(AttackDamageType attackType)
+    {
+        switch (attackType)
+        {
+            case AttackDamageType.Low:
+                return lowAttackDamageController;
+            case AttackDamageType.High:
+                return highAttackDamageController;
+            case AttackDamageType.Horizontal:
+                return horizontalAttackDamageController;
+            case AttackDamageType.Thrust:
+                return thrustDamageController;
+            case AttackDamageType.Upper:
+                return upperAttackDamageController;
+            default:
+                Debug.LogWarning($"未対応の攻撃判定種別です: {attackType}", this);
+                return null;
+        }
+    }
+
+    private static void DisableAttackDamage(ContactDamageController damageController)
+    {
+        if (damageController != null)
+        {
+            damageController.DisableContactDamage();
+        }
     }
 
     /// <summary>
@@ -1121,40 +1278,10 @@ public class Chapter3BossMoveController : MonoBehaviour
     /// </summary>
     private IEnumerator ActionLoopSequence()
     {
-        // TODO : 攻撃パターンを決める
         while (true)
         {
-            // 本来は確率で攻撃を分岐させるが、今回はMirageAssaultAttackで固定
-            bool forceMirageAssaultAttack = true;
-
-            if (!forceMirageAssaultAttack)
-            {
-                // 次にHighAttackを行うかどうかを事前に判定
-                bool willDoHighAttack = Random.value <= highAttackProbability;
-
-                // 1. LowAttackの実行（次にHighAttackが控えているかのフラグを渡す）
-                yield return StartCoroutine(PerformLowAttack(willDoHighAttack));
-
-                // 2. 条件を満たしている場合はHighAttackに派生
-                if (willDoHighAttack)
-                {
-                    // 派生前の待機時間（LowAttackのpostWaitを行わない代わりに、ここを通る）
-                    float beforeHighWait = IsDebugNoWaitActive
-                        ? 0.1f
-                        : waitBeforeHighAttackDuration;
-                    if (beforeHighWait < 0.1f)
-                        beforeHighWait = 0.1f;
-                    yield return new WaitForSeconds(beforeHighWait);
-
-                    // HighAttackの実行
-                    yield return StartCoroutine(PerformHighAttack());
-                }
-            }
-            else
-            {
-                // Shoot攻撃（ShootAttack）の実行（今回は3発発射を指定）
-                yield return StartCoroutine(PerformMirageAssault());
-            }
+            AttackPattern attackPattern = SelectNextAttackPattern();
+            yield return StartCoroutine(ExecuteAttackPattern(attackPattern));
 
             // 3. 待機状態（Idle）への移行
             yield return StartCoroutine(TransitionToIdle());
@@ -1169,10 +1296,80 @@ public class Chapter3BossMoveController : MonoBehaviour
     }
 
     /// <summary>
+    /// 次に実行する攻撃パターンを決定します。
+    /// Editor上で攻撃固定が有効な場合のみ、デバッグ指定を優先します。
+    /// </summary>
+    private AttackPattern SelectNextAttackPattern()
+    {
+#if UNITY_EDITOR
+        if (isDebugFixedAttackPattern)
+        {
+            return debugAttackPattern;
+        }
+#endif
+
+        // 現在の通常動作は、既存実装と同じく幻影強襲攻撃で固定する。
+        return AttackPattern.MirageAssault;
+    }
+
+    /// <summary>
+    /// 選択された攻撃パターンを実行します。
+    /// </summary>
+    private IEnumerator ExecuteAttackPattern(AttackPattern attackPattern)
+    {
+        switch (attackPattern)
+        {
+            case AttackPattern.NormalAttack:
+                yield return StartCoroutine(PerformNormalAttack());
+                break;
+            case AttackPattern.ThrustAttack:
+                yield return StartCoroutine(PerformThrustAttack());
+                break;
+            case AttackPattern.ShootAttack:
+                yield return StartCoroutine(PerformShootAttack(shootBulletCount));
+                break;
+            case AttackPattern.RetreatTeleportAttack:
+                yield return StartCoroutine(PerformRetreatTeleport(retreatTeleportCount));
+                break;
+            case AttackPattern.RushCombo:
+                yield return StartCoroutine(PerformRushComboAttack());
+                break;
+            case AttackPattern.MirageAssault:
+                yield return StartCoroutine(PerformMirageAssault());
+                break;
+            default:
+                Debug.LogWarning($"未対応の攻撃パターンです: {attackPattern}", this);
+                break;
+        }
+    }
+
+    /// <summary>
+    /// 下段攻撃を行い、確率判定に成功した場合は上段攻撃へ派生します。
+    /// </summary>
+    private IEnumerator PerformNormalAttack()
+    {
+        bool willDoHighAttack = Random.value <= highAttackProbability;
+
+        // 上段攻撃へ派生する場合、下段攻撃側の攻撃後待機をスキップする。
+        yield return StartCoroutine(PerformLowAttack(willDoHighAttack));
+
+        if (!willDoHighAttack)
+            yield break;
+
+        float beforeHighWait = IsDebugNoWaitActive ? 0.1f : waitBeforeHighAttackDuration;
+        if (beforeHighWait < 0.1f)
+            beforeHighWait = 0.1f;
+        yield return new WaitForSeconds(beforeHighWait);
+
+        yield return StartCoroutine(PerformHighAttack());
+    }
+
+    /// <summary>
     /// Idle状態に移行し、下端から一定の座標をキープするようにスムーズに移動します。
     /// </summary>
     private IEnumerator TransitionToIdle()
     {
+        DisableAllAttackDamage();
         CurrentState = BossState.Idle;
 
         // 下端からの目標Y座標を計算（X座標は現在の位置を維持）
@@ -1193,7 +1390,7 @@ public class Chapter3BossMoveController : MonoBehaviour
     }
     #endregion
 
-    #region 攻撃処理：下段攻撃 (Low Attack)
+    #region 攻撃パターン①：通常攻撃・下段 (Low Attack)
     /// <summary>
     /// LowAttack（下段攻撃）の一連のアクションを実行します。
     /// </summary>
@@ -1254,7 +1451,7 @@ public class Chapter3BossMoveController : MonoBehaviour
     }
     #endregion
 
-    #region 攻撃処理：上段攻撃 (High Attack)
+    #region 攻撃パターン①：通常攻撃・上段派生 (High Attack)
     /// <summary>
     /// HighAttack（上段攻撃）の一連のアクションを実行します。
     /// </summary>
@@ -1311,7 +1508,7 @@ public class Chapter3BossMoveController : MonoBehaviour
     }
     #endregion
 
-    #region 攻撃処理：突き攻撃 (Thrust Attack)
+    #region 攻撃パターン②：突き攻撃 (Thrust Attack)
     /// <summary>
     /// ThrustAttack（突き攻撃）の一連のアクションを実行します。
     /// 剣先がプレイヤーに確実に当たるように、ボス本体の移動目標座標を逆算して突進します。
@@ -1455,7 +1652,7 @@ public class Chapter3BossMoveController : MonoBehaviour
     }
     #endregion
 
-    #region 攻撃処理：射撃攻撃 (Shoot Attack)
+    #region 攻撃パターン③：射撃攻撃 (Shoot Attack)
     /// <summary>
     /// ShootAttack（射撃攻撃）の一連のアクションを実行します。
     /// 指定された数の弾を、ランダムに生成した高さのオフセットから連射します。
@@ -1626,7 +1823,7 @@ public class Chapter3BossMoveController : MonoBehaviour
     }
     #endregion
 
-    #region 攻撃処理：後退テレポート攻撃 (Retreat Teleport)
+    #region 攻撃パターン④：後退テレポート攻撃 (Retreat Teleport)
     /// <summary>
     /// 後退しながら瞬間移動し、中間地点で攻撃を行う一連のアクションを実行します。
     /// 広い空間がある方向へ後退し、壁際に到達した場合はエリア内に留まるよう補正します。
@@ -1874,7 +2071,7 @@ public class Chapter3BossMoveController : MonoBehaviour
     }
     #endregion
 
-    #region 攻撃処理：突進コンボ攻撃 (Rush Combo)
+    #region 攻撃パターン⑤：突進コンボ (Rush Combo)
     /// <summary>
     /// 前進しながら3連撃（High → Upper → High）を叩き込む一連のアクションを実行します。
     /// 移動距離が壁を超える場合は補正し、その距離を3等分してステップ前進を行います。
@@ -2011,7 +2208,7 @@ public class Chapter3BossMoveController : MonoBehaviour
     }
     #endregion
 
-    #region 攻撃処理：幻影急襲攻撃 (Mirage Assault)
+    #region 攻撃パターン⑥：幻影強襲攻撃 (Mirage Assault)
     /// <summary>
     /// プレイヤーの周囲をテレポートで撹乱し、最終的にLowAttackまたはHorizontalAttackで奇襲するアクションを実行します。
     /// 最終攻撃の種別は確率（mirageLowAttackProbability）で分岐します。

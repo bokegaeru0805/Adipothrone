@@ -376,7 +376,7 @@ public class FlagDrivenStatePro : MonoBehaviour
             {
                 if (state.randomizeAnimationStart)
                 {
-                    ApplyRandomAnimationCycleOffset(state);
+                    ApplyRandomAnimationCycleOffset();
                 }
 
                 int triggerHash = triggerParameter.nameHash;
@@ -416,21 +416,12 @@ public class FlagDrivenStatePro : MonoBehaviour
     /// <summary>
     /// Triggerの遷移先Stateで使用するCycle Offset Parameterへランダム値を設定します。
     /// </summary>
-    private void ApplyRandomAnimationCycleOffset(StatePro state)
+    private void ApplyRandomAnimationCycleOffset()
     {
-        if (string.IsNullOrEmpty(state.animationCycleOffsetParameterName))
-        {
-            Debug.LogError(
-                $"Trigger '{state.animationTriggerName}' のランダム開始が有効ですが、Cycle Offset Parameter名が設定されていません。",
-                targetObject
-            );
-            return;
-        }
-
         AnimatorControllerParameter offsetParameter = null;
         foreach (AnimatorControllerParameter parameter in targetAnimator.parameters)
         {
-            if (parameter.name == state.animationCycleOffsetParameterName)
+            if (parameter.name == StatePro.AnimationCycleOffsetParameterName)
             {
                 offsetParameter = parameter;
                 break;
@@ -440,7 +431,7 @@ public class FlagDrivenStatePro : MonoBehaviour
         if (offsetParameter == null)
         {
             Debug.LogError(
-                $"Animator ControllerにCycle Offset用Parameter '{state.animationCycleOffsetParameterName}' が見つかりません。"
+                $"Animator ControllerにCycle Offset用Parameter '{StatePro.AnimationCycleOffsetParameterName}' が見つかりません。"
                     + $"ターゲットオブジェクト '{targetObject.name}' のAnimator設定を確認してください。",
                 targetObject
             );
@@ -450,7 +441,7 @@ public class FlagDrivenStatePro : MonoBehaviour
         if (offsetParameter.type != AnimatorControllerParameterType.Float)
         {
             Debug.LogError(
-                $"Cycle Offset用Animator Parameter '{state.animationCycleOffsetParameterName}' はFloat型ではありません。"
+                $"Cycle Offset用Animator Parameter '{StatePro.AnimationCycleOffsetParameterName}' はFloat型ではありません。"
                     + $"ターゲットオブジェクト '{targetObject.name}' のAnimator設定を確認してください。",
                 targetObject
             );

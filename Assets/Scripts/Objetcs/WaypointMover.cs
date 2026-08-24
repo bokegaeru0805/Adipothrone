@@ -289,7 +289,7 @@ public class WaypointMover : MonoBehaviour, IEnemyResettable
 
         Vector2 initialWorldPosition = GetWorldPosition(_waypoints[0].localPosition);
         _rb.position = initialWorldPosition;
-        Debug.Log($"{name}: WaypointMoverの状態をリセットしました。初期位置: {initialWorldPosition}", this);
+        // Debug.Log($"{name}: WaypointMoverの状態をリセットしました。初期位置: {initialWorldPosition}", this);
     }
 
     #endregion

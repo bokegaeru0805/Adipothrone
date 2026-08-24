@@ -402,11 +402,6 @@ public class Heroin_move : MonoBehaviour
             float animDuration = isDashing ? DashTime : WalkTime;
             _animator.SetFloat("WalkSpeed", DEFAULT_WALK_ANIMATION_DURATION / animDuration);
 
-            // 効果音処理
-            if (isGrounded)
-            {
-                sePlayer.Play(SE_PlayerAction.Walk1);
-            }
             PlayMoveSoundEffects(isDashing);
 
             // 向き情報の更新
@@ -479,6 +474,26 @@ public class Heroin_move : MonoBehaviour
             sePlayer.Play(SE_PlayerAction.GichiGichi1);
             BoundIntervalTime = 0f;
         }
+    }
+
+    /// <summary>
+    /// 歩行アニメーションの足が接地するタイミングで呼び出すAnimation Event。
+    /// </summary>
+    public void OnFootstepAnimationEvent()
+    {
+        if (
+            Time.timeScale <= 0f
+            || !isPhysicsActive
+            || !isGrounded
+            || isDead
+            || !move
+            || HorizontalMoveIntent == 0f
+        )
+        {
+            return;
+        }
+
+        sePlayer.Play(SE_PlayerAction.Walk1);
     }
 
     #endregion

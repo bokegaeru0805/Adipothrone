@@ -63,6 +63,10 @@ public class SlimeWhiteMoveController : MonoBehaviour, IEnemyResettable
     private float _speedX = 4.0f;
 
     [SerializeField]
+    [Tooltip("trueの場合、移動可能範囲をAwake時点の自身のX座標からの相対座標として扱います。")]
+    private bool _isUseRelativeBounds = false;
+
+    [SerializeField]
     [Tooltip("移動可能範囲の左端のX座標。両端が0の場合は自動で設定されます。")]
     private float _leftBound = 0f;
 
@@ -204,6 +208,9 @@ public class SlimeWhiteMoveController : MonoBehaviour, IEnemyResettable
     private SlimeState _currentState = SlimeState.None;
     private bool _isFacingRight = true;
     private bool _isUseAutoBounds = false;
+    private Vector3 _initialPosition = Vector3.zero;
+    private float _resolvedLeftBound = 0f;
+    private float _resolvedRightBound = 0f;
     private float _vx = 0f;
     private float _jumpStartTime = 0f;
     private int _damage = 0;
@@ -252,6 +259,8 @@ public class SlimeWhiteMoveController : MonoBehaviour, IEnemyResettable
 
     private void Awake()
     {
+        _initialPosition = transform.position;
+
         _animator = GetComponent<Animator>();
         _spriteRenderer = GetComponent<SpriteRenderer>();
         _rbody = GetComponent<Rigidbody2D>();
@@ -382,6 +391,8 @@ public class SlimeWhiteMoveController : MonoBehaviour, IEnemyResettable
             _rbody.velocity = Vector2.zero;
         }
 
+        transform.position = _initialPosition;
+
         InitializeMoveBounds();
         SetRandomInitialPosition();
         SetRandomMoveDirection();
@@ -416,7 +427,20 @@ public class SlimeWhiteMoveController : MonoBehaviour, IEnemyResettable
 
     private void InitializeMoveBounds()
     {
-        if (!_isUseAutoBounds || _activator == null) return;
+        if (!_isUseAutoBounds)
+        {
+            float originX = _isUseRelativeBounds ? _initialPosition.x : 0f;
+            float firstBound = originX + _leftBound;
+            float secondBound = originX + _rightBound;
+            _resolvedLeftBound = Mathf.Min(firstBound, secondBound);
+            _resolvedRightBound = Mathf.Max(firstBound, secondBound);
+            return;
+        }
+
+        _resolvedLeftBound = 0f;
+        _resolvedRightBound = 0f;
+
+        if (_activator == null) return;
 
         Collider2D activatorCollider = _activator.GetComponent<Collider2D>();
         if (activatorCollider == null) return;
@@ -425,24 +449,28 @@ public class SlimeWhiteMoveController : MonoBehaviour, IEnemyResettable
         float activatorRightBound = activatorCollider.bounds.max.x;
 
         float randomCenter = Random.Range(activatorLeftBound, activatorRightBound);
-        _leftBound = Mathf.Max(randomCenter - MOVE_RANGE / 2f, activatorLeftBound);
-        _rightBound = Mathf.Min(randomCenter + MOVE_RANGE / 2f, activatorRightBound);
+        _resolvedLeftBound = Mathf.Max(randomCenter - MOVE_RANGE / 2f, activatorLeftBound);
+        _resolvedRightBound = Mathf.Min(randomCenter + MOVE_RANGE / 2f, activatorRightBound);
 
-        if (_rightBound - _leftBound < MOVE_RANGE)
+        if (_resolvedRightBound - _resolvedLeftBound < MOVE_RANGE)
         {
-            if (Mathf.Approximately(_leftBound, activatorLeftBound))
-                _rightBound = Mathf.Min(activatorRightBound, _leftBound + MOVE_RANGE);
+            if (Mathf.Approximately(_resolvedLeftBound, activatorLeftBound))
+                _resolvedRightBound = Mathf.Min(activatorRightBound, _resolvedLeftBound + MOVE_RANGE);
             else
-                _leftBound = Mathf.Max(activatorLeftBound, _rightBound - MOVE_RANGE);
+                _resolvedLeftBound = Mathf.Max(activatorLeftBound, _resolvedRightBound - MOVE_RANGE);
         }
     }
 
     private void SetRandomInitialPosition()
     {
-        if (_isUseManualInitialPosition || _rightBound <= _leftBound) return;
+        if (_isUseManualInitialPosition || _resolvedRightBound <= _resolvedLeftBound) return;
 
         Vector3 startPos = transform.position;
-        transform.position = new Vector3(Random.Range(_leftBound, _rightBound), startPos.y, startPos.z);
+        transform.position = new Vector3(
+            Random.Range(_resolvedLeftBound, _resolvedRightBound),
+            startPos.y,
+            startPos.z
+        );
     }
 
     private void SetRandomMoveDirection()
@@ -487,8 +515,8 @@ public class SlimeWhiteMoveController : MonoBehaviour, IEnemyResettable
 
     private void UpdateNormalMovement()
     {
-        if ((transform.position.x <= _leftBound && _vx < 0f) || 
-            (transform.position.x >= _rightBound && _vx > 0f))
+        if ((transform.position.x <= _resolvedLeftBound && _vx < 0f) ||
+            (transform.position.x >= _resolvedRightBound && _vx > 0f))
         {
             ReverseMoveDirection();
         }
@@ -855,11 +883,32 @@ public class SlimeWhiteMoveController : MonoBehaviour, IEnemyResettable
 
     private void OnDrawGizmos()
     {
-        if (_rightBound <= _leftBound) return;
+        float gizmoLeftBound;
+        float gizmoRightBound;
+
+        if (Application.isPlaying)
+        {
+            gizmoLeftBound = _resolvedLeftBound;
+            gizmoRightBound = _resolvedRightBound;
+        }
+        else
+        {
+            if (_leftBound == 0f && _rightBound == 0f) return;
+
+            float originX = _isUseRelativeBounds ? transform.position.x : 0f;
+            gizmoLeftBound = Mathf.Min(originX + _leftBound, originX + _rightBound);
+            gizmoRightBound = Mathf.Max(originX + _leftBound, originX + _rightBound);
+        }
+
+        if (gizmoRightBound <= gizmoLeftBound) return;
 
         Gizmos.color = new Color(1f, 0f, 0f, 0.15f);
-        Vector3 center = new Vector3((_leftBound + _rightBound) / 2f, transform.position.y, transform.position.z);
-        Vector3 size = new Vector3(_rightBound - _leftBound, 2f, 0.1f);
+        Vector3 center = new Vector3(
+            (gizmoLeftBound + gizmoRightBound) / 2f,
+            transform.position.y,
+            transform.position.z
+        );
+        Vector3 size = new Vector3(gizmoRightBound - gizmoLeftBound, 2f, 0.1f);
         Gizmos.DrawCube(center, size);
     }
 #endif

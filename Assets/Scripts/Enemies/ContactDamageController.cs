@@ -138,6 +138,23 @@ public class ContactDamageController : MonoBehaviour
     #region External Setup Methods (Damage)
 
     /// <summary>
+    /// 接触ダメージを有効化します。
+    /// 攻撃判定用Collider自体は有効なまま、Tagによってダメージ受付期間を制御します。
+    /// </summary>
+    public void EnableContactDamage()
+    {
+        gameObject.tag = GameConstants.DAMAGEABLE_ENEMY_TAG_NAME;
+    }
+
+    /// <summary>
+    /// 接触ダメージを無効化します。
+    /// </summary>
+    public void DisableContactDamage()
+    {
+        gameObject.tag = GameConstants.UNTAGGED_TAG_NAME;
+    }
+
+    /// <summary>
     /// 与えるダメージを「通常の固定ダメージ」に設定します。（外部スクリプトからの上書き用）
     /// </summary>
     public void SetNormalDamage(int amount)

@@ -243,7 +243,8 @@ namespace Fungus.EditorUtils
             get
             {
                 if (toolbarSeachTextFieldStyle == null)
-                    toolbarSeachTextFieldStyle = GUI.skin.FindStyle("ToolbarSeachTextField");
+                    toolbarSeachTextFieldStyle =
+                        EditorStyles.toolbarSearchField ?? GUI.skin.textField;
 
                 return toolbarSeachTextFieldStyle;
             }
@@ -256,7 +257,7 @@ namespace Fungus.EditorUtils
             get
             {
                 if (toolbarSeachCancelButtonStyle == null)
-                    toolbarSeachCancelButtonStyle = GUI.skin.FindStyle("ToolbarSeachCancelButton");
+                    toolbarSeachCancelButtonStyle = EditorStyles.toolbarButton;
 
                 return toolbarSeachCancelButtonStyle;
             }

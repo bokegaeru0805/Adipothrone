@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using DG.Tweening;
+using NaughtyAttributes;
 using UnityEngine;
 
 /// <summary>
@@ -44,7 +45,17 @@ public class SnowFieldGolemLargeMoveController : MonoBehaviour, IEnemyResettable
     [SerializeField, Tooltip("表示専用ルート以下のAnimator。")]
     private Animator _animator = null;
 
-    [SerializeField, Tooltip("Defaultの右向きを維持する場合はtrue。向きは実行中固定です。")]
+    [
+        SerializeField,
+        Tooltip("ResetStateごとに右向き・左向きを50%ずつの確率で抽選します。")
+    ]
+    private bool _isRandomizeFacingOnReset = false;
+
+    [
+        SerializeField,
+        ShowIf(nameof(ShouldShowFixedFacing)),
+        Tooltip("ランダム化しない場合の固定方向。元スプライトの右向きを基準にします。")
+    ]
     private bool _isFacingRight = true;
 
     [Header("共通攻撃範囲")]
@@ -201,6 +212,8 @@ public class SnowFieldGolemLargeMoveController : MonoBehaviour, IEnemyResettable
 
     private float FacingMultiplier => _isFacingRight ? 1f : -1f;
 
+    private bool ShouldShowFixedFacing => !_isRandomizeFacingOnReset;
+
     #endregion
 
     #region Unityライフサイクル
@@ -296,6 +309,7 @@ public class SnowFieldGolemLargeMoveController : MonoBehaviour, IEnemyResettable
         _isIcicleAttackReuseTimerRunning = false;
         _icicleAttackReuseElapsed = 0f;
         _hasProcessedImpactEvent = false;
+        RandomizeFacingIfNeeded();
         ApplyFacingRotation();
         ResetAnimator();
         ChangeState(GolemState.Idle);
@@ -383,6 +397,15 @@ public class SnowFieldGolemLargeMoveController : MonoBehaviour, IEnemyResettable
         Vector3 angles = _visualInitialLocalEulerAngles;
         angles.y = _isFacingRight ? 0f : 180f;
         _visualRoot.localRotation = Quaternion.Euler(angles);
+    }
+
+    /// <summary>
+    /// ランダム方向が有効な場合、ResetStateごとに左右を同確率で抽選します。
+    /// </summary>
+    private void RandomizeFacingIfNeeded()
+    {
+        if (_isRandomizeFacingOnReset)
+            _isFacingRight = Random.value < 0.5f;
     }
 
     #endregion

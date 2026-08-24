@@ -8,12 +8,54 @@ using UnityEngine;
 [System.Serializable]
 public class RareEnemyInfo
 {
+    [Label("対象オブジェクト")]
     [Tooltip("確率で出現させたいレア敵のゲームオブジェクト")]
     public GameObject enemyObject;
 
+    [Label("出現確率（%）")]
     [Tooltip("このレア敵が出現する確率（パーセント）")]
     [Range(0f, 100f)]
     public float spawnChance = 10.0f;
+}
+
+/// <summary>
+/// フラグ条件に応じて出現させるゲームオブジェクトのグループ。
+/// 同一グループ内の条件はすべて満たす必要があります。
+/// </summary>
+[System.Serializable]
+public class ConditionalEnemyGroup
+{
+    [InfoBox(
+        "条件成立時、確定出現リストは必ず有効化され、確率出現リストはエリア進入ごとに抽選されます。"
+    )]
+    [AllowNesting, Label("出現条件（すべてAND）")]
+    [Tooltip("このグループを出現させるためのフラグ条件（AND条件）")]
+    public List<FlagConditionPro> requiredFlags = new List<FlagConditionPro>();
+
+    [AllowNesting, Label("条件成立時に必ず出現")]
+    [Tooltip("条件を満たしたときに出現させるゲームオブジェクト")]
+    public List<GameObject> enemyObjects = new List<GameObject>();
+
+    [AllowNesting, Label("条件成立時に確率抽選")]
+    [Tooltip("条件を満たした場合に、エリア進入ごとに出現確率を抽選するゲームオブジェクト")]
+    public List<RareEnemyInfo> rareEnemies = new List<RareEnemyInfo>();
+
+    /// <summary>
+    /// 設定されたフラグ条件をすべて満たしているか確認します。
+    /// </summary>
+    public bool AreAllFlagsMet()
+    {
+        if (requiredFlags == null)
+            return true;
+
+        foreach (FlagConditionPro requiredFlag in requiredFlags)
+        {
+            if (requiredFlag == null || !requiredFlag.IsMet())
+                return false;
+        }
+
+        return true;
+    }
 }
 
 /// <summary>
@@ -110,6 +152,16 @@ public class EnemyActivator : MonoBehaviour
     )]
     [SerializeField]
     private List<GameObject> additionalManagedObjects;
+
+    [Header("フラグ条件付きの管理対象")]
+    [InfoBox(
+        "各グループのフラグ条件はAND評価です。同じ対象が複数グループにある場合、成立したグループが1つでもあれば出現候補になります。"
+    )]
+    [Tooltip(
+        "フラグ条件をすべて満たしたときだけ出現させるグループ。確率対象は条件成立後に抽選され、フラグ変更は次回のエリア進入時に反映されます。"
+    )]
+    [SerializeField]
+    private List<ConditionalEnemyGroup> conditionalEnemyGroups;
 
     #endregion
 
@@ -292,14 +344,22 @@ public class EnemyActivator : MonoBehaviour
                 }
             }
 
+            // 条件付き管理対象と、現在のフラグ条件を満たす対象を収集
+            var conditionalEnemySet = new HashSet<GameObject>();
+            var activeConditionalEnemySet = new HashSet<GameObject>();
+            CollectConditionalEnemies(conditionalEnemySet, activeConditionalEnemySet);
+
             // Trackerによって親元に戻っているので、transformループで正しく取得可能
-            // まずは通常の敵（レア敵リストにないもの）を有効化
+            // まずは通常の敵（レア敵・条件付き管理対象のリストにないもの）を有効化
             foreach (Transform child in transform)
             {
                 if (child == null)
                     continue;
 
-                if (!rareEnemySet.Contains(child.gameObject))
+                if (
+                    !rareEnemySet.Contains(child.gameObject)
+                    && !conditionalEnemySet.Contains(child.gameObject)
+                )
                 {
                     child.gameObject.SetActive(true);
                     ResetChildState(child);
@@ -315,8 +375,12 @@ public class EnemyActivator : MonoBehaviour
                     if (rareInfo.enemyObject == null)
                         continue;
 
+                    // 条件付き管理対象としても登録されている場合は、フラグ条件を優先する
+                    if (conditionalEnemySet.Contains(rareInfo.enemyObject))
+                        continue;
+
                     // 0から100までの乱数を生成し、出現確率と比較
-                    bool shouldSpawn = Random.Range(0f, 100f) <= rareInfo.spawnChance;
+                    bool shouldSpawn = ShouldSpawnByChance(rareInfo.spawnChance);
                     rareInfo.enemyObject.SetActive(shouldSpawn);
                     processedObjects.Add(rareInfo.enemyObject);
 
@@ -332,11 +396,30 @@ public class EnemyActivator : MonoBehaviour
             {
                 foreach (GameObject managedObject in additionalManagedObjects)
                 {
-                    if (managedObject == null || !processedObjects.Add(managedObject))
+                    if (
+                        managedObject == null
+                        || conditionalEnemySet.Contains(managedObject)
+                        || !processedObjects.Add(managedObject)
+                    )
                         continue;
 
                     managedObject.SetActive(true);
                     ResetChildState(managedObject.transform);
+                }
+            }
+
+            // 条件付き管理対象は、いずれかのグループの条件を満たした場合だけ有効化する
+            foreach (GameObject conditionalEnemy in conditionalEnemySet)
+            {
+                if (conditionalEnemy == null || !processedObjects.Add(conditionalEnemy))
+                    continue;
+
+                bool shouldSpawn = activeConditionalEnemySet.Contains(conditionalEnemy);
+                conditionalEnemy.SetActive(shouldSpawn);
+
+                if (shouldSpawn)
+                {
+                    ResetChildState(conditionalEnemy.transform);
                 }
             }
         }
@@ -363,6 +446,38 @@ public class EnemyActivator : MonoBehaviour
                 }
             }
 
+            if (conditionalEnemyGroups != null)
+            {
+                foreach (ConditionalEnemyGroup conditionalGroup in conditionalEnemyGroups)
+                {
+                    if (conditionalGroup == null)
+                        continue;
+
+                    if (conditionalGroup.enemyObjects != null)
+                    {
+                        foreach (GameObject enemyObject in conditionalGroup.enemyObjects)
+                        {
+                            DeactivateManagedObject(enemyObject, processedObjects, itemsToReturn);
+                        }
+                    }
+
+                    if (conditionalGroup.rareEnemies != null)
+                    {
+                        foreach (RareEnemyInfo rareEnemy in conditionalGroup.rareEnemies)
+                        {
+                            if (rareEnemy == null)
+                                continue;
+
+                            DeactivateManagedObject(
+                                rareEnemy.enemyObject,
+                                processedObjects,
+                                itemsToReturn
+                            );
+                        }
+                    }
+                }
+            }
+
             // 各アイテムのメソッドを呼ぶだけ
             foreach (var item in itemsToReturn)
             {
@@ -372,6 +487,75 @@ public class EnemyActivator : MonoBehaviour
                 }
             }
         }
+    }
+
+    /// <summary>
+    /// 条件付き管理対象の全候補と、現在のフラグ条件を満たす候補を収集します。
+    /// </summary>
+    private void CollectConditionalEnemies(
+        HashSet<GameObject> conditionalEnemySet,
+        HashSet<GameObject> activeConditionalEnemySet
+    )
+    {
+        if (conditionalEnemyGroups == null)
+            return;
+
+        foreach (ConditionalEnemyGroup conditionalGroup in conditionalEnemyGroups)
+        {
+            if (conditionalGroup == null)
+                continue;
+
+            bool areConditionsMet = conditionalGroup.AreAllFlagsMet();
+
+            if (conditionalGroup.enemyObjects != null)
+            {
+                foreach (GameObject enemyObject in conditionalGroup.enemyObjects)
+                {
+                    if (enemyObject == null)
+                        continue;
+
+                    conditionalEnemySet.Add(enemyObject);
+
+                    if (areConditionsMet)
+                    {
+                        activeConditionalEnemySet.Add(enemyObject);
+                    }
+                }
+            }
+
+            if (conditionalGroup.rareEnemies != null)
+            {
+                foreach (RareEnemyInfo rareEnemy in conditionalGroup.rareEnemies)
+                {
+                    if (rareEnemy == null || rareEnemy.enemyObject == null)
+                        continue;
+
+                    conditionalEnemySet.Add(rareEnemy.enemyObject);
+
+                    if (
+                        areConditionsMet
+                        && ShouldSpawnByChance(rareEnemy.spawnChance)
+                    )
+                    {
+                        activeConditionalEnemySet.Add(rareEnemy.enemyObject);
+                    }
+                }
+            }
+        }
+    }
+
+    /// <summary>
+    /// パーセント指定の出現確率を判定します。0%と100%は乱数を使わず確定させます。
+    /// </summary>
+    private bool ShouldSpawnByChance(float spawnChance)
+    {
+        if (spawnChance <= 0f)
+            return false;
+
+        if (spawnChance >= 100f)
+            return true;
+
+        return Random.Range(0f, 100f) < spawnChance;
     }
 
     /// <summary>

@@ -95,6 +95,7 @@ public class HeroController : MonoBehaviour
     );
 
     // 状態管理フラグ
+    private bool _isNormalIdleRestorePending; // 非アクティブ中に要求された通常Idleへの復帰を保留する
     private bool _isGrounded; // 現在接地しているかどうか
 
     // 攻撃関連の状態管理
@@ -132,6 +133,12 @@ public class HeroController : MonoBehaviour
         if (_robot != null)
         {
             _robot.OnRobotAttackExecuted += HandleRobotAttack;
+        }
+
+        if (_isControlEnabled)
+        {
+            _isNormalIdleRestorePending = true;
+            TryRestoreNormalIdle();
         }
     }
 
@@ -254,11 +261,50 @@ public class HeroController : MonoBehaviour
     {
         _isControlEnabled = isEnabled;
 
-        if (isEnabled && _animator != null)
+        if (isEnabled)
         {
-            // 遷移条件に依存せず、特殊な待機状態などから通常の待機状態へ戻す
-            _animator.SetTrigger(_hashIdleTrigger);
+            _isNormalIdleRestorePending = true;
+            TryRestoreNormalIdle();
         }
+        else
+        {
+            _isNormalIdleRestorePending = false;
+        }
+    }
+
+    /// <summary>
+    /// Animatorが利用可能になった時点で、通常の待機状態への復帰を適用する
+    /// </summary>
+    private void TryRestoreNormalIdle()
+    {
+        if (!_isNormalIdleRestorePending || !gameObject.activeInHierarchy)
+        {
+            return;
+        }
+
+        if (_animator == null)
+        {
+            _animator = GetComponent<Animator>();
+        }
+
+        if (_animator == null || !_animator.isActiveAndEnabled)
+        {
+            return;
+        }
+
+        // GlobalSkip中にAnimatorの評価を挟まず設定されたTriggerが、
+        // 通常Idleへ戻した直後に再発火しないよう、未消費のTriggerを解除する
+        foreach (AnimatorControllerParameter parameter in _animator.parameters)
+        {
+            if (parameter.type == AnimatorControllerParameterType.Trigger)
+            {
+                _animator.ResetTrigger(parameter.nameHash);
+            }
+        }
+
+        // 遷移条件に依存せず、特殊な待機状態などから通常の待機状態へ戻す
+        _animator.Play(_hashNormalIdleState, 0, 0f);
+        _isNormalIdleRestorePending = false;
     }
 
     /// <summary>

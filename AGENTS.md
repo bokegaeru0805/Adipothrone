@@ -39,6 +39,16 @@
 5. 既存Managerの責務や既存componentで対応できないか確認する。
 6. 他componentからの登録・取得方法と、GameObjectの永続化方法を別々に検討する。
 
+## 地上移動敵のResetState
+
+- 地面を移動する敵のMoveControllerでは、落下やノックバック等で初期位置から移動した後でも、`ResetState()`によって適切な出現位置へ復帰できるようにする。
+- 固定の初期位置へ戻す敵は、原則として`Awake()`時点の初期座標を保持し、`ResetState()`内でRigidbodyの速度・物理状態を初期化した後、移動範囲の計算やランダム配置より前に座標を復元する。
+- Activator範囲内へランダム配置する敵は、初期の高さなど必要な座標を復元してから、移動範囲内の座標を決定する。
+- `isUseManualInitialPosition`、相対Bound、外部Spawnerによる配置などがある場合は、それぞれの意図を維持し、無条件にワールド原点や現在位置を復帰先にしない。
+- 飛行敵、追従敵、イベント配置敵など、初期位置への復帰が適切とは限らない敵へ一律適用しない。
+- 実装後はUnity上で「足場から落下させる → 非アクティブ化または`ResetState()`を実行する → 想定した足場・高さへ復帰する」を確認する。
+- 参考実装は `Assets/Scripts/Enemies/MoveController/SlimeWhiteMoveController.cs` と `Assets/Scripts/Enemies/MoveController/SnowFieldGolemMediumMoveController.cs`。
+
 ## 新規スクリプト作成前の調査
 
 1. 関連する `Docs/AI/` 文書を読む。

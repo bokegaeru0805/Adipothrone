@@ -43,6 +43,10 @@ public class SnowFieldGolemNormalMoveController : MonoBehaviour, IEnemyResettabl
     [Tooltip("配置調整用の地面チェック中心点")]
     private Transform _overlapCheckPoint;
 
+    [SerializeField, Min(0f)]
+    [Tooltip("地面表面から意図的に浮かせる高さ")]
+    private float _groundClearance = 0.5f;
+
     [Header("攻撃範囲")]
     [SerializeField]
     private float _attackRangeX = 6.0f;
@@ -141,8 +145,8 @@ public class SnowFieldGolemNormalMoveController : MonoBehaviour, IEnemyResettabl
 
     // 接地判定・ステータス用
     private LayerMask _groundLayer;
-    private float _overlapCheckRadius = 0.5f;
-    private float _verticalAdjustSpeed = 10f;
+    private const float POSITION_ADJUST_STEP = 0.01f;
+    private const int MAX_POSITION_ADJUST_ATTEMPTS = 1000;
     private int _boomerangDamage = 20;
 
     // Animatorパラメータハッシュ
@@ -509,21 +513,30 @@ public class SnowFieldGolemNormalMoveController : MonoBehaviour, IEnemyResettabl
         if (_overlapCheckPoint == null)
             yield break;
 
-        // 地面に埋まっている場合の補正（GargoyleMoveControllerを参考）
-        if (Physics2D.OverlapCircle(_overlapCheckPoint.position, _overlapCheckRadius, _groundLayer))
+        // チェック地点を中心とする円が地面から離れるまで上昇させ、指定した浮遊量を確保する。
+        if (Physics2D.OverlapCircle(_overlapCheckPoint.position, _groundClearance, _groundLayer))
         {
             _rbody.simulated = false;
+            int adjustAttempts = 0;
             while (
                 Physics2D.OverlapCircle(
                     _overlapCheckPoint.position,
-                    _overlapCheckRadius,
+                    _groundClearance,
                     _groundLayer
                 )
+                && adjustAttempts < MAX_POSITION_ADJUST_ATTEMPTS
             )
             {
-                transform.position += new Vector3(0, _verticalAdjustSpeed * Time.deltaTime, 0);
+                transform.position += Vector3.up * POSITION_ADJUST_STEP;
+                adjustAttempts++;
                 yield return null;
             }
+
+            if (adjustAttempts >= MAX_POSITION_ADJUST_ATTEMPTS)
+            {
+                Debug.LogWarning($"{name}の地面からの位置補正が上限回数に達しました。", this);
+            }
+
             _rbody.simulated = true;
         }
     }
@@ -566,7 +579,7 @@ public class SnowFieldGolemNormalMoveController : MonoBehaviour, IEnemyResettabl
         if (_overlapCheckPoint != null)
         {
             Gizmos.color = Color.cyan;
-            Gizmos.DrawWireSphere(_overlapCheckPoint.position, _overlapCheckRadius);
+            Gizmos.DrawWireSphere(_overlapCheckPoint.position, _groundClearance);
         }
 
         // ブレスの発生位置（オフセット）の描画（黄色の小さい球）

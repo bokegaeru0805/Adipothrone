@@ -2,6 +2,16 @@ using System.Collections.Generic;
 using NaughtyAttributes;
 using UnityEngine;
 
+/// <summary>
+/// SnowFairyの移動および攻撃AIを制御します。
+/// 攻撃はベジェ曲線による移動が完了し、プレイヤーが検知範囲内にいる場合に選択します。
+/// 雪の結晶射撃を基本攻撃とし、雪玉落下は再使用可能な場合に設定確率で選択します。
+/// 雪玉落下は2回連続では選択せず、雪玉の次は必ず雪の結晶射撃を行います。
+/// 雪玉落下は再使用間隔の経過後、出現エフェクトと雪玉のフェードインで予兆を示してから
+/// 雪玉を真下へ落とし、攻撃後の硬直を経て移動へ戻ります。
+/// 雪の結晶射撃はプレイヤーが検知半径内にいる場合に選択し、本体を発光させて発射予兆を示した後、
+/// 発射時点のプレイヤー位置へ向けて弾を放ち、攻撃後の硬直を経て移動へ戻ります。
+/// </summary>
 [RequireComponent(typeof(Animator))]
 [RequireComponent(typeof(SpriteRenderer))]
 [RequireComponent(typeof(Rigidbody2D))]
@@ -76,12 +86,24 @@ public class SnowFairyMoveController : MonoBehaviour, IEnemyResettable
     [SerializeField, Tooltip("目的地の抽選を試行する最大回数")]
     private int _waypointPickAttempts = 12;
 
+    [SerializeField, Tooltip("ResetState時に移動範囲内のランダムな位置へ再配置します。")]
+    private bool _isRandomizePositionOnReset = false;
+
     [Header("雪の結晶射撃設定")]
     [SerializeField, Tooltip("プレイヤーを検知する円形範囲の半径")]
     private float _crystalShotDetectionRadius = 6f;
 
     [SerializeField, Tooltip("雪の結晶の発射位置Offset。右向き基準です。")]
     private Vector2 _crystalShotSpawnOffset = new Vector2(0.5f, 0f);
+
+    [SerializeField, Tooltip("雪の結晶攻撃の予兆発光色")]
+    private Color _crystalShotFlashColor = Color.red;
+
+    [SerializeField, Range(0f, 1f), Tooltip("雪の結晶攻撃の予兆発光強度")]
+    private float _crystalShotFlashAmount = 0.85f;
+
+    [SerializeField, Min(0f), Tooltip("雪の結晶攻撃の予兆発光時間（秒）")]
+    private float _crystalShotFlashDuration = 0.15f;
 
     private int _crystalShotDamage = 20;
 
@@ -150,6 +172,9 @@ public class SnowFairyMoveController : MonoBehaviour, IEnemyResettable
     [SerializeField, Tooltip("前回の雪玉落下攻撃から次に使用可能になるまでの時間")]
     private float _snowballDropInterval = 8f;
 
+    [SerializeField, Range(0f, 1f), Tooltip("雪玉落下攻撃が使用可能な場合に選択される確率")]
+    private float _snowballDropSelectionRate = 0.5f;
+
     [SerializeField, Tooltip("妖精のローカル座標を基準とする雪玉生成位置")]
     private Vector2 _snowballDropOffset = new Vector2(0f, 1.5f);
 
@@ -183,6 +208,8 @@ public class SnowFairyMoveController : MonoBehaviour, IEnemyResettable
     private Animator _animator;
     private SpriteRenderer _spriteRenderer;
     private Rigidbody2D _rbody;
+    private Collider2D _collider;
+    private EnemyHealth _enemyHP;
     private Transform _playerTransform;
     private LayerMask _groundLayer;
     private SnowFairyState _currentState = SnowFairyState.Move;
@@ -196,6 +223,7 @@ public class SnowFairyMoveController : MonoBehaviour, IEnemyResettable
     private float _bezierTotalLength;
     private float _snowballDropTimer;
     private bool _hasReleasedCrystalShot;
+    private bool _wasLastAttackSnowball;
     private bool _hasValidMovementBounds;
     private float _leftBound;
     private float _rightBound;
@@ -217,6 +245,8 @@ public class SnowFairyMoveController : MonoBehaviour, IEnemyResettable
         _animator = GetComponent<Animator>();
         _spriteRenderer = GetComponent<SpriteRenderer>();
         _rbody = GetComponent<Rigidbody2D>();
+        _collider = GetComponent<Collider2D>();
+        _enemyHP = GetComponent<EnemyHealth>();
         _rbody.gravityScale = 0f;
         _rbody.velocity = Vector2.zero;
         _rbody.constraints |= RigidbodyConstraints2D.FreezeRotation;
@@ -296,6 +326,10 @@ public class SnowFairyMoveController : MonoBehaviour, IEnemyResettable
         RestoreSnowball();
 
         transform.position = _initialPosition;
+        if (_isRandomizePositionOnReset && _hasValidMovementBounds)
+        {
+            transform.position = PickGroundRelativePoint(GetColliderBottomOffset());
+        }
         if (_rbody != null)
         {
             _rbody.gravityScale = 0f;
@@ -304,6 +338,7 @@ public class SnowFairyMoveController : MonoBehaviour, IEnemyResettable
         }
         _spriteRenderer.flipX = false;
         _snowballDropTimer = 0f;
+        _wasLastAttackSnowball = false;
         ChangeState(SnowFairyState.Move);
     }
 
@@ -404,7 +439,7 @@ public class SnowFairyMoveController : MonoBehaviour, IEnemyResettable
         }
     }
 
-    private Vector2 PickGroundRelativePoint()
+    private Vector2 PickGroundRelativePoint(float additionalGroundClearance = 0f)
     {
         for (int attempt = 0; attempt < Mathf.Max(1, _waypointPickAttempts); attempt++)
         {
@@ -420,11 +455,24 @@ public class SnowFairyMoveController : MonoBehaviour, IEnemyResettable
             {
                 float minHeight = Mathf.Min(_minHeightFromGround, _maxHeightFromGround);
                 float maxHeight = Mathf.Max(_minHeightFromGround, _maxHeightFromGround);
-                return new Vector2(x, hit.point.y + Random.Range(minHeight, maxHeight));
+                return new Vector2(
+                    x,
+                    hit.point.y
+                        + Mathf.Max(0f, additionalGroundClearance)
+                        + Random.Range(minHeight, maxHeight)
+                );
             }
         }
 
         return transform.position;
+    }
+
+    private float GetColliderBottomOffset()
+    {
+        if (_collider == null)
+            return 0f;
+
+        return Mathf.Max(0f, transform.position.y - _collider.bounds.min.y);
     }
 
     private void UpdateMove(float deltaTime)
@@ -492,17 +540,30 @@ public class SnowFairyMoveController : MonoBehaviour, IEnemyResettable
 
     private void SelectActionAfterMove()
     {
-        if (_snowballDropTimer >= _snowballDropInterval && CanUseSnowballDrop())
+        bool isPlayerInAttackRange =
+            _playerTransform != null
+            && Vector2.Distance(transform.position, _playerTransform.position)
+                <= _crystalShotDetectionRadius;
+        if (!isPlayerInAttackRange)
         {
+            ChangeState(SnowFairyState.Move);
+            return;
+        }
+
+        bool canSelectSnowballDrop =
+            !_wasLastAttackSnowball
+            && _snowballDropTimer >= _snowballDropInterval
+            && CanUseSnowballDrop();
+        if (canSelectSnowballDrop && Random.value < Mathf.Clamp01(_snowballDropSelectionRate))
+        {
+            _wasLastAttackSnowball = true;
             ChangeState(SnowFairyState.SnowballDropPrepare);
             return;
         }
 
-        if (_playerTransform != null
-            && Vector2.Distance(transform.position, _playerTransform.position)
-                <= _crystalShotDetectionRadius
-            && _crystalProjectilePrefab != null)
+        if (_crystalProjectilePrefab != null)
         {
+            _wasLastAttackSnowball = false;
             ChangeState(SnowFairyState.CrystalShot);
             return;
         }
@@ -656,6 +717,14 @@ public class SnowFairyMoveController : MonoBehaviour, IEnemyResettable
             case SnowFairyState.CrystalShot:
                 _hasReleasedCrystalShot = false;
                 SetAnimationTrigger(CrystalShotTriggerHash);
+                if (_enemyHP != null)
+                {
+                    _enemyHP.TriggerCustomFlash(
+                        _crystalShotFlashColor,
+                        _crystalShotFlashAmount,
+                        _crystalShotFlashDuration
+                    );
+                }
                 break;
             case SnowFairyState.SnowballDropPrepare:
                 SetAnimationTrigger(SnowballDropPrepareTriggerHash);
