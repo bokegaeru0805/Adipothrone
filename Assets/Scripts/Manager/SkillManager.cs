@@ -2,6 +2,18 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 
+public enum SkillEquipResult
+{
+    Success = 0,
+    InvalidSkill = 10,
+    NotUnlocked = 20,
+    AlreadyEquipped = 30,
+    NotEnoughPoints = 40,
+    PrerequisiteNotMet = 50,
+    ExclusiveSkillEquipped = 60,
+    SaveDataUnavailable = 70,
+}
+
 public class SkillManager : MonoBehaviour
 {
     [Header("データベース参照")]
@@ -64,6 +76,10 @@ public class SkillManager : MonoBehaviour
                 {
                     skillDataCache.Add(id, skillData);
                 }
+                else
+                {
+                    Debug.LogError($"SkillDatabase に重複したスキルIDがあります: {id}");
+                }
             }
         }
     }
@@ -83,9 +99,17 @@ public class SkillManager : MonoBehaviour
             return;
         }
 
+        GameManager.instance.savedata.SkillData.Validate();
         var savedSkills = GameManager.instance.savedata.SkillData.knownSkills;
         foreach (var skill in savedSkills)
         {
+            if (skill == null || !skillDataCache.ContainsKey(skill.skillID))
+            {
+                if (skill != null)
+                    Debug.LogWarning($"SkillDatabase に存在しないスキルIDを検出しました: {skill.skillID}");
+                continue;
+            }
+
             if (skill.isUnlocked)
             {
                 unlockedSkillsCache.Add(skill.skillID);
@@ -105,7 +129,7 @@ public class SkillManager : MonoBehaviour
     /// 宝箱やイベント、ボス討伐時などに呼び出します
     /// </summary>
     /// <param name="skillID">解放するスキルのID</param>
-    public void UnlockSkill(Enum skillID)
+    public void UnlockSkill(SkillName skillID)
     {
         if (GameManager.instance == null || GameManager.instance.savedata == null)
         {
@@ -114,6 +138,11 @@ public class SkillManager : MonoBehaviour
         }
 
         int id = EnumIDUtility.ToID(skillID);
+        if (!skillDataCache.ContainsKey(id))
+        {
+            Debug.LogError($"スキルID:{id} のデータがデータベースに存在しません。");
+            return;
+        }
         var skillData = GameManager.instance.savedata.SkillData;
         var skillEntry = skillData.knownSkills.Find(s => s.skillID == id);
 
@@ -137,16 +166,31 @@ public class SkillManager : MonoBehaviour
         }
     }
 
+    [Obsolete("UnlockSkill(SkillName) を使用してください。")]
+    public void UnlockSkill(Enum skillID)
+    {
+        if (skillID is SkillName typedSkillID)
+            UnlockSkill(typedSkillID);
+        else
+            Debug.LogError($"SkillName 以外のEnumはスキルIDとして使用できません: {skillID}");
+    }
+
     /// <summary>
     /// 他のスクリプト(移動や攻撃など)から、指定したスキルが有効か判定する
     /// HashSetを使用しているため、毎フレーム呼ばれても負荷は極小です
     /// </summary>
     /// <param name="skillID">判定するスキルのID</param>
     /// <returns>装備中であればtrue</returns>
-    public bool IsSkillActive(Enum skillID)
+    public bool IsSkillActive(SkillName skillID)
     {
         int id = EnumIDUtility.ToID(skillID);
         return equippedSkillsCache.Contains(id);
+    }
+
+    [Obsolete("IsSkillActive(SkillName) を使用してください。")]
+    public bool IsSkillActive(Enum skillID)
+    {
+        return skillID is SkillName typedSkillID && IsSkillActive(typedSkillID);
     }
 
     /// <summary>
@@ -155,10 +199,16 @@ public class SkillManager : MonoBehaviour
     /// </summary>
     /// <param name="skillID">判定するスキルのID</param>
     /// <returns>取得済みであればtrue</returns>
-    public bool IsSkillUnlocked(Enum skillID)
+    public bool IsSkillUnlocked(SkillName skillID)
     {
         int id = EnumIDUtility.ToID(skillID);
         return unlockedSkillsCache.Contains(id);
+    }
+
+    [Obsolete("IsSkillUnlocked(SkillName) を使用してください。")]
+    public bool IsSkillUnlocked(Enum skillID)
+    {
+        return skillID is SkillName typedSkillID && IsSkillUnlocked(typedSkillID);
     }
 
     /// <summary>
@@ -167,7 +217,13 @@ public class SkillManager : MonoBehaviour
     /// <param name="amount">獲得したポイント数</param>
     public void AddSkillPoint(int amount = 1)
     {
-        if (GameManager.instance.savedata != null)
+        if (amount <= 0)
+        {
+            Debug.LogWarning("追加するスキルポイントは1以上を指定してください。");
+            return;
+        }
+
+        if (GameManager.instance != null && GameManager.instance.savedata != null)
         {
             GameManager.instance.savedata.SkillData.totalEarnedSkillPoints += amount;
             Debug.Log(
@@ -182,7 +238,7 @@ public class SkillManager : MonoBehaviour
     /// </summary>
     public int GetAvailableSkillPoints()
     {
-        if (GameManager.instance.savedata == null)
+        if (GameManager.instance == null || GameManager.instance.savedata == null)
             return 0;
 
         int totalEarned = GameManager.instance.savedata.SkillData.totalEarnedSkillPoints;
@@ -194,24 +250,45 @@ public class SkillManager : MonoBehaviour
             // Dictionary を使ってコストを O(1) で取得
             if (skillDataCache.TryGetValue(equippedID, out SkillData data))
             {
-                usedPoints += data.requiredPoints;
+                usedPoints += Mathf.Max(0, data.requiredPoints);
             }
         }
 
-        return totalEarned - usedPoints;
+        return Mathf.Max(0, totalEarned - usedPoints);
     }
 
     /// <summary>
     /// スキルを装備する処理
     /// </summary>
-    public bool EquipSkill(Enum skillID)
+    public bool EquipSkill(SkillName skillID)
+    {
+        return TryEquipSkill(skillID, out _);
+    }
+
+    /// <summary>
+    /// 装備条件を検証してスキルを装備し、失敗理由を返します。
+    /// </summary>
+    public bool TryEquipSkill(SkillName skillID, out SkillEquipResult result)
     {
         int id = EnumIDUtility.ToID(skillID);
+
+        if (GameManager.instance == null || GameManager.instance.savedata == null)
+        {
+            result = SkillEquipResult.SaveDataUnavailable;
+            return false;
+        }
 
         // 1. 取得済みかどうかのチェック（HashSetで一瞬で判定）
         if (!unlockedSkillsCache.Contains(id))
         {
             Debug.LogWarning("未解放のスキルは装備できません。");
+            result = SkillEquipResult.NotUnlocked;
+            return false;
+        }
+
+        if (equippedSkillsCache.Contains(id))
+        {
+            result = SkillEquipResult.AlreadyEquipped;
             return false;
         }
 
@@ -219,11 +296,25 @@ public class SkillManager : MonoBehaviour
         if (!skillDataCache.TryGetValue(id, out SkillData data))
         {
             Debug.LogError($"スキルID:{id} のデータがデータベースに存在しません。");
+            result = SkillEquipResult.InvalidSkill;
+            return false;
+        }
+
+        if (!ArePrerequisitesMet(data))
+        {
+            result = SkillEquipResult.PrerequisiteNotMet;
+            return false;
+        }
+
+        if (HasExclusiveSkillEquipped(data))
+        {
+            result = SkillEquipResult.ExclusiveSkillEquipped;
             return false;
         }
 
         // 3. コストが足りているかチェック
-        if (GetAvailableSkillPoints() >= data.requiredPoints)
+        int requiredPoints = Mathf.Max(0, data.requiredPoints);
+        if (GetAvailableSkillPoints() >= requiredPoints)
         {
             var skillEntry = GameManager.instance.savedata.SkillData.knownSkills.Find(s =>
                 s.skillID == id
@@ -232,22 +323,35 @@ public class SkillManager : MonoBehaviour
             {
                 skillEntry.isEquipped = true;
                 RebuildSkillCache(); // キャッシュを再構築
+                result = SkillEquipResult.Success;
                 return true;
             }
         }
         else
         {
             Debug.Log("スキルポイントが足りません。");
+            result = SkillEquipResult.NotEnoughPoints;
+            return false;
         }
 
+        result = SkillEquipResult.InvalidSkill;
         return false;
+    }
+
+    [Obsolete("EquipSkill(SkillName) を使用してください。")]
+    public bool EquipSkill(Enum skillID)
+    {
+        return skillID is SkillName typedSkillID && EquipSkill(typedSkillID);
     }
 
     /// <summary>
     /// スキルを外す処理
     /// </summary>
-    public void UnequipSkill(Enum skillID)
+    public bool UnequipSkill(SkillName skillID)
     {
+        if (GameManager.instance == null || GameManager.instance.savedata == null)
+            return false;
+
         int id = EnumIDUtility.ToID(skillID);
         var skillEntry = GameManager.instance.savedata.SkillData.knownSkills.Find(s =>
             s.skillID == id
@@ -257,7 +361,99 @@ public class SkillManager : MonoBehaviour
         {
             skillEntry.isEquipped = false;
             RebuildSkillCache();
+            return true;
         }
+
+        return false;
+    }
+
+    [Obsolete("UnequipSkill(SkillName) を使用してください。")]
+    public void UnequipSkill(Enum skillID)
+    {
+        if (skillID is SkillName typedSkillID)
+            UnequipSkill(typedSkillID);
+    }
+
+    /// <summary>
+    /// 解放済みスキルの現在レベルを返します。未解放の場合は0を返します。
+    /// </summary>
+    public int GetSkillLevel(SkillName skillID)
+    {
+        if (GameManager.instance == null || GameManager.instance.savedata == null)
+            return 0;
+
+        int id = EnumIDUtility.ToID(skillID);
+        SkillEntry entry = GameManager.instance.savedata.SkillData.knownSkills.Find(skill =>
+            skill != null && skill.skillID == id
+        );
+        if (entry == null || !entry.isUnlocked)
+            return 0;
+
+        SkillData data = GetSkillData(skillID);
+        int maxLevel = data != null ? Mathf.Max(1, data.maxLevel) : entry.level;
+        return Mathf.Clamp(entry.level, 1, maxLevel);
+    }
+
+    /// <summary>
+    /// 指定したスキルのマスターデータを返します。
+    /// </summary>
+    public SkillData GetSkillData(SkillName skillID)
+    {
+        skillDataCache.TryGetValue(EnumIDUtility.ToID(skillID), out SkillData data);
+        return data;
+    }
+
+    /// <summary>
+    /// 指定したスキルを既読にします。
+    /// </summary>
+    public bool MarkSkillAsSeen(SkillName skillID)
+    {
+        if (GameManager.instance == null || GameManager.instance.savedata == null)
+            return false;
+
+        int id = EnumIDUtility.ToID(skillID);
+        SkillEntry entry = GameManager.instance.savedata.SkillData.knownSkills.Find(skill =>
+            skill != null && skill.skillID == id
+        );
+        if (entry == null || !entry.isNew)
+            return false;
+
+        entry.isNew = false;
+        OnSkillStateChanged?.Invoke();
+        return true;
+    }
+
+    private bool ArePrerequisitesMet(SkillData data)
+    {
+        if (data.prerequisiteSkills == null)
+            return true;
+
+        foreach (SkillName prerequisite in data.prerequisiteSkills)
+        {
+            if (prerequisite != SkillName.None && !IsSkillUnlocked(prerequisite))
+                return false;
+        }
+
+        return true;
+    }
+
+    private bool HasExclusiveSkillEquipped(SkillData data)
+    {
+        if (data.exclusiveGroupID <= 0)
+            return false;
+
+        foreach (int equippedID in equippedSkillsCache)
+        {
+            if (
+                skillDataCache.TryGetValue(equippedID, out SkillData equippedData)
+                && equippedData.exclusiveGroupID == data.exclusiveGroupID
+            )
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /// <summary>
@@ -267,6 +463,9 @@ public class SkillManager : MonoBehaviour
     /// <returns>スキルカテゴリー</returns>
     public SkillCategory GetSkillCategory(SkillName skillID)
     {
+        if (skillDatabase == null)
+            return SkillCategory.None;
+
         // SkillDatabaseから直接SkillDataを取得
         SkillData data = skillDatabase.GetSkillByID(skillID);
 
@@ -287,6 +486,9 @@ public class SkillManager : MonoBehaviour
     /// <returns>スキルの表示名</returns>
     public string GetSkillDisplayName(SkillName skillID)
     {
+        if (skillDatabase == null)
+            return skillID.ToString();
+
         SkillData data = skillDatabase.GetSkillByID(skillID);
 
         if (data != null)

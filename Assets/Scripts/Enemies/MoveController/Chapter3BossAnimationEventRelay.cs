@@ -1,7 +1,7 @@
 using UnityEngine;
 
 /// <summary>
-/// Chapter3BossのAnimatorから発生した攻撃判定用Animation Eventを、
+/// Chapter3BossのAnimatorから発生した攻撃判定・演出用Animation Eventを、
 /// Chapter3BossMoveControllerへ転送します。
 /// Animatorと同じGameObjectへ追加してください。
 /// </summary>
@@ -74,6 +74,14 @@ public class Chapter3BossAnimationEventRelay : MonoBehaviour
         Chapter3BossMoveController.AttackDamageType.Upper,
         false
     );
+
+    /// <summary>
+    /// PowerUpアニメーションの表示タイミングでスキル名UIを表示します。
+    /// </summary>
+    public void ShowPowerUpSkillNameUI()
+    {
+        _moveController?.ShowPowerUpSkillNameUI();
+    }
 
     private void SetAttackDamageEnabled(
         Chapter3BossMoveController.AttackDamageType attackType,

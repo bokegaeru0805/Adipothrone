@@ -425,6 +425,9 @@ public class SaveLoadManager : MonoBehaviour
                     //セーブデータをGameManagerに保存
                     GameManager.instance.savedata = saveData;
 
+                    // SaveDataの参照置換後に、スキルの実行時キャッシュを同期する
+                    SkillManager.instance?.RebuildSkillCache();
+
                     //装備中の全武器のIDを取得し、同じIDの所持武器(inventory)の参照に置き換える
                     WeaponManager.instance?.ReplaceAllEquippedWeaponsWithInventoryReferences();
 

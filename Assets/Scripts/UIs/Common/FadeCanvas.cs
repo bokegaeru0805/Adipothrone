@@ -1,3 +1,4 @@
+using System;
 using DG.Tweening;
 using UnityEngine;
 using UnityEngine.SceneManagement;
@@ -122,7 +123,21 @@ public class FadeCanvas : MonoBehaviour
     /// <param name="duration">フェードにかかる時間</param>
     public void FadeIn(float duration)
     {
-        if (fadeImage == null) return;
+        FadeIn(duration, null);
+    }
+
+    /// <summary>
+    /// 画面を明転させ、完了時にコールバックを呼び出します。
+    /// </summary>
+    /// <param name="duration">フェードにかかる時間</param>
+    /// <param name="onComplete">フェード完了時に呼び出す処理</param>
+    public void FadeIn(float duration, Action onComplete)
+    {
+        if (fadeImage == null)
+        {
+            onComplete?.Invoke();
+            return;
+        }
 
         fadeImage.DOKill();
         fadeImage.gameObject.SetActive(true);
@@ -134,6 +149,7 @@ public class FadeCanvas : MonoBehaviour
             c.a = 0.0f;
             fadeImage.color = c;
             fadeImage.gameObject.SetActive(false);
+            onComplete?.Invoke();
             return;
         }
 
@@ -146,6 +162,7 @@ public class FadeCanvas : MonoBehaviour
                 // 完了時に非表示にする
                 // ※この間にFadeOutが呼ばれてDOKillされた場合は、ここは実行されないので安全
                 fadeImage.gameObject.SetActive(false);
+                onComplete?.Invoke();
             });
     }
 

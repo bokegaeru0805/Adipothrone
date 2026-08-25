@@ -20,4 +20,12 @@ public class SkillDatabase : ScriptableObject
 
         return null;
     }
+
+    /// <summary>
+    /// SkillNameから対応するマスターデータを取得します。
+    /// </summary>
+    public SkillData GetSkillByID(SkillName id)
+    {
+        return skills.Find(item => item != null && item.skillID == id);
+    }
 }

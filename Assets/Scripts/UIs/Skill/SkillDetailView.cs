@@ -1,4 +1,3 @@
-using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
 
@@ -33,8 +32,12 @@ public class SkillDetailView : MonoBehaviour
     [SerializeField]
     private GameObject pointIconPrefab;
 
-    // 生成したクリスタルを保持するリスト
-    private List<PointIconUI> generatedTotalPointsIcons = new List<PointIconUI>();
+    private SkillPointView totalPointView;
+
+    private void Awake()
+    {
+        totalPointView = new SkillPointView(totalPointsContainer, pointIconPrefab);
+    }
 
     /// <summary>
     /// 現在の残りスキルポイントを再計算してクリスタルを並べる
@@ -50,29 +53,7 @@ public class SkillDetailView : MonoBehaviour
 
         int points = SkillManager.instance.GetAvailableSkillPoints();
 
-        // 必要な数までプレハブを生成
-        while (generatedTotalPointsIcons.Count < points)
-        {
-            GameObject obj = Instantiate(pointIconPrefab, totalPointsContainer);
-            obj.transform.localScale = Vector3.one;
-            PointIconUI iconUI = obj.GetComponent<PointIconUI>();
-            if (iconUI != null)
-                generatedTotalPointsIcons.Add(iconUI);
-        }
-
-        // ポイントの数だけアクティブにして、アニメーションを「Default」にする
-        for (int i = 0; i < generatedTotalPointsIcons.Count; i++)
-        {
-            if (i < points)
-            {
-                generatedTotalPointsIcons[i].gameObject.SetActive(true);
-                generatedTotalPointsIcons[i].SetState(true); // 所持ポイントは常にキラキラ(Default)させる
-            }
-            else
-            {
-                generatedTotalPointsIcons[i].gameObject.SetActive(false);
-            }
-        }
+        totalPointView.SetPoints(points, true);
     }
 
     /// <summary>
@@ -80,26 +61,40 @@ public class SkillDetailView : MonoBehaviour
     /// </summary>
     public void UpdateView(SkillData skillData)
     {
-        // 常に最新のポイント表示に更新
+        if (skillData == null || SkillManager.instance == null)
+            return;
+
+        UpdateView(
+            new SkillUIState(
+                skillData,
+                SkillManager.instance.IsSkillUnlocked(skillData.skillID),
+                SkillManager.instance.IsSkillActive(skillData.skillID),
+                false,
+                SkillManager.instance.GetSkillLevel(skillData.skillID)
+            )
+        );
+    }
+
+    public void UpdateView(SkillUIState state)
+    {
         UpdateAvailablePoints();
 
+        SkillData skillData = state.SkillData;
         if (skillData == null)
             return;
 
-        bool isUnlocked = SkillManager.instance.IsSkillUnlocked(skillData.skillID);
-
         // 各UIがインスペクターで設定されているか確認しながら書き換える（安全対策）
-        if (isUnlocked)
+        if (state.IsUnlocked)
         {
             // 解放済みの場合はすべての情報を表示
             if (skillNameText != null)
                 skillNameText.text = skillData.skillName;
             if (categoryText != null)
-                categoryText.text = GetCategoryName(skillData.category);
+                categoryText.text = SkillUIText.GetCategoryName(skillData.category);
 
             if (costText != null)
             {
-                costText.text = $"コスト: {skillData.requiredPoints}";
+                costText.text = SkillUIText.GetCostText(state.RequiredPoints);
                 costText.gameObject.SetActive(true);
             }
 
@@ -110,9 +105,9 @@ public class SkillDetailView : MonoBehaviour
         {
             // 未解放の場合は情報を隠蔽する
             if (skillNameText != null)
-                skillNameText.text = "？？？";
+                skillNameText.text = SkillUIText.LockedName;
             if (categoryText != null)
-                categoryText.text = "？？？";
+                categoryText.text = SkillUIText.LockedName;
 
             if (costText != null)
             {
@@ -120,33 +115,13 @@ public class SkillDetailView : MonoBehaviour
             }
 
             if (descriptionText != null)
-                descriptionText.text = "条件を満たすと詳細が判明します。";
+                descriptionText.text = SkillUIText.LockedDescription;
         }
     }
 
-    /// <summary>
-    /// カテゴリのEnumから表示用のテキストを取得する
-    /// </summary>
-    private string GetCategoryName(SkillCategory category)
+    public void ShowEquipFailure(SkillEquipResult result)
     {
-        switch (category)
-        {
-            case SkillCategory.Basic:
-                return "基本型";
-            case SkillCategory.Exploration:
-                return "探索型";
-            case SkillCategory.Attack:
-                return "攻撃型";
-            case SkillCategory.Defense:
-                return "防御型";
-            case SkillCategory.Luck:
-                return "幸運型";
-            case SkillCategory.Item:
-                return "アイテム型";
-            case SkillCategory.Special:
-                return "特殊型";
-            default:
-                return category.ToString();
-        }
+        if (descriptionText != null)
+            descriptionText.text = SkillUIText.GetEquipFailureMessage(result);
     }
 }

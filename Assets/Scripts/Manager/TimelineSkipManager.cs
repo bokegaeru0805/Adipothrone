@@ -35,6 +35,9 @@ public class TimelineSkipManager : MonoBehaviour
     // 現在スキップ中（Tキー）かどうか
     public bool IsSkipping { get; private set; } = false;
 
+    // Global Skipの開始から復帰フェードイン完了まで、処理中かどうか
+    public bool IsGlobalSkipRoutineActive { get; private set; } = false;
+
     // 現在早送り中（Zキー）かどうか
     public bool IsFastForwarding { get; private set; } = false;
 
@@ -62,6 +65,7 @@ public class TimelineSkipManager : MonoBehaviour
         {
             return isTalking
                 && !IsSkipping
+                && !IsGlobalSkipRoutineActive
                 && FungusSkipController.instance != null
                 && FungusSkipController.instance.IsSkipAllowed();
         }
@@ -221,7 +225,7 @@ public class TimelineSkipManager : MonoBehaviour
     /// </summary>
     public void StartGlobalSkip()
     {
-        if (IsSkipping)
+        if (IsGlobalSkipRoutineActive)
             return;
         StartCoroutine(SkipRoutine());
     }
@@ -242,6 +246,7 @@ public class TimelineSkipManager : MonoBehaviour
     /// <returns></returns>
     private IEnumerator SkipRoutine()
     {
+        IsGlobalSkipRoutineActive = true;
         IsSkipping = true;
 
         // ローカル早送り中なら一旦解除しておく
@@ -327,8 +332,12 @@ public class TimelineSkipManager : MonoBehaviour
         // 6. フェードイン
         if (FadeCanvas.instance != null)
         {
-            FadeCanvas.instance.FadeIn(fadeDuration);
+            bool isFadeInCompleted = false;
+            FadeCanvas.instance.FadeIn(fadeDuration, () => isFadeInCompleted = true);
+            yield return new WaitUntil(() => isFadeInCompleted || FadeCanvas.instance == null);
         }
+
+        IsGlobalSkipRoutineActive = false;
 
         //Debug.Log("Global Skip Ended");
     }

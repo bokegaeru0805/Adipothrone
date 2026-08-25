@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+using System;
 using TMPro;
 using UnityEngine;
 using UnityEngine.EventSystems;
@@ -59,15 +59,33 @@ public class SkillButtonUI
     private GameObject pointIconPrefab;
 
     private SkillData currentSkill;
-    private SkillMenuManager menuManager;
+    private SkillUIState currentState;
+    private Action<SkillName> onSelected;
+    private Action<SkillName> onSubmitted;
     private bool isSelected = false;
 
-    private List<PointIconUI> generatedCostIcons = new List<PointIconUI>();
+    private SkillPointView costPointView;
 
-    public void Setup(SkillData skill, SkillMenuManager manager)
+    public SkillData SkillData => currentSkill;
+    public SkillName SkillID => currentSkill != null ? currentSkill.skillID : SkillName.None;
+
+    public void Setup(
+        SkillUIState state,
+        Action<SkillName> selectedCallback,
+        Action<SkillName> submittedCallback
+    )
     {
-        currentSkill = skill;
-        menuManager = manager;
+        currentSkill = state.SkillData;
+        onSelected = selectedCallback;
+        onSubmitted = submittedCallback;
+        if (costPointView == null)
+            costPointView = new SkillPointView(costContainer, pointIconPrefab);
+        RefreshUI(state);
+    }
+
+    public void RefreshUI(SkillUIState state)
+    {
+        currentState = state;
         RefreshUI();
     }
 
@@ -76,29 +94,30 @@ public class SkillButtonUI
     /// </summary>
     public void RefreshUI()
     {
-        if (currentSkill == null || SkillManager.instance == null)
+        if (currentSkill == null)
             return;
 
-        int id = EnumIDUtility.ToID(currentSkill.skillID);
-        bool isUnlocked = SkillManager.instance.IsSkillUnlocked(currentSkill.skillID);
-        bool isEquipped = SkillManager.instance.IsSkillActive(currentSkill.skillID);
+        bool isUnlocked = currentState.IsUnlocked;
+        bool isEquipped = currentState.IsEquipped;
 
         // --- 1. テキストとNewアイコンの更新 ---
         if (isUnlocked)
         {
-            nameText.text = currentSkill.skillName;
+            if (nameText != null)
+                nameText.text = currentSkill.skillName;
             if (costContainer != null)
                 costContainer.gameObject.SetActive(true);
 
             // マネージャーが記憶している「開いた時の状態」で表示を固定
             if (newIcon != null)
             {
-                newIcon.SetActive(menuManager.WasNewOnOpen(id));
+                newIcon.SetActive(currentState.IsNew);
             }
         }
         else
         {
-            nameText.text = "？？？";
+            if (nameText != null)
+                nameText.text = SkillUIText.LockedName;
             if (costContainer != null)
                 costContainer.gameObject.SetActive(false);
             if (newIcon != null)
@@ -106,29 +125,8 @@ public class SkillButtonUI
         }
 
         // --- 2. クリスタルアイコンの生成と状態更新 ---
-        if (isUnlocked && costContainer != null && pointIconPrefab != null)
-        {
-            while (generatedCostIcons.Count < currentSkill.requiredPoints)
-            {
-                GameObject obj = Instantiate(pointIconPrefab, costContainer);
-                obj.transform.localScale = Vector3.one;
-                PointIconUI iconUI = obj.GetComponent<PointIconUI>();
-                if (iconUI != null)
-                    generatedCostIcons.Add(iconUI);
-            }
-            for (int i = 0; i < generatedCostIcons.Count; i++)
-            {
-                if (i < currentSkill.requiredPoints)
-                {
-                    generatedCostIcons[i].gameObject.SetActive(true);
-                    generatedCostIcons[i].SetState(isEquipped); // 同期機能付き
-                }
-                else
-                {
-                    generatedCostIcons[i].gameObject.SetActive(false);
-                }
-            }
-        }
+        if (isUnlocked)
+            costPointView?.SetPoints(currentState.RequiredPoints, isEquipped);
 
         if (equippedMark != null)
             equippedMark.SetActive(isEquipped);
@@ -166,23 +164,13 @@ public class SkillButtonUI
 
     public void OnSelect(BaseEventData eventData)
     {
-        isSelected = true;
-        menuManager.UpdateDetailView(currentSkill);
+        if (currentSkill == null)
+            return;
 
-        // セーブデータ上の既読処理（表示自体は閉じられるまで維持）
-        MarkAsSeen();
+        isSelected = true;
+        onSelected?.Invoke(currentSkill.skillID);
 
         RefreshUI();
-    }
-
-    private void MarkAsSeen()
-    {
-        if (currentSkill == null || GameManager.instance.savedata == null)
-            return;
-        int id = EnumIDUtility.ToID(currentSkill.skillID);
-        var entry = GameManager.instance.savedata.SkillData.knownSkills.Find(s => s.skillID == id);
-        if (entry != null && entry.isNew)
-            entry.isNew = false;
     }
 
     public void OnDeselect(BaseEventData eventData)
@@ -191,28 +179,15 @@ public class SkillButtonUI
         RefreshUI();
     }
 
-    public void OnSubmit(BaseEventData eventData) => ToggleSkill();
+    public void OnSubmit(BaseEventData eventData) => SubmitSkill();
 
-    public void OnPointerClick(PointerEventData eventData) => ToggleSkill();
+    public void OnPointerClick(PointerEventData eventData) => SubmitSkill();
 
-    private void ToggleSkill()
+    private void SubmitSkill()
     {
         if (currentSkill == null)
             return;
-        if (!SkillManager.instance.IsSkillUnlocked(currentSkill.skillID))
-            return;
 
-        if (SkillManager.instance.IsSkillActive(currentSkill.skillID))
-        {
-            SkillManager.instance.UnequipSkill(currentSkill.skillID);
-        }
-        else
-        {
-            if (!SkillManager.instance.EquipSkill(currentSkill.skillID))
-                return;
-        }
-
-        RefreshUI();
-        menuManager.UpdateDetailView(currentSkill);
+        onSubmitted?.Invoke(currentSkill.skillID);
     }
 }

@@ -34,6 +34,7 @@ public class Chapter3BossMoveController : MonoBehaviour
      *
      * ■ ② 突き攻撃 (Thrust Attack)
      * - 剣先とプレイヤーの位置からボス本体の移動先を逆算し、前方へ突進する。
+     * - プレイヤー位置を終点にせず、剣先とボス本体が指定距離だけ反対側へ通過する。
      * - 壁際と最小接近距離を考慮して移動先を補正する。
      * - 判定: thrustDamageController
      *
@@ -45,6 +46,7 @@ public class Chapter3BossMoveController : MonoBehaviour
      * ■ ④ 後退テレポート攻撃 (Retreat Teleport Attack)
      * - 空間の広い方向へ後退しながら複数回テレポートする。
      * - 中間地点で水平攻撃を行い、Animation EventのFireWindEffect()で風攻撃を発射する。
+     * - 最初の中間地点でプレイヤーが背後にいる場合は、表示・攻撃せず最終地点へ移動する。
      * - 壁際では行動可能エリア内に収まるよう位置を補正する。
      * - 水平攻撃判定: horizontalAttackDamageController
      *
@@ -66,6 +68,7 @@ public class Chapter3BossMoveController : MonoBehaviour
 
     #region 定数・列挙型
     private const string SHOOT_BULLET_POOLTAG = "Chapter3BossShoot";
+    private const string POWER_UP_SKILL_NAME = "加速";
 
     /// <summary>
     /// ボスの現在の状態を表す列挙型
@@ -81,6 +84,7 @@ public class Chapter3BossMoveController : MonoBehaviour
         RetreatTeleporting, // 後退テレポート攻撃中
         RushComboAttacking, // 突進コンボ攻撃中
         MirageAssaultAttacking, // 幻影急襲攻撃中
+        PoweringUp, // HPフェーズ移行時の強化演出中
     }
 
     private enum AttackPattern
@@ -91,6 +95,56 @@ public class Chapter3BossMoveController : MonoBehaviour
         RetreatTeleportAttack = 3,
         RushCombo = 4,
         MirageAssault = 5,
+    }
+
+    private enum PlayerDistanceRange
+    {
+        Near = 0,
+        Middle = 1,
+        Far = 2,
+    }
+
+    [System.Serializable]
+    private class AttackWeightSettings
+    {
+        [Min(0f)]
+        public float normalAttackWeight = 0f;
+
+        [Min(0f)]
+        public float thrustAttackWeight = 0f;
+
+        [Min(0f)]
+        public float shootAttackWeight = 0f;
+
+        [Min(0f)]
+        public float retreatTeleportWeight = 0f;
+
+        [Min(0f)]
+        public float rushComboWeight = 0f;
+
+        [Min(0f)]
+        public float mirageAssaultWeight = 0f;
+
+        public float GetWeight(AttackPattern attackPattern)
+        {
+            switch (attackPattern)
+            {
+                case AttackPattern.NormalAttack:
+                    return normalAttackWeight;
+                case AttackPattern.ThrustAttack:
+                    return thrustAttackWeight;
+                case AttackPattern.ShootAttack:
+                    return shootAttackWeight;
+                case AttackPattern.RetreatTeleportAttack:
+                    return retreatTeleportWeight;
+                case AttackPattern.RushCombo:
+                    return rushComboWeight;
+                case AttackPattern.MirageAssault:
+                    return mirageAssaultWeight;
+                default:
+                    return 0f;
+            }
+        }
     }
 
     internal enum AttackDamageType
@@ -143,6 +197,54 @@ public class Chapter3BossMoveController : MonoBehaviour
     [Tooltip("デバッグ中に繰り返す攻撃パターン")]
     private AttackPattern debugAttackPattern = AttackPattern.NormalAttack;
 #endif
+
+    [Header("行動AI：距離判定")]
+    [Tooltip("このX軸距離以下を近距離として扱います。")]
+    [SerializeField, Min(0f)]
+    private float nearDistance = 5f;
+
+    [Tooltip("このX軸距離以下を中距離、それより遠方を遠距離として扱います。")]
+    [SerializeField, Min(0f)]
+    private float middleDistance = 10f;
+
+    [Tooltip("Sceneビューへ近距離・中距離の境界を表示します。")]
+    [SerializeField]
+    private bool showDistanceRangeGizmos = true;
+
+    [Header("行動AI：距離別の攻撃抽選ウェイト")]
+    [SerializeField]
+    private AttackWeightSettings nearAttackWeights = new AttackWeightSettings
+    {
+        normalAttackWeight = 1f,
+        retreatTeleportWeight = 0.2f,
+        rushComboWeight = 1f,
+        mirageAssaultWeight = 0.45f,
+    };
+
+    [SerializeField]
+    private AttackWeightSettings middleAttackWeights = new AttackWeightSettings
+    {
+        thrustAttackWeight = 1f,
+        retreatTeleportWeight = 0.2f,
+        rushComboWeight = 1f,
+        mirageAssaultWeight = 0.45f,
+    };
+
+    [SerializeField]
+    private AttackWeightSettings farAttackWeights = new AttackWeightSettings
+    {
+        thrustAttackWeight = 0.8f,
+        shootAttackWeight = 1f,
+    };
+
+    [Header("行動AI：Idle中の接近")]
+    [Tooltip("通常攻撃・突き攻撃・突進コンボ後のIdle中にプレイヤーへ近づく速度")]
+    [SerializeField, Min(0f)]
+    private float idleApproachSpeed = 2.5f;
+
+    [Tooltip("Idle中の接近でプレイヤーとの間に維持するX軸距離")]
+    [SerializeField, Min(0f)]
+    private float idleApproachStopDistance = 3.5f;
 
     [Header("各攻撃のダメージ量")]
     [Tooltip("下段攻撃でプレイヤーに与えるダメージ量")]
@@ -292,6 +394,18 @@ public class Chapter3BossMoveController : MonoBehaviour
     [SerializeField]
     private float minThrustDistance = 3.0f;
 
+    [Tooltip("プレイヤー位置を通過した後、剣先がさらに進む距離")]
+    [SerializeField, Min(0f)]
+    private float thrustOvershootDistance = 2.5f;
+
+    [Tooltip("突き攻撃1回で剣先が移動できる最大距離")]
+    [SerializeField, Min(0f)]
+    private float thrustMaxTravelDistance = 20f;
+
+    [Tooltip("突き攻撃終了時の剣先の高さ（areaBottomBoundからのオフセット）")]
+    [SerializeField]
+    private float thrustAttackHeightFromBottom = 0f;
+
     [Tooltip("攻撃準備時（構え）に移動する下端からの高さ")]
     [SerializeField]
     private float thrustReadyHeightFromBottom = 3.0f;
@@ -321,9 +435,17 @@ public class Chapter3BossMoveController : MonoBehaviour
     private ParticleSystem thrustEffect;
 
     [Header("ShootAttack(射撃攻撃)状態の設定")]
-    [Tooltip("1回の射撃攻撃で発射する弾数")]
-    [SerializeField, Min(1)]
+    [Tooltip("HPが75%より多い時に、1回の射撃攻撃で発射する弾数")]
+    [SerializeField, Range(1, 5)]
     private int shootBulletCount = 3;
+
+    [Tooltip("HPが75%以下の時に、1回の射撃攻撃で発射する弾数")]
+    [SerializeField, Range(1, 5)]
+    private int shootBulletCountBelow75Percent = 4;
+
+    [Tooltip("HPが40%以下の時に、1回の射撃攻撃で発射する弾数")]
+    [SerializeField, Range(1, 5)]
+    private int shootBulletCountBelow40Percent = 5;
 
     [Tooltip("攻撃準備時間（秒）")]
     [SerializeField]
@@ -356,6 +478,10 @@ public class Chapter3BossMoveController : MonoBehaviour
     [Tooltip("Shoot攻撃時に再生するエフェクト（子オブジェクト）")]
     [SerializeField]
     private ParticleSystem shootEffect;
+
+    [Tooltip("射撃時に再生するAirBurstEffect1のAnimator（配置済みの子オブジェクト）")]
+    [SerializeField]
+    private Animator airBurstEffectAnimator;
 
     [Header("後退テレポート(RetreatTeleport)状態の設定")]
     [Tooltip("1回の後退テレポート攻撃で中間攻撃を行う回数")]
@@ -435,6 +561,10 @@ public class Chapter3BossMoveController : MonoBehaviour
     [SerializeField]
     private float advanceMoveTimeRatio = 0.2f;
 
+    [Tooltip("突進コンボの1区間に保証する最低移動時間（秒）")]
+    [SerializeField, Min(0.01f)]
+    private float comboMinimumMoveDuration = 0.15f;
+
     [Tooltip("攻撃終了後、次の行動に移るまでの待機時間（秒）")]
     [SerializeField]
     private float rushComboNextInterval = 1.0f;
@@ -511,7 +641,12 @@ public class Chapter3BossMoveController : MonoBehaviour
     private float mirageAssaultNextInterval = 1.0f;
 
     [Header("召喚演出の設定")]
-    [SerializeField, Tooltip("魔法陣と表示マスクをまとめたルート。ボスの子の場合のみ、演出中は切り離して地面に固定します。")]
+    [
+        SerializeField,
+        Tooltip(
+            "魔法陣と表示マスクをまとめたルート。ボスの子の場合のみ、演出中は切り離して地面に固定します。"
+        )
+    ]
     private Transform summonEffectRoot;
 
     [SerializeField, Tooltip("召喚時に展開する魔法陣のコントローラー")]
@@ -520,7 +655,12 @@ public class Chapter3BossMoveController : MonoBehaviour
     [SerializeField, Tooltip("魔法陣より下側を隠すためのSpriteMask")]
     private SpriteMask summonRevealMask;
 
-    [SerializeField, Tooltip("召喚時にSpriteMaskを適用する本体のSpriteRenderer。未設定時はホログラム対象を使用します。")]
+    [
+        SerializeField,
+        Tooltip(
+            "召喚時にSpriteMaskを適用する本体のSpriteRenderer。未設定時はホログラム対象を使用します。"
+        )
+    ]
     private SpriteRenderer[] summonTargetRenderers;
 
     [SerializeField, Tooltip("SummonEffectRootを基準にした、ボス本体の出現X座標オフセット")]
@@ -542,6 +682,7 @@ public class Chapter3BossMoveController : MonoBehaviour
     #region 内部管理変数・ハッシュ
     // 内部管理用変数
     private Animator _animator;
+    private CharacterHealth _characterHealth;
     private Coroutine _actionLoopCoroutine;
     private Coroutine _summonAppearanceCoroutine;
     private Tween _moveTween;
@@ -550,12 +691,29 @@ public class Chapter3BossMoveController : MonoBehaviour
         new Dictionary<Sprite, Mesh>();
     private bool _isFacingRight = false; // 現在右を向いているかどうかのフラグ（デフォルト左向き）
     private float _currentNextInterval = 1.0f; // 攻撃終了後の次の行動までの待機時間を管理する変数
+    private AttackPattern _lastAttackPattern;
+    private int _consecutiveAttackCount;
+    private bool _hasLastAttackPattern;
+    private bool _hasTriggered75PercentPowerUp;
+    private bool _hasTriggered40PercentPowerUp;
+
+    private static readonly AttackPattern[] AttackPatterns =
+    {
+        AttackPattern.NormalAttack,
+        AttackPattern.ThrustAttack,
+        AttackPattern.ShootAttack,
+        AttackPattern.RetreatTeleportAttack,
+        AttackPattern.RushCombo,
+        AttackPattern.MirageAssault,
+    };
 
     // オブジェクトプール用キュー
     private Queue<GameObject> _windEffectPool;
 
     // Animatorパラメータの事前キャッシュ
     private readonly int _idleStateHash = Animator.StringToHash("Chapter3Boss_Idle");
+    private readonly int _powerUpStateHash = Animator.StringToHash("Chapter3Boss_PowerUp");
+    private readonly int _powerUpTriggerHash = Animator.StringToHash("PowerUpTrigger");
 
     // LowAttack用ハッシュ
     private readonly int _lowAttackReadyTriggerHash = Animator.StringToHash(
@@ -594,6 +752,8 @@ public class Chapter3BossMoveController : MonoBehaviour
     private readonly int _shootTriggerHash = Animator.StringToHash("ShootAttackTrigger");
     private readonly int _shootReadySpeedHash = Animator.StringToHash("ShootAttackReadySpeed");
     private readonly int _shootSpeedHash = Animator.StringToHash("ShootAttackSpeed");
+    private readonly int _airBurstTriggerHash = Animator.StringToHash("AirBurst1Trigger");
+    private readonly int _airBurstSpeedHash = Animator.StringToHash("AirBurst1Speed");
 
     // HorizontalAttack用ハッシュ
     private readonly int _horizontalAttackReadyTriggerHash = Animator.StringToHash(
@@ -612,15 +772,24 @@ public class Chapter3BossMoveController : MonoBehaviour
     // UpperAttack用ハッシュ (RushComboAttack内で使用)
     private readonly int _upperAttackTriggerHash = Animator.StringToHash("UpperAttackTrigger");
     private readonly int _upperAttackSpeedHash = Animator.StringToHash("UpperAttackSpeed");
-    private readonly int _spriteMaskStencilCompHash = Shader.PropertyToID(
-        "_SpriteMaskStencilComp"
-    );
+    private readonly int _spriteMaskStencilCompHash = Shader.PropertyToID("_SpriteMaskStencilComp");
     #endregion
 
     #region Unity ライフサイクル
     private void Awake()
     {
         _animator = GetComponent<Animator>();
+        _characterHealth = GetComponent<CharacterHealth>();
+        if (_characterHealth == null)
+            _characterHealth = GetComponentInParent<CharacterHealth>();
+
+        if (_characterHealth == null)
+        {
+            Debug.LogError(
+                $"{name}: HPフェーズ判定に必要なCharacterHealthを取得できませんでした。",
+                this
+            );
+        }
     }
 
     private void Start()
@@ -713,6 +882,7 @@ public class Chapter3BossMoveController : MonoBehaviour
         );
 
         DrawSummonAppearanceGizmos();
+        DrawDistanceRangeGizmos();
     }
 
     /// <summary>
@@ -739,6 +909,37 @@ public class Chapter3BossMoveController : MonoBehaviour
 
         Gizmos.color = new Color(0.1f, 1f, 1f, 0.7f);
         Gizmos.DrawLine(startPosition, finalPosition);
+    }
+
+    private void DrawDistanceRangeGizmos()
+    {
+        if (!showDistanceRangeGizmos)
+            return;
+
+        float safeNearDistance = Mathf.Max(0f, nearDistance);
+        float safeMiddleDistance = Mathf.Max(safeNearDistance, middleDistance);
+        float bottomY = areaBottomBound;
+        float topY = areaTopBound;
+
+        Gizmos.color = new Color(1f, 0.75f, 0.1f, 0.9f);
+        Gizmos.DrawLine(
+            new Vector3(transform.position.x - safeNearDistance, bottomY, transform.position.z),
+            new Vector3(transform.position.x - safeNearDistance, topY, transform.position.z)
+        );
+        Gizmos.DrawLine(
+            new Vector3(transform.position.x + safeNearDistance, bottomY, transform.position.z),
+            new Vector3(transform.position.x + safeNearDistance, topY, transform.position.z)
+        );
+
+        Gizmos.color = new Color(0.1f, 0.9f, 1f, 0.9f);
+        Gizmos.DrawLine(
+            new Vector3(transform.position.x - safeMiddleDistance, bottomY, transform.position.z),
+            new Vector3(transform.position.x - safeMiddleDistance, topY, transform.position.z)
+        );
+        Gizmos.DrawLine(
+            new Vector3(transform.position.x + safeMiddleDistance, bottomY, transform.position.z),
+            new Vector3(transform.position.x + safeMiddleDistance, topY, transform.position.z)
+        );
     }
 
     private void DrawSummonTargetSilhouette(Vector3 bossPosition, Color color)
@@ -835,11 +1036,7 @@ public class Chapter3BossMoveController : MonoBehaviour
             summonEffectRoot != null
                 ? summonEffectRoot.position.x + summonBodyOffsetX
                 : transform.position.x;
-        return new Vector3(
-            finalX,
-            areaBottomBound + idleHeightFromBottom,
-            transform.position.z
-        );
+        return new Vector3(finalX, areaBottomBound + idleHeightFromBottom, transform.position.z);
     }
     #endregion
 
@@ -852,6 +1049,10 @@ public class Chapter3BossMoveController : MonoBehaviour
         InitializeWindEffectPool();
 
         DisableAllAttackDamage();
+        _hasLastAttackPattern = false;
+        _consecutiveAttackCount = 0;
+        _hasTriggered75PercentPowerUp = false;
+        _hasTriggered40PercentPowerUp = false;
 
         if (_actionLoopCoroutine != null)
         {
@@ -988,6 +1189,18 @@ public class Chapter3BossMoveController : MonoBehaviour
                     _playerTransform = playerObj.transform;
             }
         }
+    }
+
+    private bool IsPlayerInFront()
+    {
+        UpdatePlayerTransformReference();
+        if (_playerTransform == null)
+            return false;
+
+        float facingDirection = _isFacingRight ? 1f : -1f;
+        float forwardDistance =
+            (_playerTransform.position.x - transform.position.x) * facingDirection;
+        return forwardDistance > 0f;
     }
 
     /// <summary>
@@ -1213,10 +1426,7 @@ public class Chapter3BossMoveController : MonoBehaviour
                     )
                 )
                 {
-                    targetRenderer.material.SetFloat(
-                        _spriteMaskStencilCompHash,
-                        stencilComparison
-                    );
+                    targetRenderer.material.SetFloat(_spriteMaskStencilCompHash, stencilComparison);
                 }
                 targetRenderer.maskInteraction = SpriteMaskInteraction.None;
             }
@@ -1270,7 +1480,13 @@ public class Chapter3BossMoveController : MonoBehaviour
         {
             StopCoroutine(_actionLoopCoroutine);
         }
+
         _actionLoopCoroutine = StartCoroutine(ActionLoopSequence());
+
+        if (_characterHealth is BossHealth bossHealth)
+        {
+            bossHealth.InitializeBossSpecifics();
+        }
     }
 
     /// <summary>
@@ -1280,19 +1496,104 @@ public class Chapter3BossMoveController : MonoBehaviour
     {
         while (true)
         {
+            // HPフェーズ移行は、Editor用の固定攻撃を含むすべての攻撃選択より優先する。
+            // 一度に両方の閾値を下回った場合も、75%演出を先に消化し、次のループで40%演出を行う。
+            if (TryConsumePendingPowerUp())
+            {
+                yield return StartCoroutine(PerformPowerUp());
+                yield return StartCoroutine(TransitionToIdle());
+                continue;
+            }
+
             AttackPattern attackPattern = SelectNextAttackPattern();
             yield return StartCoroutine(ExecuteAttackPattern(attackPattern));
+
+            // 攻撃中に閾値を下回った場合は、通常のIdle移行・待機より先にPowerUpを行う。
+            if (TryConsumePendingPowerUp())
+            {
+                yield return StartCoroutine(PerformPowerUp());
+                yield return StartCoroutine(TransitionToIdle());
+                continue;
+            }
 
             // 3. 待機状態（Idle）への移行
             yield return StartCoroutine(TransitionToIdle());
 
             // 4. 次の行動ループまでのインターバル待機
             // 固定値ではなく、直前の攻撃でセットされた_currentNextIntervalを使用する
-            float waitTime = IsDebugNoWaitActive ? 0.1f : _currentNextInterval;
-            if (waitTime < 0.1f)
-                waitTime = 0.1f;
-            yield return new WaitForSeconds(waitTime);
+            float waitTime = GetCombatDuration(_currentNextInterval);
+            yield return StartCoroutine(PerformIdleWait(attackPattern, waitTime));
         }
+    }
+
+    /// <summary>
+    /// HP75%未満、40%未満の順に、未再生のPowerUp演出を1件だけ予約消化します。
+    /// </summary>
+    private bool TryConsumePendingPowerUp()
+    {
+        float normalizedHP = GetNormalizedHP();
+
+        if (!_hasTriggered75PercentPowerUp && normalizedHP < 0.75f)
+        {
+            _hasTriggered75PercentPowerUp = true;
+            return true;
+        }
+
+        if (!_hasTriggered40PercentPowerUp && normalizedHP < 0.4f)
+        {
+            _hasTriggered40PercentPowerUp = true;
+            return true;
+        }
+
+        return false;
+    }
+
+    /// <summary>
+    /// 攻撃判定を停止してPowerUpアニメーションを1回再生します。
+    /// </summary>
+    private IEnumerator PerformPowerUp()
+    {
+        DisableAllAttackDamage();
+        CurrentState = BossState.PoweringUp;
+
+        if (_animator == null)
+            yield break;
+
+        _animator.SetTrigger(_powerUpTriggerHash);
+
+        // Triggerが評価され、PowerUpステートへ遷移するまで待つ。
+        yield return null;
+        while (
+            _animator.GetCurrentAnimatorStateInfo(0).shortNameHash != _powerUpStateHash
+            && (
+                !_animator.IsInTransition(0)
+                || _animator.GetNextAnimatorStateInfo(0).shortNameHash != _powerUpStateHash
+            )
+        )
+        {
+            yield return null;
+        }
+
+        // 遷移完了後、非ループのPowerUpアニメーションが1周するまで待つ。
+        while (
+            _animator.IsInTransition(0)
+            || _animator.GetCurrentAnimatorStateInfo(0).shortNameHash != _powerUpStateHash
+            || _animator.GetCurrentAnimatorStateInfo(0).normalizedTime < 1f
+        )
+        {
+            yield return null;
+        }
+    }
+
+    /// <summary>
+    /// PowerUpアニメーションのAnimation Eventからスキル名UIを表示します。
+    /// </summary>
+    internal void ShowPowerUpSkillNameUI()
+    {
+        if (CurrentState != BossState.PoweringUp)
+            return;
+
+        GameUIManager.instance?.ShowSkillNameUI(POWER_UP_SKILL_NAME);
     }
 
     /// <summary>
@@ -1308,8 +1609,245 @@ public class Chapter3BossMoveController : MonoBehaviour
         }
 #endif
 
-        // 現在の通常動作は、既存実装と同じく幻影強襲攻撃で固定する。
-        return AttackPattern.MirageAssault;
+        PlayerDistanceRange distanceRange = GetPlayerDistanceRange();
+        AttackPattern selectedAttack = SelectWeightedAttack(distanceRange);
+        RecordSelectedAttack(selectedAttack);
+        return selectedAttack;
+    }
+
+    private PlayerDistanceRange GetPlayerDistanceRange()
+    {
+        UpdatePlayerTransformReference();
+        if (_playerTransform == null)
+            return PlayerDistanceRange.Far;
+
+        float distanceX = Mathf.Abs(_playerTransform.position.x - transform.position.x);
+        float safeNearDistance = Mathf.Max(0f, nearDistance);
+        float safeMiddleDistance = Mathf.Max(safeNearDistance, middleDistance);
+
+        if (distanceX <= safeNearDistance)
+            return PlayerDistanceRange.Near;
+        if (distanceX <= safeMiddleDistance)
+            return PlayerDistanceRange.Middle;
+        return PlayerDistanceRange.Far;
+    }
+
+    private AttackPattern SelectWeightedAttack(PlayerDistanceRange distanceRange)
+    {
+        AttackWeightSettings weights = GetAttackWeights(distanceRange);
+        float totalWeight = 0f;
+
+        foreach (AttackPattern attackPattern in AttackPatterns)
+        {
+            totalWeight += GetAvailableAttackWeight(attackPattern, distanceRange, weights);
+        }
+
+        if (totalWeight <= 0f)
+        {
+            AttackPattern fallbackAttack = GetFallbackAttack(distanceRange);
+            Debug.LogWarning(
+                $"{name}: {distanceRange}の攻撃候補がありません。{fallbackAttack}を使用します。",
+                this
+            );
+            return fallbackAttack;
+        }
+
+        float randomValue = Random.Range(0f, totalWeight);
+        foreach (AttackPattern attackPattern in AttackPatterns)
+        {
+            float weight = GetAvailableAttackWeight(attackPattern, distanceRange, weights);
+            if (weight <= 0f)
+                continue;
+
+            randomValue -= weight;
+            if (randomValue <= 0f)
+                return attackPattern;
+        }
+
+        return GetFallbackAttack(distanceRange);
+    }
+
+    private AttackWeightSettings GetAttackWeights(PlayerDistanceRange distanceRange)
+    {
+        switch (distanceRange)
+        {
+            case PlayerDistanceRange.Near:
+                return nearAttackWeights;
+            case PlayerDistanceRange.Middle:
+                return middleAttackWeights;
+            case PlayerDistanceRange.Far:
+                return farAttackWeights;
+            default:
+                return farAttackWeights;
+        }
+    }
+
+    private float GetAvailableAttackWeight(
+        AttackPattern attackPattern,
+        PlayerDistanceRange distanceRange,
+        AttackWeightSettings weights
+    )
+    {
+        if (weights == null)
+            return 0f;
+
+        if (!IsAttackAllowedForDistance(attackPattern, distanceRange))
+            return 0f;
+
+        if (
+            _hasLastAttackPattern
+            && _consecutiveAttackCount >= 2
+            && attackPattern == _lastAttackPattern
+        )
+            return 0f;
+
+        if (
+            attackPattern == AttackPattern.MirageAssault
+            && (GetNormalizedHP() >= 0.4f || distanceRange == PlayerDistanceRange.Far)
+        )
+        {
+            return 0f;
+        }
+
+        return Mathf.Max(0f, weights.GetWeight(attackPattern));
+    }
+
+    private static bool IsAttackAllowedForDistance(
+        AttackPattern attackPattern,
+        PlayerDistanceRange distanceRange
+    )
+    {
+        switch (distanceRange)
+        {
+            case PlayerDistanceRange.Near:
+                return attackPattern == AttackPattern.NormalAttack
+                    || attackPattern == AttackPattern.RetreatTeleportAttack
+                    || attackPattern == AttackPattern.RushCombo
+                    || attackPattern == AttackPattern.MirageAssault;
+            case PlayerDistanceRange.Middle:
+                return attackPattern == AttackPattern.ThrustAttack
+                    || attackPattern == AttackPattern.RetreatTeleportAttack
+                    || attackPattern == AttackPattern.RushCombo
+                    || attackPattern == AttackPattern.MirageAssault;
+            case PlayerDistanceRange.Far:
+                return attackPattern == AttackPattern.ShootAttack
+                    || attackPattern == AttackPattern.ThrustAttack;
+            default:
+                return false;
+        }
+    }
+
+    private AttackPattern GetFallbackAttack(PlayerDistanceRange distanceRange)
+    {
+        AttackPattern primaryAttack =
+            distanceRange == PlayerDistanceRange.Near ? AttackPattern.NormalAttack
+            : distanceRange == PlayerDistanceRange.Middle ? AttackPattern.ThrustAttack
+            : AttackPattern.ShootAttack;
+
+        if (
+            !_hasLastAttackPattern
+            || _consecutiveAttackCount < 2
+            || primaryAttack != _lastAttackPattern
+        )
+        {
+            return primaryAttack;
+        }
+
+        switch (distanceRange)
+        {
+            case PlayerDistanceRange.Near:
+                return AttackPattern.RushCombo;
+            case PlayerDistanceRange.Middle:
+                return AttackPattern.RushCombo;
+            case PlayerDistanceRange.Far:
+                return AttackPattern.ThrustAttack;
+            default:
+                return AttackPattern.ThrustAttack;
+        }
+    }
+
+    private void RecordSelectedAttack(AttackPattern attackPattern)
+    {
+        if (_hasLastAttackPattern && attackPattern == _lastAttackPattern)
+        {
+            _consecutiveAttackCount++;
+            return;
+        }
+
+        _lastAttackPattern = attackPattern;
+        _consecutiveAttackCount = 1;
+        _hasLastAttackPattern = true;
+    }
+
+    private float GetNormalizedHP()
+    {
+        if (_characterHealth == null || _characterHealth.MaxHP <= 0)
+            return 1f;
+
+        return _characterHealth.NormalizedHP;
+    }
+
+    private float GetCurrentCombatTimeScale()
+    {
+        float normalizedHP = GetNormalizedHP();
+        if (normalizedHP <= 0.4f)
+            return 0.8f;
+        if (normalizedHP <= 0.75f)
+            return 0.9f;
+        return 1f;
+    }
+
+    private float GetCombatDuration(float baseDuration, float minimumDuration = 0.1f)
+    {
+        if (IsDebugNoWaitActive)
+            return minimumDuration;
+
+        return Mathf.Max(minimumDuration, baseDuration * GetCurrentCombatTimeScale());
+    }
+
+    private IEnumerator PerformIdleWait(AttackPattern previousAttack, float waitTime)
+    {
+        bool shouldApproach =
+            previousAttack == AttackPattern.NormalAttack
+            || previousAttack == AttackPattern.ThrustAttack
+            || previousAttack == AttackPattern.RushCombo;
+
+        float elapsedTime = 0f;
+        while (elapsedTime < waitTime)
+        {
+            if (shouldApproach)
+                MoveTowardsPlayerDuringIdle();
+
+            elapsedTime += Time.deltaTime;
+            yield return null;
+        }
+    }
+
+    private void MoveTowardsPlayerDuringIdle()
+    {
+        UpdatePlayerTransformReference();
+        if (_playerTransform == null || idleApproachSpeed <= 0f)
+            return;
+
+        float deltaX = _playerTransform.position.x - transform.position.x;
+        float distanceX = Mathf.Abs(deltaX);
+        float stopDistance = Mathf.Max(0f, idleApproachStopDistance);
+        if (distanceX <= stopDistance)
+            return;
+
+        UpdateFacingDirection(deltaX > 0f);
+
+        float targetX = _playerTransform.position.x - Mathf.Sign(deltaX) * stopDistance;
+        float minimumX = areaLeftBound + wallMargin;
+        float maximumX = areaRightBound - wallMargin;
+        targetX = Mathf.Clamp(targetX, minimumX, maximumX);
+
+        float nextX = Mathf.MoveTowards(
+            transform.position.x,
+            targetX,
+            idleApproachSpeed * Time.deltaTime
+        );
+        transform.position = new Vector3(nextX, transform.position.y, transform.position.z);
     }
 
     /// <summary>
@@ -1326,7 +1864,7 @@ public class Chapter3BossMoveController : MonoBehaviour
                 yield return StartCoroutine(PerformThrustAttack());
                 break;
             case AttackPattern.ShootAttack:
-                yield return StartCoroutine(PerformShootAttack(shootBulletCount));
+                yield return StartCoroutine(PerformShootAttack(GetCurrentShootBulletCount()));
                 break;
             case AttackPattern.RetreatTeleportAttack:
                 yield return StartCoroutine(PerformRetreatTeleport(retreatTeleportCount));
@@ -1344,7 +1882,21 @@ public class Chapter3BossMoveController : MonoBehaviour
     }
 
     /// <summary>
-    /// 下段攻撃を行い、確率判定に成功した場合は上段攻撃へ派生します。
+    /// 射撃開始時のHPフェーズに応じた発射数を取得します。
+    /// </summary>
+    private int GetCurrentShootBulletCount()
+    {
+        float normalizedHP = GetNormalizedHP();
+        if (normalizedHP <= 0.4f)
+            return Mathf.Max(1, shootBulletCountBelow40Percent);
+        if (normalizedHP <= 0.75f)
+            return Mathf.Max(1, shootBulletCountBelow75Percent);
+
+        return Mathf.Max(1, shootBulletCount);
+    }
+
+    /// <summary>
+    /// 下段攻撃を行い、確率判定に成功し、かつプレイヤーが前方にいる場合は上段攻撃へ派生します。
     /// </summary>
     private IEnumerator PerformNormalAttack()
     {
@@ -1356,9 +1908,11 @@ public class Chapter3BossMoveController : MonoBehaviour
         if (!willDoHighAttack)
             yield break;
 
-        float beforeHighWait = IsDebugNoWaitActive ? 0.1f : waitBeforeHighAttackDuration;
-        if (beforeHighWait < 0.1f)
-            beforeHighWait = 0.1f;
+        // 下段攻撃中にプレイヤーが背後へ回った場合は、上段攻撃へ派生せず終了する。
+        if (!IsPlayerInFront())
+            yield break;
+
+        float beforeHighWait = GetCombatDuration(waitBeforeHighAttackDuration);
         yield return new WaitForSeconds(beforeHighWait);
 
         yield return StartCoroutine(PerformHighAttack());
@@ -1374,9 +1928,7 @@ public class Chapter3BossMoveController : MonoBehaviour
 
         // 下端からの目標Y座標を計算（X座標は現在の位置を維持）
         float targetY = areaBottomBound + idleHeightFromBottom;
-        float duration = IsDebugNoWaitActive ? 0.1f : idleTransitionDuration;
-        if (duration < 0.1f)
-            duration = 0.1f;
+        float duration = GetCombatDuration(idleTransitionDuration);
 
         if (_animator != null)
         {
@@ -1398,16 +1950,9 @@ public class Chapter3BossMoveController : MonoBehaviour
     {
         CurrentState = BossState.LowAttacking;
 
-        float readyDuration = IsDebugNoWaitActive ? 0.1f : lowAttackReadyDuration;
-        float attackDur = IsDebugNoWaitActive ? 0.1f : lowAttackDuration;
-        float postWait = IsDebugNoWaitActive ? 0.1f : postLowAttackWaitDuration;
-
-        if (readyDuration < 0.1f)
-            readyDuration = 0.1f;
-        if (attackDur < 0.1f)
-            attackDur = 0.1f;
-        if (postWait < 0.1f)
-            postWait = 0.1f;
+        float readyDuration = GetCombatDuration(lowAttackReadyDuration);
+        float attackDur = GetCombatDuration(lowAttackDuration);
+        float postWait = GetCombatDuration(postLowAttackWaitDuration);
 
         // --- 1. 準備フェーズ ---
         if (_animator != null)
@@ -1459,16 +2004,9 @@ public class Chapter3BossMoveController : MonoBehaviour
     {
         CurrentState = BossState.HighAttacking;
 
-        float readyDuration = IsDebugNoWaitActive ? 0.1f : highAttackReadyDuration;
-        float attackDur = IsDebugNoWaitActive ? 0.1f : highAttackDuration;
-        float postWait = IsDebugNoWaitActive ? 0.1f : postHighAttackWaitDuration;
-
-        if (readyDuration < 0.1f)
-            readyDuration = 0.1f;
-        if (attackDur < 0.1f)
-            attackDur = 0.1f;
-        if (postWait < 0.1f)
-            postWait = 0.1f;
+        float readyDuration = GetCombatDuration(highAttackReadyDuration);
+        float attackDur = GetCombatDuration(highAttackDuration);
+        float postWait = GetCombatDuration(postHighAttackWaitDuration);
 
         // --- 1. 準備フェーズ ---
         if (_animator != null)
@@ -1517,16 +2055,9 @@ public class Chapter3BossMoveController : MonoBehaviour
     {
         CurrentState = BossState.ThrustAttacking;
 
-        float readyDuration = IsDebugNoWaitActive ? 0.1f : thrustReadyDuration;
-        float attackDur = IsDebugNoWaitActive ? 0.1f : thrustDuration;
-        float postWait = IsDebugNoWaitActive ? 0.1f : postThrustWaitDuration;
-
-        if (readyDuration < 0.1f)
-            readyDuration = 0.1f;
-        if (attackDur < 0.1f)
-            attackDur = 0.1f;
-        if (postWait < 0.1f)
-            postWait = 0.1f;
+        float readyDuration = GetCombatDuration(thrustReadyDuration);
+        float attackDur = GetCombatDuration(thrustDuration);
+        float postWait = GetCombatDuration(postThrustWaitDuration);
 
         // --- 1. 準備フェーズ ---
         if (_animator != null)
@@ -1558,17 +2089,21 @@ public class Chapter3BossMoveController : MonoBehaviour
 
         // 剣先の前方方向を基準とした、プレイヤーとの水平距離差を計算
         float forwardDistance = (playerX - currentSwordTipX) * facingDir;
-        float targetSwordTipX;
+        float safeMinThrustDistance = Mathf.Max(0f, minThrustDistance);
+        float safeOvershootDistance = Mathf.Max(0f, thrustOvershootDistance);
+        float safeMaxTravelDistance = Mathf.Max(
+            safeMinThrustDistance,
+            thrustMaxTravelDistance
+        );
 
-        // プレイヤーが剣先から最小距離内（または背後）にいるか、最小距離より遠くにいるかで剣先の目標X座標を分岐
-        if (forwardDistance < minThrustDistance)
-        {
-            targetSwordTipX = currentSwordTipX + (facingDir * minThrustDistance);
-        }
-        else
-        {
-            targetSwordTipX = playerX;
-        }
+        // プレイヤー位置を終点にせず、その先まで剣先を通過させる。
+        // プレイヤーが近すぎる、または背後にいる場合も、現在の向きへ最低距離分は突進する。
+        float desiredTravelDistance = Mathf.Max(
+            safeMinThrustDistance,
+            forwardDistance + safeOvershootDistance
+        );
+        float actualTravelDistance = Mathf.Min(desiredTravelDistance, safeMaxTravelDistance);
+        float targetSwordTipX = currentSwordTipX + (facingDir * actualTravelDistance);
 
         // 剣の先（swordTipTransform）とボス本体の現在位置のオフセット（ズレ）を計算
         Vector3 swordOffset = Vector3.zero;
@@ -1577,11 +2112,17 @@ public class Chapter3BossMoveController : MonoBehaviour
             swordOffset = swordTipTransform.position - transform.position;
         }
 
-        // 剣の先が目標X座標および下端（bottom）のY座標に到達するように、本体の目標座標を逆算
+        // 剣先が目標座標へ到達するように、本体の目標座標を逆算する。
         Vector3 targetBossPosition;
         targetBossPosition.x = targetSwordTipX - swordOffset.x;
-        targetBossPosition.y = areaBottomBound - swordOffset.y;
+        targetBossPosition.y =
+            areaBottomBound + thrustAttackHeightFromBottom - swordOffset.y;
         targetBossPosition.z = transform.position.z;
+
+        // ボス本体が行動可能エリアを越えないように制限する。
+        float minimumBossX = areaLeftBound + wallMargin;
+        float maximumBossX = areaRightBound - wallMargin;
+        targetBossPosition.x = Mathf.Clamp(targetBossPosition.x, minimumBossX, maximumBossX);
 
         // --- 3. 攻撃（突進）フェーズ ---
         if (thrustDamageController != null)
@@ -1629,8 +2170,8 @@ public class Chapter3BossMoveController : MonoBehaviour
             thrustEffect.Play();
         }
 
-        // 迫力を出すため、Ease.OutExpo（超高速で突進し後半急減速する）を適用して目標座標へ一気に移動
-        _moveTween = transform.DOMove(targetBossPosition, attackDur).SetEase(Ease.OutExpo);
+        // プレイヤー付近で停止・減速せず、最高速に近い状態で通過する。
+        _moveTween = transform.DOMove(targetBossPosition, attackDur).SetEase(Ease.InOutCubic);
         yield return new WaitForSeconds(attackDur);
 
         // --- 4. 攻撃後待機（リカバリー）フェーズ ---
@@ -1662,19 +2203,10 @@ public class Chapter3BossMoveController : MonoBehaviour
     {
         CurrentState = BossState.ShootAttacking;
 
-        float readyDuration = IsDebugNoWaitActive ? 0.1f : shootReadyDuration;
-        float attackDur = IsDebugNoWaitActive ? 0.1f : shootAttackDuration; // 攻撃フェーズ自体の時間
-        float bulletInterval = IsDebugNoWaitActive ? 0.1f : shootBulletInterval; // 弾の発射間隔
-        float postWait = IsDebugNoWaitActive ? 0.1f : postShootWaitDuration;
-
-        if (readyDuration < 0.1f)
-            readyDuration = 0.1f;
-        if (attackDur < 0.1f)
-            attackDur = 0.1f;
-        if (bulletInterval < 0.1f)
-            bulletInterval = 0.1f;
-        if (postWait < 0.1f)
-            postWait = 0.1f;
+        float readyDuration = GetCombatDuration(shootReadyDuration);
+        float attackDur = GetCombatDuration(shootAttackDuration);
+        float bulletInterval = GetCombatDuration(shootBulletInterval);
+        float postWait = GetCombatDuration(postShootWaitDuration);
 
         // --- 1. 準備フェーズ ---
         if (_animator != null)
@@ -1733,6 +2265,7 @@ public class Chapter3BossMoveController : MonoBehaviour
             // 懐に入られていた場合は、これ以降の射撃処理と postWait をすべてスキップして即座にコルーチンを抜ける
             if (!shouldFire)
             {
+                _currentNextInterval = shootAttackNextInterval;
                 yield break;
             }
 
@@ -1750,6 +2283,8 @@ public class Chapter3BossMoveController : MonoBehaviour
                 shootEffect.Play();
             }
 
+            PlayAirBurstEffect(attackDur + bulletInterval);
+
             // 弾の発射
             FireShootBullet(yOffset, facingDir, currentSwordTipX);
 
@@ -1763,6 +2298,20 @@ public class Chapter3BossMoveController : MonoBehaviour
         yield return new WaitForSeconds(postWait);
 
         _currentNextInterval = shootAttackNextInterval;
+    }
+
+    /// <summary>
+    /// 次弾までに1秒基準のAirBurstアニメーションが完了するよう速度を調整し、再生します。
+    /// </summary>
+    private void PlayAirBurstEffect(float actualShotInterval)
+    {
+        if (airBurstEffectAnimator == null)
+            return;
+
+        float safeShotInterval = Mathf.Max(0.01f, actualShotInterval);
+        airBurstEffectAnimator.SetFloat(_airBurstSpeedHash, 1f / safeShotInterval);
+        airBurstEffectAnimator.gameObject.SetActive(true);
+        airBurstEffectAnimator.SetTrigger(_airBurstTriggerHash);
     }
 
     /// <summary>
@@ -1833,19 +2382,10 @@ public class Chapter3BossMoveController : MonoBehaviour
     {
         CurrentState = BossState.RetreatTeleporting;
 
-        float initialFadeTime = IsDebugNoWaitActive ? 0.1f : retreatInitialFadeOutTime;
-        float appearTime = IsDebugNoWaitActive ? 0.1f : retreatHologramAppearTime;
-        float attackDur = IsDebugNoWaitActive ? 0.1f : retreatAttackDuration;
-        float disappearTime = IsDebugNoWaitActive ? 0.1f : retreatHologramDisappearTime;
-
-        if (initialFadeTime < 0.1f)
-            initialFadeTime = 0.1f;
-        if (appearTime < 0.1f)
-            appearTime = 0.1f;
-        if (attackDur < 0.1f)
-            attackDur = 0.1f;
-        if (disappearTime < 0.1f)
-            disappearTime = 0.1f;
+        float initialFadeTime = GetCombatDuration(retreatInitialFadeOutTime);
+        float appearTime = GetCombatDuration(retreatHologramAppearTime);
+        float attackDur = GetCombatDuration(retreatAttackDuration);
+        float disappearTime = GetCombatDuration(retreatHologramDisappearTime);
 
         // --- 1. 広い方向の判定と向きの固定 ---
         float distToLeft = transform.position.x - areaLeftBound;
@@ -1908,6 +2448,14 @@ public class Chapter3BossMoveController : MonoBehaviour
             float currentTargetY = areaBottomBound + currentHeight;
 
             transform.position = new Vector3(currentTargetX, currentTargetY, transform.position.z);
+
+            // 最初の攻撃地点へ透明なまま移動した時点で、プレイヤーが背後なら攻撃を中断する。
+            // この後の最終出現処理へ進むため、ここでは表示や攻撃アニメーションを開始しない。
+            if (i == 1 && !IsPlayerInFront())
+            {
+                DisableAllAttackDamage();
+                break;
+            }
 
             // 出現に合わせたアニメーション (Ready)
             if (_animator != null)
@@ -2080,21 +2628,21 @@ public class Chapter3BossMoveController : MonoBehaviour
     {
         CurrentState = BossState.RushComboAttacking;
 
-        float readyDur = IsDebugNoWaitActive ? 0.1f : advanceReadyDuration;
-        float attackDur = IsDebugNoWaitActive ? 0.1f : advanceAttackDuration;
-        float waitDur = IsDebugNoWaitActive ? 0.1f : advanceWaitDuration;
+        float readyDur = GetCombatDuration(advanceReadyDuration);
+        float attackDur = GetCombatDuration(advanceAttackDuration);
+        float waitDur = GetCombatDuration(advanceWaitDuration);
 
-        if (readyDur < 0.1f)
-            readyDur = 0.1f;
-        if (attackDur < 0.1f)
-            attackDur = 0.1f;
-        if (waitDur < 0.1f)
-            waitDur = 0.1f;
-
-        // 移動にかかる実際の時間（攻撃時間 × 指定割合）
-        float moveDur = attackDur * advanceMoveTimeRatio;
-        if (moveDur <= 0f)
-            moveDur = 0.01f; // 0除算やエラー防止
+        // 移動にかかる実際の時間（攻撃時間 × 指定割合）。
+        // 攻撃時間を越えない範囲で最低移動時間を保証し、瞬間移動と判定抜けを抑える。
+        float minimumMoveDuration = Mathf.Min(
+            Mathf.Max(0.01f, comboMinimumMoveDuration),
+            attackDur
+        );
+        float moveDur = Mathf.Clamp(
+            attackDur * advanceMoveTimeRatio,
+            minimumMoveDuration,
+            attackDur
+        );
 
         // --- 1. 進行方向の決定と目標座標の計算 ---
         UpdatePlayerTransformReference();
@@ -2157,9 +2705,14 @@ public class Chapter3BossMoveController : MonoBehaviour
             shootEffect.Play();
         }
 
-        // 鋭い動き（Ease.OutExpo）で移動
-        _moveTween = transform.DOMoveX(targetX1, moveDur).SetEase(Ease.OutExpo);
-        yield return new WaitForSeconds(attackDur); // 攻撃時間いっぱい待つ
+        yield return StartCoroutine(
+            PerformRushComboStepMovement(
+                targetX1,
+                moveDur,
+                attackDur,
+                highAttackDamageController
+            )
+        );
         yield return new WaitForSeconds(waitDur); // インターバル待機
 
         // 【2撃目：UpperAttack】
@@ -2178,8 +2731,14 @@ public class Chapter3BossMoveController : MonoBehaviour
             shootEffect.Play();
         }
 
-        _moveTween = transform.DOMoveX(targetX2, moveDur).SetEase(Ease.OutExpo);
-        yield return new WaitForSeconds(attackDur);
+        yield return StartCoroutine(
+            PerformRushComboStepMovement(
+                targetX2,
+                moveDur,
+                attackDur,
+                upperAttackDamageController
+            )
+        );
         yield return new WaitForSeconds(waitDur);
 
         // 【3撃目：HighAttack】
@@ -2198,13 +2757,36 @@ public class Chapter3BossMoveController : MonoBehaviour
             shootEffect.Play();
         }
 
-        _moveTween = transform.DOMoveX(targetX3, moveDur).SetEase(Ease.OutExpo);
-        yield return new WaitForSeconds(attackDur);
+        yield return StartCoroutine(
+            PerformRushComboStepMovement(
+                targetX3,
+                moveDur,
+                attackDur,
+                highAttackDamageController
+            )
+        );
 
         // 3撃目の後のリカバリー（インターバル）待機
         yield return new WaitForSeconds(waitDur);
 
         _currentNextInterval = rushComboNextInterval;
+    }
+
+    private IEnumerator PerformRushComboStepMovement(
+        float targetX,
+        float moveDuration,
+        float attackDuration,
+        ContactDamageController damageController
+    )
+    {
+        _moveTween = transform.DOMoveX(targetX, moveDuration).SetEase(Ease.OutQuad);
+        yield return _moveTween.WaitForCompletion();
+
+        float remainingAttackTime = Mathf.Max(0f, attackDuration - moveDuration);
+        if (remainingAttackTime > 0f)
+            yield return new WaitForSeconds(remainingAttackTime);
+
+        DisableAttackDamage(damageController);
     }
     #endregion
 
@@ -2226,9 +2808,7 @@ public class Chapter3BossMoveController : MonoBehaviour
         if (teleportCount < 2)
             teleportCount = 2;
 
-        float initialFadeTime = IsDebugNoWaitActive ? 0.1f : mirageInitialFadeOutTime;
-        if (initialFadeTime < 0.1f)
-            initialFadeTime = 0.1f;
+        float initialFadeTime = GetCombatDuration(mirageInitialFadeOutTime);
 
         // 初期の消滅演出
         Sequence initialFadeSeq = DOTween.Sequence();
@@ -2323,48 +2903,43 @@ public class Chapter3BossMoveController : MonoBehaviour
                 // 決定していた攻撃を実行
                 if (isLowAttack)
                 {
+                    float finalAttackDuration = GetCombatDuration(lowAttackDuration);
+                    float postWaitDuration = GetCombatDuration(miragePostWaitDuration);
+
                     if (lowAttackDamageController != null)
                         lowAttackDamageController.SetNormalDamage(mirageAttackDamage);
                     if (_animator != null)
                     {
-                        SetAnimatorSpeed(
-                            _lowAttackSpeedHash,
-                            IsDebugNoWaitActive ? 0.1f : lowAttackDuration
-                        );
+                        SetAnimatorSpeed(_lowAttackSpeedHash, finalAttackDuration);
                         _animator.SetTrigger(_lowAttackTriggerHash);
                     }
-                    yield return new WaitForSeconds(IsDebugNoWaitActive ? 0.1f : lowAttackDuration);
-                    yield return new WaitForSeconds(
-                        IsDebugNoWaitActive ? 0.1f : miragePostWaitDuration
-                    );
+                    yield return new WaitForSeconds(finalAttackDuration);
+                    yield return new WaitForSeconds(postWaitDuration);
                 }
                 else
                 {
+                    float finalAttackDuration = GetCombatDuration(horizontalAttackDuration);
+                    float postWaitDuration = GetCombatDuration(miragePostWaitDuration);
+
                     if (horizontalAttackDamageController != null)
                         horizontalAttackDamageController.SetNormalDamage(mirageAttackDamage);
                     if (_animator != null)
                     {
-                        SetAnimatorSpeed(
-                            _horizontalAttackSpeedHash,
-                            IsDebugNoWaitActive ? 0.1f : horizontalAttackDuration
-                        );
+                        SetAnimatorSpeed(_horizontalAttackSpeedHash, finalAttackDuration);
                         _animator.SetTrigger(_horizontalAttackTriggerHash);
                     }
-                    yield return new WaitForSeconds(
-                        IsDebugNoWaitActive ? 0.1f : horizontalAttackDuration
-                    );
-                    yield return new WaitForSeconds(
-                        IsDebugNoWaitActive ? 0.1f : miragePostWaitDuration
-                    );
+                    yield return new WaitForSeconds(finalAttackDuration);
+                    yield return new WaitForSeconds(postWaitDuration);
                 }
             }
             else if (isReadyPhase)
             {
                 // --- 構えフェーズ ---
 
-                float totalReadyTime = mirageAppearTime + mirageStayTime + mirageDisappearTime;
-                if (IsDebugNoWaitActive)
-                    totalReadyTime = 0.1f;
+                float appearDuration = GetCombatDuration(mirageAppearTime, 0.05f);
+                float stayDuration = GetCombatDuration(mirageStayTime, 0.05f);
+                float disappearDuration = GetCombatDuration(mirageDisappearTime, 0.05f);
+                float totalReadyTime = appearDuration + stayDuration + disappearDuration;
 
                 // 構えアニメーションの再生（決定した最終攻撃に合わせて構えを変更）
                 if (_animator != null)
@@ -2390,23 +2965,19 @@ public class Chapter3BossMoveController : MonoBehaviour
                         renderer.material.EnableKeyword("_HOLOGRAM_ON");
                         renderer.material.SetFloat("_HologramBlend", 1.0f);
 
-                        float appearDur = IsDebugNoWaitActive ? 0.05f : mirageAppearTime;
-                        float disappearDur = IsDebugNoWaitActive ? 0.05f : mirageDisappearTime;
-                        float stayTime = IsDebugNoWaitActive ? 0.05f : mirageStayTime;
-
                         readySeq.Insert(
                             0f,
-                            renderer.DOFade(mirageMaxAlpha, appearDur).SetEase(Ease.OutQuad)
+                            renderer.DOFade(mirageMaxAlpha, appearDuration).SetEase(Ease.OutQuad)
                         );
                         readySeq.Insert(
-                            appearDur + stayTime,
-                            renderer.DOFade(0f, disappearDur).SetEase(Ease.InQuad)
+                            appearDuration + stayDuration,
+                            renderer.DOFade(0f, disappearDuration).SetEase(Ease.InQuad)
                         );
                     }
                 }
                 yield return readySeq.WaitForCompletion();
 
-                yield return new WaitForSeconds(IsDebugNoWaitActive ? 0.1f : mirageIntervalTime);
+                yield return new WaitForSeconds(GetCombatDuration(mirageIntervalTime));
             }
             else
             {
@@ -2418,6 +2989,9 @@ public class Chapter3BossMoveController : MonoBehaviour
                 }
 
                 Sequence teleSeq = DOTween.Sequence();
+                float appearDuration = GetCombatDuration(mirageAppearTime, 0.05f);
+                float stayDuration = GetCombatDuration(mirageStayTime, 0.05f);
+                float disappearDuration = GetCombatDuration(mirageDisappearTime, 0.05f);
                 foreach (var renderer in hologramTargetRenderers)
                 {
                     if (renderer != null && renderer.material != null)
@@ -2425,23 +2999,19 @@ public class Chapter3BossMoveController : MonoBehaviour
                         renderer.material.EnableKeyword("_HOLOGRAM_ON");
                         renderer.material.SetFloat("_HologramBlend", 1.0f);
 
-                        float appearDur = IsDebugNoWaitActive ? 0.05f : mirageAppearTime;
-                        float disappearDur = IsDebugNoWaitActive ? 0.05f : mirageDisappearTime;
-                        float stayTime = IsDebugNoWaitActive ? 0.05f : mirageStayTime;
-
                         teleSeq.Insert(
                             0f,
-                            renderer.DOFade(mirageMaxAlpha, appearDur).SetEase(Ease.OutQuad)
+                            renderer.DOFade(mirageMaxAlpha, appearDuration).SetEase(Ease.OutQuad)
                         );
                         teleSeq.Insert(
-                            appearDur + stayTime,
-                            renderer.DOFade(0f, disappearDur).SetEase(Ease.InQuad)
+                            appearDuration + stayDuration,
+                            renderer.DOFade(0f, disappearDuration).SetEase(Ease.InQuad)
                         );
                     }
                 }
                 yield return teleSeq.WaitForCompletion();
 
-                yield return new WaitForSeconds(IsDebugNoWaitActive ? 0.1f : mirageIntervalTime);
+                yield return new WaitForSeconds(GetCombatDuration(mirageIntervalTime));
             }
         }
 

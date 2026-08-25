@@ -82,5 +82,6 @@ public class SaveData
             RecipeData = new RecipeSaveData();
         if (SkillData == null)
             SkillData = new SkillSaveData();
+        SkillData.Validate();
     }
 }

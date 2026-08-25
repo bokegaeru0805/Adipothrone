@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 
 /// <summary>
@@ -38,7 +39,20 @@ public class SkillData : ScriptableObject, IItemIDProvider
 
     [Header("コスト")]
     [Tooltip("このスキルを装備(有効化)するために必要なスキルポイント")]
+    [Min(0)]
     public int requiredPoints = 1;
+
+    [Header("成長・装備条件")]
+    [Tooltip("このスキルが到達できる最大レベル")]
+    [Min(1)]
+    public int maxLevel = 1;
+
+    [Tooltip("装備するために解放が必要なスキル")]
+    public List<SkillName> prerequisiteSkills = new List<SkillName>();
+
+    [Tooltip("同じ0以外の値を持つスキル同士は同時に装備できません")]
+    [Min(0)]
+    public int exclusiveGroupID = 0;
 
     public System.Enum GetItemID()
     {

@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 using Fungus;
 using UnityEngine;
 
@@ -9,6 +10,9 @@ public class TalkEndCommand : Command
 
     public override void OnEnter()
     {
+        bool shouldWaitForGlobalSkip = TimelineSkipManager.instance != null
+            && TimelineSkipManager.instance.IsGlobalSkipRoutineActive;
+
         // スキップ中にここに到達したら、スキップ終了を通知
         OnTalkEndExecuted?.Invoke();
 
@@ -17,7 +21,7 @@ public class TalkEndCommand : Command
         if (currentBlock == null)
         {
             Debug.LogError("コマンドが所属するブロックが見つかりませんでした。", this);
-            Continue();
+            ContinueAfterGlobalSkip(shouldWaitForGlobalSkip);
             return;
         }
         else
@@ -32,7 +36,7 @@ public class TalkEndCommand : Command
         else
         {
             Debug.LogError("GameManagerが存在しません");
-            Continue();
+            ContinueAfterGlobalSkip(shouldWaitForGlobalSkip);
             return;
         }
 
@@ -46,13 +50,31 @@ public class TalkEndCommand : Command
         else
         {
             Debug.LogError("HeroinPortraitControllerが存在しません");
-            Continue();
+            ContinueAfterGlobalSkip(shouldWaitForGlobalSkip);
             return;
         }
 
         // 会話が終わったら敵の動きを再開する
         TimeManager.instance.SetEnemyMovePaused(false);
 
+        ContinueAfterGlobalSkip(shouldWaitForGlobalSkip);
+    }
+
+    private void ContinueAfterGlobalSkip(bool shouldWaitForGlobalSkip)
+    {
+        if (!shouldWaitForGlobalSkip)
+        {
+            Continue();
+            return;
+        }
+
+        StartCoroutine(WaitForGlobalSkipAndContinue());
+    }
+
+    private IEnumerator WaitForGlobalSkipAndContinue()
+    {
+        yield return new WaitUntil(() => TimelineSkipManager.instance == null
+            || !TimelineSkipManager.instance.IsGlobalSkipRoutineActive);
         Continue();
     }
 
