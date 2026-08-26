@@ -15,18 +15,18 @@ public static class SkillUIText
     {
         switch (category)
         {
-            case SkillCategory.Basic:
-                return "基本型";
+            case SkillCategory.Mobility:
+                return "機動型";
             case SkillCategory.Exploration:
                 return "探索型";
             case SkillCategory.Attack:
                 return "攻撃型";
             case SkillCategory.Defense:
                 return "防御型";
-            case SkillCategory.Luck:
-                return "幸運型";
-            case SkillCategory.Item:
-                return "アイテム型";
+            case SkillCategory.Reward:
+                return "報酬型";
+            case SkillCategory.Tool:
+                return "道具型";
             case SkillCategory.Special:
                 return "特殊型";
             default:

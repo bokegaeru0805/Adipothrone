@@ -33,12 +33,12 @@ public class SkillMenuManager : MonoBehaviour, IPanelActive
 
     private static readonly SkillCategory[] TabCategories =
     {
-        SkillCategory.Basic,
+        SkillCategory.Mobility,
         SkillCategory.Exploration,
         SkillCategory.Attack,
         SkillCategory.Defense,
-        SkillCategory.Luck,
-        SkillCategory.Item,
+        SkillCategory.Reward,
+        SkillCategory.Tool,
         SkillCategory.Special,
     };
 
@@ -66,7 +66,9 @@ public class SkillMenuManager : MonoBehaviour, IPanelActive
         // ▼ 追加：パネルを開いた瞬間に、NEWフラグが立っているスキルを記憶する
         RecordNewSkills();
 
-        ReloadList(currentTabIndex);
+        int activeTabIndex =
+            tabPanelController != null ? tabPanelController.CurrentTabIndex : currentTabIndex;
+        ReloadList(activeTabIndex);
     }
 
     private void OnDisable()
@@ -173,16 +175,42 @@ public class SkillMenuManager : MonoBehaviour, IPanelActive
 
     private void HandleSkillSubmitted(SkillName skillID)
     {
-        if (SkillManager.instance == null || !SkillManager.instance.IsSkillUnlocked(skillID))
-            return;
-
-        if (SkillManager.instance.IsSkillActive(skillID))
+        if (SkillManager.instance == null)
         {
-            SkillManager.instance.UnequipSkill(skillID);
+            Debug.LogWarning($"[SkillUI診断] SkillManagerが存在しません: SkillID={skillID}", this);
             return;
         }
 
-        if (!SkillManager.instance.TryEquipSkill(skillID, out SkillEquipResult result))
+        bool isUnlocked = SkillManager.instance.IsSkillUnlocked(skillID);
+        bool wasEquipped = SkillManager.instance.IsSkillActive(skillID);
+        Debug.Log(
+            $"[SkillUI診断] 着脱処理を受信: SkillID={skillID}, "
+                + $"isUnlocked={isUnlocked}, isEquippedBefore={wasEquipped}",
+            this
+        );
+
+        if (!isUnlocked)
+            return;
+
+        if (wasEquipped)
+        {
+            bool isSucceeded = SkillManager.instance.UnequipSkill(skillID);
+            Debug.Log(
+                $"[SkillUI診断] 解除結果: SkillID={skillID}, "
+                    + $"success={isSucceeded}, "
+                    + $"isEquippedAfter={SkillManager.instance.IsSkillActive(skillID)}",
+                this
+            );
+            return;
+        }
+
+        bool isEquipped = SkillManager.instance.TryEquipSkill(skillID, out SkillEquipResult result);
+        Debug.Log(
+            $"[SkillUI診断] 装備結果: SkillID={skillID}, success={isEquipped}, result={result}, "
+                + $"isEquippedAfter={SkillManager.instance.IsSkillActive(skillID)}",
+            this
+        );
+        if (!isEquipped)
             detailView?.ShowEquipFailure(result);
     }
 

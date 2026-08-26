@@ -72,7 +72,13 @@ public class DropItem : PoolableObject
     public bool isSkillDrop = false; // スキルドロップかどうかの判定フラグ
 
     [HideInInspector]
+    public bool isSkillCrystalDrop = false;
+
+    [HideInInspector]
     public SkillName DropSkillID; // ドロップするスキルID
+
+    [HideInInspector]
+    public EnemyName DropSourceEnemyID = EnemyName.None;
 
     // --- インスペクター設定 ---
     [Header("宝箱のスプライト設定")]
@@ -118,12 +124,27 @@ public class DropItem : PoolableObject
     [SerializeField]
     private float dropInitialUpForce = 5f;
 
+    [Header("自動回収設定")]
+    [Tooltip("AutoCoinCollect装備時に、敵ドロップを引き寄せ始める距離")]
+    [SerializeField]
+    private float autoCollectDistance = 8f;
+
+    [Tooltip("AutoCoinCollect装備時に、敵ドロップを引き寄せる速度")]
+    [SerializeField]
+    private float autoCollectSpeed = 8f;
+
     // --- 内部コンポーネント参照 ---
     private SpriteRenderer spriteRenderer;
     private CircleCollider2D mycollider;
     private CapsuleCollider2D groundCheckerCollider;
     private Rigidbody2D rbody;
     private Animator animator;
+
+    // --- 自動回収状態 ---
+    private bool isEnemyAutoCollectTarget;
+    private bool isReadyForAutoCollect;
+    private bool isAutoCollecting;
+    private Transform autoCollectTarget;
 
     // --- 宝箱用スプライトキャッシュ ---
     // 現在の宝箱に適用すべき開閉スプライトを保存しておく変数
@@ -165,6 +186,42 @@ public class DropItem : PoolableObject
         transform.DOKill();
     }
 
+    /// <summary>
+    /// 着地済みの敵ドロップを、AutoCoinCollect装備中のプレイヤーへ移動させます。
+    /// </summary>
+    private void FixedUpdate()
+    {
+        if (!CanAutoCollect())
+        {
+            StopAutoCollect();
+            return;
+        }
+
+        Vector2 currentPosition = rbody.position;
+        Vector2 targetPosition = autoCollectTarget.position;
+        float autoCollectDistanceSqr = autoCollectDistance * autoCollectDistance;
+        if ((targetPosition - currentPosition).sqrMagnitude > autoCollectDistanceSqr)
+        {
+            StopAutoCollect();
+            return;
+        }
+
+        if (!isAutoCollecting)
+        {
+            transform.DOKill();
+            rbody.bodyType = RigidbodyType2D.Kinematic;
+            rbody.velocity = Vector2.zero;
+            isAutoCollecting = true;
+        }
+
+        Vector2 nextPosition = Vector2.MoveTowards(
+            currentPosition,
+            targetPosition,
+            autoCollectSpeed * Time.fixedDeltaTime
+        );
+        rbody.MovePosition(nextPosition);
+    }
+
     #endregion
 
     #region 初期化・リセット処理
@@ -176,9 +233,15 @@ public class DropItem : PoolableObject
     {
         isTreasureBox = false;
         isSkillDrop = false;
+        isSkillCrystalDrop = false;
         DropMoney = 0;
         DropID = null;
         DropSkillID = SkillName.None;
+        DropSourceEnemyID = EnemyName.None;
+        isEnemyAutoCollectTarget = false;
+        isReadyForAutoCollect = false;
+        isAutoCollecting = false;
+        autoCollectTarget = null;
 
         // 宝箱化によって変更されたタグを元に戻す
         this.tag = GameConstants.UNTAGGED_TAG_NAME;
@@ -209,6 +272,14 @@ public class DropItem : PoolableObject
     #endregion
 
     #region スプライト・種別設定処理
+
+    /// <summary>
+    /// このオブジェクトをAutoCoinCollectの対象となる敵ドロップとして設定します。
+    /// </summary>
+    public void SetAsEnemyAutoCollectTarget()
+    {
+        isEnemyAutoCollectTarget = true;
+    }
 
     /// <summary>
     /// ドロップアイテムとしてのスプライトを設定し、配置を調整します。
@@ -379,6 +450,35 @@ public class DropItem : PoolableObject
         AdjustPositionToGroundSurface();
     }
 
+    /// <summary>
+    /// このオブジェクトをスキルクリスタルとして設定します。
+    /// </summary>
+    public void SetSkillCrystalSprite(EnemyName sourceEnemyID)
+    {
+        isSkillCrystalDrop = true;
+        DropSourceEnemyID = sourceEnemyID;
+
+        if (skillEffectObject != null)
+        {
+            skillEffectObject.SetActive(false);
+        }
+
+        if (animator != null)
+        {
+            animator.enabled = true;
+            animator.SetTrigger("SkillCrystalTrigger");
+        }
+
+        spriteRenderer.sortingOrder = CoinsortingOrder;
+
+        if (mycollider != null)
+        {
+            mycollider.radius = originalColliderSize / 2;
+        }
+
+        AdjustPositionToGroundSurface();
+    }
+
     #endregion
 
     #region 配置・アニメーション処理
@@ -395,6 +495,7 @@ public class DropItem : PoolableObject
             // 安全のためKinematicにしてその場でホバー（宝箱以外）
             rbody.bodyType = RigidbodyType2D.Kinematic;
             rbody.velocity = Vector2.zero;
+            isReadyForAutoCollect = true;
             StartHoverAnimation();
             return;
         }
@@ -468,6 +569,7 @@ public class DropItem : PoolableObject
 
                 // 新しい座標を設定
                 transform.position = new Vector3(transform.position.x, newY, transform.position.z);
+                isReadyForAutoCollect = true;
 
                 // ホバーアニメーションは宝箱以外で開始
                 StartHoverAnimation();
@@ -507,6 +609,8 @@ public class DropItem : PoolableObject
             return;
         }
 
+        transform.DOKill();
+
         // 現在のY座標を基準点とする
         float startY = transform.position.y;
 
@@ -518,6 +622,49 @@ public class DropItem : PoolableObject
             .DOMoveY(startY + hoverAmount, hoverDuration)
             .SetEase(Ease.InOutSine)
             .SetLoops(-1, LoopType.Yoyo);
+    }
+
+    /// <summary>
+    /// 現在の状態で自動回収できるか判定し、必要ならプレイヤー参照を取得します。
+    /// </summary>
+    private bool CanAutoCollect()
+    {
+        if (
+            !isEnemyAutoCollectTarget
+            || !isReadyForAutoCollect
+            || isTreasureBox
+            || isSkillDrop
+            || rbody == null
+            || SkillManager.instance == null
+            || !SkillManager.instance.IsSkillActive(SkillName.AutoDropItemCollect)
+        )
+        {
+            return false;
+        }
+
+        if (autoCollectTarget == null)
+        {
+            GameObject playerObject = PlayerManager.instance?.PlayerGameObject;
+            Heroin_move heroinMove = playerObject?.GetComponent<Heroin_move>();
+            autoCollectTarget = heroinMove != null ? heroinMove.transform : null;
+        }
+
+        return autoCollectTarget != null;
+    }
+
+    /// <summary>
+    /// 自動回収条件から外れた場合に移動を止め、通常のホバーへ戻します。
+    /// </summary>
+    private void StopAutoCollect()
+    {
+        if (!isAutoCollecting)
+        {
+            return;
+        }
+
+        isAutoCollecting = false;
+        rbody.velocity = Vector2.zero;
+        StartHoverAnimation();
     }
 
     #endregion
@@ -541,6 +688,7 @@ public class DropItem : PoolableObject
             // 地面に着地したら、物理演算を停止してその場に固定する
             rbody.bodyType = RigidbodyType2D.Kinematic;
             rbody.velocity = Vector2.zero; // 完全に静止させる
+            isReadyForAutoCollect = true;
             StartHoverAnimation(); // 着地後にホバーアニメーションを開始
         }
     }

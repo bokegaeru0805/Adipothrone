@@ -33,6 +33,11 @@ public class EnemyRecordEntry
     /// </summary>
     public bool hasEncountered = false;
 
+    /// <summary>
+    /// この敵からスキルクリスタルを取得済みか。
+    /// </summary>
+    public bool hasObtainedSkillCrystal = false;
+
     // 内部リスト（nullチェック用のプロパティ経由でアクセス推奨）
     private List<int> _unlockedDropItemIds; // 解除済みドロップアイテムID
     private List<int> _unlockedConditionItemIds; // 解除済み条件付きドロップアイテムID
@@ -80,6 +85,7 @@ public class EnemyRecordEntry
         killCount = amount;
         isNew = true;
         hasEncountered = true;
+        hasObtainedSkillCrystal = false;
         _unlockedDropItemIds = new List<int>();
         _unlockedConditionItemIds = new List<int>();
     }
@@ -197,6 +203,14 @@ public class EnemyRecordData
     }
 
     /// <summary>
+    /// 指定された敵のスキルクリスタルを取得済みとして記録します。
+    /// </summary>
+    public void UnlockSkillCrystal(EnemyName enemyID)
+    {
+        GetOrCreateEntry(enemyID).hasObtainedSkillCrystal = true;
+    }
+
+    /// <summary>
     /// 指定した敵を「確認済み（NEWフラグ解除）」としてマークします。
     /// 図鑑を開いた際などに呼び出します。
     /// </summary>
@@ -302,6 +316,15 @@ public class EnemyRecordData
             return entry.UnlockedConditionItemIds.Contains(itemID);
         }
         return false;
+    }
+
+    /// <summary>
+    /// 指定された敵のスキルクリスタルを取得済みか判定します。
+    /// </summary>
+    public bool IsSkillCrystalUnlocked(EnemyName enemyID)
+    {
+        var entry = GetEntry(enemyID);
+        return entry != null && entry.hasObtainedSkillCrystal;
     }
 
     /// <summary>

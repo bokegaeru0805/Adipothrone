@@ -316,7 +316,7 @@ public class EnemyDexPanelActive : MonoBehaviour, IPanelActive
         {
             foreach (var skill in enemyData.dropSkills)
             {
-                if (skill.skillID != SkillName.None)
+                if (skill.skillID != SkillName.None || skill.isSkillCrystal)
                 {
                     hasValidSkills = true;
                     break;
@@ -502,11 +502,35 @@ public class EnemyDexPanelActive : MonoBehaviour, IPanelActive
             // スキル一覧表示：左上揃えに設定
             dropSkillsText.alignment = TextAlignmentOptions.TopLeft;
             StringBuilder dropSkillsBuilder = new StringBuilder();
+            bool hasDisplayedSkillCrystal = false;
 
             foreach (var dropSkill in enemyData.dropSkills)
             {
-                if (dropSkill.skillID == SkillName.None)
+                bool isSkillCrystal =
+                    dropSkill.isSkillCrystal && dropSkill.skillID == SkillName.None;
+                if (!isSkillCrystal && dropSkill.skillID == SkillName.None)
                     continue;
+
+                if (isSkillCrystal)
+                {
+                    if (hasDisplayedSkillCrystal)
+                        continue;
+                    hasDisplayedSkillCrystal = true;
+
+                    if (
+                        GameManager.instance.savedata.EnemyRecordData.IsSkillCrystalUnlocked(
+                            enemyData.enemyID
+                        )
+                    )
+                    {
+                        dropSkillsBuilder.AppendLine("スキルクリスタル");
+                    }
+                    else
+                    {
+                        dropSkillsBuilder.AppendLine($"？？？ ({dropSkill.dropChance:F1}%)");
+                    }
+                    continue;
+                }
 
                 // スキルを既に所持・解放しているかどうかで表示を分岐する
                 if (SkillManager.instance.IsSkillUnlocked(dropSkill.skillID))

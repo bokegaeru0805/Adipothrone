@@ -167,8 +167,8 @@ public static class GameConstants
     public const float PLAYER_DEFENSE_WP_MULTIPLIER = 0.1f / 50; // プレイヤーの防御力WP倍率
     public const float PLAYER_WEAPON_SPEED_WP_MULTIPLIER = 0.005f; // プレイヤーの武器速度WP倍率
 
-    // その他の効果閾値
-    public const float GUTS_EFFECT_THRESHOLD = 0.9f; // 「耐える」効果が発動するHP割合の閾値
+    // スキル効果の発動条件
+    public const float LAST_STAND_REQUIRED_HP_RATIO = 0.95f; // LastStand（不屈）が発動する被ダメージ前のHP割合
     #endregion
 
     #region プレイヤー物理・アクション設定
@@ -197,6 +197,7 @@ public static class GameConstants
     //string coloredText = string.Format(GameConstants.UI_COLOR_TAG_GOLD, "攻撃力");のようにして使用
 
     public const float GAUGE_SMOOTH_TIME = 0.15f; // ゲージのスムーズな更新にかかる時間
+    public const float BOSS_ITEM_USE_INTERVAL = 10.0f; // ボス戦中にアイテムを再使用できるまでの時間（秒）
     public const float CHARGE_EFFECT_DEFAULT_DURATION = 300f / 60f; // チャージエフェクトの基本持続時間
     public const int BUY_MAX_QUANTITY = 99; // 購入時の最大個数
     public const string UI_NAME_FAST_TRAVEL_PANEL = "FastTravelPanel"; // ファストトラベルパネルのUI名

@@ -64,6 +64,7 @@ public class Heroin_move : MonoBehaviour
     private const float BOUND1_SOUND_LENGHT = 3.395f; //体形1のときの揺れる効果音の長さ
     private const float BOUND2_SOUND_LENGHT = 1.384f; //体形2のときの揺れる効果音の長さ
     private const float DEFAULT_WALK_ANIMATION_DURATION = 0.500f; //元の一回の歩行アニメーションの秒数
+    private const float DASH_SPEED_UP_MULTIPLIER = 1.3f; //「疾走」装備時のダッシュ速度倍率
     private float m_dashDefaultSpeed = 8.0f; //通常のダッシュ速度
     private float jumpHeight = 3.5f; // ジャンプで到達したい高さ
 
@@ -116,6 +117,11 @@ public class Heroin_move : MonoBehaviour
     private bool isOnCarrier = false; // リフトに乗っているかどうかのフラグ
     private float currentHorizontalVelocity = 0f; // 現在の自力移動速度（滑る床の慣性計算用）
     private Color defaultCharacterColor; // インスペクターで設定された初期状態のデフォルト色を保存する変数
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+    private bool? lastLoggedDashSpeedUpSaveState;
+    private bool? lastLoggedDashSpeedUpCacheState;
+    private float lastLoggedDashSpeed = float.NaN;
+#endif
     #endregion
 
     #region Component References
@@ -395,6 +401,14 @@ public class Heroin_move : MonoBehaviour
             // 速度計算（ダッシュ or 歩行）
             bool isDashing = inputManager.GetPlayerDash();
             float currentSpeed = isDashing ? dashSpeed : walkSpeed;
+            bool isDashSpeedUpActive =
+                SkillManager.instance != null
+                && SkillManager.instance.IsSkillActive(SkillName.DashSpeedUp);
+            if (isDashing && isDashSpeedUpActive)
+            {
+                currentSpeed *= DASH_SPEED_UP_MULTIPLIER;
+            }
+
             float direction = movingRight ? 1f : -1f;
             vx = currentSpeed * direction;
 
@@ -677,9 +691,7 @@ public class Heroin_move : MonoBehaviour
         // [Y軸] 乗車中かつ上昇中でなければ、足場の上下速度に追従する。
         // ジャンプなどで上昇している間はプレイヤー自身の速度を優先する。
         float baseVelocityY =
-            isOnCarrier && _rbody.velocity.y <= 0f
-                ? currentCarrierVelocity.y
-                : _rbody.velocity.y;
+            isOnCarrier && _rbody.velocity.y <= 0f ? currentCarrierVelocity.y : _rbody.velocity.y;
         float finalVelocityY = baseVelocityY + totalWindVelocity.y;
 
         // --- 4. ゆっくり落下ギミック（落下速度のクランプ） ---
@@ -896,6 +908,17 @@ public class Heroin_move : MonoBehaviour
                     // Fungusを呼び出して「〇〇を手に入れた」メッセージを表示する
                     GameManager.instance.SkillGetFungus(script.DropSkillID);
 
+                    sePlayer.Play(SE_SystemEvent.ItemGet2);
+                }
+            }
+
+            if (script.isSkillCrystalDrop)
+            {
+                var enemyRecordData = GameManager.instance.savedata.EnemyRecordData;
+                if (!enemyRecordData.IsSkillCrystalUnlocked(script.DropSourceEnemyID))
+                {
+                    SkillManager.instance.AddSkillPoint(1);
+                    enemyRecordData.UnlockSkillCrystal(script.DropSourceEnemyID);
                     sePlayer.Play(SE_SystemEvent.ItemGet2);
                 }
             }

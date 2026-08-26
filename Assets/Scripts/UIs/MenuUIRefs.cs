@@ -19,6 +19,11 @@ public class MenuUIRefs : MonoBehaviour
     private Button _saveButton;
     public Button SaveButton => _saveButton;
 
+    [Header("メニュー画面のアイテムボタン")]
+    [SerializeField]
+    private Button _itemButton;
+    public Button ItemButton => _itemButton;
+
     [Header("メニュー画面のログ表示パネル")]
     [SerializeField]
     private GameObject _progressLogPanel;

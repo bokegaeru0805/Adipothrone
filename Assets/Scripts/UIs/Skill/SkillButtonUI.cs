@@ -186,7 +186,16 @@ public class SkillButtonUI
     private void SubmitSkill()
     {
         if (currentSkill == null)
+        {
+            Debug.LogWarning("[SkillUI診断] SubmitSkillが呼ばれましたが、currentSkillがnullです。", this);
             return;
+        }
+
+        Debug.Log(
+            $"[SkillUI診断] ボタン送信: SkillID={currentSkill.skillID}, "
+                + $"callbackRegistered={onSubmitted != null}",
+            this
+        );
 
         onSubmitted?.Invoke(currentSkill.skillID);
     }

@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using NaughtyAttributes;
 using UnityEngine;
 
 public enum SkillEquipResult
@@ -14,11 +15,61 @@ public enum SkillEquipResult
     SaveDataUnavailable = 70,
 }
 
+[Serializable]
+public class ConsecutiveHuntSettings
+{
+    [Label("最大連続撃破数")]
+    [Tooltip("同じ敵を連続撃破したときにカウントされる上限です")]
+    [Min(1)]
+    public int maxConsecutiveKills = 30;
+
+    [Label("ボーナス上昇に必要な撃破数")]
+    [Tooltip("この撃破数ごとにドロップ率ボーナスが1段階上昇します")]
+    [Min(1)]
+    public int killsPerBonusStep = 5;
+
+    [Label("1段階ごとのドロップ率上昇（%）")]
+    [Tooltip("基礎ドロップ率へ乗算する、1段階ごとの相対上昇率です")]
+    [Min(0f)]
+    public float dropBonusPerStepPercent = 1f;
+}
+
+public readonly struct ConsecutiveHuntResult
+{
+    public bool IsActive { get; }
+    public int ConsecutiveKills { get; }
+    public float DropBonusPercent { get; }
+    public bool IsBonusIncreased { get; }
+    public bool IsMax { get; }
+
+    public ConsecutiveHuntResult(
+        bool isActive,
+        int consecutiveKills,
+        float dropBonusPercent,
+        bool isBonusIncreased,
+        bool isMax
+    )
+    {
+        IsActive = isActive;
+        ConsecutiveKills = consecutiveKills;
+        DropBonusPercent = dropBonusPercent;
+        IsBonusIncreased = isBonusIncreased;
+        IsMax = isMax;
+    }
+}
+
 public class SkillManager : MonoBehaviour
 {
     [Header("データベース参照")]
     [Tooltip("全スキルデータが登録されたデータベースをアタッチしてください")]
     public SkillDatabase skillDatabase;
+
+    [Header("連続狩猟の設定")]
+    [Tooltip("ConsecutiveHuntの連続数上限、段階間隔、段階ごとのドロップ率補正")]
+    [Label("連続狩猟設定")]
+    [AllowNesting]
+    [SerializeField]
+    private ConsecutiveHuntSettings _consecutiveHuntSettings = new ConsecutiveHuntSettings();
 
     public static SkillManager instance { get; private set; }
 
@@ -31,8 +82,20 @@ public class SkillManager : MonoBehaviour
     // 高速アクセス用のキャッシュ（所持・解放済みのスキルIDのみを保持）
     private HashSet<int> unlockedSkillsCache = new HashSet<int>();
 
+    private static bool _hasConsecutiveHuntTarget;
+    private static EnemyName _lastConsecutiveHuntEnemy;
+    private static int _consecutiveHuntKills;
+
     // スキル状態やポイントが変化したときにUIを更新するためのイベント
     public event Action OnSkillStateChanged;
+
+    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+    private static void ResetConsecutiveHuntRuntimeState()
+    {
+        _hasConsecutiveHuntTarget = false;
+        _lastConsecutiveHuntEnemy = default;
+        _consecutiveHuntKills = 0;
+    }
 
     private void Awake()
     {
@@ -121,7 +184,60 @@ public class SkillManager : MonoBehaviour
             }
         }
 
+        if (!IsSkillActive(SkillName.ConsecutiveHunt))
+            ResetConsecutiveHunt();
+
         OnSkillStateChanged?.Invoke();
+    }
+
+    /// <summary>
+    /// 敵の討伐を連続狩猟へ登録し、この討伐に適用する補正情報を返します。
+    /// </summary>
+    public ConsecutiveHuntResult RegisterConsecutiveHuntDefeat(EnemyName enemyID)
+    {
+        if (!IsSkillActive(SkillName.ConsecutiveHunt))
+        {
+            ResetConsecutiveHunt();
+            return default;
+        }
+
+        ConsecutiveHuntSettings settings =
+            _consecutiveHuntSettings ?? new ConsecutiveHuntSettings();
+        int maxKills = Mathf.Max(1, settings.maxConsecutiveKills);
+        int killsPerStep = Mathf.Max(1, settings.killsPerBonusStep);
+        int previousBonusStep = _consecutiveHuntKills / killsPerStep;
+
+        if (_hasConsecutiveHuntTarget && _lastConsecutiveHuntEnemy.Equals(enemyID))
+        {
+            _consecutiveHuntKills = Mathf.Min(_consecutiveHuntKills + 1, maxKills);
+        }
+        else
+        {
+            _hasConsecutiveHuntTarget = true;
+            _lastConsecutiveHuntEnemy = enemyID;
+            _consecutiveHuntKills = 1;
+            previousBonusStep = 0;
+        }
+
+        int currentBonusStep = _consecutiveHuntKills / killsPerStep;
+        float bonusPercent =
+            currentBonusStep * Mathf.Max(0f, settings.dropBonusPerStepPercent);
+
+        return new ConsecutiveHuntResult(
+            true,
+            _consecutiveHuntKills,
+            bonusPercent,
+            currentBonusStep > previousBonusStep,
+            _consecutiveHuntKills >= maxKills
+        );
+    }
+
+    /// <summary>
+    /// 連続狩猟の実行中状態を初期化します。セーブデータには影響しません。
+    /// </summary>
+    public void ResetConsecutiveHunt()
+    {
+        ResetConsecutiveHuntRuntimeState();
     }
 
     /// <summary>

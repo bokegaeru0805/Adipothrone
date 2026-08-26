@@ -44,6 +44,7 @@ public class TabPanelController : MonoBehaviour, IPanelActive
     private bool resetOnEnable = false;
 
     private int currentTabIndex = 0; // 現在選択されているタブのインデックス
+    public int CurrentTabIndex => currentTabIndex;
     public event Action<int> OnTabChanged; // タブが切り替わったときに発火するイベント（引数はタブのインデックス）
     private bool isInitialized = false; // 初回起動が完了したかどうかのフラグ
     #endregion

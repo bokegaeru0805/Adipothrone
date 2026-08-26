@@ -84,6 +84,26 @@ public class PlayerManager : MonoBehaviour
     // インベントリソート用辞書（アイテムID -> 並び順インデックス）
     private Dictionary<int, int> itemSortOrderMap;
 
+    // ボス戦中のアイテム使用インターバル
+    private bool isInBossBattle = false;
+    private float bossItemUseIntervalEndTime = 0f;
+
+    /// <summary>ボス戦中のアイテム使用インターバルが継続中かどうか</summary>
+    public bool IsBossItemUseIntervalActive =>
+        isInBossBattle && Time.time < bossItemUseIntervalEndTime;
+
+    /// <summary>現在アイテムを使用できるかどうか</summary>
+    public bool CanUseItem => !IsBossItemUseIntervalActive;
+
+    /// <summary>ボス戦中のアイテム使用インターバル残量（0～1）</summary>
+    public float BossItemUseIntervalNormalized =>
+        IsBossItemUseIntervalActive
+            ? Mathf.Clamp01(
+                (bossItemUseIntervalEndTime - Time.time)
+                    / GameConstants.BOSS_ITEM_USE_INTERVAL
+            )
+            : 0f;
+
     // シールドコントローラーへの参照
     private PlayerShieldController shieldController;
 
@@ -181,11 +201,16 @@ public class PlayerManager : MonoBehaviour
 
         // 会話状態の変更イベントを購読
         GameManager.OnTalkingStateChanged += HandleTalkingStateChanged;
+
+        // ボス戦状態を初期化し、以降の変更を購読
+        isInBossBattle = GameUIManager.instance?.IsInBossBattle ?? false;
+        GameUIManager.OnBossBattleStateChanged += HandleBossBattleStateChanged;
     }
 
     private void OnDestroy()
     {
         GameManager.OnTalkingStateChanged -= HandleTalkingStateChanged;
+        GameUIManager.OnBossBattleStateChanged -= HandleBossBattleStateChanged;
     }
 
     #endregion
@@ -432,9 +457,13 @@ public class PlayerManager : MonoBehaviour
         int hpBeforeDamage = GetPlayerIntStatus(PlayerStatusIntName.playerCurrentHP);
         int playerCurrentMaxHP = playerMaxHP;
 
-        // HPがGutsEffectThresholdの閾値以上あるかどうかの条件を確認（食いしばり効果）
-        bool hasGutsEffect =
-            (float)hpBeforeDamage / playerCurrentMaxHP >= GameConstants.GUTS_EFFECT_THRESHOLD;
+        // LastStand装備中かつ、被ダメージ前のHPが必要割合以上か確認（食いしばり効果）
+        bool canActivateLastStand =
+            SkillManager.instance != null
+            && SkillManager.instance.IsSkillActive(SkillName.LastStand)
+            && playerCurrentMaxHP > 0
+            && (float)hpBeforeDamage / playerCurrentMaxHP
+                >= GameConstants.LAST_STAND_REQUIRED_HP_RATIO;
 
         SEManager.instance?.PlayPlayerActionSE(SE_PlayerAction.Damage1); // ダメージの効果音を鳴らす
 
@@ -451,9 +480,9 @@ public class PlayerManager : MonoBehaviour
         // 死亡判定
         if (hpAfterDamage <= 0)
         {
-            if (hasGutsEffect)
+            if (canActivateLastStand)
             {
-                // 閾値以上だった場合、HPを1にして耐える
+                // LastStandの発動条件を満たしていた場合、HPを1にして耐える
                 SetPlayerIntStatus(PlayerStatusIntName.playerCurrentHP, 1);
                 OnChangeHP?.Invoke(1);
             }
@@ -479,6 +508,7 @@ public class PlayerManager : MonoBehaviour
 
         // プレイヤーが死亡したときに呼び出されるイベントを発火
         // 復活処理の関係から、ExecuteDeathFastTravelの前に発火させる
+        SkillManager.instance?.ResetConsecutiveHunt();
         OnPlayerDied?.Invoke();
 
         bool isEnableSave = SaveLoadManager.instance?.isEnableSave ?? false;
@@ -738,6 +768,9 @@ public class PlayerManager : MonoBehaviour
     /// <returns>アイテムの使用に成功したかどうか</returns>
     public bool UseHealItem(Enum ID)
     {
+        if (!CanUseItem)
+            return false;
+
         var ItemInventory = GameManager.instance.savedata.ItemInventoryData;
         if (ItemInventory.ownedItems == null)
         {
@@ -767,6 +800,7 @@ public class PlayerManager : MonoBehaviour
                 effect.EffectApply();
             }
         }
+        StartBossItemUseInterval();
         return true; // アイテムの使用に成功
     }
 
@@ -853,6 +887,9 @@ public class PlayerManager : MonoBehaviour
     /// <returns>アイテムの使用に成功したかどうか</returns>
     public bool UseStatusEnhanceItem(Enum ID)
     {
+        if (!CanUseItem)
+            return false;
+
         var ItemInventory = GameManager.instance.savedata.ItemInventoryData;
         if (ItemInventory.ownedItems == null)
         {
@@ -877,6 +914,7 @@ public class PlayerManager : MonoBehaviour
             StatusLevelManager.UseEnhanceItem(itemData);
         }
 
+        StartBossItemUseInterval();
         return true; // アイテムの使用に成功
     }
 
@@ -1023,6 +1061,29 @@ public class PlayerManager : MonoBehaviour
     private void HandleTalkingStateChanged(bool talkState)
     {
         isTalking = talkState;
+    }
+
+    /// <summary>
+    /// ボス戦状態の変更を受け取り、戦闘終了時はアイテム使用インターバルを即時解除します。
+    /// </summary>
+    private void HandleBossBattleStateChanged(bool isFighting)
+    {
+        isInBossBattle = isFighting;
+        if (!isFighting)
+        {
+            bossItemUseIntervalEndTime = 0f;
+        }
+    }
+
+    /// <summary>
+    /// ボス戦中に限り、アイテム使用成功後のインターバルを開始します。
+    /// </summary>
+    private void StartBossItemUseInterval()
+    {
+        if (isInBossBattle)
+        {
+            bossItemUseIntervalEndTime = Time.time + GameConstants.BOSS_ITEM_USE_INTERVAL;
+        }
     }
     #endregion
 }

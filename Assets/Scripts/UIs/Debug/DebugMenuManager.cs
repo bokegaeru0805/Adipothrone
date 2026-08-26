@@ -33,6 +33,10 @@ public class DebugMenuManager : MonoBehaviour
     [SerializeField]
     private TMP_InputField itemAmountInput; // 入手個数を指定する入力欄
 
+    [Header("マスターデータ")]
+    [SerializeField]
+    private EnemyDatabase enemyDatabase; // 全敵のドロップ情報解放に使用する敵データベース
+
     [Header("システム設定用入力")]
     [SerializeField]
     private TMP_InputField timeScaleInput; // ゲームスピード変更用入力欄
@@ -174,6 +178,7 @@ public class DebugMenuManager : MonoBehaviour
         _view.GiveAllWeaponsButton.onClick.AddListener(GiveAllWeapons);
         _view.GiveAllRecipeItemsButton.onClick.AddListener(GiveAllRecipeItems);
         _view.UnlockAllSkillsButton.onClick.AddListener(UnlockAllSkills);
+        _view.UnlockAllEnemyDropItemsButton.onClick.AddListener(UnlockAllEnemyDropItems);
         _view.ApplyTimeScaleButton.onClick.AddListener(() => ApplyTimeScale(timeScaleInput.text));
 
         float[] presets = { 0.25f, 0.5f, 1f, 2f, 4f };
@@ -500,6 +505,49 @@ public class DebugMenuManager : MonoBehaviour
         }
         else
             SetStatus("エラー: GameManagerが存在しません。", true);
+    }
+
+    /// <summary>
+    /// EnemyDatabaseに登録されている全敵を討伐済みにし、ドロップアイテム情報を解放します。
+    /// </summary>
+    public void UnlockAllEnemyDropItems()
+    {
+        if (GameManager.instance == null || GameManager.instance.savedata == null)
+        {
+            SetStatus("エラー: セーブデータが存在しません。", true);
+            return;
+        }
+
+        if (enemyDatabase == null || enemyDatabase.enemies == null)
+        {
+            Debug.LogWarning("EnemyDatabaseが設定されていないため、ドロップ情報を解放できません。");
+            SetStatus("エラー: EnemyDatabaseが設定されていません。", true);
+            return;
+        }
+
+        if (GameManager.instance.savedata.EnemyRecordData == null)
+        {
+            GameManager.instance.savedata.EnemyRecordData = new EnemyRecordData();
+        }
+
+        int unlockedEnemyCount = 0;
+        foreach (EnemyData enemyData in enemyDatabase.enemies)
+        {
+            if (enemyData == null)
+                continue;
+
+            // 図鑑で敵の全情報を表示できるよう、未討伐の敵だけ討伐数を1にする。
+            if (GameManager.instance.savedata.EnemyRecordData.GetKillCount(enemyData.enemyID) <= 0)
+            {
+                GameManager.instance.savedata.EnemyRecordData.AddKillCount(enemyData.enemyID);
+            }
+
+            GameManager.instance.savedata.EnemyRecordData.UnlockAllDropItems(enemyData);
+            unlockedEnemyCount++;
+        }
+
+        Debug.Log($"{unlockedEnemyCount}体の敵情報とドロップ情報をすべて解放しました。");
+        SetStatus($"全敵情報・ドロップを解放しました（{unlockedEnemyCount}体）。", false);
     }
 
     /// <summary>

@@ -112,7 +112,9 @@ public class SpotlightQuickItemController : MonoBehaviour
         }
 
         // 特定のボタンが押されていて、かつメニューが開いていなく、会話中でない
-        IsHighlighting = inputManager.QuickItemHighlightHold() && !isMenuOpen && !isTalking;
+        bool canUseItem = PlayerManager.instance?.CanUseItem ?? false;
+        IsHighlighting =
+            inputManager.QuickItemHighlightHold() && !isMenuOpen && !isTalking && canUseItem;
 
         // spotlightObjectがnullでないこと、そして現在の状態とキー入力の状態が異なる場合のみ更新
         if (spotlightObject != null && spotlightObject.activeSelf != IsHighlighting)

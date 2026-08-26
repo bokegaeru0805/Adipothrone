@@ -183,6 +183,8 @@ public class UIManager : MonoBehaviour, IPanelStackManager
         if (!uiRefs.MenuPanel.activeSelf)
             return;
 
+        UpdateItemButtonInteractable();
+
         // --- メニュー（パネル）を閉じる判定と処理 ---
         if (
             (inputManager.UIClose() || inputManager.UISelectNo()) // キャンセル系の入力があった
@@ -249,6 +251,8 @@ public class UIManager : MonoBehaviour, IPanelStackManager
                 uiRefs.SaveButton.interactable = false;
             }
 
+            UpdateItemButtonInteractable();
+
             // 初期状態のパネルを開く
             OpenPanel(uiRefs.MenuPanel, 1); // 階層1: メニューのベースとなるボタン群
             OpenPanel(uiRefs.ProgressLogPanel, 2); // 階層2: 進行状況ログ画面
@@ -285,6 +289,8 @@ public class UIManager : MonoBehaviour, IPanelStackManager
             }
 
             uiRefs.SaveButton.interactable = true; // SaveButtonの状態を初期化（次回開いた時のため）
+            if (uiRefs.ItemButton != null)
+                uiRefs.ItemButton.interactable = true;
             TimeManager.instance.ReleasePause(); // ゲームの時間を元に戻す（再開）
             isMenuOpen = false; // メニュー画面が開いているかどうかのフラグをOFF
 
@@ -466,6 +472,17 @@ public class UIManager : MonoBehaviour, IPanelStackManager
         int currentMoney = playerManager.GetPlayerIntStatus(PlayerStatusIntName.playerMoney);
         // 金色（#C6A34C）のタグをつけて表示
         uiRefs.CoinNumberText.text = $"<color=#C6A34C>{currentMoney}</color>";
+    }
+
+    /// <summary>
+    /// ボス戦中のアイテム使用インターバルに合わせて、メニューのアイテムボタンを更新します。
+    /// </summary>
+    private void UpdateItemButtonInteractable()
+    {
+        if (uiRefs.ItemButton != null)
+        {
+            uiRefs.ItemButton.interactable = playerManager != null && playerManager.CanUseItem;
+        }
     }
 
     #endregion

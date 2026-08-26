@@ -38,6 +38,7 @@ public sealed class DebugMenuUIBuilder
         public Button GiveAllWeaponsButton;
         public Button GiveAllRecipeItemsButton;
         public Button UnlockAllSkillsButton;
+        public Button UnlockAllEnemyDropItemsButton;
         public Button ApplyTimeScaleButton;
         public readonly List<Button> TimeScalePresetButtons = new List<Button>();
         public readonly List<Button> TabButtons = new List<Button>();
@@ -203,7 +204,7 @@ public sealed class DebugMenuUIBuilder
         grid.constraint = GridLayoutGroup.Constraint.FixedColumnCount;
         grid.constraintCount = 2;
         grid.childAlignment = TextAnchor.UpperCenter;
-        gridObject.AddComponent<LayoutElement>().preferredHeight = 210f;
+        gridObject.AddComponent<LayoutElement>().preferredHeight = 268f;
 
         view.GiveAllHealItemsButton = CreateButton("GiveHeal", gridObject.transform, "全回復アイテムを付与", 0f, WarningColor);
         view.GiveAllStatusEnhanceItemsButton = CreateButton("GiveEnhance", gridObject.transform, "全強化アイテムを付与", 0f, WarningColor);
@@ -211,8 +212,14 @@ public sealed class DebugMenuUIBuilder
         view.GiveAllKeyItemsButton = CreateButton("GiveKey", gridObject.transform, "全キーアイテムを付与", 0f, WarningColor);
         view.GiveAllRecipeItemsButton = CreateButton("GiveRecipe", gridObject.transform, "全レシピを付与", 0f, WarningColor);
         view.GiveAllWeaponsButton = CreateButton("GiveWeapon", gridObject.transform, "全武器を付与", 0f, WarningColor);
-        view.UnlockAllSkillsButton = CreateButton("UnlockSkills", parent, "全スキルを解放", 0f, WarningColor);
-        view.UnlockAllSkillsButton.gameObject.GetComponent<LayoutElement>().preferredHeight = 52f;
+        view.UnlockAllSkillsButton = CreateButton("UnlockSkills", gridObject.transform, "全スキルを解放", 0f, WarningColor);
+        view.UnlockAllEnemyDropItemsButton = CreateButton(
+            "UnlockEnemyDropItems",
+            gridObject.transform,
+            "全敵情報・ドロップを解放",
+            0f,
+            WarningColor
+        );
     }
 
     private void BuildWorldPanel(Transform parent, View view)

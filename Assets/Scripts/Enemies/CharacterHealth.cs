@@ -137,6 +137,10 @@ public abstract class CharacterHealth : PoolableObject, IDamageable, IDroppable,
     [SerializeField]
     private bool enableOverlayTexture = false;
 
+    [Tooltip("ダメージ数値を表示する位置の、キャラクター座標からのオフセット")]
+    [SerializeField]
+    private Vector2 damageDisplayOffset = Vector2.zero;
+
     #endregion
 
     #region Internal Variables
@@ -269,6 +273,14 @@ public abstract class CharacterHealth : PoolableObject, IDamageable, IDroppable,
         // HPが変動したことを外部に通知する
         OnDamageTaken?.Invoke(damage);
         OnHPChanged?.Invoke(CurrentHP);
+
+        // DamageDisplayスキル装備中は、軽減後の攻撃値を表示する
+        DamageDisplayManager.instance?.ShowDamage(
+            transform.position
+                + new Vector3(damageDisplayOffset.x, damageDisplayOffset.y, 0f),
+            damage,
+            transform
+        );
 
         // --- Step 3: ダメージ適用"後"の、派生クラス独自の処理を呼び出すフック ---
         OnDamageApplied();
@@ -643,6 +655,61 @@ public abstract class CharacterHealth : PoolableObject, IDamageable, IDroppable,
     public Vector3 GetDropPosition() => transform.position;
 
     public virtual Transform GetDropParent() => transform.parent;
+
+    #endregion
+
+    #region Editor Preview
+
+    private void OnDrawGizmosSelected()
+    {
+#if UNITY_EDITOR
+        if (!UnityEditor.EditorPrefs.GetBool("MyGame_ShowCustomGizmos", true))
+            return;
+
+        DamageDisplayManager damageDisplayManager = DamageDisplayManager.instance;
+        if (damageDisplayManager == null)
+            damageDisplayManager = UnityEngine.Object.FindObjectOfType<DamageDisplayManager>();
+
+        float previewScale = damageDisplayManager != null
+            ? damageDisplayManager.DamageNumberScale
+            : 1.75f;
+        Color previewColor = damageDisplayManager != null
+            ? damageDisplayManager.DamageNumberColor
+            : new Color(1f, 0.65f, 0.1f, 1f);
+
+        Vector3 previewPosition =
+            transform.position
+            + new Vector3(damageDisplayOffset.x, damageDisplayOffset.y, 0f);
+
+        float markerSize = 0.15f * previewScale;
+        Gizmos.color = previewColor;
+        Gizmos.DrawLine(
+            previewPosition + Vector3.left * markerSize,
+            previewPosition + Vector3.right * markerSize
+        );
+        Gizmos.DrawLine(
+            previewPosition + Vector3.down * markerSize,
+            previewPosition + Vector3.up * markerSize
+        );
+
+        float handleSize = UnityEditor.HandleUtility.GetHandleSize(previewPosition);
+        int previewFontSize = Mathf.Clamp(
+            Mathf.RoundToInt(14f * previewScale / Mathf.Max(0.01f, handleSize)),
+            1,
+            256
+        );
+
+        GUIStyle style = new GUIStyle
+        {
+            alignment = TextAnchor.LowerCenter,
+            fontSize = previewFontSize,
+            fontStyle = FontStyle.Bold,
+        };
+        style.normal.textColor = previewColor;
+
+        UnityEditor.Handles.Label(previewPosition, "123", style);
+#endif
+    }
 
     #endregion
 }

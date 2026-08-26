@@ -7,14 +7,13 @@ using UnityEngine;
 public enum SkillCategory
 {
     None = 0,
-    Basic = 10, // 基本型
+    Mobility = 10, // 機動型
     Exploration = 20, // 探索型
     Attack = 30, // 攻撃型
     Defense = 40, // 防御型
-    Luck =  50, // 幸運型
-    Item  = 60, // アイテム型
-    Special  = 70 // 特殊型
-    ,
+    Reward = 50, // 報酬型
+    Tool = 60, // 道具型
+    Special = 70, // 特殊型
 }
 
 /// <summary>

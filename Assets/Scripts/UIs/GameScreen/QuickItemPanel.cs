@@ -35,6 +35,9 @@ public class QuickItemPanel : MonoBehaviour
         public Image buttonImage; // ボタン自体のImage
 
         [HideInInspector]
+        public Color buttonBaseColor; // インターバル終了時に復元するボタンの色
+
+        [HideInInspector]
         public Tween scaleTween;
 
         [HideInInspector]
@@ -61,6 +64,11 @@ public class QuickItemPanel : MonoBehaviour
 
     [SerializeField]
     private Sprite transparentSquare;
+
+    [Header("ボス戦中のアイテム使用インターバルUI")]
+    [Tooltip("クイックアイテムリスト全体を覆い、残り時間を縦方向のFillで表示するImage")]
+    [SerializeField]
+    private Image itemUseIntervalSheet;
 
     private List<HealItemData> healItemData = new List<HealItemData>(); //アイテムの情報
     private List<ItemEntry> quickList = new List<ItemEntry>(); //セーブデータから参照する
@@ -109,6 +117,7 @@ public class QuickItemPanel : MonoBehaviour
     private bool isUiPaused = false; //UIが一時停止中かどうかを管理するフラグ
     private bool isMenuOpen = false; // UIManagerから通知されたメニューの表示状態を保存する変数
     private bool isTalking = false; // 会話状態を保存するローカル変数
+    private bool? previousBossItemUseIntervalState = null;
 
     private void Awake()
     {
@@ -122,6 +131,13 @@ public class QuickItemPanel : MonoBehaviour
         {
             Debug.LogError("QuickItemPanelは必要なスプライトが設定されていません");
             return;
+        }
+
+        if (itemUseIntervalSheet == null)
+        {
+            Debug.LogWarning(
+                "QuickItemPanelのitemUseIntervalSheetが設定されていないため、インターバルの残り時間は表示されません。"
+            );
         }
 
         if (quickSlotButtons == null || quickSlotButtons.Length == 0)
@@ -181,6 +197,10 @@ public class QuickItemPanel : MonoBehaviour
                 Debug.LogError(
                     $"slotGameObject {quickSlotButtons[i].slotGameObject.name}にImageコンポーネントが見つかりません。"
                 );
+            }
+            else
+            {
+                quickSlotButtons[i].buttonBaseColor = quickSlotButtons[i].buttonImage.color;
             }
 
             // アイテムアイコンのImage (子オブジェクトの0番目)
@@ -314,6 +334,7 @@ public class QuickItemPanel : MonoBehaviour
         HandleQuickSlotAssigned(); //スロットを初期化する(quickListを取得してから行う)
         ChangeAllCountTextImage(); //所持数を初期化する
         StartCoroutine(InitialChangeSelection()); //最初のボタンを選択する(フレームの終わりまで待つ)
+        UpdateBossItemUseIntervalUI();
     }
 
     /// <summary>
@@ -376,6 +397,8 @@ public class QuickItemPanel : MonoBehaviour
 
     private void Update()
     {
+        UpdateBossItemUseIntervalUI();
+
         if (spotlightController == null)
         {
             spotlightController = SpotlightQuickItemController.instance;
@@ -658,6 +681,9 @@ public class QuickItemPanel : MonoBehaviour
     /// </summary>
     private void OnButtonClicked(int id)
     {
+        if (playerManager == null || !playerManager.CanUseItem)
+            return;
+
         if (id >= quickList.Count)
         {
             SEManager.instance?.PlayUISE(SE_UI.Beep1);
@@ -777,6 +803,47 @@ public class QuickItemPanel : MonoBehaviour
                 //ボタンの画像と文章を使えないように黒くする
                 DisableButtonImage(i);
             }
+        }
+
+        UpdateBossItemUseIntervalUI();
+    }
+
+    /// <summary>
+    /// ボス戦中のアイテム使用インターバルに合わせて、全スロットと残り時間シートを更新します。
+    /// </summary>
+    private void UpdateBossItemUseIntervalUI()
+    {
+        bool isIntervalActive = playerManager != null && playerManager.IsBossItemUseIntervalActive;
+
+        if (previousBossItemUseIntervalState != isIntervalActive)
+        {
+            previousBossItemUseIntervalState = isIntervalActive;
+
+            foreach (QuickSlotButton slot in quickSlotButtons)
+            {
+                if (slot.button != null)
+                    slot.button.interactable = !isIntervalActive;
+
+                if (slot.buttonImage != null)
+                    slot.buttonImage.color = isIntervalActive ? Color.red : slot.buttonBaseColor;
+            }
+
+            if (isIntervalActive)
+                PauseAllAnimations();
+            else
+                ResumeAllAnimations();
+        }
+
+        if (itemUseIntervalSheet != null)
+        {
+            itemUseIntervalSheet.gameObject.SetActive(isIntervalActive);
+            itemUseIntervalSheet.fillAmount =
+                playerManager != null ? playerManager.BossItemUseIntervalNormalized : 0f;
+        }
+
+        if (isIntervalActive)
+        {
+            isHoldingSelect = false;
         }
     }
 

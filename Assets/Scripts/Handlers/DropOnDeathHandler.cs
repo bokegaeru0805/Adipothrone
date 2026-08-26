@@ -24,6 +24,24 @@ public static class DropOnDeathHandler
         // ドロップ位置を取得
         Vector3 dropBasePos = droppable.GetDropPosition();
 
+        ConsecutiveHuntResult consecutiveHuntResult = default;
+        if (SkillManager.instance != null)
+        {
+            consecutiveHuntResult = SkillManager.instance.RegisterConsecutiveHuntDefeat(
+                enemyData.enemyID
+            );
+            if (
+                consecutiveHuntResult.IsActive
+                && consecutiveHuntResult.ConsecutiveKills >= 2
+            )
+            {
+                DamageDisplayManager.instance?.ShowConsecutiveHunt(
+                    dropBasePos,
+                    consecutiveHuntResult
+                );
+            }
+        }
+
         // 金貨（1000,100,10）をドロップする処理
         if (enemyData.dropMoney > 0)
         {
@@ -132,7 +150,11 @@ public static class DropOnDeathHandler
             {
                 // 幸運ボーナスを加味した最終ドロップ率を計算（上限100%）
                 float finalDropChance = Mathf.Clamp(
-                    drop.dropChance * (1f + (luckBonus / 100f)),
+                    ApplyDropRateBonuses(
+                        drop.dropChance,
+                        luckBonus,
+                        consecutiveHuntResult.DropBonusPercent
+                    ),
                     0f,
                     100f
                 );
@@ -154,7 +176,11 @@ public static class DropOnDeathHandler
                 {
                     // 幸運ボーナスを加味した最終ドロップ率を計算（上限100%）
                     float finalDropChance = Mathf.Clamp(
-                        drop.dropChance * (1f + (luckBonus / 100f)),
+                        ApplyDropRateBonuses(
+                            drop.dropChance,
+                            luckBonus,
+                            consecutiveHuntResult.DropBonusPercent
+                        ),
                         0f,
                         100f
                     );
@@ -228,6 +254,7 @@ public static class DropOnDeathHandler
                     else
                     {
                         // 通常アイテムのスプライトを設定
+                        dropScript.SetAsEnemyAutoCollectTarget();
                         dropScript.SetDropItemSprite();
                     }
                 }
@@ -237,20 +264,45 @@ public static class DropOnDeathHandler
         // 敵が持つすべてのドロップ候補スキルについて処理
         if (enemyData.dropSkills != null)
         {
+            bool hasProcessedSkillCrystal = false;
             foreach (var dropSkill in enemyData.dropSkills)
             {
-                if (dropSkill.skillID == SkillName.None)
+                bool isSkillCrystal =
+                    dropSkill.isSkillCrystal && dropSkill.skillID == SkillName.None;
+                if (!isSkillCrystal && dropSkill.skillID == SkillName.None)
                     continue;
 
-                // 既に所持・解放済みの場合はドロップさせない
-                if (SkillManager.instance.IsSkillUnlocked(dropSkill.skillID))
+                // スキルクリスタルは敵ごとに一度だけ取得できる。
+                if (
+                    isSkillCrystal
+                    && (
+                        hasProcessedSkillCrystal
+                        || recordEntry.hasObtainedSkillCrystal
+                    )
+                )
+                {
+                    continue;
+                }
+
+                if (isSkillCrystal)
+                {
+                    // 誤って複数行設定されていても、先頭の設定だけを採用する。
+                    hasProcessedSkillCrystal = true;
+                }
+
+                // 通常スキルは既に所持・解放済みの場合、ドロップさせない。
+                if (!isSkillCrystal && SkillManager.instance.IsSkillUnlocked(dropSkill.skillID))
                 {
                     continue;
                 }
 
                 // 幸運ボーナスを加味した最終ドロップ率を計算（上限100%）
                 float finalDropChance = Mathf.Clamp(
-                    dropSkill.dropChance * (1f + (luckBonus / 100f)),
+                    ApplyDropRateBonuses(
+                        dropSkill.dropChance,
+                        luckBonus,
+                        consecutiveHuntResult.DropBonusPercent
+                    ),
                     0f,
                     100f
                 );
@@ -282,8 +334,14 @@ public static class DropOnDeathHandler
                     var dropScript = dropObj.GetComponent<DropItem>();
                     if (dropScript != null)
                     {
-                        // スキル用の設定を呼び出す
-                        dropScript.SetSkillSprite(dropSkill.skillID);
+                        if (isSkillCrystal)
+                        {
+                            dropScript.SetSkillCrystalSprite(enemyData.enemyID);
+                        }
+                        else
+                        {
+                            dropScript.SetSkillSprite(dropSkill.skillID);
+                        }
                     }
                 }
             }
@@ -325,8 +383,14 @@ public static class DropOnDeathHandler
                 }
 
                 dropScript.DropMoney = coinValue;
+                dropScript.SetAsEnemyAutoCollectTarget();
                 dropScript.SetMoneySprite();
             }
+        }
+
+        float ApplyDropRateBonuses(float baseChance, float luckPercent, float huntPercent)
+        {
+            return baseChance * (1f + luckPercent / 100f) * (1f + huntPercent / 100f);
         }
     }
 }

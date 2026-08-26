@@ -69,11 +69,27 @@ public class EnemyData : ScriptableObject, IItemIDProvider
 
         if (dropSkills != null)
         {
+            bool hasSkillCrystal = false;
             for (int i = 0; i < dropSkills.Count; i++)
             {
                 if (dropSkills[i] != null)
                 {
-                    dropSkills[i]._inspectorLabel = dropSkills[i].skillID.ToString();
+                    if (dropSkills[i].isSkillCrystal)
+                    {
+                        dropSkills[i]._inspectorLabel = "Skill Crystal";
+                        if (hasSkillCrystal)
+                        {
+                            Debug.LogWarning(
+                                $"{name}: スキルクリスタルは1体の敵につき1件だけ設定してください。",
+                                this
+                            );
+                        }
+                        hasSkillCrystal = true;
+                    }
+                    else
+                    {
+                        dropSkills[i]._inspectorLabel = dropSkills[i].skillID.ToString();
+                    }
                 }
             }
         }
@@ -129,8 +145,24 @@ public class DropSkillData
     [HideInInspector]
     public string _inspectorLabel; // Unityの仕様を利用してインスペクターの要素名にするための隠し変数
 
+    [AllowNesting]
+    [ShowIf(nameof(IsSkillNameVisible))]
     public SkillName skillID; // ドロップするスキル
+
+    [AllowNesting]
+    [ShowIf(nameof(IsSkillCrystalVisible))]
+    public bool isSkillCrystal; // スキルポイントを1獲得できるクリスタルか
 
     [Range(0f, 100f)]
     public float dropChance; // ドロップ確率（％）
+
+    private bool IsSkillNameVisible()
+    {
+        return !isSkillCrystal;
+    }
+
+    private bool IsSkillCrystalVisible()
+    {
+        return skillID == SkillName.None;
+    }
 }
