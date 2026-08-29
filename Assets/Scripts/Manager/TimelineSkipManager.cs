@@ -348,6 +348,7 @@ public class TimelineSkipManager : MonoBehaviour
     /// </summary>
     private void HandleTalkingStateChanged(bool talkState)
     {
+        Debug.Log($"[TalkStateDebug] TimelineSkipManager received talking state: {talkState}", this);
         isTalking = talkState;
     }
 }

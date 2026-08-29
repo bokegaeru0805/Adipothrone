@@ -23,6 +23,7 @@ public class SnowFieldEvent : BaseFieldEvent
         VillageHouse = 11, // 雪原の村の家
         VillageCenter = 16, // 雪原の村の中心
         MountainEntrance = 19, // 雪原の山入口
+        ParkField = 20, // 公園フィールド
         CaveEntrance = 21, // 雪原の洞窟入口
         TowerGate = 26, // 雪原の塔の入り口
         TowerEntrance = 31, // 雪原の塔の入り口
@@ -72,7 +73,8 @@ public class SnowFieldEvent : BaseFieldEvent
                 break;
             case FieldName.LeftBridgeField:
                 if (
-                    !flagManager.GetBoolFlag(
+                    flagManager.GetBoolFlag(Chapter3TriggeredEvent.WitnessedVillageChange)
+                    && !flagManager.GetBoolFlag(
                         Chapter3TriggeredEvent.TalkedToCoachmanAboutVillageChange
                     )
                 )
@@ -91,6 +93,32 @@ public class SnowFieldEvent : BaseFieldEvent
                     flagManager.SetBoolFlag(Chapter3TriggeredEvent.FirstEnteredSnowVillage, true);
                     FungusHelper.ExecuteBlock(targetFlowchart, "EnterSnowVillage");
                 }
+                else if (
+                    flagManager.GetBoolFlag(Chapter3TriggeredEvent.ApothecaryCaptured)
+                    && !flagManager.GetBoolFlag(Chapter3TriggeredEvent.SensedVillageAnomaly)
+                )
+                {
+                    flagManager.SetBoolFlag(Chapter3TriggeredEvent.SensedVillageAnomaly, true);
+                    FungusHelper.ExecuteBlock(targetFlowchart, "SensedVillageAnomaly");
+                }
+                else if (
+                    flagManager.GetBoolFlag(
+                        Chapter3TriggeredEvent.TalkedToCoachmanAboutVillageChange
+                    )
+                    && !flagManager.GetBoolFlag(
+                        Chapter3TriggeredEvent.StartedInvestigatingVillageAnomaly
+                    )
+                )
+                {
+                    flagManager.SetBoolFlag(
+                        Chapter3TriggeredEvent.StartedInvestigatingVillageAnomaly,
+                        true
+                    );
+                    FungusHelper.ExecuteBlock(
+                        targetFlowchart,
+                        "StartedInvestigatingVillageAnomaly"
+                    );
+                }
                 break;
             case FieldName.VillageHouse:
                 if (!flagManager.GetBoolFlag(Chapter3TriggeredEvent.FirstTalkedToVillageChief))
@@ -99,10 +127,14 @@ public class SnowFieldEvent : BaseFieldEvent
                     // flagManager.SetBoolFlag(Chapter3TriggeredEvent.FirstTalkedToVillageChief, true);
                     FungusHelper.ExecuteBlock(targetFlowchart, "FirstTalkedToVillageChief");
                 }
-                else if (!flagManager.GetBoolFlag(Chapter3TriggeredEvent.WitnessedVillageChange))
+                else if (
+                    flagManager.GetBoolFlag(Chapter3TriggeredEvent.ApothecaryCaptured)
+                    && !flagManager.GetBoolFlag(Chapter3TriggeredEvent.WitnessedVillageChange)
+                )
                 {
                     flagManager.SetBoolFlag(Chapter3TriggeredEvent.WitnessedVillageChange, true);
                     FungusHelper.ExecuteBlock(targetFlowchart, "WitnessedVillageChange");
+                    flagManager.SetBoolFlag(Chapter3TriggeredEvent.SensedVillageAnomaly, true); // 村の異変を察知したフラグも立てる
                 }
                 break;
             case FieldName.VillageCenter:
@@ -114,7 +146,7 @@ public class SnowFieldEvent : BaseFieldEvent
                 }
                 break;
             case FieldName.MountainEntrance:
-                if (flagManager.GetBoolFlag(Chapter3TriggeredEvent.DiscoveredParkEntrance))
+                if (!flagManager.GetBoolFlag(Chapter3TriggeredEvent.DiscoveredParkEntrance))
                 {
                     flagManager.SetBoolFlag(Chapter3TriggeredEvent.DiscoveredParkEntrance, true);
                     FungusHelper.ExecuteBlock(targetFlowchart, "DiscoveredParkEntrance");
@@ -126,6 +158,16 @@ public class SnowFieldEvent : BaseFieldEvent
                 {
                     flagManager.SetBoolFlag(Chapter3TriggeredEvent.ReunitedWithRobot, true);
                     FungusHelper.ExecuteBlock(targetFlowchart, "ReunitedWithRobot");
+                }
+                break;
+            case FieldName.ParkField:
+                if (!flagManager.GetBoolFlag(Chapter3TriggeredEvent.FirstTalkedToFrogShopManager))
+                {
+                    flagManager.SetBoolFlag(
+                        Chapter3TriggeredEvent.FirstTalkedToFrogShopManager,
+                        true
+                    );
+                    FungusHelper.ExecuteBlock(targetFlowchart, "FirstTalkedToFrogShopManager");
                 }
                 break;
             case FieldName.CaveEntrance:
@@ -193,7 +235,7 @@ public class SnowFieldEvent : BaseFieldEvent
                 }
                 break;
             case FieldName.LastBattleEntrance:
-                if (flagManager.GetBoolFlag(Chapter3TriggeredEvent.ReachedFinalBattleEntrance))
+                if (!flagManager.GetBoolFlag(Chapter3TriggeredEvent.ReachedFinalBattleEntrance))
                 {
                     flagManager.SetBoolFlag(
                         Chapter3TriggeredEvent.ReachedFinalBattleEntrance,

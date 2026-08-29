@@ -1,9 +1,9 @@
 ID,EnumName,Name,Category,Description,RequiredPoints,MaxLevel,PrerequisiteSkills,ExclusiveGroupID
 21001,DashSpeedUp,疾走,Mobility,ダッシュ速度が上昇する。,1,1,,0
-21002,DoubleJump,二段跳び,Mobility,ジャンプ回数が一回増える。,1,1,,0
-21003,Glide,滑空,Mobility,空中でジャンプボタンを押し続けると、ゆっくり落下する。,1,1,,0
-21004,SlowFall,緩降下,Mobility,落下速度が低下する。,1,1,,0
-21005,JumpPowerUp,跳躍強化,Mobility,ジャンプ力が上昇する。,1,1,,0
+21002,JumpPowerUp,跳躍強化,Mobility,ジャンプ力が上昇する。,1,1,,0
+21003,DoubleJump,二段跳び,Mobility,ジャンプ回数が一回増える。,1,1,,0
+21004,Glide,滑空,Mobility,空中でジャンプボタンを押し続けると、ゆっくり落下する。,1,1,,0
+21005,SlowFall,緩降下,Mobility,落下速度が低下する。,1,1,,0
 21101,DamageDisplay,ダメージ表示,Exploration,与えたダメージを表示する。,1,1,,0
 21102,AutoDropItemCollect,自動回収,Exploration,敵からドロップしたアイテムやコインを自動で回収する。,1,1,,0
 21103,TreasureCount,宝箱計測,Exploration,マップ内にある宝箱の数を表示する。,1,1,,0

@@ -36,6 +36,7 @@ public class DialogueUpdater : MonoBehaviour
 
     // 「地の文」として扱うキーワード
     private const string NARRATIVE_TEXT_KEYWORD = "narrative";
+    private const string GEAR_ICON_SPRITE_TAG = "<sprite name=\"Gear_Icon\">";
 
     /// <summary>
     /// CSVファイルを読み込み、Flowchartの各Block内のSayコマンドを更新します。
@@ -161,7 +162,10 @@ public class DialogueUpdater : MonoBehaviour
                 )
             )
             {
-                List<Say> sayCommandsInBlock = block.CommandList.OfType<Say>().ToList();
+                List<Say> sayCommandsInBlock = block
+                    .CommandList.OfType<Say>()
+                    .Where(say => !say.GetStandardText().Contains(GEAR_ICON_SPRITE_TAG))
+                    .ToList();
 
                 if (csvLinesForBlock.Count != sayCommandsInBlock.Count)
                 {

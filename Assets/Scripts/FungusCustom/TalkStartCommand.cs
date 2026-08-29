@@ -12,6 +12,8 @@ public class TalkStartCommand : Command
 
     public override void OnEnter()
     {
+        Debug.Log($"[TalkStateDebug] TalkStart entered. Block: {ParentBlock?.BlockName}", this);
+
         // 会話開始イベントを発行し、購読しているクラスに通知する
         OnTalkStartExecuted?.Invoke();
 

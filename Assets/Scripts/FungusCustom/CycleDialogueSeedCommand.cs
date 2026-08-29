@@ -16,10 +16,11 @@ public class CycleDialogueSeedCommand : Command
     private Flowchart globalFlowchart = null;
 
     /// <summary>
-    /// このコマンドインスタンス内でSeed値を独自に保持する変数。
-    /// 初期値を-1にすることで、初回実行かどうかを判定するフラグとして利用します。
+    /// 次回実行時に使用するSeed値。
+    /// Flowchart上のコマンドごとに保持され、初回実行では0が使用されます。
     /// </summary>
-    private int ownSeed = -1;
+    [SerializeField]
+    private int currentSeed = 0;
 
     public override void OnEnter()
     {
@@ -81,30 +82,14 @@ public class CycleDialogueSeedCommand : Command
             return;
         }
 
-        // このコマンドの独自Seedが未初期化(-1)の場合、Flowchartの現在の値を取得して初期化する
-        if (ownSeed == -1)
-        {
-            ownSeed = dialogueSeedVariable.Value;
-        }
+        // Inspectorで設定された現在の値を出力する。
+        // 分岐数の変更などで値が範囲外になっていた場合は、循環範囲内へ補正する。
+        currentSeed = ((currentSeed % conditionalCommandCount) + conditionalCommandCount)
+            % conditionalCommandCount;
+        dialogueSeedVariable.Value = currentSeed;
 
-        // 独自に保持しているownSeedの値を元に、次の値を計算する
-        int nextSeed = ownSeed + 1;
-
-        // 計算後の値が分岐の合計数以上なら、0に戻す（循環させる）
-        if (nextSeed >= conditionalCommandCount)
-        {
-            nextSeed = 0;
-        }
-        
-        // 更新前の値をデバッグログ用に保持
-        int previousSeed = ownSeed;
-
-        // 計算結果をこのコマンドの独自変数と、Flowchartの変数の両方に書き戻す
-        ownSeed = nextSeed; // 自分の値を更新
-        dialogueSeedVariable.Value = nextSeed; // Flowchartの値を更新
-
-        // Debug.Log($"DialogueSeedを {previousSeed} -> {nextSeed} に更新しました。");
-
+        // 次回実行時の値を進める。分岐数に達したら0へ戻す。
+        currentSeed = (currentSeed + 1) % conditionalCommandCount;
 
         // 処理が完了したので、次のコマンドへ進む
         Continue();

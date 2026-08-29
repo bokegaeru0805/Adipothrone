@@ -24,6 +24,10 @@ using Fungus;
         [SerializeField]
         protected Character character;
 
+        [Tooltip("CharacterのNameTextより優先して表示する任意の話者名。空欄ならCharacterの名前を使用します。")]
+        [SerializeField]
+        protected string customCharacterName = "";
+
         [Tooltip("このセリフの時に表示するキャラクターの立ち絵や表情。")]
         [SerializeField]
         protected Sprite portrait;
@@ -118,6 +122,14 @@ using Fungus;
         }
 
         /// <summary>
+        /// Characterの有無にかかわらず、会話ウィンドウへ表示する任意の話者名を設定します。
+        /// </summary>
+        public virtual void SetCustomCharacterName(string newCharacterName)
+        {
+            customCharacterName = newCharacterName ?? "";
+        }
+
+        /// <summary>
         /// 外部スクリプトから表情（立ち絵）を設定するための公開メソッド。
         /// </summary>
         /// <param name="newPortrait">設定したい新しい表情のSprite</param>
@@ -174,6 +186,11 @@ using Fungus;
             var flowchart = GetFlowchart();
             sayDialog.SetActive(true);
             sayDialog.SetCharacter(character);
+            if (!string.IsNullOrEmpty(customCharacterName))
+            {
+                Color nameColor = character != null ? character.NameColor : Color.white;
+                sayDialog.SetCharacterName(customCharacterName, nameColor);
+            }
 
             // --- 【ステップ3】立ち絵の表示処理 ---
             // 直接処理せず、イベントを発行するだけにする
@@ -249,7 +266,11 @@ using Fungus;
         {
             string namePrefix = "";
             // キャラクターが設定されていれば、その名前を接頭辞にする
-            if (character != null)
+            if (!string.IsNullOrEmpty(customCharacterName))
+            {
+                namePrefix = customCharacterName + ": ";
+            }
+            else if (character != null)
             {
                 // // Heroinの場合は表情文字列も表示
                 // if (character.name == "Heroin" && !string.IsNullOrEmpty(portraitString))
@@ -337,7 +358,11 @@ using Fungus;
         {
             // Sayコマンドの文字列IDは「SAY.<ローカライズID>.<コマンドID>.[キャラクター名]」の形式
             string stringId = "SAY." + GetFlowchartLocalizationId() + "." + itemId + ".";
-            if (character != null)
+            if (!string.IsNullOrEmpty(customCharacterName))
+            {
+                stringId += customCharacterName;
+            }
+            else if (character != null)
             {
                 stringId += character.NameText;
             }

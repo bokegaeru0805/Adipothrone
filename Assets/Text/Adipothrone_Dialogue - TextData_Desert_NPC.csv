@@ -1,18 +1,18 @@
 セリフ,ChracterName,BlockName,FileName
 "遠路はるばる、よくぞこの過酷な砂漠を越えていらっしゃいました。
-心より歓迎いたします。",Fill,Fill_Default,
-ここから砂漠の最奥地へと向かうことができます。,Fill,Fill_AfterFirstMetLevias,
+心より歓迎いたします。",Fill,Fill_Default,Fill_normal_smile
+ここから砂漠の最奥地へと向かうことができます。,Fill,Fill_AfterFirstMetLevias,Fill_normal_normal
 "魔物も多く険しい道ですから、
-どうか気を引き締めて行きましょう。",Fill,Fill_AfterFirstMetLevias,
-この奥に、村に古くから伝わる秘宝が安置されています。,Fill,Fill_ReachedDeepestDesert,
+どうか気を引き締めて行きましょう。",Fill,Fill_AfterFirstMetLevias,Fill_normal_normal
+この奥に、村に古くから伝わる秘宝が安置されています。,Fill,Fill_ReachedDeepestDesert,Fill_normal_normal
 "何が待ち受けているか分かりませんから、
-どうか十分に用心してくださいね。",Fill,Fill_ReachedDeepestDesert,
+どうか十分に用心してくださいね。",Fill,Fill_ReachedDeepestDesert,Fill_normal_normal
 "申し訳ありません。私はここで、
-動くこともままならない姉様を見守っていようと思います。",Fill,Fill_AfterTempleBossSmokeDefeat,
+動くこともままならない姉様を見守っていようと思います。",Fill,Fill_AfterTempleBossSmokeDefeat,Fill_armed2_normal
 "もし何かあったら、いつでもここへ戻ってきてください。
-私にできることなら、何でもお力になりますから。",Fill,Fill_AfterTempleBossSmokeDefeat,
-この先に、あの恐ろしい魔物が待ち構えているはずです。,Fill,Fill_BeforeDecisionBattle,
-必ず打ち払い、私たちの村を魔の手から解放してみせます。,Fill,Fill_BeforeDecisionBattle,
+私にできることなら、何でもお力になりますから。",Fill,Fill_AfterTempleBossSmokeDefeat,Fill_armed2_normal
+この先に、あの恐ろしい魔物が待ち構えているはずです。,Fill,Fill_BeforeDecisionBattle,Fill_armed2_determination
+必ず打ち払い、私たちの村を魔の手から解放してみせます。,Fill,Fill_BeforeDecisionBattle,Fill_armed2_determination
 "悪いけど、オアシスまで行って水を汲んできてくれないかな？ 
 頼んだよ。",Axis,Axis_Default,Axis_normal_normal
 "巫女さんなら村の端にある神殿にいたよ。
@@ -48,6 +48,8 @@
 "……気のせいか、少しお姿にゆとりができたっていうか……。
 でも、あんなに必死なツラして神殿に向かうフィル様なんて、
 俺は初めて見たよ。",Boy_Desert_1,Boy_Desert_1_AfterOasisPartiallyRestored,Boy_Desert_1_normal_normal
+おい、さっき神殿の方からでかい音が聞こえたぞ。,Boy_Desert_1,Boy_Desert_1_AfterTempleBossDefeat,Boy_Desert_1_normal_normal
+何が起きたんだ？,Boy_Desert_1,Boy_Desert_1_AfterTempleBossDefeat,Boy_Desert_1_normal_normal
 "あら、砂漠を越えてここまで来たの？　
 ……ふふ、珍しいお客さまね。",Girl_Desert_1,Girl_Desert_1_Default,Girl_Desert_1_normal_normal
 アクスっていう御者？ ……ううん、見かけてないわ。,Girl_Desert_1,Girl_Desert_1_InquiryAboutFill,Girl_Desert_1_normal_normal
@@ -73,6 +75,8 @@
 "……気のせいかしら、
 姿が少しふくよかになったような気もするけれど、
 フィルお姉ちゃん、とても真剣な表情で神殿へ向かっていったわ。",Girl_Desert_1,Girl_Desert_1_AfterOasisPartiallyRestored,Girl_Desert_1_normal_normal
+フィルお姉ちゃん、前みたいに笑ってくれるようになったの。,Girl_Desert_1,Girl_Desert_1_AfterTempleBossDefeat,Girl_Desert_1_normal_normal
+あなたのおかげなんでしょう？　本当にありがとう。,Girl_Desert_1,Girl_Desert_1_AfterTempleBossDefeat,Girl_Desert_1_normal_normal
 "おや、見かけん顔じゃな。
 こんな場所まで、よく砂漠を越えてきなさった。",OldMan_Desert_1,OldMan_Desert_1_Default,OldMan_Desert_1_normal_normal
 "アクスという御者じゃと？ いや、ワシは毎日ここにおるが、
@@ -93,6 +97,8 @@
 我らの命の源であるオアシスが枯れてしまうとは……
 神は我らを見放されたというのか……。",OldMan_Desert_1,OldMan_Desert_1_AfterFirstMetLevias,OldMan_Desert_1_normal_normal
 ……水が少しだけ戻ったようじゃが、これでは何日持つことか。,OldMan_Desert_1,OldMan_Desert_1_AfterOasisPartiallyRestored,OldMan_Desert_1_normal_normal
+おお……水が戻っておる。,OldMan_Desert_1,OldMan_Desert_1_AfterTempleBossDefeat,OldMan_Desert_1_normal_normal
+これで、村もしばらくは安心じゃのう。,OldMan_Desert_1,OldMan_Desert_1_AfterTempleBossDefeat,OldMan_Desert_1_normal_normal
 装置を全て起動しよう。,narrative,BossGate_Default,
 扉の先に行く前に、フィルさんに話しかけておこう。,narrative,BossGate_CompleteAllOrbsPlacedInDevice,
 "おーっと！　そこのあなた、ちょっと待ったー！

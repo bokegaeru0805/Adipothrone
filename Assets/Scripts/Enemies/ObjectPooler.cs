@@ -154,14 +154,21 @@ public class ObjectPooler : MonoBehaviour
     /// </summary>
     private void InitializePools()
     {
-        poolDictionary = new Dictionary<string, Queue<GameObject>>();
-        poolParentDictionary = new Dictionary<string, Transform>();
-        activeObjects = new Dictionary<GameObject, string>();
-        initialSettingsMap = new Dictionary<int, InitialObjectSettings>();
+        int poolCount = pools != null ? pools.Count : 0;
+        int totalObjectCount = 0;
+        for (int i = 0; i < poolCount; i++)
+        {
+            totalObjectCount += Mathf.Max(0, pools[i].size);
+        }
+
+        poolDictionary = new Dictionary<string, Queue<GameObject>>(poolCount);
+        poolParentDictionary = new Dictionary<string, Transform>(poolCount);
+        activeObjects = new Dictionary<GameObject, string>(totalObjectCount);
+        initialSettingsMap = new Dictionary<int, InitialObjectSettings>(totalObjectCount);
 
         foreach (Pool pool in pools)
         {
-            Queue<GameObject> objectQueue = new Queue<GameObject>();
+            Queue<GameObject> objectQueue = new Queue<GameObject>(Mathf.Max(0, pool.size));
 
             // 生成したオブジェクトを、このプーラーの子オブジェクトにして、
             // Unityエディタのヒエラルキーを見やすく整理する

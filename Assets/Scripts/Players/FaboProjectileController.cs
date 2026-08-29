@@ -1,6 +1,4 @@
-using System.Collections;
 using System.Collections.Generic;
-using System.Linq;
 using UnityEngine;
 
 /// <summary>
@@ -8,10 +6,16 @@ using UnityEngine;
 /// 武器データ（ShootWeaponData）を元に初期化され、直線・放物線・3-Wayなどの軌道を描きます。
 /// </summary>
 [RequireComponent(typeof(CriWare.Assets.CriAtomSePlayer))]
-public class FaboProjectileController : MonoBehaviour
+public class FaboProjectileController : PoolableObject
 {
+    public const string RobotShootPoolTag = "RobotShoot";
+
     #region キャッシュ・外部参照
     private CriWare.Assets.CriAtomSePlayer sePlayer;
+    private SpriteRenderer _spriteRenderer;
+    private Rigidbody2D _rigidbody;
+    private CircleCollider2D _circleCollider;
+    private Animator _animator;
     #endregion
 
     #region インスペクター設定
@@ -50,7 +54,42 @@ public class FaboProjectileController : MonoBehaviour
     private Vector2 initialPosition; // 発射時の初期座標
     private bool isSubBullet = false; // 3-Wayなどで複製されたサブ弾かどうかのフラグ
     private bool _isInBossBattle = false; // ボス戦闘中かどうかのフラグ
+    private float _remainingLifetime = 0f;
+    private bool _isLifetimeActive = false;
+    private bool _isSubBulletMoving = false;
+    private float _subBulletYDirection = 0f;
     #endregion
+
+    private void Awake()
+    {
+        sePlayer = GetComponent<CriWare.Assets.CriAtomSePlayer>();
+        _spriteRenderer = GetComponent<SpriteRenderer>();
+        _rigidbody = GetComponent<Rigidbody2D>();
+        _circleCollider = GetComponent<CircleCollider2D>();
+        _animator = GetComponent<Animator>();
+    }
+
+    private void Update()
+    {
+        if (_isLifetimeActive)
+        {
+            _remainingLifetime -= Time.deltaTime;
+            if (_remainingLifetime <= 0f)
+            {
+                ReturnProjectile();
+                return;
+            }
+        }
+
+        if (
+            _isSubBulletMoving
+            && Mathf.Abs(transform.position.y - initialPosition.y) >= height
+        )
+        {
+            _rigidbody.velocity = new Vector2(_rigidbody.velocity.x, 0f);
+            _isSubBulletMoving = false;
+        }
+    }
     #region 初期化設定
 
     /// <summary>
@@ -61,18 +100,25 @@ public class FaboProjectileController : MonoBehaviour
     /// <param name="moveRight">右方向に発射する場合は true</param>
     public void InitializeBullet(ShootWeaponData data, bool moveRight)
     {
-        this.isMoveRight = moveRight;
+        InitializeBullet(data, moveRight, false);
+    }
+
+    private void InitializeBullet(ShootWeaponData data, bool moveRight, bool isSubProjectile)
+    {
+        ResetRuntimeState();
+        isSubBullet = isSubProjectile;
+        isMoveRight = moveRight;
 
         if (data == null)
         {
             Debug.LogWarning("ShootWeaponDataがnullのため、弾を初期化できません。");
-            Destroy(gameObject);
+            ReturnProjectile();
             return;
         }
 
         // --- 1. データの適用 ---
         currentShootData = data;
-        this.GetComponent<SpriteRenderer>().sprite = data.itemSprite;
+        _spriteRenderer.sprite = data.itemSprite;
         shootPower = data.power;
         wpCost = data.wpCost;
         vanishTime = data.vanishTime;
@@ -82,32 +128,32 @@ public class FaboProjectileController : MonoBehaviour
         moveType = data.moveType;
 
         // --- 2. コンポーネントの設定 ---
-        sePlayer = this.GetComponent<CriWare.Assets.CriAtomSePlayer>();
-
-        var collider = this.GetComponent<CircleCollider2D>();
-        if (collider != null)
+        if (_circleCollider != null)
         {
-            collider.offset = data.colliderOffset;
-            collider.radius = data.colliderRadius;
+            _circleCollider.offset = data.colliderOffset;
+            _circleCollider.radius = data.colliderRadius;
         }
 
-        if (data.shootAnimation != null)
+        if (_animator != null)
         {
-            Animator animator = this.GetComponent<Animator>();
-            animator.enabled = true;
-            animator.Play(data.shootAnimation.name);
+            bool hasShootAnimation = data.shootAnimation != null;
+            _animator.enabled = hasShootAnimation;
+            if (hasShootAnimation)
+            {
+                _animator.Play(Animator.StringToHash(data.shootAnimation.name));
+            }
         }
 
         _isInBossBattle = GameUIManager.instance?.IsInBossBattle ?? false;
 
         // --- 3. 寿命と向きの初期化 ---
-        this.gameObject.GetComponent<SpriteRenderer>().flipX = !moveRight;
+        _spriteRenderer.flipX = !moveRight;
         currentPenetrationCount = 0;
-        Destroy(this.gameObject, vanishTime);
+        _remainingLifetime = vanishTime;
+        _isLifetimeActive = true;
 
         // --- 4. 発射処理の呼び出し ---
-        var rb = this.gameObject.GetComponent<Rigidbody2D>();
-        ExecuteFire(rb);
+        ExecuteFire(_rigidbody);
     }
 
     #endregion
@@ -158,10 +204,15 @@ public class FaboProjectileController : MonoBehaviour
             rb.AddForce(launchDirection * shootSpeed, ForceMode2D.Impulse);
             isStarted = true;
         }
+        else if (isSubBullet && moveType == ShootWeaponData.ShootMoveType.Parallel3Way)
+        {
+            // 3-Wayのサブ弾はBeginSubBulletMovementで速度を設定する
+            isStarted = true;
+        }
         else
         {
             Debug.LogWarning("不明な弾の移動タイプが指定されました: " + moveType);
-            Destroy(gameObject);
+            ReturnProjectile();
         }
     }
 
@@ -175,42 +226,29 @@ public class FaboProjectileController : MonoBehaviour
     /// <param name="yDirection">Y軸方向の向き（1f または -1f）</param>
     private void CreateSubBullet(float yDirection)
     {
-        GameObject subBulletGO = Instantiate(
-            this.gameObject,
-            transform.position,
-            Quaternion.identity
-        );
+        GameObject subBulletGO = SpawnProjectile(transform.position, Quaternion.identity);
+        if (subBulletGO == null)
+            return;
+
         FaboProjectileController subBulletScript =
             subBulletGO.GetComponent<FaboProjectileController>();
 
-        subBulletScript.isSubBullet = true;
-        subBulletScript.InitializeBullet(currentShootData, isMoveRight);
-        subBulletScript.StartCoroutine(subBulletScript.SubBulletMovement(yDirection));
+        subBulletScript.InitializeBullet(currentShootData, isMoveRight, true);
+        subBulletScript.BeginSubBulletMovement(yDirection);
     }
 
     /// <summary>
     /// サブ弾固有の移動軌道（斜めに広がった後、平行に飛ぶ）を制御します。
     /// </summary>
-    private IEnumerator SubBulletMovement(float yDirection)
+    private void BeginSubBulletMovement(float yDirection)
     {
-        initialPosition = this.transform.position;
-        var rb = GetComponent<Rigidbody2D>();
-
-        if (rb == null)
-            yield break;
+        initialPosition = transform.position;
+        _subBulletYDirection = yDirection;
+        _isSubBulletMoving = true;
 
         // 指定方向へ斜めに撃ち出す
         float horizontalVelocity = (isMoveRight ? 1 : -1) * shootSpeed;
-        rb.velocity = new Vector2(horizontalVelocity, yDirection * shootSpeed / 2);
-
-        // 指定された高さ（height）に到達するまで待機
-        while (Mathf.Abs(transform.position.y - initialPosition.y) < height)
-        {
-            yield return null;
-        }
-
-        // 高さに到達後、垂直方向の速度をなくし水平移動に切り替える
-        rb.velocity = new Vector2(rb.velocity.x, 0);
+        _rigidbody.velocity = new Vector2(horizontalVelocity, _subBulletYDirection * shootSpeed / 2f);
     }
 
     #endregion
@@ -277,7 +315,7 @@ public class FaboProjectileController : MonoBehaviour
             // 貫通上限に達した場合は弾を破棄
             if (currentPenetrationCount >= penetrationLimitCount)
             {
-                Destroy(this.gameObject);
+                ReturnProjectile();
             }
 
             return;
@@ -291,8 +329,51 @@ public class FaboProjectileController : MonoBehaviour
                 return;
 
             // 物理的な壁（isTriggerがfalseのコライダー）に当たった場合は弾を破棄
-            Destroy(this.gameObject);
+            ReturnProjectile();
         }
+    }
+
+    #endregion
+
+    #region Pooling
+
+    private GameObject SpawnProjectile(Vector3 position, Quaternion rotation)
+    {
+        ObjectPooler pooler = returnToPool == PoolType.Persistent
+            ? ObjectPooler.PersistentInstance
+            : ObjectPooler.SceneInstance;
+
+        if (pooler != null && !string.IsNullOrEmpty(myPoolTag))
+        {
+            return pooler.SpawnFromPool(myPoolTag, position, rotation);
+        }
+
+        return Instantiate(gameObject, position, rotation);
+    }
+
+    private void ResetRuntimeState()
+    {
+        _isLifetimeActive = false;
+        _remainingLifetime = 0f;
+        _isSubBulletMoving = false;
+        _subBulletYDirection = 0f;
+        isStarted = false;
+        currentPenetrationCount = 0;
+        enemyCooldowns.Clear();
+
+        if (_rigidbody != null)
+        {
+            _rigidbody.velocity = Vector2.zero;
+            _rigidbody.angularVelocity = 0f;
+            _rigidbody.gravityScale = 0f;
+        }
+    }
+
+    private void ReturnProjectile()
+    {
+        _isLifetimeActive = false;
+        _isSubBulletMoving = false;
+        ReturnToPool();
     }
 
     #endregion

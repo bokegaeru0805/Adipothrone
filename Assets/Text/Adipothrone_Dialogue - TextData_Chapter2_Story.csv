@@ -152,7 +152,7 @@
 時間は気にしなくて大丈夫だよ。ゆっくりしてくるといい。",Axis,ReportedCoachmanQuestComplete ,Axis_normal_normal
 ありがとうございます。助かります。,Heroin,ReportedCoachmanQuestComplete ,Heroin_flexible_normal
 村の右端の方へ行けば、すぐに神殿が見えてくるはずだよ。,Axis,ReportedCoachmanQuestComplete ,Axis_normal_normal
-フィルさん！,Heroin,FirstMetDesertTempleBoss,
+フィルさん！,Heroin,FirstMetDesertTempleBoss,Heroin_flexible_serious
 "村の人から聞きました……。
 フィルさんが一人で、この村のために無理をしてきたこと。
 私、やっぱり放っておけません。私に、何か手伝わせてください！",Heroin,FirstMetDesertTempleBoss,Heroin_flexible_normal
@@ -349,7 +349,7 @@
 今回はさらなる個体を回収する、とな",Levias_smoke,TempleBossSmokeAppear,Levias_smoke_normal_normal
 そんな……。,Fill,TempleBossSmokeAppear,Fill_armed1_troubled
 "巨躯の魔物は無機質な青い光を放つ目で、
-絶望に立ち尽くすフィルさんを冷徹に見下ろしている。",Fabo,TempleBossSmokeAppear,
+絶望に立ち尽くすフィルさんを冷徹に見下ろしている。",narrative,TempleBossSmokeAppear,
 ……ほう。,Levias_smoke,TempleBossSmokeAppear,Levias_smoke_normal_normal
 "個体データに著しい変化が確認できる。
 その体内に満ちる強大な魔力……あれを使用したか。
@@ -580,3 +580,127 @@
 その愚かな幻想ごと、力ずくで叩き潰してくれよう。,Levias_smoke,TempleBossAppear,Levias_smoke_normal_normal
 我が名は『蒼儡機 レヴィアス』。,Levias,TempleBossAppear,Levias_normal_normal
 主の命により、全対象を排除する。,Levias,TempleBossAppear,Levias_normal_normal
+馬鹿な。この結果は、計算上あり得ない。,Levias,TempleBossDefeat,Levias_normal_normal
+もう、あなたの好きにはさせません。,Fill,TempleBossDefeat,Fill_armed2_determination
+何故だ？貴様ら二個体に、我が敗北するなど。,Levias,TempleBossDefeat,Levias_normal_normal
+これで終わりです。もう、誰かが犠牲になるのを見過ごしたりしません。,Heroin,TempleBossDefeat,Heroin_flexible_serious
+はい。姉様たちが受けた苦しみも、ここで終わらせます。,Fill,TempleBossDefeat,Fill_armed2_determination
+この結果は、計算外だ。主へ報告を行う必要がある。,Levias,TempleBossDefeat,Levias_normal_normal
+誰であろうと、同じことを繰り返させるつもりはありません。,Heroin,TempleBossDefeat,Heroin_flexible_serious
+私たちが止めます。これ以上、誰かを犠牲になんてさせません。,Fill,TempleBossDefeat,Fill_armed2_determination
+通信機能を起動。主へ、戦闘結果および対象個体の情報を――,Levias,TempleBossDefeat,Levias_normal_normal
+ツウシン――。キノウテイシ。システム、シュウリョウ。,Levias,TempleBossDefeat,Levias_normal_normal
+終わった、んですね。,Fill,TempleBossDefeat,Fill_armed2_normal
+はい。まずはお姉さんたちの様子を確認して、それから村に戻りましょう。,Heroin,TempleBossDefeat,Heroin_flexible_normal
+そうですね。村のみんなにも、もう大丈夫だって伝えないと。,Fill,TempleBossDefeat,Fill_armed2_smile
+行きましょう、フィルさん。神殿を出て、村へ戻りましょう。,Heroin,TempleBossDefeat,Heroin_flexible_smile
+ノエリさん。本当に、ありがとうございました。,Fill,TempleBossDefeat,Fill_armed2_smile
+えっ？ 私だけの力じゃないですよ。フィルさんが最後まで諦めなかったからです。,Heroin,TempleBossDefeat,Heroin_flexible_smile
+それでも、ノエリさんが来てくれなかったら、私はきっと一人で全部を抱え込んでいました。,Fill,TempleBossDefeat,Fill_armed2_smile
+姉様たちのことも、これから少しずつ元に戻す方法を探していきます。村のみんなと一緒に、できることから始めるつもりです。,Fill,TempleBossDefeat,Fill_armed2_smile
+はい。きっと大丈夫です。フィルさんなら。,Heroin,TempleBossDefeat,Heroin_flexible_smile
+ふふ、ありがとうございます、ノエリさん。,Fill,TempleBossDefeat,Fill_normal_smile
+ノエリさんは、これから王都へ向かうんですよね。,Fill,TempleBossDefeat,Fill_armed2_normal
+はい。まだ、自分のことを知るために行かなきゃいけない場所があるので。,Heroin,TempleBossDefeat,Heroin_flexible_normal
+どうか気をつけて。ノエリさんの旅が、無事に続いていきますように。,Fill,TempleBossDefeat,Fill_armed2_smile
+ありがとうございます。フィルさんも、お元気で。,Heroin,TempleBossDefeat,Heroin_flexible_smile
+それじゃあ、アクスさんのところへ戻ろう。,Heroin,TempleBossDefeat,Heroin_flexible_normal
+アクスさん、お待たせしました。ずいぶん待たせてしまいましたか？,Heroin,TalkedToCoachmanBeforeLeavingDesert,Heroin_flexible_normal
+いや、大丈夫だよ。,Axis,TalkedToCoachmanBeforeLeavingDesert,Axis_normal_normal
+それにしても、この土地を支配する厄災を倒したんだね。,Axis,TalkedToCoachmanBeforeLeavingDesert,Axis_normal_normal
+えっ？ どうして知ってるんですか？,Heroin,TalkedToCoachmanBeforeLeavingDesert,Heroin_flexible_surprised
+ふふ。御者っていうのは、耳が早いものなんだよ。,Axis,TalkedToCoachmanBeforeLeavingDesert,Axis_normal_normal
+それだけで分かるものなんですか？,Heroin,TalkedToCoachmanBeforeLeavingDesert,Heroin_flexible_troubled
+まあね。それに、今の村を見れば何となく察しはつくさ。,Axis,TalkedToCoachmanBeforeLeavingDesert,Axis_normal_normal
+これで君も、砂漠を救った英雄になったわけだ。,Axis,TalkedToCoachmanBeforeLeavingDesert,Axis_normal_normal
+え、英雄だなんて、そんな。私はフィルさんたちと一緒に戦っただけです。,Heroin,TalkedToCoachmanBeforeLeavingDesert,Heroin_flexible_blush
+そういうことにしておこうか。,Axis,TalkedToCoachmanBeforeLeavingDesert,Axis_normal_normal
+さて、約束通り王都へ向かおう。馬車の準備はできているよ。,Axis,TalkedToCoachmanBeforeLeavingDesert,Axis_normal_normal
+そういえば、ノエリはどうして王都へ行こうと思ったんだい？,Axis,ToRoyalCapital,Axis_normal_normal
+私、自分の昔のことをほとんど覚えてないんです。,Heroin,ToRoyalCapital,Heroin_flexible_normal
+なるほど。記憶がないのかい？,Axis,ToRoyalCapital,Axis_normal_normal
+はい。だから、王都なら何か手掛かりになる情報が見つかるかもしれないって思って。,Heroin,ToRoyalCapital,Heroin_flexible_normal
+自分が誰なのか、少しでも確かめたいんです。,Heroin,ToRoyalCapital,Heroin_flexible_serious
+なるほど。それなら――,Axis,ToRoyalCapital,Axis_normal_normal
+おや。,Axis,ToRoyalCapital,Axis_normal_normal
+どうしました？,Heroin,ToRoyalCapital,Heroin_flexible_troubled
+どうやら、ちょっとした問題が起きたみたいだね。,Axis,ToRoyalCapital,Axis_normal_normal
+まあ、旅をしていればこういうこともあるさ。,Axis,ToRoyalCapital,Axis_normal_normal
+大きい……あれは、魔物？,Heroin,ToRoyalCapital,Heroin_flexible_troubled
+どうやら、素直に道を譲ってくれる相手ではなさそうだ。,Axis,ToRoyalCapital,Axis_normal_normal
+ど、どうするんですか？,Heroin,ToRoyalCapital,Heroin_flexible_anxious
+そうだね。できれば僕が片づけてしまいたいところだけど。,Axis,ToRoyalCapital,Axis_normal_normal
+ふふ。僕はドライバーだからね。ガードみたいに戦うことはできないよ。,Axis,ToRoyalCapital,Axis_normal_normal
+えっ、それじゃあ――,Heroin,ToRoyalCapital,Heroin_flexible_surprised
+きゃっ！？,Heroin,ToRoyalCapital,Heroin_flexible_surprised
+うおりゃあああっ！,???,ToRoyalCapital,
+おう！大丈夫だったか？,???,ToRoyalCapital,
+おや、ガドじゃないか。,Axis,ToRoyalCapital,Axis_normal_normal
+おお、その声はアクスか！,Hero,ToRoyalCapital,Hero_normal_smile
+ふふ。相変わらず元気そうだね。,Axis,ToRoyalCapital,Axis_normal_normal
+ちょうどいい。悪いんだが、そいつに乗せてくれねぇか？,Hero,ToRoyalCapital,Hero_normal_normal
+もちろん。席なら空いているよ。,Axis,ToRoyalCapital,Axis_normal_normal
+助かる。じゃあ、遠慮なく乗せてもらうぜ。,Hero,ToRoyalCapital,Hero_normal_smile
+ところでガド。どうしてこんなところを歩いていたんだい？,Axis,ToRoyalCapital,Axis_normal_normal
+いやぁ、別の街で仕事してたんだけどよ。朝寝坊して、ドライバーに置いてかれちまってな。,Hero,ToRoyalCapital,Hero_normal_smile
+仕方ねぇから、王都まで歩いて帰っていたわけだ。,Hero,ToRoyalCapital,Hero_normal_normal
+相変わらず朝には弱いんだね。,Axis,ToRoyalCapital,Axis_normal_normal
+ほっとけ。んで、そっちのお嬢ちゃんは誰なんだ？,Hero,ToRoyalCapital,Hero_normal_normal
+"ノエリさんだよ。さっきの仕事で納品を手伝ってもらってね。
+そのお礼に王都まで送っているところなんだ。
+どうも、色々と情報を集めたいそうだよ。",Axis,ToRoyalCapital,Axis_normal_normal
+それなら、あそこにあるギルド本部に寄ってみりゃいいんじゃねぇか？ 人も情報も集まる場所だ。,Hero,ToRoyalCapital,Hero_normal_normal
+ああ。ちょうどさっき、それを言おうとしていたんだ。,Axis,ToRoyalCapital,Axis_normal_normal
+あそこなら各地から人が集まる。君の探している情報も、何か見つかるかもしれないよ。,Axis,ToRoyalCapital,Axis_normal_normal
+本当ですか？ それなら、行ってみたいです。,Heroin,ToRoyalCapital,Heroin_flexible_smile
+よし、決まりだな。,Hero,ToRoyalCapital,Hero_normal_smile
+そういや、まだ名乗ってなかったな。,Hero,ToRoyalCapital,Hero_normal_normal
+"俺はガド。ガードっつう仕事をしている。
+道中で何かあったら、俺に任せとけ。
+よろしくな、ノエリ。",Hero,ToRoyalCapital,Hero_normal_smile
+はい。よろしくお願いします、ガドさん。,Heroin,ToRoyalCapital,Heroin_flexible_smile
+わぁ、すごく大きい建物……,Heroin,FirstEnteredGuild,Heroin_flexible_normal
+えっと、まずはアクスさんとガドさんのところへ行こう。,Heroin,FirstEnteredGuild,Heroin_flexible_normal
+ただいま、アノン。王都までの便、無事に戻ったよ。,Axis,FirstMetGuildReceptionist,Axis_normal_normal
+おかえりなさい、アクスさん。今回もお疲れさまでした。,Receptionist,FirstMetGuildReceptionist,Receptionist_normal_normal
+俺も戻ったぞ。,Hero,FirstMetGuildReceptionist,Hero_normal_normal
+ガドさん！ よかった、無事だったんですね。,Receptionist,FirstMetGuildReceptionist,Receptionist_normal_normal
+一緒だったドライバーの方だけ先に戻ってきていたので、少し心配していたんです。次からは気をつけてくださいね。,Receptionist,FirstMetGuildReceptionist,Receptionist_normal_normal
+悪かったって。次からはもっと気ぃつけるよ。,Hero,FirstMetGuildReceptionist,Hero_normal_smile
+ふふっ、本当にお願いしますね。,Receptionist,FirstMetGuildReceptionist,Receptionist_normal_normal
+あれ？ そちらの方は？,Receptionist,FirstMetGuildReceptionist,Receptionist_normal_normal
+彼女はノエリさん。道中で少し世話になってね。王都で情報を探しているんだ。,Axis,FirstMetGuildReceptionist,Axis_normal_normal
+しばらくギルドの中を見て回ってもらっても構わないかな？,Axis,FirstMetGuildReceptionist,Axis_normal_normal
+もちろんです。どうぞ、ゆっくり見ていってください。,Receptionist,FirstMetGuildReceptionist,Receptionist_normal_normal
+はじめまして。このギルドでクラーク・フロントをしている、アノンです。何か分からないことがあれば、いつでも声をかけてくださいね。,Receptionist,FirstMetGuildReceptionist,Receptionist_normal_normal
+はじめまして、ノエリです。よろしくお願いします。,Heroin,FirstMetGuildReceptionist,Heroin_flexible_smile
+はい。こちらこそ、よろしくお願いします。,Receptionist,FirstMetGuildReceptionist,Receptionist_normal_normal
+じゃあ僕たちは、馬車と荷物の片づけを済ませてくるよ。,Axis,FirstMetGuildReceptionist,Axis_normal_normal
+おう、それじゃあまたな、ノエリ。,Hero,FirstMetGuildReceptionist,Hero_normal_smile
+はい。ありがとうございます。,Heroin,FirstMetGuildReceptionist,Heroin_flexible_smile
+ひとまず聞き込みも終わったし、アノンさんのいる受付に戻ろうかな。,Heroin,GuildInquiryCompleteAll,Heroin_flexible_normal
+あっ、ノエリさん。おかえりなさい。,Receptionist,AskedReceptionistAboutNextDestination,Receptionist_normal_normal
+ただいま戻りました。あれ、アクスさんとガドさんも。,Heroin,AskedReceptionistAboutNextDestination,Heroin_flexible_normal
+ちょうど片づけが終わったところだよ。,Axis,AskedReceptionistAboutNextDestination,Axis_normal_normal
+そしたら今度は、こっちで仕事の話ってわけだ。,Hero,AskedReceptionistAboutNextDestination,Hero_normal_normal
+今、納品について少し困ったことがあって、お二人に相談していたところなんです。,Receptionist,AskedReceptionistAboutNextDestination,Receptionist_normal_normal
+困ったこと、ですか？,Heroin,AskedReceptionistAboutNextDestination,Heroin_flexible_troubled
+はい。最近、雪の村から届くはずの荷物が、急に途絶えてしまっていて。,Receptionist,AskedReceptionistAboutNextDestination,Receptionist_normal_normal
+こちらに来ている現地の方にも聞いてみたんですが、はっきりした原因が分からないんです。,Receptionist,AskedReceptionistAboutNextDestination,Receptionist_normal_normal
+なので、お二人に一度現地へ行って、何が起きているのか確かめてもらえないかとお願いしていました。,Receptionist,AskedReceptionistAboutNextDestination,Receptionist_normal_normal
+ちょっと待て。こないだまで暑い地方に行かされてたんだぞ？,Hero,AskedReceptionistAboutNextDestination,Hero_normal_normal
+はい。お疲れさまでした。,Receptionist,AskedReceptionistAboutNextDestination,Receptionist_normal_normal
+で、今度は雪の村ってか。今度は凍えろってことかよ。,Hero,AskedReceptionistAboutNextDestination,Hero_normal_normal
+ガドさんなら大丈夫ですよね？,Receptionist,AskedReceptionistAboutNextDestination,Receptionist_normal_normal
+その笑顔で言うのやめろって。,Hero,AskedReceptionistAboutNextDestination,Hero_normal_normal
+では、お願いしてもいいですか？,Receptionist,AskedReceptionistAboutNextDestination,Receptionist_normal_normal
+ったく、分かったよ。行きゃいいんだろ、行きゃ。,Hero,AskedReceptionistAboutNextDestination,Hero_normal_normal
+アノン。ノエリさんも一緒に連れて行っていいかな？,Axis,AskedReceptionistAboutNextDestination,Axis_normal_normal
+えっ？ ノエリさんはギルドのお客さんですよ。そんな危ないかもしれない場所へお願いするわけには。,Receptionist,AskedReceptionistAboutNextDestination,Receptionist_normal_normal
+彼女ならきっと力になってくれるよ。それに、僕の勘では一緒に来てもらった方がよさそうなんだ。,Axis,AskedReceptionistAboutNextDestination,Axis_normal_normal
+でも、もし何かあったら。ノエリさん、大丈夫ですか？,Receptionist,AskedReceptionistAboutNextDestination,Receptionist_normal_normal
+はい。私も行きたいです。,Heroin,AskedReceptionistAboutNextDestination,Heroin_flexible_serious
+まだ知りたいこともたくさんありますし、いろんな場所へ行けば、何か手掛かりが見つかるかもしれないので。,Heroin,AskedReceptionistAboutNextDestination,Heroin_flexible_serious
+分かりました。でも、絶対に無理はしないでくださいね。,Receptionist,AskedReceptionistAboutNextDestination,Receptionist_normal_normal
+はい。ありがとうございます、アノンさん。,Heroin,AskedReceptionistAboutNextDestination,Heroin_flexible_smile
+それじゃあ決まりだね。準備ができたら、僕に話しかけてくれ。,Axis,AskedReceptionistAboutNextDestination,Axis_normal_normal

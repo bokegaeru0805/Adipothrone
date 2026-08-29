@@ -46,6 +46,8 @@ public class NPCDialogueTrigger : MonoBehaviour
 
     #region Private Fields
 
+    private const string LocalFlowchartObjectName = "LocalFlowchart";
+
     // 外部コンポーネント参照
     private ShopInteractionTrigger shopInteractionTrigger = null;
 
@@ -57,8 +59,86 @@ public class NPCDialogueTrigger : MonoBehaviour
 
     #region Unity Lifecycle
 
+    /// <summary>
+    /// コンポーネント追加時に、同じシーン内のLocalFlowchartを自動設定します。
+    /// </summary>
+    private void Reset()
+    {
+        if (useGlobalFlowchart || targetFlowchart != null)
+            return;
+
+        Flowchart localFlowchart = FindLocalFlowchartInScene();
+
+        if (localFlowchart == null)
+        {
+            Debug.LogWarning(
+                $"同じシーン内に「{LocalFlowchartObjectName}」という名前のFlowchartが見つからないため、targetFlowchartを自動設定できませんでした。",
+                this
+            );
+            return;
+        }
+
+        targetFlowchart = localFlowchart;
+    }
+
+    private Flowchart FindLocalFlowchartInScene()
+    {
+        Flowchart localFlowchart = null;
+        Flowchart[] flowcharts = FindObjectsByType<Flowchart>(
+            FindObjectsInactive.Include,
+            FindObjectsSortMode.None
+        );
+
+        foreach (Flowchart flowchart in flowcharts)
+        {
+            if (
+                flowchart.gameObject.scene != gameObject.scene
+                || !string.Equals(
+                    flowchart.gameObject.name,
+                    LocalFlowchartObjectName,
+                    StringComparison.Ordinal
+                )
+            )
+            {
+                continue;
+            }
+
+            if (localFlowchart != null)
+                return null;
+
+            localFlowchart = flowchart;
+        }
+
+        return localFlowchart;
+    }
+
+    /// <summary>
+    /// シーン上のPrefabインスタンスへ配置・変更された際に、LocalFlowchartを自動設定します。
+    /// </summary>
+    private void OnValidate()
+    {
+        // Prefabアセット編集中や再生中は、シーン上の参照を自動保存しない
+        if (
+            Application.isPlaying
+            || useGlobalFlowchart
+            || targetFlowchart != null
+            || !gameObject.scene.IsValid()
+        )
+        {
+            return;
+        }
+
+        targetFlowchart = FindLocalFlowchartInScene();
+    }
+
     private void Awake()
     {
+        // Prefabから生成されたインスタンスなど、シーン参照を保持できない場合に実行時解決する
+        if (targetFlowchart == null && !useGlobalFlowchart)
+        {
+            targetFlowchart = FindLocalFlowchartInScene();
+        }
+
         // 必須コンポーネントのチェック
         if (targetFlowchart == null && !useGlobalFlowchart)
         {

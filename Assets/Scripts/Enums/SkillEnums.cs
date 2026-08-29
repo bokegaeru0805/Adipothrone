@@ -7,6 +7,7 @@ public enum SkillName
 
     // 機動型：21001～21099
     DashSpeedUp = 21001, // 疾走
+    JumpPowerUp = 21002, // 跳躍強化
 
     // 探索型：21101～21199
     DamageDisplay = 21101, // ダメージ表示

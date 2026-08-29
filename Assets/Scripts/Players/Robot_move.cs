@@ -124,6 +124,10 @@ public class Robot_move : MonoBehaviour
     private bool isEnableNextAttack = true; // 次の攻撃が出来るかどうか
     private bool isTalking = false; // 会話状態を保存するローカル変数
     private Tween floatingTween; // 上下移動のTweenを管理
+    private Tweener floatingReturnTween; // 基準位置へ戻るTweenを再利用する
+    private bool isShootRecoveryActive = false;
+    private float shootMovementUnlockTime = 0f;
+    private float shootAttackReadyTime = 0f;
 
     // 現在装備している武器のデータをキャッシュ
     private BladeWeaponData currentBladeData;
@@ -160,6 +164,8 @@ public class Robot_move : MonoBehaviour
 
     private void Update()
     {
+        UpdateShootRecovery();
+
         if (Time.timeScale > 0 && isRobotmove && !isTalking)
         { //ゲームが進行中で、ロボットが動ける状態で、会話中ではないとき
             if (!isEnable)
@@ -281,20 +287,60 @@ public class Robot_move : MonoBehaviour
         OnRobotAttackExecuted?.Invoke(); // 攻撃が実行されたことを外部に通知するイベントを発行
 
         Vector3 newPos = this.transform.position; //自分の座標を保存
-        GameObject newGameObject = Instantiate(shoot_prefab) as GameObject; // 弾1のプレハブを生成
-        newGameObject.transform.position = newPos; //弾の位置を設定
+        GameObject newGameObject = null;
+        if (ObjectPooler.PersistentInstance != null)
+        {
+            newGameObject = ObjectPooler.PersistentInstance.SpawnFromPool(
+                FaboProjectileController.RobotShootPoolTag,
+                newPos,
+                Quaternion.identity
+            );
+        }
 
-        var shootMove = newGameObject.GetComponent<FaboProjectileController>();
+        // プール未設定時にも既存の発射動作を維持する
+        if (newGameObject == null)
+        {
+            newGameObject = Instantiate(shoot_prefab, newPos, Quaternion.identity);
+        }
+
+        FaboProjectileController shootMove = newGameObject.GetComponent<FaboProjectileController>();
         if (shootMove != null)
         {
             //キャッシュしておいた最新の武器データを渡して初期化
             shootMove.InitializeBullet(currentShootData, rightFlag);
         }
 
-        float EnableMove_Sec =
-            newGameObject.GetComponent<FaboProjectileController>().vanishTime
-            * EnableMoveTimeAcjuctment; //プレイヤーが動けない時間を設定
-        StartCoroutine(AttackStart(EnableMove_Sec, currentShootData.shotInterval)); //待機
+        float enableMoveSec =
+            (shootMove != null ? shootMove.vanishTime : currentShootData.vanishTime)
+            * EnableMoveTimeAcjuctment;
+        StartShootRecovery(enableMoveSec, currentShootData.shotInterval);
+    }
+
+    private void StartShootRecovery(float enableMoveSec, float afterSec)
+    {
+        float currentTime = Time.time;
+        shootMovementUnlockTime = currentTime + enableMoveSec;
+        shootAttackReadyTime = currentTime + Mathf.Max(enableMoveSec, afterSec);
+        isShootRecoveryActive = true;
+    }
+
+    private void UpdateShootRecovery()
+    {
+        if (!isShootRecoveryActive)
+            return;
+
+        float currentTime = Time.time;
+        if (isAttacking && currentTime >= shootMovementUnlockTime)
+        {
+            isAttacking = false;
+        }
+
+        if (currentTime < shootAttackReadyTime)
+            return;
+
+        isShootRecoveryActive = false;
+        isEnableNextAttack = true;
+        StartFloating();
     }
 
     private void Blade()
@@ -644,11 +690,16 @@ public class Robot_move : MonoBehaviour
         {
             floatingTween.Kill();
         }
+        if (floatingReturnTween != null)
+        {
+            floatingReturnTween.Kill();
+        }
 
         // その他のリセット処理
         isEnable = false;
         isBladeSwinging = false; //剣の当たり判定を失くす
         isAttacking = false; //attackを再開する
+        isShootRecoveryActive = false;
         OnRobotVisibilityChanged?.Invoke(false); // ロボットの可視状態を非表示にする
     }
 
@@ -815,9 +866,9 @@ public class Robot_move : MonoBehaviour
     private void StartFloating()
     {
         // 既存のTweenがあれば安全に停止
-        if (floatingTween != null && floatingTween.IsActive())
+        if (floatingReturnTween != null && floatingReturnTween.IsActive())
         {
-            floatingTween.Kill();
+            floatingReturnTween.Pause();
         }
 
         // 攻撃中や剣を振っている最中は開始しない
@@ -826,11 +877,19 @@ public class Robot_move : MonoBehaviour
 
         // Y座標を offset.y を中心に、floatingAmplitude の幅で往復運動させる
         // FixedUpdateのタイミングで更新することで物理挙動との同期が取りやすくなります
-        floatingTween = transform
-            .DOLocalMoveY(offset.y + floatingAmplitude, floatingDuration)
-            .SetEase(Ease.InOutSine)
-            .SetLoops(-1, LoopType.Yoyo)
-            .SetUpdate(UpdateType.Fixed);
+        if (floatingTween == null || !floatingTween.IsActive())
+        {
+            floatingTween = transform
+                .DOLocalMoveY(offset.y + floatingAmplitude, floatingDuration)
+                .SetEase(Ease.InOutSine)
+                .SetLoops(-1, LoopType.Yoyo)
+                .SetUpdate(UpdateType.Fixed)
+                .SetAutoKill(false);
+        }
+        else
+        {
+            floatingTween.Restart();
+        }
     }
 
     /// <summary>
@@ -841,11 +900,21 @@ public class Robot_move : MonoBehaviour
         // 既存のTweenを停止
         if (floatingTween != null && floatingTween.IsActive())
         {
-            floatingTween.Kill();
+            floatingTween.Pause();
         }
 
         // 基準となるY座標へ指定時間で移動
-        transform.DOLocalMoveY(offset.y, duration).SetUpdate(UpdateType.Fixed);
+        if (floatingReturnTween == null || !floatingReturnTween.IsActive())
+        {
+            floatingReturnTween = transform
+                .DOLocalMoveY(offset.y, duration)
+                .SetUpdate(UpdateType.Fixed)
+                .SetAutoKill(false);
+        }
+        else
+        {
+            floatingReturnTween.ChangeEndValue(offset.y, duration, true).Restart();
+        }
     }
 
     #endregion

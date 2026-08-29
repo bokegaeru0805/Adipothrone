@@ -25,6 +25,9 @@ public class CharacterHealthUIController : MonoBehaviour
     // 親から取得する CharacterHealth の参照
     private CharacterHealth characterHealth;
 
+    // 装備状態変更イベントを購読しているSkillManager
+    private SkillManager subscribedSkillManager;
+
     // 実行中のDOTweenアニメーションの参照
     private Tween fillTween;
 
@@ -75,6 +78,8 @@ public class CharacterHealthUIController : MonoBehaviour
 
     private void OnEnable()
     {
+        TrySubscribeToSkillManager();
+
         // CharacterHealth が正常に見つかっている場合のみ実行
         if (characterHealth != null)
         {
@@ -86,6 +91,12 @@ public class CharacterHealthUIController : MonoBehaviour
         }
     }
 
+    private void Start()
+    {
+        // Awake順によりOnEnable時点でSkillManagerが未生成だった場合のフォールバック
+        TrySubscribeToSkillManager();
+    }
+
     private void OnDisable()
     {
         // CharacterHealth が存在する場合のみ
@@ -94,6 +105,8 @@ public class CharacterHealthUIController : MonoBehaviour
             //オブジェクトが無効化される際に、イベント購読を解除（必須）
             characterHealth.OnHPChanged -= HandleHPChanged;
         }
+
+        UnsubscribeFromSkillManager();
 
         // 実行中のDOTweenアニメーションが残っている場合は、安全のために停止
         if (fillTween != null && fillTween.IsActive())
@@ -146,6 +159,14 @@ public class CharacterHealthUIController : MonoBehaviour
     {
         if (characterHealth == null)
             return;
+
+        TrySubscribeToSkillManager();
+
+        if (!IsDamageDisplayActive())
+        {
+            HideHPBarImmediately();
+            return;
+        }
 
         //以前の「非表示タイマー」が動いていたら、停止する
         if (hideCoroutine != null)
@@ -208,5 +229,59 @@ public class CharacterHealthUIController : MonoBehaviour
 
         // タイマーが完了したことを記録
         hideCoroutine = null;
+    }
+
+    /// <summary>
+    /// DamageDisplayスキルの装備状態が変わった際、未装備なら表示中のHPバーを即座に隠します。
+    /// </summary>
+    private void HandleSkillStateChanged()
+    {
+        if (!IsDamageDisplayActive())
+        {
+            HideHPBarImmediately();
+        }
+    }
+
+    private bool IsDamageDisplayActive()
+    {
+        return SkillManager.instance != null
+            && SkillManager.instance.IsSkillActive(SkillName.DamageDisplay);
+    }
+
+    private void TrySubscribeToSkillManager()
+    {
+        if (subscribedSkillManager != null || SkillManager.instance == null)
+            return;
+
+        subscribedSkillManager = SkillManager.instance;
+        subscribedSkillManager.OnSkillStateChanged += HandleSkillStateChanged;
+    }
+
+    private void UnsubscribeFromSkillManager()
+    {
+        if (subscribedSkillManager == null)
+            return;
+
+        subscribedSkillManager.OnSkillStateChanged -= HandleSkillStateChanged;
+        subscribedSkillManager = null;
+    }
+
+    private void HideHPBarImmediately()
+    {
+        if (fillTween != null && fillTween.IsActive())
+        {
+            fillTween.Kill();
+        }
+
+        if (hideCoroutine != null)
+        {
+            StopCoroutine(hideCoroutine);
+            hideCoroutine = null;
+        }
+
+        if (hpBarRootObject != null)
+        {
+            hpBarRootObject.SetActive(false);
+        }
     }
 }

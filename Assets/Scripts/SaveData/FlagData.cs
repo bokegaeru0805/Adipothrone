@@ -46,8 +46,10 @@ public enum KeyID
 
     // --- 雪山のキー ---
     K13 = 1301,
+
     // --- 塔のギミックのキー1 ---
     K14 = 1401,
+
     // --- 塔のギミックのキー2 ---
     K15 = 1501,
 }
@@ -213,7 +215,6 @@ public enum Chapter3TriggeredEvent
     FirstMetGuildReceptionist = 3004, // 初めてギルドの受付嬢に会った
     GuildInquiryComplete1 = 3007, // ギルドで聞き込みを完了した(1)
     GuildInquiryComplete2 = 3008, // ギルドで聞き込みを完了した(2)
-
     // GuildInquiryComplete3 = 3009, // ギルドで聞き込みを完了した(3)
     GuildInquiryCompleteAll = 3010, // ギルドで聞き込みを完了した
     AskedReceptionistAboutNextDestination = 3013, // 受付嬢に次の目的地について尋ねた
@@ -248,8 +249,10 @@ public enum Chapter3TriggeredEvent
     Under3FieldComplete = 3088, // 地下施設3のイベントを完了した
     Under4FieldComplete = 3091, // 地下施設4のイベントを完了した
     ApothecaryCaptured = 3094, // 薬屋が捕らわれた
+    SensedVillageAnomaly = 3096, // 村の異変を察知した
     WitnessedVillageChange = 3097, // 村の変化を目撃した
     TalkedToCoachmanAboutVillageChange = 3100, // 村の変化について御者と話した
+    StartedInvestigatingVillageAnomaly = 3101, // 村の異変の調査を開始した
     AskedVillageGirlAboutClue = 3103, // 村の女の子に手がかりについて尋ねた
     GaveItemToVillageGirl = 3106, // 村の女の子にアイテムを渡した
     HeroineCapturedByVillagers = 3109, // 村人にヒロインが捕らわれた

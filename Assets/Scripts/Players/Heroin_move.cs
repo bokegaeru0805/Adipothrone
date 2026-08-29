@@ -65,6 +65,7 @@ public class Heroin_move : MonoBehaviour
     private const float BOUND2_SOUND_LENGHT = 1.384f; //体形2のときの揺れる効果音の長さ
     private const float DEFAULT_WALK_ANIMATION_DURATION = 0.500f; //元の一回の歩行アニメーションの秒数
     private const float DASH_SPEED_UP_MULTIPLIER = 1.3f; //「疾走」装備時のダッシュ速度倍率
+    private const float JUMP_POWER_UP_MULTIPLIER = 1.2f; //「跳躍強化」装備時のジャンプ高度倍率
     private float m_dashDefaultSpeed = 8.0f; //通常のダッシュ速度
     private float jumpHeight = 3.5f; // ジャンプで到達したい高さ
 
@@ -794,6 +795,14 @@ public class Heroin_move : MonoBehaviour
             {
                 finalJumpHeightMultiplier *= activeEnvironments[i].JumpHeightMultiplier;
             }
+        }
+
+        bool isJumpPowerUpActive =
+            SkillManager.instance != null
+            && SkillManager.instance.IsSkillActive(SkillName.JumpPowerUp);
+        if (isJumpPowerUpActive)
+        {
+            finalJumpHeightMultiplier *= JUMP_POWER_UP_MULTIPLIER;
         }
 
         float finalJumpHeight = jumpHeight * finalJumpHeightMultiplier;
