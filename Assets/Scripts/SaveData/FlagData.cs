@@ -215,6 +215,7 @@ public enum Chapter3TriggeredEvent
     FirstMetGuildReceptionist = 3004, // 初めてギルドの受付嬢に会った
     GuildInquiryComplete1 = 3007, // ギルドで聞き込みを完了した(1)
     GuildInquiryComplete2 = 3008, // ギルドで聞き込みを完了した(2)
+
     // GuildInquiryComplete3 = 3009, // ギルドで聞き込みを完了した(3)
     GuildInquiryCompleteAll = 3010, // ギルドで聞き込みを完了した
     AskedReceptionistAboutNextDestination = 3013, // 受付嬢に次の目的地について尋ねた
@@ -228,6 +229,7 @@ public enum Chapter3TriggeredEvent
     ReachedTowerGate = 3031, // 塔の入り口に到達した
     ReachedTowerEntrance = 3034, // 塔の入り口に到達した
     ReachedTowerLanding1 = 3037, // 塔の中間地点1に到達した
+    ReachedTowerLanding2 = 3038, // 塔の中間地点2に到達した
     ReachedTowerHallEntrance = 3040, // 塔のホールの入り口に到達した
     ApothecaryDefeated = 3045, // 薬屋のボスを倒した
     ApothecaryQuestComplete = 3050, // 薬屋のクエストを完了した

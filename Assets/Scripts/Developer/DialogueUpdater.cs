@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.IO;
+using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
 using Fungus;
@@ -38,6 +39,9 @@ public class DialogueUpdater : MonoBehaviour
     private const string NARRATIVE_TEXT_KEYWORD = "narrative";
     private const string GEAR_ICON_SPRITE_TAG = "<sprite name=\"Gear_Icon\">";
 
+    // UpdateDialogueの実行中に、同一Characterへ同じ顔グラフィックを繰り返し登録しないためのキャッシュ。
+    private readonly HashSet<Character> _registeredFaceGraphicCharacters = new HashSet<Character>();
+
     /// <summary>
     /// CSVファイルを読み込み、Flowchartの各Block内のSayコマンドを更新します。
     /// </summary>
@@ -50,6 +54,7 @@ public class DialogueUpdater : MonoBehaviour
         }
 
         var dialogueByBlock = new Dictionary<string, List<DialogueLineData>>();
+        _registeredFaceGraphicCharacters.Clear();
 
         foreach (var csvFile in csvFiles)
         {
@@ -184,11 +189,19 @@ public class DialogueUpdater : MonoBehaviour
                     // リストに含まれるキャラクターの場合は動的立ち絵（文字列）として処理
                     if (dynamicPortraitCharacters.Contains(csvLine.character))
                     {
+                        RegisterFaceGraphicsIfNeeded(newCharacter, csvLine.character);
+
                         string newPortraitString = csvLine.expression;
+                        Sprite newPortrait = FindDynamicCharacterFaceGraphic(
+                            newCharacter,
+                            csvLine.character,
+                            newPortraitString
+                        );
                         if (
                             sayCommand.GetStandardText() != csvLine.dialogue
                             || sayCommand._Character != newCharacter
                             || sayCommand.PortraitString != newPortraitString
+                            || sayCommand.Portrait != newPortrait
                         )
                         {
                             sayCommand.SetStandardText(csvLine.dialogue);
@@ -198,9 +211,9 @@ public class DialogueUpdater : MonoBehaviour
                             sayCommand.SetPortrait(null);
                             sayCommand.SetPortraitString("");
 
-                            // 動的立ち絵の文字列をセットし、静的なSpriteはnullで上書きする
+                            // 動的立ち絵用の文字列と、顔グラフィック優先時に使うSpriteを両方保持する
                             sayCommand.SetPortraitString(newPortraitString);
-                            sayCommand.SetPortrait(null);
+                            sayCommand.SetPortrait(newPortrait);
 
                             totalUpdatedCount++;
                             hasChanged = true;
@@ -283,6 +296,86 @@ public class DialogueUpdater : MonoBehaviour
         if (character == null || string.IsNullOrEmpty(expressionName))
             return null;
         return character.GetPortrait(expressionName);
+    }
+
+    /// <summary>
+    /// 動的立ち絵を使うキャラクターの顔グラフィックを、Fungus CharacterのPortraitsへ登録します。
+    /// 顔グラフィック優先のBlockでも、同じCSV表情指定から画像を選べるようにします。
+    /// </summary>
+    private void RegisterFaceGraphicsIfNeeded(Character character, string characterName)
+    {
+#if UNITY_EDITOR
+        if (
+            character == null
+            || !_registeredFaceGraphicCharacters.Add(character)
+            || character.Portraits == null
+        )
+        {
+            return;
+        }
+
+        string faceGraphicFolder = $"Assets/Sprites/Portrait/{characterName}/Face";
+        if (!AssetDatabase.IsValidFolder(faceGraphicFolder))
+        {
+            return;
+        }
+
+        bool hasAddedFaceGraphic = false;
+        foreach (string guid in AssetDatabase.FindAssets("t:Sprite", new[] { faceGraphicFolder }))
+        {
+            string assetPath = AssetDatabase.GUIDToAssetPath(guid);
+            Sprite faceGraphic = AssetDatabase.LoadAssetAtPath<Sprite>(assetPath);
+            if (faceGraphic == null || character.Portraits.Contains(faceGraphic))
+            {
+                continue;
+            }
+
+            character.Portraits.Add(faceGraphic);
+            hasAddedFaceGraphic = true;
+        }
+
+        if (hasAddedFaceGraphic)
+        {
+            EditorUtility.SetDirty(character);
+        }
+#endif
+    }
+
+    /// <summary>
+    /// 動的立ち絵キャラクターのSayへ登録する顔グラフィックを取得します。
+    /// Heroinは実行時に体型別画像へ切り替えるため、ここではnormal体型を初期値として登録します。
+    /// </summary>
+    private Sprite FindDynamicCharacterFaceGraphic(
+        Character character,
+        string characterName,
+        string portraitString
+    )
+    {
+        if (character == null || string.IsNullOrEmpty(portraitString))
+        {
+            return null;
+        }
+
+        string portraitName = portraitString;
+        if (characterName == "Heroin")
+        {
+            string expressionName = portraitString.Split('_').LastOrDefault();
+            if (string.IsNullOrEmpty(expressionName))
+            {
+                return null;
+            }
+
+            if (expressionName == "anxious")
+            {
+                expressionName = "anxiety";
+            }
+
+            portraitName = $"Heroin_normal_{expressionName}";
+        }
+
+        return character.Portraits.FirstOrDefault(
+            portrait => portrait != null && portrait.name == portraitName
+        );
     }
 
     /// <summary>

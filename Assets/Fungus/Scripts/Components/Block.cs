@@ -37,6 +37,18 @@ namespace Fungus
     }
 
     /// <summary>
+    /// Sayコマンドで顔グラフィックと動的立ち絵のどちらを優先するかを定義します。
+    /// </summary>
+    public enum PortraitDisplayPriority
+    {
+        [InspectorName("顔グラフィック優先")]
+        FaceGraphicFirst = 0,
+
+        [InspectorName("立ち絵優先")]
+        StandingPortraitFirst = 1,
+    }
+
+    /// <summary>
     /// Fungusのコマンドを順番に格納するためのコンテナ（入れ物）です。
     /// Flowchartウィンドウに表示される各「ブロック」の実体となります。
     /// </summary>
@@ -51,6 +63,10 @@ namespace Fungus
         [Tooltip("ブロックの種類を設定します。エディタでの色分けなどに使用されます。")]
         [SerializeField]
         protected BlockType blockType = BlockType.Default;
+
+        [SerializeField, HideInInspector]
+        protected PortraitDisplayPriority portraitDisplayPriority =
+            PortraitDisplayPriority.FaceGraphicFirst;
 
         [Tooltip("このブロック実行中にスキップ機能を許可するかどうか")]
         [SerializeField]
@@ -195,6 +211,14 @@ namespace Fungus
         public virtual BlockType TypeOfBlock
         {
             get { return blockType; }
+        }
+
+        /// <summary>
+        /// このBlockの画像表示優先度を返します。
+        /// </summary>
+        public virtual PortraitDisplayPriority PortraitPriority
+        {
+            get { return portraitDisplayPriority; }
         }
 
         /// <summary>

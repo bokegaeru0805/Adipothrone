@@ -12,7 +12,8 @@ public class TalkStartCommand : Command
 
     public override void OnEnter()
     {
-        Debug.Log($"[TalkStateDebug] TalkStart entered. Block: {ParentBlock?.BlockName}", this);
+        // キャラクター別の一時的な画像優先度は会話ブロックをまたいで持ち越さない。
+        PortraitDisplayPriorityState.ResetOverrides();
 
         // 会話開始イベントを発行し、購読しているクラスに通知する
         OnTalkStartExecuted?.Invoke();

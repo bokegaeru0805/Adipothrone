@@ -175,6 +175,18 @@ namespace Fungus.EditorUtils
             {
                 // --- ブロックタイプの選択UI ---
                 EditorGUILayout.PropertyField(serializedObject.FindProperty("blockType"));
+
+                SerializedProperty priorityProperty = serializedObject.FindProperty(
+                    "portraitDisplayPriority"
+                );
+                EditorGUILayout.PropertyField(
+                    priorityProperty,
+                    new GUIContent(
+                        "画像表示優先度",
+                        "Sayで動的立ち絵と顔グラフィックのどちらを優先するか"
+                    )
+                );
+
                 EditorGUILayout.PropertyField(serializedObject.FindProperty("isSkippable"));
 
                 // ブロックのカスタムカラー設定

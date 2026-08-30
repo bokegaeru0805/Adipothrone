@@ -10,8 +10,6 @@ public class TalkEndCommand : Command
 
     public override void OnEnter()
     {
-        Debug.Log($"[TalkStateDebug] TalkEnd entered. Block: {ParentBlock?.BlockName}, GameManager.IsTalking: {GameManager.instance?.IsTalking}", this);
-
         bool shouldWaitForGlobalSkip = TimelineSkipManager.instance != null
             && TimelineSkipManager.instance.IsGlobalSkipRoutineActive;
 

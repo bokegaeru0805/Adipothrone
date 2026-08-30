@@ -192,21 +192,36 @@ using Fungus;
                 sayDialog.SetCharacterName(customCharacterName, nameColor);
             }
 
-            // --- 【ステップ3】立ち絵の表示処理 ---
-            // 直接処理せず、イベントを発行するだけにする
-            if (character != null && !string.IsNullOrEmpty(portraitString))
+            // --- 【ステップ3】顔グラフィック／動的立ち絵の表示処理 ---
+            BasePortraitController dynamicPortraitController =
+                PortraitDisplayPriorityState.FindDynamicPortraitController(character);
+            bool canUseDynamicPortrait =
+                dynamicPortraitController != null && !string.IsNullOrEmpty(portraitString);
+            Sprite faceGraphic = PortraitDisplayPriorityState.ResolveFaceGraphic(
+                character,
+                portraitString,
+                portrait
+            );
+            PortraitDisplayPriority displayPriority = PortraitDisplayPriorityState.Resolve(
+                ParentBlock,
+                character
+            );
+
+            bool shouldUseDynamicPortrait =
+                canUseDynamicPortrait
+                && displayPriority == PortraitDisplayPriority.StandingPortraitFirst;
+
+            if (shouldUseDynamicPortrait)
             {
-                // portraitStringが設定されている場合（Heroinや動的立ち絵を持つNPC）、Fungus標準の立ち絵は使わない
+                // 顔グラフィックを消してから、対象キャラクターの動的立ち絵だけを表示する。
                 sayDialog.SetCharacterImage(null);
-                // 合図（イベント）を送信する
-                FungusCustomSignals.DoRequestDynamicPortrait(portraitString);
+                dynamicPortraitController.HandleShowRequest(portraitString);
             }
             else
             {
-                // 動的立ち絵を持たないキャラクターの場合は、従来通りFungusの機能で立ち絵を表示
-                sayDialog.SetCharacterImage(portrait);
-                // Heroinの立ち絵は会話が終わるまで消さない
-                // FungusCustomSignals.DoRequestHideDynamicPortrait();
+                // 顔グラフィックを優先する場合は、同じキャラクターの動的立ち絵を残さない。
+                dynamicPortraitController?.HidePortrait();
+                sayDialog.SetCharacterImage(faceGraphic);
             }
 
             // --- 【ステップ4】表示テキストの準備 ---
@@ -264,6 +279,7 @@ using Fungus;
         /// </summary>
         public override string GetSummary()
         {
+            string sequencePrefix = GetConsecutiveSaySequencePrefix();
             string namePrefix = "";
             // キャラクターが設定されていれば、その名前を接頭辞にする
             if (!string.IsNullOrEmpty(customCharacterName))
@@ -290,7 +306,46 @@ using Fungus;
                 namePrefix = "EXTEND" + ": ";
             }
             // 最終的に「キャラクター名: "セリフ"」の形式で表示する
-            return namePrefix + "\"" + storyText + "\"";
+            return sequencePrefix + namePrefix + "\"" + storyText + "\"";
+        }
+
+        /// <summary>
+        /// 同じBlock内で連続するSayコマンドの、グループ内の位置を返します。
+        /// </summary>
+        private string GetConsecutiveSaySequencePrefix()
+        {
+            if (ParentBlock == null)
+            {
+                return "";
+            }
+
+            var commandList = ParentBlock.CommandList;
+            int currentIndex = commandList.IndexOf(this);
+            if (currentIndex < 0)
+            {
+                return "";
+            }
+
+            int firstIndex = currentIndex;
+            while (firstIndex > 0 && commandList[firstIndex - 1] is Say)
+            {
+                firstIndex--;
+            }
+
+            int lastIndex = currentIndex;
+            while (lastIndex < commandList.Count - 1 && commandList[lastIndex + 1] is Say)
+            {
+                lastIndex++;
+            }
+
+            int sequenceLength = lastIndex - firstIndex + 1;
+            if (sequenceLength < 2)
+            {
+                return "";
+            }
+
+            int sequenceIndex = currentIndex - firstIndex + 1;
+            return "[" + sequenceIndex + "/" + sequenceLength + "] ";
         }
 
         /// <summary>

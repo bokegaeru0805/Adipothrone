@@ -26,11 +26,6 @@ public class FillPortraitController : BasePortraitController
     /// </summary>
     public override void HandleShowRequest(string portraitString)
     {
-        if (currentBlockType != BlockType.Story)
-        {
-            return;
-        }
-
         // 文字列を '_' で分割。想定フォーマット: "Fill_状態_表情" (例: Fill_normal_Smile)
         string[] parts = portraitString.Split('_');
 

@@ -225,14 +225,11 @@ public class GameManager : MonoBehaviour
     /// </summary>
     public void StartTalk()
     {
-        Debug.Log($"[TalkStateDebug] StartTalk called. isTalking before: {isTalking}", this);
-
         // 既に会話中なら何もしない
         if (isTalking)
             return;
 
         isTalking = true;
-        Debug.Log("[TalkStateDebug] StartTalk set isTalking to true.", this);
         // イベントを発行して、会話が始まったことを他のスクリプトに通知する
         OnTalkingStateChanged?.Invoke(true);
     }
@@ -242,14 +239,11 @@ public class GameManager : MonoBehaviour
     /// </summary>
     public void EndTalk()
     {
-        Debug.Log($"[TalkStateDebug] EndTalk called. isTalking before: {isTalking}", this);
-
         // 会話中でなければ何もしない
         if (!isTalking)
             return;
 
         isTalking = false;
-        Debug.Log("[TalkStateDebug] EndTalk set isTalking to false.", this);
         // イベントを発行して、会話が終わったことを他のスクリプトに通知する
         OnTalkingStateChanged?.Invoke(false);
 
@@ -263,18 +257,12 @@ public class GameManager : MonoBehaviour
     /// </summary>
     public IEnumerator DialogEnd()
     {
-        bool isSkipDialogHeld = InputManager.instance.SkipDialogHold();
-        Debug.Log($"[TalkStateDebug] DialogEnd started. SkipDialogHold: {isSkipDialogHeld}", this);
-
-        if (isSkipDialogHeld)
+        if (InputManager.instance.SkipDialogHold())
         {
-            Debug.Log("[TalkStateDebug] DialogEnd is waiting for SkipDialogHold to become true.", this);
             yield return new WaitUntil(() => InputManager.instance.SkipDialogHold());
-            Debug.Log("[TalkStateDebug] DialogEnd wait finished.", this);
         }
 
         // 会話が終了したら、会話中フラグをOFFにする
-        Debug.Log("[TalkStateDebug] DialogEnd is calling EndTalk.", this);
         EndTalk();
     }
 

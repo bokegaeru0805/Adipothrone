@@ -202,6 +202,7 @@ namespace Fungus.EditorUtils
         protected GUIStyle nodeStyle,
             descriptionStyle,
             handlerStyle,
+            portraitPriorityBadgeStyle,
             blockSearchPopupNormalStyle,
             blockSearchPopupSelectedStyle;
         protected static BlockInspector blockInspector;
@@ -325,6 +326,15 @@ namespace Fungus.EditorUtils
             handlerStyle.margin.top = 0;
             handlerStyle.margin.bottom = 0;
             handlerStyle.alignment = TextAnchor.MiddleCenter;
+
+            if (EditorStyles.miniLabel != null && portraitPriorityBadgeStyle == null)
+            {
+                portraitPriorityBadgeStyle = new GUIStyle(EditorStyles.miniLabel);
+            }
+            portraitPriorityBadgeStyle.alignment = TextAnchor.MiddleCenter;
+            portraitPriorityBadgeStyle.fontStyle = FontStyle.Bold;
+            portraitPriorityBadgeStyle.clipping = TextClipping.Clip;
+            portraitPriorityBadgeStyle.padding = new RectOffset(3, 3, 0, 0);
 
             if (blockSearchPopupNormalStyle == null || blockSearchPopupSelectedStyle == null)
             {
@@ -1516,10 +1526,13 @@ namespace Fungus.EditorUtils
                                 new GUIContent("Add Block"),
                                 false,
                                 () =>
-                                    CreateBlock(
+                                {
+                                    var newBlock = CreateBlock(
                                         flowchart,
                                         mousePosition / flowchart.Zoom - flowchart.ScrollPos
-                                    )
+                                    );
+                                    AddDefaultTalkCommands(flowchart, newBlock);
+                                }
                             );
 
                             if (copyList.Count > 0)
@@ -1792,6 +1805,41 @@ namespace Fungus.EditorUtils
             SetBlockForInspector(flowchart, newBlock);
 
             return newBlock;
+        }
+
+        private static void AddDefaultTalkCommands(Flowchart flowchart, Block block)
+        {
+            var talkStartCommandType = GetCommandType("TalkStartCommand");
+            var talkEndCommandType = GetCommandType("TalkEndCommand");
+
+            if (talkStartCommandType == null || talkEndCommandType == null)
+            {
+                Debug.LogError("Could not find TalkStartCommand or TalkEndCommand.");
+                return;
+            }
+
+            AddDefaultTalkCommand(flowchart, block, talkStartCommandType);
+            AddDefaultTalkCommand(flowchart, block, talkEndCommandType);
+        }
+
+        private static Type GetCommandType(string commandTypeName)
+        {
+            return AppDomain
+                .CurrentDomain.GetAssemblies()
+                .Select(assembly => assembly.GetType(commandTypeName))
+                .FirstOrDefault(type => type != null && typeof(Command).IsAssignableFrom(type));
+        }
+
+        private static void AddDefaultTalkCommand(
+            Flowchart flowchart,
+            Block block,
+            Type commandType
+        )
+        {
+            var command = Undo.AddComponent(flowchart.gameObject, commandType) as Command;
+            command.ItemId = flowchart.NextItemId();
+            command.ParentBlock = block;
+            block.CommandList.Add(command);
         }
 
         public Block CreateBlockSuppressSelect(Flowchart flowchart, Vector2 position)
@@ -2346,6 +2394,43 @@ namespace Fungus.EditorUtils
             return graphics;
         }
 
+        private void DrawPortraitPriorityBadge(Block block, Rect blockRect, float alpha)
+        {
+            const float badgeWidth = 44f;
+            const float badgeHeight = 15f;
+            const float badgeMargin = 3f;
+
+            bool isStandingPortraitFirst =
+                block.PortraitPriority == PortraitDisplayPriority.StandingPortraitFirst;
+            string badgeText = isStandingPortraitFirst ? "立ち絵" : "顔グラ";
+            string tooltip = isStandingPortraitFirst
+                ? "画像表示優先度: 立ち絵優先"
+                : "画像表示優先度: 顔グラフィック優先";
+            Color badgeColor = isStandingPortraitFirst
+                ? new Color(0.95f, 0.55f, 0.18f, alpha)
+                : new Color(0.58f, 0.35f, 0.88f, alpha);
+
+            Rect badgeRect = new Rect(
+                blockRect.xMax - badgeWidth - badgeMargin,
+                blockRect.yMax - badgeHeight - badgeMargin,
+                badgeWidth,
+                badgeHeight
+            );
+
+            EditorGUI.DrawRect(badgeRect, badgeColor);
+
+            Color previousTextColor = portraitPriorityBadgeStyle.normal.textColor;
+            portraitPriorityBadgeStyle.normal.textColor = isStandingPortraitFirst
+                ? new Color(0.12f, 0.08f, 0.03f, alpha)
+                : new Color(1f, 1f, 1f, alpha);
+            GUI.Label(
+                badgeRect,
+                new GUIContent(badgeText, tooltip),
+                portraitPriorityBadgeStyle
+            );
+            portraitPriorityBadgeStyle.normal.textColor = previousTextColor;
+        }
+
         private void DrawBlock(Block block, Rect scriptViewRect)
         {
             float nodeWidthA = nodeStyle.CalcSize(new GUIContent(block.BlockName)).x + 10;
@@ -2416,9 +2501,14 @@ namespace Fungus.EditorUtils
 
                 nodeStyle.normal.background = graphics.offTexture;
                 GUI.backgroundColor = graphics.tint;
+                Vector2 previousContentOffset = nodeStyle.contentOffset;
+                nodeStyle.contentOffset = previousContentOffset + new Vector2(0f, -5f);
                 GUI.Box(windowRelativeRect, block.BlockName, nodeStyle);
+                nodeStyle.contentOffset = previousContentOffset;
 
                 GUI.backgroundColor = Color.white;
+
+                DrawPortraitPriorityBadge(block, windowRelativeRect, graphics.tint.a);
 
                 if (block.Description.Length > 0)
                 {

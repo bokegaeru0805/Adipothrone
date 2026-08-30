@@ -110,9 +110,6 @@ public abstract class BasePortraitController : MonoBehaviour
     // 現在表示中の胴体スプライト名を記憶する変数。変化アニメーションを再生すべきかの判定に使用します。
     protected string _currentBodySpriteName = "";
 
-    // 現在の会話のBlockTypeを保持する変数。Storyブロックの時のみ立ち絵を表示するためなどに使用します。
-    protected BlockType currentBlockType = BlockType.Default;
-
     // CanvasのSort Order制御用
     protected Canvas _portraitCanvas;
     protected int _defaultSortOrder;
@@ -217,18 +214,12 @@ public abstract class BasePortraitController : MonoBehaviour
 
     /// <summary>
     /// TalkStartコマンドから「会話ブロックが始まった」通知を受け取るハンドラ。
-    /// ブロックの種別に応じて、立ち絵の表示ルールを切り替えます。
+    /// 前の会話で表示していた立ち絵の状態をリセットします。
     /// </summary>
     protected virtual void HandleBlockStart(BlockType blockType)
     {
         ResetToInitialState(); // ブロック開始時に状態を初期値にリセット
-
-        currentBlockType = blockType;
-
-        if (currentBlockType != BlockType.Story)
-        {
-            HidePortrait();
-        }
+        HidePortrait();
     }
 
     /// <summary>

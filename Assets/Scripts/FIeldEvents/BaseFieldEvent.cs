@@ -1,4 +1,5 @@
 using Fungus;
+using System;
 using TMPro;
 using UnityEngine;
 #if UNITY_EDITOR
@@ -21,6 +22,8 @@ public abstract class BaseFieldEvent : MonoBehaviour
 
     #region 内部状態・キャッシュ
 
+    private const string LocalFlowchartObjectName = "LocalFlowchart";
+
     protected FlagManager flagManager;
     protected bool isEventTriggered = false;
     private GameObject debugOverlayObj;
@@ -39,12 +42,85 @@ public abstract class BaseFieldEvent : MonoBehaviour
 
     #region Unityライフサイクル
 
+    /// <summary>
+    /// コンポーネント追加時に、同じシーン内のLocalFlowchartを自動設定します。
+    /// </summary>
+    private void Reset()
+    {
+        TryAssignLocalFlowchart();
+    }
+
+    /// <summary>
+    /// シーン上のPrefabインスタンスへ配置・変更された際に、LocalFlowchartを自動設定します。
+    /// </summary>
+    private void OnValidate()
+    {
+        // Prefabアセット編集中や再生中は、シーン上の参照を自動保存しない
+        if (Application.isPlaying || targetFlowchart != null || !gameObject.scene.IsValid())
+            return;
+
+        TryAssignLocalFlowchart();
+    }
+
     protected virtual void Awake()
     {
+        // Prefabから生成されたインスタンスなど、シーン参照を保持できない場合に実行時解決する
+        TryAssignLocalFlowchart();
+
         if (targetFlowchart == null)
         {
             Debug.LogWarning($"{gameObject.name} に Flowchart が設定されていません", this);
         }
+    }
+
+    private void TryAssignLocalFlowchart()
+    {
+        if (targetFlowchart != null || !gameObject.scene.IsValid())
+            return;
+
+        Flowchart localFlowchart = FindLocalFlowchartInScene();
+
+        if (localFlowchart == null)
+            return;
+
+        targetFlowchart = localFlowchart;
+    }
+
+    private Flowchart FindLocalFlowchartInScene()
+    {
+        Flowchart localFlowchart = null;
+        Flowchart[] flowcharts = FindObjectsByType<Flowchart>(
+            FindObjectsInactive.Include,
+            FindObjectsSortMode.None
+        );
+
+        foreach (Flowchart flowchart in flowcharts)
+        {
+            if (
+                flowchart.gameObject.scene != gameObject.scene
+                || !string.Equals(
+                    flowchart.gameObject.name,
+                    LocalFlowchartObjectName,
+                    StringComparison.Ordinal
+                )
+            )
+            {
+                continue;
+            }
+
+            if (localFlowchart != null)
+            {
+                Debug.LogWarning(
+                    $"同じシーン内に「{LocalFlowchartObjectName}」という名前のFlowchartが複数あるため、targetFlowchartを自動設定できません。",
+                    this
+                );
+                return null;
+            }
+
+            localFlowchart = flowchart;
+        }
+
+        return localFlowchart;
     }
 
     protected virtual void Start()

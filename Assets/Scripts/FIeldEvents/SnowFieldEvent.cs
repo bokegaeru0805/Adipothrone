@@ -29,6 +29,7 @@ public class SnowFieldEvent : BaseFieldEvent
         TowerEntrance = 31, // 雪原の塔の入り口
         TowerLobby = 32, // 雪原の塔のロビー
         TowerLanding1 = 36, // 雪原の塔の中間地点1
+        TowerLanding2 = 37, // 雪原の塔の中間地点2
         TowerHall = 41, // 雪原の塔のホール
         Under2Field = 46, // 地下施設2
         UnderExit = 51, // 地下施設の出口
@@ -203,6 +204,13 @@ public class SnowFieldEvent : BaseFieldEvent
                 if (!flagManager.GetBoolFlag(Chapter3TriggeredEvent.ReachedTowerLanding1))
                 {
                     flagManager.SetBoolFlag(Chapter3TriggeredEvent.ReachedTowerLanding1, true);
+                }
+                break;
+            case FieldName.TowerLanding2:
+                if (!flagManager.GetBoolFlag(Chapter3TriggeredEvent.ReachedTowerLanding2))
+                {
+                    flagManager.SetBoolFlag(Chapter3TriggeredEvent.ReachedTowerLanding2, true);
+                    FungusHelper.ExecuteBlock(targetFlowchart, "ReachedTowerLanding2");
                 }
                 break;
             case FieldName.TowerHall:

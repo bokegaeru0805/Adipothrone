@@ -70,12 +70,6 @@ public class HeroinPortraitController : BasePortraitController
             return;
         }
 
-        // Storyブロック（メインストーリーの会話など）でない場合は、立ち絵表示リクエストを無視する
-        if (!(currentBlockType == BlockType.Story))
-        {
-            return;
-        }
-
         // 指定された文字列を '_' で分割し、キャラクター名と表情名を抽出する
         // 想定フォーマット: [CharacterName]_[何か]_[ExpressionName] (例: "Heroin_A_Smile" -> "Heroin" と "Smile")
         string[] parts = portraitString.Split('_');
