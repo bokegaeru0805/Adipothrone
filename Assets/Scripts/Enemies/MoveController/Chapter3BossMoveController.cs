@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using DG.Tweening;
+using NaughtyAttributes;
 using UnityEngine;
 
 /// <summary>
@@ -60,7 +61,7 @@ public class Chapter3BossMoveController : MonoBehaviour
      * ■ ⑥ 幻影強襲攻撃 (Mirage Assault)
      * - プレイヤー周辺へ複数回テレポートし、出現と消失を繰り返す。
      * - 最後の出現時にLow AttackまたはHorizontal Attackで攻撃する。
-     * - 最終攻撃のダメージにはmirageAttackDamageを使用する。
+     * - 最終攻撃はプレイヤーの最大HPの30%を与える割合ダメージ。
      * - 下段判定: lowAttackDamageController
      * - 水平攻撃判定: horizontalAttackDamageController
      */
@@ -69,6 +70,7 @@ public class Chapter3BossMoveController : MonoBehaviour
     #region 定数・列挙型
     private const string SHOOT_BULLET_POOLTAG = "Chapter3BossShoot";
     private const string POWER_UP_SKILL_NAME = "加速";
+    private const float MIRAGE_ATTACK_MAX_HP_RATIO = 0.3f;
 
     /// <summary>
     /// ボスの現在の状態を表す列挙型
@@ -275,9 +277,9 @@ public class Chapter3BossMoveController : MonoBehaviour
     [SerializeField]
     private int upperAttackDamage = 15;
 
-    [Tooltip("幻影急襲でプレイヤーに与えるダメージ量")]
-    [SerializeField]
-    private int mirageAttackDamage = 15;
+    [InfoBox("幻影強襲：プレイヤーの最大HPの30%を与える割合ダメージ（設定不要）")]
+    [SerializeField, ReadOnly, Tooltip("表示専用。実際のダメージは定数で最大HPの30%に固定されています")]
+    private float mirageAttackMaxHPRatioDisplay = MIRAGE_ATTACK_MAX_HP_RATIO;
 
     [Header("エリア境界の設定")]
     [Tooltip("ボスが行動できるエリアの左端X座標")]
@@ -2907,7 +2909,9 @@ public class Chapter3BossMoveController : MonoBehaviour
                     float postWaitDuration = GetCombatDuration(miragePostWaitDuration);
 
                     if (lowAttackDamageController != null)
-                        lowAttackDamageController.SetNormalDamage(mirageAttackDamage);
+                        lowAttackDamageController.SetMaxHPRatioDamage(
+                            MIRAGE_ATTACK_MAX_HP_RATIO
+                        );
                     if (_animator != null)
                     {
                         SetAnimatorSpeed(_lowAttackSpeedHash, finalAttackDuration);
@@ -2922,7 +2926,9 @@ public class Chapter3BossMoveController : MonoBehaviour
                     float postWaitDuration = GetCombatDuration(miragePostWaitDuration);
 
                     if (horizontalAttackDamageController != null)
-                        horizontalAttackDamageController.SetNormalDamage(mirageAttackDamage);
+                        horizontalAttackDamageController.SetMaxHPRatioDamage(
+                            MIRAGE_ATTACK_MAX_HP_RATIO
+                        );
                     if (_animator != null)
                     {
                         SetAnimatorSpeed(_horizontalAttackSpeedHash, finalAttackDuration);

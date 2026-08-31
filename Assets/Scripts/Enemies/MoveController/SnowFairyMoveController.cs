@@ -259,8 +259,8 @@ public class SnowFairyMoveController : MonoBehaviour, IEnemyResettable
         switch (_variantType)
         {
             case EnemyVariant.SnowField:
-                _crystalShotDamage = 20;
-                _snowballDropDamage = 20;
+                _crystalShotDamage = 87;
+                _snowballDropDamage = 127;
                 break;
             default:
                 Debug.LogError($"{name}のEnemyVariantが設定されていません。", this);

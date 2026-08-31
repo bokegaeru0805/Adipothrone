@@ -137,7 +137,15 @@ public class Light2DPropertyCommand : Command
                 yield break;
             }
 
-            elapsedTime += useUnscaledTime ? Time.unscaledDeltaTime : Time.deltaTime;
+            float deltaTime = useUnscaledTime ? Time.unscaledDeltaTime : Time.deltaTime;
+            if (
+                TimelineSkipManager.instance != null
+                && TimelineSkipManager.instance.IsFastForwarding
+            )
+            {
+                deltaTime *= TimelineSkipManager.instance.FastForwardSpeed;
+            }
+            elapsedTime += deltaTime;
             float normalizedTime = Mathf.Clamp01(elapsedTime / tweenDuration);
             float curveValue = easeCurve.Evaluate(normalizedTime);
 

@@ -291,6 +291,15 @@ public class IcicleMoveController : MonoBehaviour, IEnemyResettable
     #region 初期化・リセット処理
 
     /// <summary>
+    /// 外部の攻撃コントローラーから、この氷柱の接触ダメージを設定します。
+    /// </summary>
+    /// <param name="damage">設定するダメージ値</param>
+    public void SetDamage(int damage)
+    {
+        _damage = damage;
+    }
+
+    /// <summary>
     /// ボス召喚用としてつららを指定位置に出現させます。
     /// </summary>
     /// <param name="position">出現させる座標</param>

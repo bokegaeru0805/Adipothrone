@@ -167,8 +167,8 @@ public class GargoyleMoveController : MonoBehaviour, IEnemyResettable
         switch (variantType)
         {
             case EnemyVariant.Tower:
-                smallBulletSettings.damage = 15;
-                largeBulletSettings.damage = 30;
+                smallBulletSettings.damage = 94;
+                largeBulletSettings.damage = 94;
                 break;
             default:
                 Debug.LogError($"{this.name}のEnemyVariantが設定されていません。", this);

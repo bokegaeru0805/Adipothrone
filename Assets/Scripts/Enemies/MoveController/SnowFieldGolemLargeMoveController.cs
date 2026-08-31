@@ -5,8 +5,34 @@ using NaughtyAttributes;
 using UnityEngine;
 
 /// <summary>
-/// 大型雪原ゴーレムの待機、つらら攻撃、近距離攻撃を制御します。
-/// 物理ルートと、Animator・全身ボーンを持つ表示ルートを分離して扱います。
+/// 大型雪原ゴーレムの行動、攻撃、生成物を制御します。
+///
+/// 行動概要:
+/// - 通常時はIdleで待機し、Inspectorで指定した方向を維持します。
+/// - ResetState()でランダム方向を有効にしている場合は、左右を再抽選します。
+/// - プレイヤーが攻撃範囲へ入ると、つらら攻撃を近距離攻撃より優先して開始します。
+///
+/// つらら攻撃:
+/// - Attack1_Execute → Attack1_Recoveryを再生します。
+/// - 既存のつららをHOLOGRAM演出で消去し、新しいつららを等間隔に生成・表示します。
+/// - 表示完了後に落下検知を許可し、各つららが個別にプレイヤーを感知して落下します。
+/// - 落下許可時点から指定時間が経過するか、残存数が閾値以下になると再使用可能になります。
+///
+/// 近距離攻撃:
+/// - Attack2_Prepare → 追加待機 → Attack2_Execute → Attack2_Recoveryの順に再生します。
+/// - Execute中だけ腕をDamageableに変更し、Animation EventでImpactEffectとShockwaveを発生させます。
+/// - Shockwaveは生成位置から固定方向へ進み、寿命経過または壁への接触で非表示になります。
+///
+/// ダメージ設定:
+/// - 本体ダメージ: 本体のContactDamageControllerへ設定する接触ダメージです。
+/// - 腕ダメージ: 近距離攻撃のExecute中だけDamageableになる腕へ設定する攻撃ダメージです。
+/// - Shockwaveダメージ: 近距離攻撃のImpact時に発生するGroundSweepShockwaveへ設定するダメージです。
+/// - Icicleダメージ: 生成するIcicle Prefab自身のIcicleMoveControllerが管理する落下攻撃ダメージです。
+/// - 本体・腕・Shockwaveの値はEnemyVariantに応じてAwake()で設定し、Inspectorには公開しません。
+///
+/// 構成:
+/// - 物理・状態管理を本体ルート、Animatorと全身ボーンをVisual Rootへ分離します。
+/// - IcicleとShockwaveは生成後に追跡し、ResetState()で停止・回収します。
 /// </summary>
 [RequireComponent(typeof(Rigidbody2D))]
 public class SnowFieldGolemLargeMoveController : MonoBehaviour, IEnemyResettable
@@ -45,10 +71,7 @@ public class SnowFieldGolemLargeMoveController : MonoBehaviour, IEnemyResettable
     [SerializeField, Tooltip("表示専用ルート以下のAnimator。")]
     private Animator _animator = null;
 
-    [
-        SerializeField,
-        Tooltip("ResetStateごとに右向き・左向きを50%ずつの確率で抽選します。")
-    ]
+    [SerializeField, Tooltip("ResetStateごとに右向き・左向きを50%ずつの確率で抽選します。")]
     private bool _isRandomizeFacingOnReset = false;
 
     [
@@ -66,13 +89,25 @@ public class SnowFieldGolemLargeMoveController : MonoBehaviour, IEnemyResettable
     private float _attackRangeYDown = 1f;
 
     [Header("つらら攻撃")]
-    [SerializeField, Min(0f), Tooltip("前方につらら攻撃を検知するX距離。近距離攻撃より優先されます。")]
+    [
+        SerializeField,
+        Min(0f),
+        Tooltip("前方につらら攻撃を検知するX距離。近距離攻撃より優先されます。")
+    ]
     private float _icicleAttackRangeX = 8f;
 
-    [SerializeField, Min(0.01f), Tooltip("つらら攻撃の実行アニメーション再生時間。元クリップは1秒想定です。")]
+    [
+        SerializeField,
+        Min(0.01f),
+        Tooltip("つらら攻撃の実行アニメーション再生時間。元クリップは1秒想定です。")
+    ]
     private float _icicleAttackExecuteDuration = 1f;
 
-    [SerializeField, Min(0.01f), Tooltip("つらら攻撃のRecoveryアニメーション再生時間。元クリップは1秒想定です。")]
+    [
+        SerializeField,
+        Min(0.01f),
+        Tooltip("つらら攻撃のRecoveryアニメーション再生時間。元クリップは1秒想定です。")
+    ]
     private float _icicleAttackRecoveryDuration = 1f;
 
     [SerializeField, Tooltip("生成するIcicleMoveController付きPrefab。")]
@@ -102,7 +137,11 @@ public class SnowFieldGolemLargeMoveController : MonoBehaviour, IEnemyResettable
     [SerializeField, Min(0f), Tooltip("つららの表示完了後、落下を許可するまでの時間。")]
     private float _icicleFallWaitDuration = 0.5f;
 
-    [SerializeField, Min(0f), Tooltip("落下許可後、時間条件でつらら攻撃が再使用可能になるまでの時間。")]
+    [
+        SerializeField,
+        Min(0f),
+        Tooltip("落下許可後、時間条件でつらら攻撃が再使用可能になるまでの時間。")
+    ]
     private float _icicleAttackReuseTime = 5f;
 
     [SerializeField, Min(0f), Tooltip("本体がIdleへ戻った後の攻撃後待機時間。")]
@@ -112,16 +151,28 @@ public class SnowFieldGolemLargeMoveController : MonoBehaviour, IEnemyResettable
     [SerializeField, Min(0f), Tooltip("前方に近距離攻撃を検知するX距離。")]
     private float _meleeAttackRangeX = 3f;
 
-    [SerializeField, Min(0.01f), Tooltip("近距離攻撃のPrepareアニメーション再生時間。元クリップは1秒想定です。")]
+    [
+        SerializeField,
+        Min(0.01f),
+        Tooltip("近距離攻撃のPrepareアニメーション再生時間。元クリップは1秒想定です。")
+    ]
     private float _meleeAttackPrepareDuration = 1f;
 
     [SerializeField, Min(0f), Tooltip("Prepare終了後、Executeを開始するまで追加で待機する時間。")]
     private float _meleeAttackPreExecuteDelay = 0.2f;
 
-    [SerializeField, Min(0.01f), Tooltip("近距離攻撃のExecuteアニメーション再生時間。元クリップは1秒想定です。")]
+    [
+        SerializeField,
+        Min(0.01f),
+        Tooltip("近距離攻撃のExecuteアニメーション再生時間。元クリップは1秒想定です。")
+    ]
     private float _meleeAttackExecuteDuration = 1f;
 
-    [SerializeField, Min(0.01f), Tooltip("近距離攻撃のRecoveryアニメーション再生時間。元クリップは1秒想定です。")]
+    [
+        SerializeField,
+        Min(0.01f),
+        Tooltip("近距離攻撃のRecoveryアニメーション再生時間。元クリップは1秒想定です。")
+    ]
     private float _meleeAttackRecoveryDuration = 1f;
 
     [SerializeField, Min(0f), Tooltip("近距離攻撃後、次の攻撃が可能になるまでの待機時間。")]
@@ -146,7 +197,11 @@ public class SnowFieldGolemLargeMoveController : MonoBehaviour, IEnemyResettable
     [SerializeField, Min(0f), Tooltip("GroundSweepShockwaveが正面方向へ直進する速度。")]
     private float _shockwaveSpeed = 8f;
 
-    [SerializeField, Min(0f), Tooltip("GroundSweepShockwaveが衝突しなかった場合に非表示となるまでの時間。")]
+    [
+        SerializeField,
+        Min(0f),
+        Tooltip("GroundSweepShockwaveが衝突しなかった場合に非表示となるまでの時間。")
+    ]
     private float _shockwaveLifeTime = 2f;
 
     #endregion
@@ -173,35 +228,51 @@ public class SnowFieldGolemLargeMoveController : MonoBehaviour, IEnemyResettable
     private bool _isIcicleAttackReuseTimerRunning;
     private bool _hasProcessedImpactEvent;
     private float _icicleAttackReuseElapsed;
-    private int _bodyDamage = 20;
+
+    // 近距離攻撃中に腕のContactDamageControllerへ設定する攻撃ダメージです。
     private int _armDamage = 20;
+
+    // 近距離攻撃のImpact時に生成するGroundSweepShockwaveへ設定するダメージです。
     private int _shockwaveDamage = 20;
+
+    // 生成するIcicleの落下攻撃へ設定するダメージです。
+    private int _icicleDamage = 20;
 
     #endregion
 
     #region Animatorパラメータ
 
     private static readonly int AnimIdleTrigger = Animator.StringToHash("IdleTrigger");
-    private static readonly int AnimIcicleAttackExecuteTrigger =
-        Animator.StringToHash("Attack1ExecuteTrigger");
-    private static readonly int AnimIcicleAttackRecoveryTrigger =
-        Animator.StringToHash("Attack1RecoveryTrigger");
-    private static readonly int AnimMeleeAttackPrepareTrigger =
-        Animator.StringToHash("Attack2PrepareTrigger");
-    private static readonly int AnimMeleeAttackExecuteTrigger =
-        Animator.StringToHash("Attack2ExecuteTrigger");
-    private static readonly int AnimMeleeAttackRecoveryTrigger =
-        Animator.StringToHash("Attack2RecoveryTrigger");
-    private static readonly int AnimIcicleAttackExecuteSpeed =
-        Animator.StringToHash("Attack1ExecuteSpeed");
-    private static readonly int AnimIcicleAttackRecoverySpeed =
-        Animator.StringToHash("Attack1RecoverySpeed");
-    private static readonly int AnimMeleeAttackPrepareSpeed =
-        Animator.StringToHash("Attack2PrepareSpeed");
-    private static readonly int AnimMeleeAttackExecuteSpeed =
-        Animator.StringToHash("Attack2ExecuteSpeed");
-    private static readonly int AnimMeleeAttackRecoverySpeed =
-        Animator.StringToHash("Attack2RecoverySpeed");
+    private static readonly int AnimIcicleAttackExecuteTrigger = Animator.StringToHash(
+        "Attack1ExecuteTrigger"
+    );
+    private static readonly int AnimIcicleAttackRecoveryTrigger = Animator.StringToHash(
+        "Attack1RecoveryTrigger"
+    );
+    private static readonly int AnimMeleeAttackPrepareTrigger = Animator.StringToHash(
+        "Attack2PrepareTrigger"
+    );
+    private static readonly int AnimMeleeAttackExecuteTrigger = Animator.StringToHash(
+        "Attack2ExecuteTrigger"
+    );
+    private static readonly int AnimMeleeAttackRecoveryTrigger = Animator.StringToHash(
+        "Attack2RecoveryTrigger"
+    );
+    private static readonly int AnimIcicleAttackExecuteSpeed = Animator.StringToHash(
+        "Attack1ExecuteSpeed"
+    );
+    private static readonly int AnimIcicleAttackRecoverySpeed = Animator.StringToHash(
+        "Attack1RecoverySpeed"
+    );
+    private static readonly int AnimMeleeAttackPrepareSpeed = Animator.StringToHash(
+        "Attack2PrepareSpeed"
+    );
+    private static readonly int AnimMeleeAttackExecuteSpeed = Animator.StringToHash(
+        "Attack2ExecuteSpeed"
+    );
+    private static readonly int AnimMeleeAttackRecoverySpeed = Animator.StringToHash(
+        "Attack2RecoverySpeed"
+    );
 
     #endregion
 
@@ -223,10 +294,12 @@ public class SnowFieldGolemLargeMoveController : MonoBehaviour, IEnemyResettable
         _rbody = GetComponent<Rigidbody2D>();
         _enemyHP = GetComponent<EnemyHealth>();
         _contactDamageController = GetComponent<ContactDamageController>();
-        _armDamageController = _armDamageObject != null
-            ? _armDamageObject.GetComponent<ContactDamageController>()
-            : null;
-        _impactEffectAnimator = _impactEffect != null ? _impactEffect.GetComponent<Animator>() : null;
+        _armDamageController =
+            _armDamageObject != null
+                ? _armDamageObject.GetComponent<ContactDamageController>()
+                : null;
+        _impactEffectAnimator =
+            _impactEffect != null ? _impactEffect.GetComponent<Animator>() : null;
         _groundLayer = LayerMask.GetMask(
             GameConstants.PHYSICS_LAYER_NAME_GROUND,
             GameConstants.PHYSICS_LAYER_NAME_OBJECT_GROUND
@@ -288,7 +361,6 @@ public class SnowFieldGolemLargeMoveController : MonoBehaviour, IEnemyResettable
 
         ResolvePlayerTransform();
         _enemyHP?.ResetState();
-        _contactDamageController?.SetNormalDamage(_bodyDamage);
         _armDamageController?.SetNormalDamage(_armDamage);
 
         if (_rbody != null)
@@ -341,9 +413,9 @@ public class SnowFieldGolemLargeMoveController : MonoBehaviour, IEnemyResettable
         switch (_variantType)
         {
             case EnemyVariant.SnowField:
-                _bodyDamage = 20;
-                _armDamage = 20;
-                _shockwaveDamage = 20;
+                _icicleDamage = 141;
+                _shockwaveDamage = 102;
+                _armDamage = 224;
                 break;
             default:
                 Debug.LogError($"{name}のEnemyVariantが設定されていません。", this);
@@ -379,11 +451,14 @@ public class SnowFieldGolemLargeMoveController : MonoBehaviour, IEnemyResettable
 
     private void ResolvePlayerTransform()
     {
-        _playerTransform = PlayerManager.instance != null
-            ? PlayerManager.instance.PlayerGameObject?.transform
-            : null;
+        _playerTransform =
+            PlayerManager.instance != null
+                ? PlayerManager.instance.PlayerGameObject?.transform
+                : null;
         if (_playerTransform == null)
-            _playerTransform = GameObject.FindGameObjectWithTag(GameConstants.PLAYER_TAG_NAME)?.transform;
+            _playerTransform = GameObject
+                .FindGameObjectWithTag(GameConstants.PLAYER_TAG_NAME)
+                ?.transform;
     }
 
     private void ApplyFacingRotation()
@@ -450,16 +525,12 @@ public class SnowFieldGolemLargeMoveController : MonoBehaviour, IEnemyResettable
 
     private bool CanUseIcicleAttack()
     {
-        return _isIcicleAttackTimeReady
-            || GetRemainingIcicleCount() <= _icicleRemainingThreshold;
+        return _isIcicleAttackTimeReady || GetRemainingIcicleCount() <= _icicleRemainingThreshold;
     }
 
     private void UpdateIcicleAttackAvailability()
     {
-        if (
-            !_isIcicleAttackTimeReady
-            && _icicleAttackReuseElapsed >= _icicleAttackReuseTime
-        )
+        if (!_isIcicleAttackTimeReady && _icicleAttackReuseElapsed >= _icicleAttackReuseTime)
         {
             _isIcicleAttackTimeReady = true;
             _isIcicleAttackReuseTimerRunning = false;
@@ -589,17 +660,20 @@ public class SnowFieldGolemLargeMoveController : MonoBehaviour, IEnemyResettable
             float forwardLimit = Mathf.Max(_icicleForwardOffset, _icicleLimitDistance);
             float forwardDistance = Mathf.Lerp(_icicleForwardOffset, forwardLimit, ratio);
             Vector3 position =
-                PivotPosition
-                + new Vector3(forwardDistance * FacingMultiplier, _icicleHeight, 0f);
+                PivotPosition + new Vector3(forwardDistance * FacingMultiplier, _icicleHeight, 0f);
             GameObject icicleObject = Instantiate(_iciclePrefab, position, Quaternion.identity);
             IcicleMoveController icicle = icicleObject.GetComponent<IcicleMoveController>();
             if (icicle == null)
             {
-                Debug.LogError($"{icicleObject.name}: IcicleMoveControllerがありません。", icicleObject);
+                Debug.LogError(
+                    $"{icicleObject.name}: IcicleMoveControllerがありません。",
+                    icicleObject
+                );
                 Destroy(icicleObject);
                 continue;
             }
 
+            icicle.SetDamage(_icicleDamage);
             icicle.PrepareExternalSummon(position);
             result.Add(icicle);
         }
@@ -634,11 +708,7 @@ public class SnowFieldGolemLargeMoveController : MonoBehaviour, IEnemyResettable
             if (newIcicle == null)
                 continue;
 
-            AddHologramAppear(
-                _icicleHologramSequence,
-                newIcicle.gameObject,
-                _icicleAppearDuration
-            );
+            AddHologramAppear(_icicleHologramSequence, newIcicle.gameObject, _icicleAppearDuration);
         }
 
         yield return _icicleHologramSequence.WaitForCompletion();
@@ -913,7 +983,8 @@ public class SnowFieldGolemLargeMoveController : MonoBehaviour, IEnemyResettable
     )
     {
         float height = _attackRangeYUp + _attackRangeYDown;
-        Vector3 center = pivot
+        Vector3 center =
+            pivot
             + new Vector3(
                 rangeX * 0.5f * facingMultiplier,
                 (_attackRangeYUp - _attackRangeYDown) * 0.5f,
@@ -931,31 +1002,26 @@ public class SnowFieldGolemLargeMoveController : MonoBehaviour, IEnemyResettable
     {
         int count = Mathf.Max(1, _icicleCount);
         float forwardLimit = Mathf.Max(_icicleForwardOffset, _icicleLimitDistance);
-        Vector3 firstPosition = pivot
-            + new Vector3(_icicleForwardOffset * facingMultiplier, _icicleHeight, 0f);
-        Vector3 lastPosition = pivot
-            + new Vector3(forwardLimit * facingMultiplier, _icicleHeight, 0f);
+        Vector3 firstPosition =
+            pivot + new Vector3(_icicleForwardOffset * facingMultiplier, _icicleHeight, 0f);
+        Vector3 lastPosition =
+            pivot + new Vector3(forwardLimit * facingMultiplier, _icicleHeight, 0f);
 
         Gizmos.color = new Color(0.1f, 1f, 1f, 0.9f);
         Gizmos.DrawLine(firstPosition, lastPosition);
 
         Gizmos.color = new Color(0.1f, 1f, 1f, 0.45f);
         Gizmos.DrawLine(pivot, firstPosition);
-        Gizmos.DrawLine(
-            new Vector3(firstPosition.x, pivot.y, pivot.z),
-            firstPosition
-        );
+        Gizmos.DrawLine(new Vector3(firstPosition.x, pivot.y, pivot.z), firstPosition);
 
         for (int i = 0; i < count; i++)
         {
             float ratio = count == 1 ? 0f : (float)i / (count - 1);
             float forwardDistance = Mathf.Lerp(_icicleForwardOffset, forwardLimit, ratio);
-            Vector3 position = pivot
-                + new Vector3(forwardDistance * facingMultiplier, _icicleHeight, 0f);
+            Vector3 position =
+                pivot + new Vector3(forwardDistance * facingMultiplier, _icicleHeight, 0f);
 
-            Gizmos.color = i == 0
-                ? new Color(0f, 1f, 0.65f, 1f)
-                : new Color(0.1f, 0.8f, 1f, 1f);
+            Gizmos.color = i == 0 ? new Color(0f, 1f, 0.65f, 1f) : new Color(0.1f, 0.8f, 1f, 1f);
             Gizmos.DrawWireSphere(position, 0.18f);
             Gizmos.DrawLine(position + Vector3.down * 0.25f, position + Vector3.up * 0.25f);
         }
@@ -966,17 +1032,17 @@ public class SnowFieldGolemLargeMoveController : MonoBehaviour, IEnemyResettable
 
     private void DrawImpactAndShockwaveGizmos(Vector3 pivot, float facingMultiplier)
     {
-        Vector3 impactPosition = pivot
-            + new Vector3(
-                _impactEffectOffset.x * facingMultiplier,
-                _impactEffectOffset.y,
-                0f
-            );
+        Vector3 impactPosition =
+            pivot
+            + new Vector3(_impactEffectOffset.x * facingMultiplier, _impactEffectOffset.y, 0f);
 
         Gizmos.color = new Color(1f, 0f, 1f, 0.85f);
         Gizmos.DrawLine(pivot, impactPosition);
         Gizmos.DrawWireSphere(impactPosition, 0.22f);
-        Gizmos.DrawLine(impactPosition + Vector3.left * 0.3f, impactPosition + Vector3.right * 0.3f);
+        Gizmos.DrawLine(
+            impactPosition + Vector3.left * 0.3f,
+            impactPosition + Vector3.right * 0.3f
+        );
         Gizmos.DrawLine(impactPosition + Vector3.down * 0.3f, impactPosition + Vector3.up * 0.3f);
 
         Vector3 direction = Vector3.right * facingMultiplier;

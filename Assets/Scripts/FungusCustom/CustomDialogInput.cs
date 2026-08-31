@@ -37,7 +37,14 @@ public class CustomDialogInput : DialogInput
         }
 
         // inputManagerが取得できていれば、会話開始時のスキップキーの状態をチェック
-        if (inputManager != null && inputManager.SkipDialogHold())
+        if (
+            inputManager != null
+            && inputManager.SkipDialogHold()
+            && !(
+                TimelineSkipManager.instance != null
+                && TimelineSkipManager.instance.IsFastForwarding
+            )
+        )
         {
             // スキップキーが押されていたら、解放待ちフラグを立てる
             isWaitingForSkipKeyRelease = true;

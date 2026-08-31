@@ -11,6 +11,7 @@ public enum BladeName
     Blade_IronWood = 1011,
     Blade_DesertTemple = 1012,
     Gratesword_DesertTemple = 1013,
+    Spear_Prototype = 1014,
     Blade_Debug = 1999,
 }
 

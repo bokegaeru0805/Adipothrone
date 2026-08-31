@@ -28,8 +28,20 @@ public class FungusCameraMove : Command
 
     private IEnumerator WaitForCameraMove()
     {
+        float moveDuration = reachTime;
+        if (
+            TimelineSkipManager.instance != null
+            && TimelineSkipManager.instance.IsFastForwarding
+        )
+        {
+            moveDuration /= TimelineSkipManager.instance.FastForwardSpeed;
+        }
+
         yield return MyGame.CameraControl.CameraManager.instance.StartCoroutine(
-            MyGame.CameraControl.CameraManager.instance.CameraMoveByTween(targetPosition, reachTime)
+            MyGame.CameraControl.CameraManager.instance.CameraMoveByTween(
+                targetPosition,
+                moveDuration
+            )
         );
         Continue();
     }

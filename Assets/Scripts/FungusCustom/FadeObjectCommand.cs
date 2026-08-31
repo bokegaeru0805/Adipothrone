@@ -60,6 +60,13 @@ public class FadeObjectCommand : Command
         GameObject target = targetGameObject.Value;
         float endAlpha = targetAlpha.Value;
         float time = duration.Value;
+        if (
+            TimelineSkipManager.instance != null
+            && TimelineSkipManager.instance.IsFastForwarding
+        )
+        {
+            time /= TimelineSkipManager.instance.FastForwardSpeed;
+        }
 
         // もし目標Alphaが0より大きいなら、フェード前に表示状態にする
         if (endAlpha > 0f && !target.activeSelf)

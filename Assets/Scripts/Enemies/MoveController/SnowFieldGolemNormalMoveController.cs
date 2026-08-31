@@ -19,6 +19,7 @@ public class SnowFieldGolemNormalMoveController : MonoBehaviour, IEnemyResettabl
     {
         None = 0,
         SnowField = 1, // 雪原タイプ
+        SnowMan = 2,
     }
 
     #endregion
@@ -137,6 +138,7 @@ public class SnowFieldGolemNormalMoveController : MonoBehaviour, IEnemyResettabl
     private bool _isFacingRight = true;
     private bool _canAttack = true;
     private bool _isAttacking = false;
+    private Coroutine _attackCoroutine;
 
     // ブーメランの状態記憶用
     private Vector3 _boomerangLocalPosition;
@@ -178,7 +180,10 @@ public class SnowFieldGolemNormalMoveController : MonoBehaviour, IEnemyResettabl
         switch (_variantType)
         {
             case EnemyVariant.SnowField:
-                _boomerangDamage = 20;
+                _boomerangDamage = 107;
+                break;
+            case EnemyVariant.SnowMan:
+                _boomerangDamage = 80;
                 break;
             default:
                 Debug.LogError($"{this.name}のEnemyVariantが設定されていません。", this);
@@ -224,8 +229,21 @@ public class SnowFieldGolemNormalMoveController : MonoBehaviour, IEnemyResettabl
         // 攻撃可能かつプレイヤーが範囲内にいる場合に攻撃を実行
         if (_canAttack && IsPlayerInAttackRange())
         {
-            StartCoroutine(AttackRoutine());
+            _attackCoroutine = StartCoroutine(AttackRoutine());
         }
+    }
+
+    private void OnDisable()
+    {
+        if (_attackCoroutine != null)
+        {
+            StopCoroutine(_attackCoroutine);
+            _attackCoroutine = null;
+        }
+
+        _canAttack = true;
+        _isAttacking = false;
+        CleanupBoomerangState();
     }
 
     #endregion
@@ -263,24 +281,37 @@ public class SnowFieldGolemNormalMoveController : MonoBehaviour, IEnemyResettabl
         _canAttack = true;
         _isAttacking = false;
 
-        // ブーメランを手元に戻して非アクティブ化
-        if (_boomerangTransform != null)
-        {
-            _boomerangTransform.SetParent(this.transform);
-            _boomerangTransform.localPosition = _boomerangLocalPosition;
-            _boomerangTransform.gameObject.SetActive(false);
-        }
-
-        // 背負い用のブーメランを表示状態にリセット
-        if (_backBoomerangTransform != null)
-        {
-            _backBoomerangTransform.gameObject.SetActive(true);
-        }
+        CleanupBoomerangState();
 
         _animator.SetBool(AnimIsAttacking, false);
 
         // 地面への接地調整
         StartCoroutine(CheckAndAdjustPosition());
+    }
+
+    #endregion
+
+    #region 状態後処理
+
+    /// <summary>
+    /// 攻撃中・非表示化後に残ったブーメランを初期状態へ戻します。
+    /// </summary>
+    private void CleanupBoomerangState()
+    {
+        if (_boomerangTransform != null)
+        {
+            _boomerangTransform.SetParent(transform);
+            _boomerangTransform.localPosition = _boomerangLocalPosition;
+            _boomerangTransform.gameObject.SetActive(false);
+        }
+
+        if (_backBoomerangTransform != null)
+        {
+            _backBoomerangTransform.SetParent(transform);
+            _backBoomerangTransform.localPosition = _backBoomerangLocalPosition;
+            _backBoomerangTransform.localScale = _backBoomerangLocalScale;
+            _backBoomerangTransform.gameObject.SetActive(true);
+        }
     }
 
     #endregion
@@ -371,6 +402,7 @@ public class SnowFieldGolemNormalMoveController : MonoBehaviour, IEnemyResettabl
         // 指定されたクールダウン時間を待機
         yield return new WaitForSeconds(currentCooldown);
         _canAttack = true;
+        _attackCoroutine = null;
     }
 
     /// <summary>

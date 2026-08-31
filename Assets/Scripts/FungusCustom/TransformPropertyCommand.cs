@@ -135,7 +135,15 @@ public class TransformPropertyCommand : Command
 
         while (timer < time)
         {
-            timer += Time.deltaTime;
+            float deltaTime = Time.deltaTime;
+            if (
+                TimelineSkipManager.instance != null
+                && TimelineSkipManager.instance.IsFastForwarding
+            )
+            {
+                deltaTime *= TimelineSkipManager.instance.FastForwardSpeed;
+            }
+            timer += deltaTime;
             float t = Mathf.Clamp01(timer / time);
             float curveValue = easeCurve.Evaluate(t);
 

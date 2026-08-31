@@ -275,8 +275,8 @@ public class SnowFieldGolemMediumMoveController : MonoBehaviour, IEnemyResettabl
     private float _resolvedRightBound = 0f;
     private float _moveVelocityX = 0f;
     private float _jumpStartTime = 0f;
-    private int _bodyDamage = 20;
-    private int _spearDamage = 20;
+    private int _meleeSpearDamage = 20;
+    private int _jumpSpearDamage = 20;
 
     private Vector3 _visualInitialLocalEulerAngles;
     private Vector2 _lastCheckedPosition;
@@ -459,8 +459,8 @@ public class SnowFieldGolemMediumMoveController : MonoBehaviour, IEnemyResettabl
         switch (_variantType)
         {
             case EnemyVariant.SnowField:
-                _bodyDamage = 20;
-                _spearDamage = 20;
+                _meleeSpearDamage = 118;
+                _jumpSpearDamage = 160;
                 break;
 
             default:
@@ -551,8 +551,8 @@ public class SnowFieldGolemMediumMoveController : MonoBehaviour, IEnemyResettabl
     private void ResetDamageControllers()
     {
         _enemyHP?.ResetState();
-        _contactDamageController?.SetNormalDamage(_bodyDamage);
-        _spearDamageController?.SetNormalDamage(_spearDamage);
+        _contactDamageController?.SetNormalDamage(0);
+        _spearDamageController?.SetNormalDamage(0);
     }
 
     private void ResetAttackObjects()
@@ -1030,6 +1030,7 @@ public class SnowFieldGolemMediumMoveController : MonoBehaviour, IEnemyResettabl
             return;
 
         _hasProcessedAttackEvent = true;
+        SetSpearDamage(isMeleeAttack ? _meleeSpearDamage : _jumpSpearDamage);
         SetSpearDamageActive(true);
 
         if (isMeleeAttack)
@@ -1039,6 +1040,11 @@ public class SnowFieldGolemMediumMoveController : MonoBehaviour, IEnemyResettabl
     #endregion
 
     #region 槍・回復・クールダウン
+
+    private void SetSpearDamage(int damage)
+    {
+        _spearDamageController?.SetNormalDamage(damage);
+    }
 
     private void SetSpearDamageActive(bool isActive)
     {

@@ -99,8 +99,17 @@ public class StartCameraShakeCommand : Command
 
     private IEnumerator WaitAndStopCoroutine()
     {
+        float durationScale = 1f;
+        if (
+            TimelineSkipManager.instance != null
+            && TimelineSkipManager.instance.IsFastForwarding
+        )
+        {
+            durationScale = TimelineSkipManager.instance.FastForwardSpeed;
+        }
+
         // 指定時間（揺れ続ける時間）待機
-        yield return new WaitForSeconds(timeToStop);
+        yield return new WaitForSeconds(timeToStop / durationScale);
 
         // この時点で、外部のStopコマンドによって既に停止されていなければ、時間経過での停止を実行
         if (
@@ -108,12 +117,15 @@ public class StartCameraShakeCommand : Command
             && MyGame.CameraControl.CameraManager.instance.IsContinuousShakeActive
         )
         {
-            MyGame.CameraControl.CameraManager.instance.StopContinuousShake(fadeOutTimeOnTimeStop);
+            float adjustedFadeOutDuration = fadeOutTimeOnTimeStop / durationScale;
+            MyGame.CameraControl.CameraManager.instance.StopContinuousShake(
+                adjustedFadeOutDuration
+            );
 
             // WaitUntilFinishedがTrueなら、フェードアウト完了まで更に待ってから進む
             if (waitUntilFinished)
             {
-                yield return new WaitForSeconds(fadeOutTimeOnTimeStop);
+                yield return new WaitForSeconds(adjustedFadeOutDuration);
                 Continue();
             }
         }

@@ -78,6 +78,13 @@ public class HeroinPortraitController : BasePortraitController
             string charName = parts[0];
             string expressionString = parts.LastOrDefault(); // 配列の最後を表情名とする
 
+            // CSVでは "anxious" を使用しているが、既存の立ち絵スプライト名は
+            // "anxiety" なので、辞書検索前に素材名へ合わせる。
+            if (expressionString == "anxious")
+            {
+                expressionString = "anxiety";
+            }
+
             // プレイヤーの現在の体形状態（Enum）を取得し、文字列化。接頭辞の "BodyState_" を削除する。
             string bodyStateString = PlayerBodyManager
                 .instance.GetCurrentBodyStateEnum()

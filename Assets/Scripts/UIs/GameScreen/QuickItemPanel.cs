@@ -25,10 +25,10 @@ public class QuickItemPanel : MonoBehaviour
         [HideInInspector]
         public CanvasGroup borderFlash; // 枠ImageのCanvasGroupでAlpha制御
 
-        [HideInInspector]
+        [Tooltip("アイテムアイコンを表示するImage。Inspectorで各スロットのItemImageを設定してください。")]
         public Image itemIconImage; // アイテムアイコンのImage
 
-        [HideInInspector]
+        [Tooltip("アイテム個数を表示するTextMeshProUGUI。Inspectorで各スロットのItemCount_textを設定してください。")]
         public TextMeshProUGUI countText; // アイテム個数表示のTextMeshProUGUI
 
         [HideInInspector]
@@ -203,45 +203,7 @@ public class QuickItemPanel : MonoBehaviour
                 quickSlotButtons[i].buttonBaseColor = quickSlotButtons[i].buttonImage.color;
             }
 
-            // アイテムアイコンのImage (子オブジェクトの0番目)
-            if (quickSlotButtons[i].slotGameObject.transform.childCount > 0)
-            {
-                quickSlotButtons[i].itemIconImage = quickSlotButtons[i]
-                    .slotGameObject.transform.GetChild(0)
-                    .GetComponent<Image>();
-                if (quickSlotButtons[i].itemIconImage == null)
-                {
-                    Debug.LogWarning(
-                        $"slotGameObject {quickSlotButtons[i].slotGameObject.name}の最初のRaycast Targetではない子オブジェクトにImageコンポーネントが見つかりません。"
-                    );
-                }
-            }
-            else
-            {
-                Debug.LogWarning(
-                    $"slotGameObject {quickSlotButtons[i].slotGameObject.name}に子オブジェクトが見つかりません。アイテムアイコンのImageを取得できません。"
-                );
-            }
-
-            // 個数表示のTextMeshProUGUI (子オブジェクトの1番目)
-            if (quickSlotButtons[i].slotGameObject.transform.childCount > 1)
-            {
-                quickSlotButtons[i].countText = quickSlotButtons[i]
-                    .slotGameObject.transform.GetChild(1)
-                    .GetComponent<TextMeshProUGUI>();
-                if (quickSlotButtons[i].countText == null)
-                {
-                    Debug.LogWarning(
-                        $"slotGameObject {quickSlotButtons[i].slotGameObject.name}の2番目の子オブジェクトにTextMeshProUGUIコンポーネントが見つかりません。"
-                    );
-                }
-            }
-            else
-            {
-                Debug.LogWarning(
-                    $"slotGameObject {quickSlotButtons[i].slotGameObject.name}に十分な子オブジェクトが見つかりません。個数表示のTextMeshProUGUIを取得できません。"
-                );
-            }
+            ResolveSlotUiReferences(quickSlotButtons[i]);
         }
 
         if (
@@ -269,13 +231,55 @@ public class QuickItemPanel : MonoBehaviour
         }
 
         // アイテム画像のベースサイズを取得
-        if (quickSlotButtons.Length > 0 && quickSlotButtons[0].itemIconImage != null)
+        foreach (QuickSlotButton slot in quickSlotButtons)
         {
-            baseSize = quickSlotButtons[0].itemIconImage.GetComponent<RectTransform>().sizeDelta.x; // 横幅をベースサイズとして使用
+            if (slot.itemIconImage != null)
+            {
+                baseSize = slot.itemIconImage.rectTransform.sizeDelta.x;
+                break;
+            }
         }
-        else
+
+        if (baseSize <= 0)
         {
-            Debug.LogWarning("アイテム画像のRectTransformが取得できませんでした。");
+            Debug.LogWarning("アイテムアイコンのRectTransformのサイズを取得できませんでした。QuickSlotButtonのItem Icon Imageを設定してください。");
+        }
+    }
+
+    private static void ResolveSlotUiReferences(QuickSlotButton slot)
+    {
+        Transform slotTransform = slot.slotGameObject.transform;
+
+        if (slot.itemIconImage == null)
+        {
+            Transform itemImageTransform = slotTransform.Find("ItemImage");
+            if (itemImageTransform != null)
+            {
+                slot.itemIconImage = itemImageTransform.GetComponent<Image>();
+            }
+        }
+
+        if (slot.itemIconImage == null)
+        {
+            Debug.LogWarning(
+                $"slotGameObject {slot.slotGameObject.name}のItem Icon Imageが未設定です。InspectorでアイテムアイコンのImageを設定してください。"
+            );
+        }
+
+        if (slot.countText == null)
+        {
+            Transform countTextTransform = slotTransform.Find("ItemCount_text");
+            if (countTextTransform != null)
+            {
+                slot.countText = countTextTransform.GetComponent<TextMeshProUGUI>();
+            }
+        }
+
+        if (slot.countText == null)
+        {
+            Debug.LogWarning(
+                $"slotGameObject {slot.slotGameObject.name}のCount Textが未設定です。Inspectorで個数表示のTextMeshProUGUIを設定してください。"
+            );
         }
     }
 

@@ -43,6 +43,14 @@ public class TalkEndCommand : Command
         // BGMのダッキングを解除する
         BGMManager.instance?.SetDucking(false);
 
+        // 会話終了時にEventCGと実行中の自動非表示タイマーを破棄する
+        EventCGController.HideExistingImmediate();
+
+        // 会話UIとスキップアイコンを通常の上側配置へ戻す
+        SayDialog.ActiveSayDialog
+            ?.GetComponent<TalkUIPositionController>()
+            ?.ResetImmediate();
+
         if (HeroinPortraitController.instance != null)
         {
             HeroinPortraitController.instance.HidePortrait(); // 立ち絵を非表示にする

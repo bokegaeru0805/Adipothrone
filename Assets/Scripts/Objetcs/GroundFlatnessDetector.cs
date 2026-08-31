@@ -55,32 +55,32 @@ public class GroundFlatnessDetector : MonoBehaviour
 
     [Header("判定の設定")]
     [Tooltip("判定する横幅")]
-    [SerializeField]
+    [SerializeField, MinValue(0.01f)]
     private float _checkWidth = 2.0f;
 
     [Tooltip("許容する隙間の量（X軸）。この間隔でレイを飛ばします。")]
-    [SerializeField]
+    [SerializeField, MinValue(0.01f)]
     private float _allowedGap = 0.5f;
 
     [Tooltip("判定基準となるY座標からの誤差許容範囲")]
-    [SerializeField]
+    [SerializeField, MinValue(0f)]
     private float _yErrorTolerance = 0.1f;
 
     [Tooltip("レイを発射する高さ（基準Y座標からの上方向のオフセット）")]
-    [SerializeField]
+    [SerializeField, MinValue(0f)]
     private float _rayStartHeightOffset = 1.0f;
 
     [Tooltip("レイを飛ばす距離")]
-    [SerializeField]
+    [SerializeField, MinValue(0.01f)]
     private float _rayDistance = 2.0f;
 
     [Header("時間判定の設定")]
     [Tooltip("平らな状態が何秒継続したら「整地された」と確定させるか")]
-    [SerializeField]
+    [SerializeField, MinValue(0f)]
     private float _timeToBecomeFlat = 2.0f;
 
     [Tooltip("平らでない状態が何秒継続したら「整地が解除された」と確定させるか")]
-    [SerializeField]
+    [SerializeField, MinValue(0f)]
     private float _timeToLoseFlatness = 0.0f;
 
     [Header("イベント")]
@@ -97,13 +97,19 @@ public class GroundFlatnessDetector : MonoBehaviour
     #region フィールド (内部変数)
 
     // 現在確定している「地面が平らかどうか」の状態フラグ
+    [SerializeField, ReadOnly]
     private bool _isFlat = false;
 
     // 状態変化を遅延させるためのタイマー
+    [SerializeField, ReadOnly]
     private float _stateChangeTimer = 0f;
 
     // 地面として判定するレイヤーマスク
+    [SerializeField, ReadOnly]
     private LayerMask _groundLayerMask;
+
+    [SerializeField, ReadOnly]
+    private int _lastRayCount;
 
     #endregion
 
@@ -178,6 +184,7 @@ public class GroundFlatnessDetector : MonoBehaviour
 
         // 許容される隙間の間隔に基づいてレイの本数と実際の間隔を計算
         int rayCount = Mathf.CeilToInt(_checkWidth / _allowedGap) + 1;
+        _lastRayCount = rayCount;
         float spacing = _checkWidth / (rayCount - 1);
 
         float baselineY = centerPosition.y;
@@ -256,6 +263,18 @@ public class GroundFlatnessDetector : MonoBehaviour
     #endregion
 
     #region デバッグ・エディタ機能
+
+    [Button("平坦化イベントを発火 (Debug)")]
+    private void DebugInvokeBecameFlat()
+    {
+        _onBecameFlat?.Invoke();
+    }
+
+    [Button("平坦解除イベントを発火 (Debug)")]
+    private void DebugInvokeLostFlatness()
+    {
+        _onLostFlatness?.Invoke();
+    }
 
     private void OnDrawGizmosSelected()
     {

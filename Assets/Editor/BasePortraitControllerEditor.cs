@@ -66,7 +66,7 @@ public class BasePortraitControllerEditor : Editor
         }
 
         // 読み込み対象のフォルダパスを自動構築 (character.name を使用)
-        string targetFolderPath = $"Assets/Sprites/Portrait/{controller.character.name}";
+        string targetFolderPath = $"Assets/Sprites/Portrait/{controller.character.name}/Standing";
 
         // ボタンの前に、どこから読み込むのかをインスペクターに表示
         EditorGUILayout.HelpBox(

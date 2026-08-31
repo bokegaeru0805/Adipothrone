@@ -117,8 +117,13 @@ public class TimelineSkipManager : MonoBehaviour
             defaultDirectorSpeed = 1.0;
         }
 
-        // 新しいTimelineになったら早送り状態はリセット
-        IsFastForwarding = false;
+        // Zキーを長押ししたまま新しいTimelineへ移った場合も、早送り状態を引き継ぐ
+        if (IsFastForwarding && director.playableGraph.IsValid())
+        {
+            if (SEManager.instance != null)
+                SEManager.instance.IsTimelineMuted = true;
+            director.playableGraph.GetRootPlayable(0).SetSpeed(fastForwardSpeed);
+        }
     }
 
     /// <summary>
@@ -130,7 +135,6 @@ public class TimelineSkipManager : MonoBehaviour
         if (activeDirector == director)
         {
             activeDirector = null;
-            IsFastForwarding = false;
 
             // 安全策：ミュート解除
             if (SEManager.instance != null)
@@ -146,6 +150,8 @@ public class TimelineSkipManager : MonoBehaviour
         if (!isTalking)
         {
             currentSkipHoldTimer = 0f;
+            if (IsFastForwarding)
+                SetLocalFastForward(false);
             return;
         }
 
@@ -193,28 +199,32 @@ public class TimelineSkipManager : MonoBehaviour
     /// <param name="active">早送りを有効にするかどうか</param>
     public void SetLocalFastForward(bool active)
     {
-        if (activeDirector == null || !activeDirector.playableGraph.IsValid())
-            return;
-
         if (active)
         {
             if (!IsFastForwarding)
             {
                 IsFastForwarding = true;
-                if (SEManager.instance != null)
-                    SEManager.instance.IsTimelineMuted = true;
-                activeDirector.playableGraph.GetRootPlayable(0).SetSpeed(fastForwardSpeed);
             }
+
+            if (activeDirector == null || !activeDirector.playableGraph.IsValid())
+                return;
+
+            if (SEManager.instance != null)
+                SEManager.instance.IsTimelineMuted = true;
+            activeDirector.playableGraph.GetRootPlayable(0).SetSpeed(fastForwardSpeed);
         }
         else
         {
             if (IsFastForwarding)
             {
                 IsFastForwarding = false;
-                if (SEManager.instance != null)
-                    SEManager.instance.IsTimelineMuted = false;
-                activeDirector.playableGraph.GetRootPlayable(0).SetSpeed(defaultDirectorSpeed);
             }
+
+            if (SEManager.instance != null)
+                SEManager.instance.IsTimelineMuted = false;
+
+            if (activeDirector != null && activeDirector.playableGraph.IsValid())
+                activeDirector.playableGraph.GetRootPlayable(0).SetSpeed(defaultDirectorSpeed);
         }
     }
     #endregion
@@ -349,5 +359,7 @@ public class TimelineSkipManager : MonoBehaviour
     private void HandleTalkingStateChanged(bool talkState)
     {
         isTalking = talkState;
+        if (!talkState && IsFastForwarding)
+            SetLocalFastForward(false);
     }
 }

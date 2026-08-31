@@ -268,6 +268,24 @@ public abstract class BasePortraitController : MonoBehaviour
         // 派生クラスでオーバーライドして使用
     }
 
+    /// <summary>
+    /// Flowchartの明示的な表示コマンドからの立ち絵表示リクエストを処理します。
+    /// 通常はSayからの表示リクエストと同じ処理を行いますが、派生クラスで分けられます。
+    /// </summary>
+    /// <param name="portraitString">Flowchart側で指定されたポートレート指定文字列</param>
+    public virtual void HandleExplicitShowRequest(string portraitString)
+    {
+        HandleShowRequest(portraitString);
+    }
+
+    /// <summary>
+    /// Flowchartの明示的な非表示コマンドからのリクエストを処理します。
+    /// </summary>
+    public virtual void HandleExplicitHideRequest()
+    {
+        HidePortrait();
+    }
+
     #endregion
 
     #region Transform Controls (一時的な配置・向き変更)
@@ -529,6 +547,33 @@ public abstract class BasePortraitController : MonoBehaviour
         bodyImage.enabled = false;
         faceImage.enabled = false;
         expressionImage.enabled = false;
+    }
+
+    /// <summary>
+    /// 現在表示中の立ち絵をフェードアウトし、完了後に通常の非表示処理を実行します。
+    /// </summary>
+    public virtual void FadeOutPortrait(float duration, System.Action onComplete = null)
+    {
+        _activeTweenAnimation?.Kill();
+        _activeTweenAnimation = null;
+
+        if (_portraitCanvasGroup == null || _portraitCanvasGroup.alpha <= 0f || duration <= 0f)
+        {
+            HidePortrait();
+            onComplete?.Invoke();
+            return;
+        }
+
+        _activeTweenAnimation = DOTween.Sequence();
+        _activeTweenAnimation
+            .Append(_portraitCanvasGroup.DOFade(0f, duration))
+            .SetUpdate(true)
+            .OnComplete(() =>
+            {
+                _activeTweenAnimation = null;
+                HidePortrait();
+                onComplete?.Invoke();
+            });
     }
 
     #endregion

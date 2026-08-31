@@ -1,9 +1,9 @@
 using System.Collections.Generic;
 using System.IO;
-using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
 using Fungus;
+using NaughtyAttributes;
 using UnityEngine;
 #if UNITY_EDITOR
 using UnityEditor;
@@ -15,9 +15,13 @@ using UnityEditor;
 [System.Serializable]
 public class DialogueLineData
 {
+    public string block;
     public string character;
     public string expression;
     public string dialogue;
+    public string sourceCsvName;
+    public int sourceLineStart;
+    public int sourceLineEnd;
 }
 
 /// <summary>
@@ -28,6 +32,12 @@ public class DialogueUpdater : MonoBehaviour
     [Header("基本設定")]
     public Flowchart targetFlowchart;
     public List<TextAsset> csvFiles = new List<TextAsset>();
+
+    // 動的立ち絵（PortraitString）として処理するキャラクター名
+    private static readonly string[] dynamicPortraitCharacters = { "Heroin", "Fill", "Apothecary"};
+
+    [ShowNativeProperty]
+    private string DynamicPortraitCharacters => string.Join(", ", dynamicPortraitCharacters);
 
     // CSVファイルの各列がどのデータに対応するかのインデックス（0から始まる番号）
     private const int COL_DIALOGUE = 0; //セリフの列
@@ -67,6 +77,7 @@ public class DialogueUpdater : MonoBehaviour
             int lineNumber = 1;
             while (reader.Peek() != -1)
             {
+                int lineStart = lineNumber + 1;
                 lineNumber++;
                 string line = reader.ReadLine();
 
@@ -127,9 +138,13 @@ public class DialogueUpdater : MonoBehaviour
 
                 var lineData = new DialogueLineData
                 {
+                    block = blockName,
                     character = characterName,
                     expression = expressionName,
                     dialogue = dialogueText,
+                    sourceCsvName = csvFile.name,
+                    sourceLineStart = lineStart,
+                    sourceLineEnd = lineNumber,
                 };
 
                 if (!dialogueByBlock.ContainsKey(blockName))
@@ -153,10 +168,6 @@ public class DialogueUpdater : MonoBehaviour
     {
         int totalUpdatedCount = 0;
         bool hasChanged = false;
-
-        // 動的立ち絵（PortraitString）として処理するキャラクター名のリスト
-        // ※ 必要に応じて "Aks", "Noeli" などを追加してください
-        string[] dynamicPortraitCharacters = { "Heroin", "Fill" };
 
         foreach (Block block in targetFlowchart.GetComponents<Block>())
         {
@@ -194,8 +205,7 @@ public class DialogueUpdater : MonoBehaviour
                         string newPortraitString = csvLine.expression;
                         Sprite newPortrait = FindDynamicCharacterFaceGraphic(
                             newCharacter,
-                            csvLine.character,
-                            newPortraitString
+                            csvLine
                         );
                         if (
                             sayCommand.GetStandardText() != csvLine.dialogue
@@ -222,7 +232,7 @@ public class DialogueUpdater : MonoBehaviour
                     // リストに含まれないキャラクターの場合は静的立ち絵（Sprite）として処理
                     else
                     {
-                        Sprite newPortrait = FindPortrait(newCharacter, csvLine.expression);
+                        Sprite newPortrait = FindPortrait(newCharacter, csvLine);
                         if (
                             sayCommand.GetStandardText() != csvLine.dialogue
                             || sayCommand._Character != newCharacter
@@ -291,11 +301,17 @@ public class DialogueUpdater : MonoBehaviour
         return null;
     }
 
-    private Sprite FindPortrait(Character character, string expressionName)
+    private Sprite FindPortrait(Character character, DialogueLineData csvLine)
     {
-        if (character == null || string.IsNullOrEmpty(expressionName))
+        if (character == null || string.IsNullOrEmpty(csvLine.expression))
             return null;
-        return character.GetPortrait(expressionName);
+
+        if (!character.Portraits.Any(portrait => portrait != null && portrait.name == csvLine.expression))
+        {
+            LogMissingPortraitSource(character, csvLine, csvLine.expression);
+        }
+
+        return character.GetPortrait(csvLine.expression);
     }
 
     /// <summary>
@@ -347,10 +363,11 @@ public class DialogueUpdater : MonoBehaviour
     /// </summary>
     private Sprite FindDynamicCharacterFaceGraphic(
         Character character,
-        string characterName,
-        string portraitString
+        DialogueLineData csvLine
     )
     {
+        string characterName = csvLine.character;
+        string portraitString = csvLine.expression;
         if (character == null || string.IsNullOrEmpty(portraitString))
         {
             return null;
@@ -373,8 +390,33 @@ public class DialogueUpdater : MonoBehaviour
             portraitName = $"Heroin_normal_{expressionName}";
         }
 
-        return character.Portraits.FirstOrDefault(
+        Sprite portrait = character.Portraits.FirstOrDefault(
             portrait => portrait != null && portrait.name == portraitName
+        );
+
+        if (portrait == null)
+        {
+            LogMissingPortraitSource(character, csvLine, portraitName);
+        }
+
+        return portrait;
+    }
+
+    private void LogMissingPortraitSource(
+        Character character,
+        DialogueLineData csvLine,
+        string portraitName
+    )
+    {
+        string lineRange = csvLine.sourceLineStart == csvLine.sourceLineEnd
+            ? $"{csvLine.sourceLineStart}行目"
+            : $"{csvLine.sourceLineStart}〜{csvLine.sourceLineEnd}行目";
+
+        Debug.LogError(
+            $"CSV「{csvLine.sourceCsvName}」の{lineRange}: "
+                + $"Block「{csvLine.block}」、キャラクター「{csvLine.character}」、表情「{csvLine.expression}」。"
+                + $"Character「{character.gameObject.name}」の立ち絵リストに「{portraitName}」がありません。",
+            targetFlowchart
         );
     }
 

@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using DG.Tweening;
+using NaughtyAttributes;
 using UnityEngine;
 
 /// <summary>
@@ -93,11 +94,29 @@ public class ApothecaryMoveController : MonoBehaviour
     [SerializeField]
     private Vector2 normalAttackOffset = new Vector2(1.0f, 1.0f);
 
+    [Header("ダメージ設定（各攻撃）")]
+    [InfoBox("光レーザー：プレイヤーの最大HPの50%を与える割合ダメージ（設定不要）")]
+    [SerializeField, Tooltip("炎弾が空中でヒットしたときのダメージ")]
+    private int fireAirDamage = 10;
+
+    [SerializeField, Tooltip("炎弾が着地した後の炎上ダメージ")]
+    private int fireGroundDamage = 15;
+
+    [SerializeField, Tooltip("風弾がヒットしたときのダメージ")]
+    private int windDamage = 10;
+
+    [SerializeField, Tooltip("氷柱がヒットしたときのダメージ")]
+    private int iceDamage = 20;
+
+    [SerializeField, Tooltip("雷がヒットしたときのダメージ")]
+    private int thunderDamage = 20;
+
     #endregion --- インスペクター設定（基本・デバッグ） ---
 
 
     #region --- インスペクター設定（各種攻撃・演出） ---
 
+    [Header("攻撃演出・挙動設定")]
     [Header("ポーション演出の設定")]
     [Tooltip("ポーションを表示する子オブジェクトのSpriteRenderer")]
     [SerializeField]
@@ -143,12 +162,6 @@ public class ApothecaryMoveController : MonoBehaviour
     [SerializeField, Tooltip("炎弾の初速")]
     private float fireBulletSpeed = 10f;
 
-    [SerializeField, Tooltip("炎弾(空中)のダメージ")]
-    private int fireAirDamage = 10;
-
-    [SerializeField, Tooltip("炎上(着地後)のダメージ")]
-    private int fireGroundDamage = 15;
-
     [SerializeField, Tooltip("着地後の炎上継続時間")]
     private float fireGroundDuration = 3.0f;
 
@@ -179,9 +192,6 @@ public class ApothecaryMoveController : MonoBehaviour
 
     [SerializeField, Tooltip("風弾の初速")]
     private float windBulletSpeed = 12f;
-
-    [SerializeField, Tooltip("風弾のダメージ")]
-    private int windDamage = 10;
 
     [SerializeField, Tooltip("風弾ヒット時のノックバック力")]
     private float windKnockbackForce = 15f;
@@ -217,9 +227,6 @@ public class ApothecaryMoveController : MonoBehaviour
 
     [SerializeField, Tooltip("雷同士の最小距離（近すぎないようにするための距離）")]
     private float thunderMinDistance = 2.0f;
-
-    [SerializeField, Tooltip("雷のダメージ")]
-    private int thunderDamage = 20;
 
     [SerializeField, Tooltip("予兆エフェクトの表示時間")]
     private float thunderWarningDuration = 1.0f;
@@ -257,9 +264,6 @@ public class ApothecaryMoveController : MonoBehaviour
 
     [SerializeField, Tooltip("予測線の回転速度（度/秒）")]
     private float lightRotationSpeed = 45f;
-
-    [SerializeField, Tooltip("光レーザーのダメージ")]
-    private int lightDamage = 30;
 
     [Header("光攻撃の予測線演出設定")]
     [SerializeField, Tooltip("予測線のチャージ開始時の太さ")]
@@ -336,6 +340,7 @@ public class ApothecaryMoveController : MonoBehaviour
     private const int INITIAL_ICICLE_POOL_SIZE = 15;
     private const int INITIAL_THUNDER_POOL_SIZE = 15;
     private const int INITIAL_LIGHT_POOL_SIZE = 8;
+    private const float LIGHT_DAMAGE_MAX_HP_RATIO = 0.5f;
 
     // 専用のオブジェクトプールを保持するリスト
     private List<ApothecaryFireBullet> fireBulletPool = new List<ApothecaryFireBullet>();
@@ -1263,6 +1268,7 @@ public class ApothecaryMoveController : MonoBehaviour
                 _reservedIcicles.Remove(icicle);
 
             // 正しい座標に配置した上で、内部で SetActive(true) やエフェクト再生を行う
+            icicle.SetDamage(iceDamage);
             icicle.SpawnAsBossSummon(position);
         }
     }
@@ -1420,7 +1426,7 @@ public class ApothecaryMoveController : MonoBehaviour
             if (laser != null)
             {
                 laser.gameObject.SetActive(true);
-                laser.Setup(lightDamage);
+                laser.SetupMaxHPRatioDamage(LIGHT_DAMAGE_MAX_HP_RATIO);
                 activeLasers.Add(laser);
             }
         }

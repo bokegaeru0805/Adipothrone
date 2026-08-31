@@ -70,7 +70,7 @@
 まずは、奥の上に見える大きな石をどうにかした方がよさそう。,Apothecary,Apothecary_Under4FieldInProgress,Apothecary_armed2_normal
 この配置なら、石は一つも余らないと思う。全部使う前提で考えて。,Apothecary,Apothecary_Under4FieldInProgress,Apothecary_armed2_normal
 石の性質は変わってない。遠くまで離れると、元の位置に戻る。,Apothecary,Apothecary_Under4FieldInProgress,Apothecary_armed2_normal
-これで終わりなら助かる。正直、もうあまり余裕がない。,Apothecary,Apothecary_Under4FieldInProgress,Apothecary_armed2_normal
+石はすぐには落ちないみたい。下に足場がなくても、落ちるまでなら動かせる。,Apothecary,Apothecary_Under4FieldInProgress,Apothecary_armed2_normal
 "何もなければ、それに越したことはないさ。
 面倒なことになっていないといいね。",Axis,Axis_Default,Axis_normal_normal
 "見かけない人ですね。
@@ -79,6 +79,9 @@
 この辺りはずっと雪が積もってるんですよ。",SnowVillageGirl1,SnowVillageGirl1_Default,SnowVillageGirl1_normal_normal
 "お腹が鳴ったら恥ずかしいですね。
 ……もう少し我慢します。",SnowVillageGirl1,SnowVillageGirl1_Default,SnowVillageGirl1_normal_normal
+もう食べ物、ないんですかぁ……？　まだ全然足りないですぅ……。,SnowVillageGirl1,SnowVillageGirl1_ReachedUnderExit,SnowVillageGirl1_immobile_normal
+まだどこかに残ってないでしょうかぁ……探したら見つかるかもですぅ……。,SnowVillageGirl1,SnowVillageGirl1_ReachedUnderExit,SnowVillageGirl1_immobile_normal
+うぅ……なんだか身体が重くて、うまく動けないですぅ……。,SnowVillageGirl1,SnowVillageGirl1_ReachedUnderExit,SnowVillageGirl1_immobile_normal
 "もぐっ、もぐっ……止まらないですぅ
 ……まだいっぱい食べられそうですぅ……。",SnowVillageGirl1,SnowVillageGirl1_RestraintEscapeComplete,SnowVillageGirl1_immobile_normal
 "もう何個口にしたか分からないですぅ
@@ -89,6 +92,9 @@
 お姉ちゃん、村の外から来たんだよね。寒くない？,SnowVillageGirl2,SnowVillageGirl2_Default,SnowVillageGirl2_normal_normal
 おじいちゃん、また難しい顔してた。何か困ってるのかな。,SnowVillageGirl2,SnowVillageGirl2_Default,SnowVillageGirl2_normal_normal
 今日のごはん、何かな。いっぱい食べられるといいな。,SnowVillageGirl2,SnowVillageGirl2_Default,SnowVillageGirl2_normal_normal
+お腹いっぱいだったはずなのにぃ……なんでまた欲しくなるんだろぉ……。,SnowVillageGirl2,SnowVillageGirl2_ReachedUnderExit,SnowVillageGirl2_immobile_normal
+もう何も残ってないんだねぇ……ちょっと、さみしいぃ……。,SnowVillageGirl2,SnowVillageGirl2_ReachedUnderExit,SnowVillageGirl2_immobile_normal
+お姉ちゃんも、お腹すいてないぃ……？　何か探しに行かないぃ……？,SnowVillageGirl2,SnowVillageGirl2_ReachedUnderExit,SnowVillageGirl2_immobile_normal
 "縄、ちゃんと切れてよかったぁ……。
 ずっとあのままだったら、どうしようって思ったぁ……。",SnowVillageGirl2,SnowVillageGirl2_RestraintEscapeComplete,SnowVillageGirl2_immobile_normal
 "お姉ちゃん、いっぱい食べたけどぉ……
@@ -99,6 +105,8 @@
 何か用があって、この村まで来たのかしら？",SnowVillageWoman1,SnowVillageWoman1_Default,
 "この辺りは雪が深いでしょう？ 
 慣れてないなら、足元には気をつけてね。",SnowVillageWoman1,SnowVillageWoman1_Default,
+何か残ってないかしらぁ……もう一度探してみようかなぁ……。,SnowVillageWoman1,SnowVillageWoman1_ReachedUnderExit,
+……身体が重いわねぇ。少し動くだけでも、前より疲れるぅ……。,SnowVillageWoman1,SnowVillageWoman1_ReachedUnderExit,
 "ねぇ……まだ食べ物、持ってるんでしょうぉ……？
 少しくらい置いていってよぉ……。",SnowVillageWoman1,SnowVillageWoman1_RestraintEscapeComplete,
 "さっきからずっと口にしてるのにぃ……

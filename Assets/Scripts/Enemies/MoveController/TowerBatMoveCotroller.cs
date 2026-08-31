@@ -239,7 +239,7 @@ public class TowerBatMoveController : MonoBehaviour, IEnemyResettable
         switch (_variantType)
         {
             case EnemyVariant.Tower:
-                _damage = 20;
+                _damage = 73;
                 break;
             default:
                 Debug.LogError($"{this.name}のEnemyVariantが設定されていません。");

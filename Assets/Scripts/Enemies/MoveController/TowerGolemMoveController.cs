@@ -183,7 +183,7 @@ public class TowerGolemMoveController : MonoBehaviour, IEnemyResettable
         switch (variantType)
         {
             case EnemyVariant.Tower:
-                damage = 30;
+                damage = 114;
                 break;
             default:
                 Debug.LogError($"{this.name}のEnemyVariantが設定されていません。", this);

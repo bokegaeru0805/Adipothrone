@@ -22,19 +22,30 @@ namespace Fungus
 
         public override void OnEnter()
         {
+            float adjustedFadeOutDuration = fadeOutDuration;
+            if (
+                TimelineSkipManager.instance != null
+                && TimelineSkipManager.instance.IsFastForwarding
+            )
+            {
+                adjustedFadeOutDuration /= TimelineSkipManager.instance.FastForwardSpeed;
+            }
+
             // アクティブな持続シェイクがあれば停止命令を出す
             if (
                 MyGame.CameraControl.CameraManager.instance != null
                 && MyGame.CameraControl.CameraManager.instance.IsContinuousShakeActive
             )
             {
-                MyGame.CameraControl.CameraManager.instance.StopContinuousShake(fadeOutDuration);
+                MyGame.CameraControl.CameraManager.instance.StopContinuousShake(
+                    adjustedFadeOutDuration
+                );
             }
 
             // フェードアウト時間が設定されており、完了を待つ場合
             if (waitUntilFinished && fadeOutDuration > 0f)
             {
-                StartCoroutine(WaitCoroutine());
+                StartCoroutine(WaitCoroutine(adjustedFadeOutDuration));
             }
             else
             {
@@ -43,9 +54,9 @@ namespace Fungus
             }
         }
 
-        private IEnumerator WaitCoroutine()
+        private IEnumerator WaitCoroutine(float waitDuration)
         {
-            yield return new WaitForSeconds(fadeOutDuration);
+            yield return new WaitForSeconds(waitDuration);
             Continue();
         }
 

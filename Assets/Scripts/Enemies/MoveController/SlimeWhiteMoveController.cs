@@ -277,7 +277,7 @@ public class SlimeWhiteMoveController : MonoBehaviour, IEnemyResettable
         switch (_variantType)
         {
             case EnemyVariant.SnowField:
-                _damage = 20;
+                _damage = 92;
                 break;
             default:
                 Debug.LogError($"{this.name}のEnemyVariantが設定されていません。", this);

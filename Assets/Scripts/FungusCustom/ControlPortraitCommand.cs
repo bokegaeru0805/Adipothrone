@@ -44,10 +44,10 @@ public class ControlPortraitCommand : Command
             {
                 if (operation == OperationType.Show)
                 {
-                    // 1. 指定の文字列があれば HandleShowRequest を呼び出す
+                    // 1. 指定の文字列があれば明示表示用のリクエストを呼び出す
                     if (!string.IsNullOrEmpty(portraitString))
                     {
-                        controller.HandleShowRequest(portraitString);
+                        controller.HandleExplicitShowRequest(portraitString);
                     }
 
                     // 2. 会話中（Speaking）でなければ暗くする機能の適用
@@ -67,7 +67,7 @@ public class ControlPortraitCommand : Command
                 else if (operation == OperationType.Hide)
                 {
                     // 非表示にする
-                    controller.HidePortrait();
+                    controller.HandleExplicitHideRequest();
                 }
 
                 controllerFound = true;

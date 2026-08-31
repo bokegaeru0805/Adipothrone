@@ -10,12 +10,18 @@ public static class PortraitDisplayPriorityState
 {
     private static readonly Dictionary<Character, PortraitDisplayPriority> CharacterOverrides =
         new Dictionary<Character, PortraitDisplayPriority>();
+    private static PortraitDisplayPriority? _globalOverride;
 
     public static PortraitDisplayPriority Resolve(Block block, Character character)
     {
         if (character != null && CharacterOverrides.TryGetValue(character, out var priority))
         {
             return priority;
+        }
+
+        if (_globalOverride.HasValue)
+        {
+            return _globalOverride.Value;
         }
 
         return block != null
@@ -39,9 +45,28 @@ public static class PortraitDisplayPriorityState
         }
     }
 
-    public static void ResetOverrides()
+    /// <summary>
+    /// 全キャラクターへ強制設定を適用します。
+    /// 実行時点で既存の個別設定を解除し、以後に設定された個別指定だけを例外として扱います。
+    /// </summary>
+    public static void SetGlobalOverride(PortraitDisplayPriority priority)
     {
         CharacterOverrides.Clear();
+        _globalOverride = priority;
+    }
+
+    /// <summary>
+    /// 全体・個別の強制設定を解除し、Block設定へ戻します。
+    /// </summary>
+    public static void ClearAllOverrides()
+    {
+        CharacterOverrides.Clear();
+        _globalOverride = null;
+    }
+
+    public static void ResetOverrides()
+    {
+        ClearAllOverrides();
     }
 
     public static BasePortraitController FindDynamicPortraitController(Character character)

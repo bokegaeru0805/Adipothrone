@@ -47,6 +47,27 @@ public class ApothecaryLightLaser : MonoBehaviour
             damageController.SetNormalDamage(damage);
         }
 
+        ResetLaserState();
+    }
+
+    /// <summary>
+    /// プールから呼び出された際の初期化を行い、最大HP割合の接触ダメージを設定します。
+    /// </summary>
+    public void SetupMaxHPRatioDamage(float ratio)
+    {
+        if (damageController != null)
+        {
+            damageController.SetMaxHPRatioDamage(ratio);
+        }
+
+        ResetLaserState();
+    }
+
+    /// <summary>
+    /// レーザーの表示、判定、アニメーション状態を初期化します。
+    /// </summary>
+    private void ResetLaserState()
+    {
         // 全ての表示と判定をオフにしておく
         if (predictionLine != null)
             predictionLine.gameObject.SetActive(false);
