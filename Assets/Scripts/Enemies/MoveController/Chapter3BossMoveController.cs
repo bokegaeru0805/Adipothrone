@@ -106,6 +106,13 @@ public class Chapter3BossMoveController : MonoBehaviour
         Far = 2,
     }
 
+    private enum AfterImageSpeedTier
+    {
+        Slow = 0,
+        Medium = 1,
+        Fast = 2,
+    }
+
     [System.Serializable]
     private class AttackWeightSettings
     {
@@ -524,6 +531,84 @@ public class Chapter3BossMoveController : MonoBehaviour
     [SerializeField]
     private SpriteRenderer[] hologramTargetRenderers;
 
+    [Header("行動開始後の全身残像")]
+    [Tooltip("残像へ使用するマテリアル。未設定の場合は対象SpriteRendererと同じマテリアルを使用します")]
+    [SerializeField]
+    private Material afterImageMaterial;
+
+    [Tooltip("通常速度の残像数")]
+    [SerializeField, Min(1)]
+    private int slowAfterImageCount = 4;
+
+    [Tooltip("通常速度の残像間隔（秒）")]
+    [SerializeField, Min(0.001f)]
+    private float slowAfterImageInterval = 0.045f;
+
+    [SerializeField, HideInInspector]
+    private float slowAfterImageDistanceRange = 0f;
+
+    [Tooltip("中速時の残像数")]
+    [SerializeField, Min(1)]
+    private int mediumAfterImageCount = 6;
+
+    [Tooltip("中速時の残像間隔（秒）")]
+    [SerializeField, Min(0.001f)]
+    private float mediumAfterImageInterval = 0.03f;
+
+    [SerializeField, HideInInspector]
+    private float mediumAfterImageDistanceRange = 0.005f;
+
+    [Tooltip("高速時の残像数")]
+    [SerializeField, Min(1)]
+    private int fastAfterImageCount = 9;
+
+    [Tooltip("高速時の残像間隔（秒）")]
+    [SerializeField, Min(0.001f)]
+    private float fastAfterImageInterval = 0.015f;
+
+    [SerializeField, HideInInspector]
+    private float fastAfterImageDistanceRange = 0.005f;
+
+    [Tooltip("中速残像へ切り替えるボス本体の移動速度")]
+    [SerializeField, Min(0f)]
+    private float mediumAfterImageSpeed = 0.5f;
+
+    [Tooltip("高速残像へ切り替えるボス本体の移動速度")]
+    [SerializeField, Min(0f)]
+    private float fastAfterImageSpeed = 7f;
+
+    [Tooltip("速度帯の境界付近で切替が連続しないようにする戻り幅")]
+    [SerializeField, Min(0f)]
+    private float afterImageSpeedHysteresis = 2f;
+
+    [Tooltip("通常移動時の残像フェード時間の倍率。テレポート残像には適用しない")]
+    [SerializeField, Min(0.1f)]
+    private float afterImageFadeTimeMultiplier = 2f;
+
+    [Tooltip("HP75%より多い時の残像色")]
+    [SerializeField]
+    private Color highHpAfterImageColor = new Color(0.2f, 0.9f, 1f, 0.28f);
+
+    [Tooltip("HP75%以下の残像色")]
+    [SerializeField]
+    private Color middleHpAfterImageColor = new Color(0.35f, 0.45f, 1f, 0.32f);
+
+    [Tooltip("HP40%以下の残像色")]
+    [SerializeField]
+    private Color lowHpAfterImageColor = new Color(0.9f, 0.2f, 1f, 0.38f);
+
+    [Tooltip("瞬間移動で消えた位置に残す静止残像の保持時間")]
+    [SerializeField, Min(0f)]
+    private float teleportAfterImageDuration = 0.01f;
+
+    [Tooltip("瞬間移動で消えた位置に残す静止残像のフェード時間")]
+    [SerializeField, Min(0.01f)]
+    private float teleportAfterImageFadeTime = 0.06f;
+
+    [Tooltip("瞬間移動残像の通常残像に対する透明度倍率")]
+    [SerializeField, Min(0f)]
+    private float teleportAfterImageAlphaMultiplier = 1.25f;
+
     [Header("WindEffect(後退テレポート時)の設定")]
     [Tooltip("発射するWindEffectのプレハブ")]
     [SerializeField]
@@ -698,6 +783,24 @@ public class Chapter3BossMoveController : MonoBehaviour
     private bool _hasLastAttackPattern;
     private bool _hasTriggered75PercentPowerUp;
     private bool _hasTriggered40PercentPowerUp;
+    private int _currentPowerUpHpPhase;
+    private int _unlockedAfterImageHpPhase;
+    private readonly List<GameObject> _teleportAfterImageObjects = new List<GameObject>();
+    private readonly Dictionary<SpriteRenderer, Queue<Chapter3BossSkinnedAfterImage>> _poseAfterImagePools =
+        new Dictionary<SpriteRenderer, Queue<Chapter3BossSkinnedAfterImage>>();
+    private readonly Dictionary<Chapter3BossSkinnedAfterImage, SpriteRenderer> _poseAfterImageOwners =
+        new Dictionary<Chapter3BossSkinnedAfterImage, SpriteRenderer>();
+    private readonly List<Chapter3BossSkinnedAfterImage> _activePoseAfterImages =
+        new List<Chapter3BossSkinnedAfterImage>();
+    private readonly Dictionary<SpriteRenderer, Vector3> _previousAfterImageRendererPositions =
+        new Dictionary<SpriteRenderer, Vector3>();
+    private AfterImageSpeedTier _currentAfterImageSpeedTier = AfterImageSpeedTier.Slow;
+    private Vector3 _previousAfterImagePosition;
+    private bool _isAfterImageInitialized;
+    private bool _isAfterImageEnabled;
+    private bool _isDynamicAfterImageSuspended;
+    private bool _isTeleportAfterImageSequenceActive;
+    private float _slowAfterImageElapsedTime;
 
     private static readonly AttackPattern[] AttackPatterns =
     {
@@ -799,13 +902,23 @@ public class Chapter3BossMoveController : MonoBehaviour
         ResetState();
     }
 
+    private void LateUpdate()
+    {
+        UpdateAfterImageEffects();
+    }
+
     private void OnDisable()
     {
         DisableAllAttackDamage();
+        SetAfterImageEffectsEnabled(false);
+        ClearTeleportAfterImages();
     }
 
     private void OnDestroy()
     {
+        ClearTeleportAfterImages();
+        DestroyPoseAfterImagePoolObjects();
+
         if (_moveTween != null && _moveTween.IsActive())
         {
             _moveTween.Kill();
@@ -1055,6 +1168,10 @@ public class Chapter3BossMoveController : MonoBehaviour
         _consecutiveAttackCount = 0;
         _hasTriggered75PercentPowerUp = false;
         _hasTriggered40PercentPowerUp = false;
+        _currentPowerUpHpPhase = 0;
+        _unlockedAfterImageHpPhase = 0;
+        SetAfterImageEffectsEnabled(false);
+        ClearTeleportAfterImages();
 
         if (_actionLoopCoroutine != null)
         {
@@ -1276,6 +1393,418 @@ public class Chapter3BossMoveController : MonoBehaviour
     }
     #endregion
 
+    #region 全身残像
+    private void InitializeAfterImageEffects()
+    {
+        if (_isAfterImageInitialized)
+            return;
+
+        _isAfterImageInitialized = true;
+        if (hologramTargetRenderers == null)
+            return;
+
+        foreach (SpriteRenderer targetRenderer in hologramTargetRenderers)
+        {
+            if (targetRenderer == null)
+                continue;
+
+            _previousAfterImageRendererPositions[targetRenderer] =
+                targetRenderer.transform.position;
+
+            if (!_poseAfterImagePools.ContainsKey(targetRenderer))
+            {
+                _poseAfterImagePools.Add(
+                    targetRenderer,
+                    new Queue<Chapter3BossSkinnedAfterImage>()
+                );
+            }
+        }
+    }
+
+    private void SetAfterImageEffectsEnabled(bool isEnabled)
+    {
+        if (isEnabled)
+            InitializeAfterImageEffects();
+
+        _isAfterImageEnabled = isEnabled && _isAfterImageInitialized;
+        _isDynamicAfterImageSuspended = false;
+        _isTeleportAfterImageSequenceActive = false;
+        _previousAfterImagePosition = transform.position;
+        ResetAfterImageRendererPositions();
+        _slowAfterImageElapsedTime = 0f;
+
+        if (!_isAfterImageEnabled)
+        {
+            ClearActivePoseAfterImages();
+            return;
+        }
+
+        ApplyAfterImageSpeedTier(AfterImageSpeedTier.Slow, true);
+    }
+
+    private void UpdateAfterImageEffects()
+    {
+        if (!_isAfterImageEnabled)
+            return;
+
+        Vector3 currentPosition = transform.position;
+        if (_isDynamicAfterImageSuspended || Time.deltaTime <= 0f)
+        {
+            _previousAfterImagePosition = currentPosition;
+            ResetAfterImageRendererPositions();
+            return;
+        }
+
+        float moveSpeed = Vector3.Distance(currentPosition, _previousAfterImagePosition) / Time.deltaTime;
+        _previousAfterImagePosition = currentPosition;
+        moveSpeed = Mathf.Max(moveSpeed, GetAndUpdateFastestRendererSpeed());
+
+        float mediumEnterSpeed = Mathf.Max(0f, mediumAfterImageSpeed);
+        float mediumExitSpeed = Mathf.Max(0f, mediumEnterSpeed - afterImageSpeedHysteresis);
+        float fastEnterSpeed = Mathf.Max(mediumEnterSpeed, fastAfterImageSpeed);
+        float fastExitSpeed = Mathf.Max(mediumEnterSpeed, fastEnterSpeed - afterImageSpeedHysteresis);
+
+        AfterImageSpeedTier nextTier = _currentAfterImageSpeedTier;
+        switch (_currentAfterImageSpeedTier)
+        {
+            case AfterImageSpeedTier.Slow:
+                if (moveSpeed >= fastEnterSpeed)
+                    nextTier = AfterImageSpeedTier.Fast;
+                else if (moveSpeed >= mediumEnterSpeed)
+                    nextTier = AfterImageSpeedTier.Medium;
+                break;
+            case AfterImageSpeedTier.Medium:
+                if (moveSpeed >= fastEnterSpeed)
+                    nextTier = AfterImageSpeedTier.Fast;
+                else if (moveSpeed < mediumExitSpeed)
+                    nextTier = AfterImageSpeedTier.Slow;
+                break;
+            case AfterImageSpeedTier.Fast:
+                if (moveSpeed < fastExitSpeed)
+                {
+                    nextTier =
+                        moveSpeed < mediumExitSpeed
+                            ? AfterImageSpeedTier.Slow
+                            : AfterImageSpeedTier.Medium;
+                }
+                break;
+        }
+
+        ApplyAfterImageSpeedTier(nextTier, false);
+        UpdatePoseAfterImageEmission();
+    }
+
+    private float GetAndUpdateFastestRendererSpeed()
+    {
+        if (hologramTargetRenderers == null || Time.deltaTime <= 0f)
+            return 0f;
+
+        float fastestSpeed = 0f;
+        foreach (SpriteRenderer targetRenderer in hologramTargetRenderers)
+        {
+            if (targetRenderer == null)
+                continue;
+
+            Vector3 currentPosition = targetRenderer.transform.position;
+            if (_previousAfterImageRendererPositions.TryGetValue(targetRenderer, out Vector3 previousPosition))
+            {
+                float rendererSpeed = Vector3.Distance(currentPosition, previousPosition) / Time.deltaTime;
+                fastestSpeed = Mathf.Max(fastestSpeed, rendererSpeed);
+            }
+            _previousAfterImageRendererPositions[targetRenderer] = currentPosition;
+        }
+
+        return fastestSpeed;
+    }
+
+    private void ResetAfterImageRendererPositions()
+    {
+        if (hologramTargetRenderers == null)
+            return;
+
+        foreach (SpriteRenderer targetRenderer in hologramTargetRenderers)
+        {
+            if (targetRenderer != null)
+            {
+                _previousAfterImageRendererPositions[targetRenderer] =
+                    targetRenderer.transform.position;
+            }
+        }
+    }
+
+    private void ApplyAfterImageSpeedTier(AfterImageSpeedTier speedTier, bool forceUpdate)
+    {
+        if (!forceUpdate && speedTier == _currentAfterImageSpeedTier)
+            return;
+
+        _currentAfterImageSpeedTier = speedTier;
+    }
+
+    private void UpdatePoseAfterImageEmission()
+    {
+        GetCurrentAfterImageSettings(out int count, out float interval, out float alphaScale);
+        float safeInterval = Mathf.Max(0.001f, interval);
+        _slowAfterImageElapsedTime += Time.deltaTime;
+        if (_slowAfterImageElapsedTime < safeInterval)
+            return;
+
+        // 低FPS時も同一フレームの残像をまとめて生成せず、全身を1組だけ記録する。
+        _slowAfterImageElapsedTime %= safeInterval;
+        EmitPoseAfterImageBatch(count, safeInterval, alphaScale);
+    }
+
+    private void GetCurrentAfterImageSettings(
+        out int count,
+        out float interval,
+        out float alphaScale
+    )
+    {
+        switch (_currentAfterImageSpeedTier)
+        {
+            case AfterImageSpeedTier.Fast:
+                count = fastAfterImageCount;
+                interval = fastAfterImageInterval;
+                alphaScale = 0.85f;
+                return;
+            case AfterImageSpeedTier.Medium:
+                count = mediumAfterImageCount;
+                interval = mediumAfterImageInterval;
+                alphaScale = 0.7f;
+                return;
+            default:
+                count = slowAfterImageCount;
+                interval = slowAfterImageInterval;
+                alphaScale = 0.55f;
+                return;
+        }
+    }
+
+    private void EmitPoseAfterImageBatch(int count, float interval, float alphaScale)
+    {
+        if (hologramTargetRenderers == null)
+            return;
+
+        Color color = GetCurrentAfterImageColor();
+        color.a = Mathf.Clamp01(color.a * alphaScale);
+        float holdTime = interval;
+        float fadeTime =
+            interval * Mathf.Max(1, count) * Mathf.Max(0.1f, afterImageFadeTimeMultiplier);
+
+        // Chapter3BossはネストされたPSDの複数SpriteRendererで全身を構成する。
+        // Animator評価後の同一LateUpdateで全部位を記録し、1ポーズとして同期させる。
+        foreach (SpriteRenderer targetRenderer in hologramTargetRenderers)
+        {
+            if (
+                targetRenderer == null
+                || !targetRenderer.enabled
+                || targetRenderer.sprite == null
+            )
+                continue;
+
+            Chapter3BossSkinnedAfterImage afterImage = GetPoseAfterImage(targetRenderer);
+            afterImage.gameObject.SetActive(true);
+            afterImage.Initialize(
+                targetRenderer,
+                afterImageMaterial != null ? afterImageMaterial : targetRenderer.sharedMaterial,
+                color,
+                holdTime,
+                fadeTime,
+                ReleasePoseAfterImage
+            );
+            _activePoseAfterImages.Add(afterImage);
+        }
+    }
+
+    private Chapter3BossSkinnedAfterImage GetPoseAfterImage(SpriteRenderer targetRenderer)
+    {
+        Queue<Chapter3BossSkinnedAfterImage> pool = _poseAfterImagePools[targetRenderer];
+        if (pool.Count > 0)
+            return pool.Dequeue();
+
+        GameObject afterImageObject = new GameObject(
+            $"{targetRenderer.gameObject.name}_PoseAfterImage"
+        );
+        afterImageObject.layer = targetRenderer.gameObject.layer;
+        Chapter3BossSkinnedAfterImage afterImage =
+            afterImageObject.AddComponent<Chapter3BossSkinnedAfterImage>();
+        _poseAfterImageOwners.Add(afterImage, targetRenderer);
+        return afterImage;
+    }
+
+    private void ReleasePoseAfterImage(Chapter3BossSkinnedAfterImage afterImage)
+    {
+        if (afterImage == null)
+            return;
+
+        _activePoseAfterImages.Remove(afterImage);
+        if (
+            _poseAfterImageOwners.TryGetValue(afterImage, out SpriteRenderer owner)
+            && owner != null
+            && _poseAfterImagePools.TryGetValue(owner, out Queue<Chapter3BossSkinnedAfterImage> pool)
+        )
+        {
+            afterImage.gameObject.SetActive(false);
+            pool.Enqueue(afterImage);
+            return;
+        }
+
+        Destroy(afterImage.gameObject);
+    }
+
+    private void ClearActivePoseAfterImages()
+    {
+        for (int i = _activePoseAfterImages.Count - 1; i >= 0; i--)
+        {
+            Chapter3BossSkinnedAfterImage afterImage = _activePoseAfterImages[i];
+            _activePoseAfterImages.RemoveAt(i);
+            if (afterImage == null)
+                continue;
+
+            if (
+                _poseAfterImageOwners.TryGetValue(afterImage, out SpriteRenderer owner)
+                && owner != null
+                && _poseAfterImagePools.TryGetValue(owner, out Queue<Chapter3BossSkinnedAfterImage> pool)
+            )
+            {
+                afterImage.gameObject.SetActive(false);
+                pool.Enqueue(afterImage);
+            }
+            else
+            {
+                Destroy(afterImage.gameObject);
+            }
+        }
+    }
+
+    private void DestroyPoseAfterImagePoolObjects()
+    {
+        foreach (Chapter3BossSkinnedAfterImage afterImage in _poseAfterImageOwners.Keys)
+        {
+            if (afterImage != null)
+                Destroy(afterImage.gameObject);
+        }
+
+        _activePoseAfterImages.Clear();
+        _poseAfterImageOwners.Clear();
+        _poseAfterImagePools.Clear();
+    }
+
+    private int GetAfterImageHpPhase()
+    {
+        float normalizedHP = GetNormalizedHP();
+        int hpPhase;
+        if (normalizedHP <= 0.4f)
+            hpPhase = 2;
+        else if (normalizedHP <= 0.75f)
+            hpPhase = 1;
+        else
+            hpPhase = 0;
+
+        // 色のフェーズ変更は、PowerUpのAnimation Eventで「加速」が表示された後に解禁する。
+        return Mathf.Min(hpPhase, _unlockedAfterImageHpPhase);
+    }
+
+    private Color GetCurrentAfterImageColor()
+    {
+        switch (GetAfterImageHpPhase())
+        {
+            case 2:
+                return lowHpAfterImageColor;
+            case 1:
+                return middleHpAfterImageColor;
+            default:
+                return highHpAfterImageColor;
+        }
+    }
+
+    private void BeginTeleportAfterImage()
+    {
+        if (!_isAfterImageEnabled)
+            return;
+
+        // 通常残像を移動前の位置に長く残さず、消失地点の短い1組へ置き換える。
+        ClearActivePoseAfterImages();
+        CreateTeleportDepartureAfterImages();
+        _isTeleportAfterImageSequenceActive = true;
+        _isDynamicAfterImageSuspended = true;
+        _slowAfterImageElapsedTime = 0f;
+    }
+
+    private void ResumeDynamicAfterImage()
+    {
+        if (!_isAfterImageEnabled)
+            return;
+
+        _previousAfterImagePosition = transform.position;
+        ResetAfterImageRendererPositions();
+        _slowAfterImageElapsedTime = 0f;
+        _isDynamicAfterImageSuspended = _isTeleportAfterImageSequenceActive;
+    }
+
+    private void EndTeleportAfterImageSequence()
+    {
+        _isTeleportAfterImageSequenceActive = false;
+        ResumeDynamicAfterImage();
+    }
+
+    private void CreateTeleportDepartureAfterImages()
+    {
+        if (hologramTargetRenderers == null)
+            return;
+
+        // 連続テレポート時は前回分を残さず、消失地点に短い残像を1組だけ表示する。
+        ClearTeleportAfterImages();
+
+        Color color = GetCurrentAfterImageColor();
+        color.a = Mathf.Clamp01(color.a * teleportAfterImageAlphaMultiplier);
+        // テレポートでは消失直後の一瞬だけ残し、通常残像のような長い軌跡にはしない。
+        float duration = Mathf.Min(Mathf.Max(0f, teleportAfterImageDuration), 0.001f);
+        float fadeTime = Mathf.Min(Mathf.Max(0.01f, teleportAfterImageFadeTime), 0.035f);
+
+        foreach (SpriteRenderer targetRenderer in hologramTargetRenderers)
+        {
+            if (targetRenderer == null || targetRenderer.sprite == null)
+                continue;
+
+            GameObject afterImageObject = new GameObject(
+                $"{targetRenderer.gameObject.name}_TeleportAfterImage"
+            );
+            afterImageObject.layer = targetRenderer.gameObject.layer;
+            Chapter3BossSkinnedAfterImage afterImage =
+                afterImageObject.AddComponent<Chapter3BossSkinnedAfterImage>();
+            afterImage.Initialize(
+                targetRenderer,
+                afterImageMaterial != null ? afterImageMaterial : targetRenderer.sharedMaterial,
+                color,
+                duration,
+                fadeTime,
+                ReleaseTeleportAfterImage
+            );
+            _teleportAfterImageObjects.Add(afterImageObject);
+        }
+    }
+
+    private void ReleaseTeleportAfterImage(Chapter3BossSkinnedAfterImage afterImage)
+    {
+        if (afterImage == null)
+            return;
+
+        GameObject afterImageObject = afterImage.gameObject;
+        _teleportAfterImageObjects.Remove(afterImageObject);
+        Destroy(afterImageObject);
+    }
+
+    private void ClearTeleportAfterImages()
+    {
+        foreach (GameObject afterImageObject in _teleportAfterImageObjects)
+        {
+            if (afterImageObject != null)
+                Destroy(afterImageObject);
+        }
+        _teleportAfterImageObjects.Clear();
+    }
+    #endregion
+
     #region メインループ・状態推移
     /// <summary>
     /// Fungusから呼び出し、魔法陣からボスが徐々に現れる召喚演出を開始します。
@@ -1489,6 +2018,8 @@ public class Chapter3BossMoveController : MonoBehaviour
         {
             bossHealth.InitializeBossSpecifics();
         }
+
+        SetAfterImageEffectsEnabled(true);
     }
 
     /// <summary>
@@ -1538,12 +2069,14 @@ public class Chapter3BossMoveController : MonoBehaviour
         if (!_hasTriggered75PercentPowerUp && normalizedHP < 0.75f)
         {
             _hasTriggered75PercentPowerUp = true;
+            _currentPowerUpHpPhase = 1;
             return true;
         }
 
         if (!_hasTriggered40PercentPowerUp && normalizedHP < 0.4f)
         {
             _hasTriggered40PercentPowerUp = true;
+            _currentPowerUpHpPhase = 2;
             return true;
         }
 
@@ -1596,6 +2129,10 @@ public class Chapter3BossMoveController : MonoBehaviour
             return;
 
         GameUIManager.instance?.ShowSkillNameUI(POWER_UP_SKILL_NAME);
+        _unlockedAfterImageHpPhase = Mathf.Max(
+            _unlockedAfterImageHpPhase,
+            _currentPowerUpHpPhase
+        );
     }
 
     /// <summary>
@@ -2433,6 +2970,7 @@ public class Chapter3BossMoveController : MonoBehaviour
             }
         }
         yield return fadeOutSeq.SetEase(Ease.OutCubic).WaitForCompletion();
+        BeginTeleportAfterImage();
 
         // --- 4. 瞬間移動と攻撃のループ ---
         // 攻撃回数 + 1(最後の出現用) で等分することで、1回目の出現を1区画先から開始する
@@ -2458,6 +2996,8 @@ public class Chapter3BossMoveController : MonoBehaviour
                 DisableAllAttackDamage();
                 break;
             }
+
+            ResumeDynamicAfterImage();
 
             // 出現に合わせたアニメーション (Ready)
             if (_animator != null)
@@ -2526,6 +3066,7 @@ public class Chapter3BossMoveController : MonoBehaviour
                 }
             }
             yield return disappearSeq.SetEase(Ease.OutCubic).WaitForCompletion();
+            BeginTeleportAfterImage();
         }
 
         // --- 5. 最後の出現（攻撃なしでIdleへ戻る） ---
@@ -2534,6 +3075,7 @@ public class Chapter3BossMoveController : MonoBehaviour
             areaBottomBound + idleHeightFromBottom,
             transform.position.z
         );
+        ResumeDynamicAfterImage();
 
         Sequence finalAppearSeq = DOTween.Sequence();
         foreach (var renderer in hologramTargetRenderers)
@@ -2569,6 +3111,7 @@ public class Chapter3BossMoveController : MonoBehaviour
             }
         }
 
+        EndTeleportAfterImageSequence();
         CurrentState = BossState.Idle;
         _currentNextInterval = retreatTeleportNextInterval;
     }
@@ -2681,8 +3224,11 @@ public class Chapter3BossMoveController : MonoBehaviour
         if (_animator != null)
         {
             SetAnimatorSpeed(_highAttackReadySpeedHash, readyDur);
-            // 最初はHighAttackの構えを使用
+            ResetRushComboAttackTriggers();
             _animator.SetTrigger(_comboHighAttackReadyTriggerHash);
+
+            // TriggerをAnimatorに消費させ、Ready_High_Comboへの遷移を確定してから移動を開始する。
+            yield return null;
         }
 
         // 指定の高さへ移動しながら待機
@@ -2699,6 +3245,7 @@ public class Chapter3BossMoveController : MonoBehaviour
         if (_animator != null)
         {
             SetAnimatorSpeed(_highAttackSpeedHash, attackDur);
+            ResetRushComboAttackTriggers();
             _animator.SetTrigger(_comboHighAttackTriggerHash);
         }
         if (shootEffect != null)
@@ -2725,6 +3272,7 @@ public class Chapter3BossMoveController : MonoBehaviour
         if (_animator != null)
         {
             SetAnimatorSpeed(_upperAttackSpeedHash, attackDur);
+            ResetRushComboAttackTriggers();
             _animator.SetTrigger(_upperAttackTriggerHash);
         }
         if (shootEffect != null)
@@ -2751,6 +3299,7 @@ public class Chapter3BossMoveController : MonoBehaviour
         if (_animator != null)
         {
             SetAnimatorSpeed(_highAttackSpeedHash, attackDur);
+            ResetRushComboAttackTriggers();
             _animator.SetTrigger(_comboHighAttackTriggerHash);
         }
         if (shootEffect != null)
@@ -2772,6 +3321,16 @@ public class Chapter3BossMoveController : MonoBehaviour
         yield return new WaitForSeconds(waitDur);
 
         _currentNextInterval = rushComboNextInterval;
+    }
+
+    /// <summary>
+    /// 突進コンボ用のAny State Triggerを毎回初期化し、前回の連撃から残った遷移要求を防ぎます。
+    /// </summary>
+    private void ResetRushComboAttackTriggers()
+    {
+        _animator.ResetTrigger(_comboHighAttackReadyTriggerHash);
+        _animator.ResetTrigger(_comboHighAttackTriggerHash);
+        _animator.ResetTrigger(_upperAttackTriggerHash);
     }
 
     private IEnumerator PerformRushComboStepMovement(
@@ -2824,6 +3383,7 @@ public class Chapter3BossMoveController : MonoBehaviour
             }
         }
         yield return initialFadeSeq.SetEase(Ease.OutCubic).WaitForCompletion();
+        BeginTeleportAfterImage();
 
         // 瞬間移動ループ
         for (int i = 0; i < teleportCount; i++)
@@ -2885,6 +3445,7 @@ public class Chapter3BossMoveController : MonoBehaviour
             // 座標の適用と向きの固定（常にプレイヤー側を向く）
             transform.position = new Vector3(targetX, targetY, transform.position.z);
             UpdateFacingDirection(playerX > transform.position.x);
+            ResumeDynamicAfterImage();
 
             if (isFinalAttack)
             {
@@ -2982,6 +3543,7 @@ public class Chapter3BossMoveController : MonoBehaviour
                     }
                 }
                 yield return readySeq.WaitForCompletion();
+                BeginTeleportAfterImage();
 
                 yield return new WaitForSeconds(GetCombatDuration(mirageIntervalTime));
             }
@@ -3016,11 +3578,13 @@ public class Chapter3BossMoveController : MonoBehaviour
                     }
                 }
                 yield return teleSeq.WaitForCompletion();
+                BeginTeleportAfterImage();
 
                 yield return new WaitForSeconds(GetCombatDuration(mirageIntervalTime));
             }
         }
 
+        EndTeleportAfterImageSequence();
         _currentNextInterval = mirageAssaultNextInterval;
     }
     #endregion

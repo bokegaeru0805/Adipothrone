@@ -26,9 +26,11 @@ public class SaveLoadManager : MonoBehaviour
 {
     public static SaveLoadManager instance { get; private set; } //シングルトンインスタンス
     private const string SETTINGS_FILE_PATH = "GameSettings.es3"; // ファイルパスとキーの定義
+    private const string DEBUG_SETTINGS_FILE_PATH = "DebugSettings.es3";
     private const int DEBUG_LOAD_SLOT_NUMBER = -1; //デバッグ用のロードスロット番号
     private Vector2 PlayerStartPos = new Vector2(-110, 0); //プレイヤーの初期座標
     public GameSettingsSaveData Settings { get; private set; } // 現在ロードしているデータ
+    public DebugSettingsSaveData DebugSettings { get; private set; }
     public static float timeSinceLoad; //ロードしてからのプレイ時間を保存する変数
     public static float StartTime; //始まるまでのプレイ時間を保存する変数
     public SaveLoadMode CurrentSaveLoadMode { get; private set; } = SaveLoadMode.Load; //セーブロードの状態を管理する変数
@@ -172,6 +174,7 @@ public class SaveLoadManager : MonoBehaviour
         }
 
         LoadSettings(); // ゲーム起動時に必ず設定ファイルを読み込む
+        LoadDebugSettings();
 
         Version currentGameVersion = new Version(Application.version); // 現在のゲームバージョンをVersionオブジェクトとして取得
         FileSlotInfos = new Dictionary<int, SaveSlotInfo>(); //ゲームのプレイ時間などの情報を保存する変数を初期化
@@ -956,6 +959,43 @@ public class SaveLoadManager : MonoBehaviour
     public void SaveSettings()
     {
         ES3.Save<GameSettingsSaveData>("settings", Settings, SETTINGS_FILE_PATH);
+    }
+
+    /// <summary>
+    /// セーブスロットに依存しないデバッグ設定を読み込みます。
+    /// </summary>
+    public void LoadDebugSettings()
+    {
+        bool settingsExist = ES3.KeyExists("settings", DEBUG_SETTINGS_FILE_PATH);
+        DebugSettings = ES3.Load<DebugSettingsSaveData>(
+            "settings",
+            DEBUG_SETTINGS_FILE_PATH,
+            new DebugSettingsSaveData()
+        );
+
+        if (!settingsExist)
+        {
+            // 既存のPlayerPrefs設定を初回のみ引き継ぐ。
+            DebugSettings.isShowEventArea = PlayerPrefs.GetInt("ShowEventArea", 0) == 1;
+            DebugSettings.debugTimeScale = PlayerPrefs.GetFloat("DebugTimeScale", 1f);
+        }
+
+        DebugSettings.Validate();
+
+        if (!settingsExist)
+            SaveDebugSettings();
+    }
+
+    /// <summary>
+    /// セーブスロットに依存しないデバッグ設定を保存します。
+    /// </summary>
+    public void SaveDebugSettings()
+    {
+        if (DebugSettings == null)
+            return;
+
+        DebugSettings.Validate();
+        ES3.Save<DebugSettingsSaveData>("settings", DebugSettings, DEBUG_SETTINGS_FILE_PATH);
     }
 
     /// <summary>

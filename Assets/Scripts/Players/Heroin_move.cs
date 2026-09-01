@@ -39,7 +39,7 @@ public class Heroin_move : MonoBehaviour
     /// <summary>
     /// 外部から現在の無敵状態を読み取るための公開プロパティ
     /// </summary>
-    public bool IsImmune => immunity;
+    public bool IsImmune => immunity || isDebugInvincible;
 
     /// <summary>
     /// 現在の水平方向の移動入力意図。左は-1、入力なしは0、右は1を返します。
@@ -104,6 +104,7 @@ public class Heroin_move : MonoBehaviour
     private float gravity; //重力の大きさを保存する変数
     private bool isAttacking = false; // 攻撃中かどうかのフラグ
     private bool immunity = false; //無敵かどうかのフラグ
+    private bool isDebugInvincible = false; //デバッグ機能による恒久無敵フラグ
     private bool isFadingOut = true; //不透明度が減少するかどうかのフラグ
     private bool move = true; //操作できるかどうかのフラグ
     private bool isFirstGetKey = false; //初めてキー入力をしたかどうかのフラグ
@@ -1018,6 +1019,14 @@ public class Heroin_move : MonoBehaviour
     public void EnableInvincibility(float time)
     {
         StartCoroutine(EnableInvincibilityCoroutine(time));
+    }
+
+    /// <summary>
+    /// デバッグ用の恒久無敵状態を設定します。
+    /// </summary>
+    public void SetDebugInvincibility(bool isEnabled)
+    {
+        isDebugInvincible = isEnabled;
     }
 
     private IEnumerator EnableInvincibilityCoroutine(float time)

@@ -40,17 +40,26 @@ SpriteAtlas:
     isAtlasV2: 0
     cachedData: {fileID: 0}
     packedSpriteRenderDataKeys:
+    - 75edf0b0d85412c4ea92025396f5908c: 21300000
+    - 08c48b12a14ddd347bcb249fd88d0489: 21300000
+    - a8cd7872594d6bf41976a29247765c18: 21300000
     - 652bc943fab9ceb4ca60239bae772b79: 1267147520
+    - 4dbec8d35a37461419035375dbd7017f: 21300000
+    - 7c5e4c25e53348d4a99c84888ec90d1a: 21300000
     - 26bd7887e53e8fe448e692286cdac493: 72990847
     - 26bd7887e53e8fe448e692286cdac493: 1441070913
     - 26bd7887e53e8fe448e692286cdac493: 1083562796
     - 26bd7887e53e8fe448e692286cdac493: 1463958095
+    - 4a5f9d97ac40a4c4abdfcd101f1585bc: 21300000
     - 96259aa7da2d9b84fa11796214e34a9f: -1197484545
     - 3af3a498d5a15c1419cab6eb446ad826: 21300000
     - 90428b98cd0c8a048937eb4baead7343: 21300000
+    - cb3d11d82249ec8448cd6e9d9ea2a0e9: 21300000
     - 9d42c92a0d34cea42be0cc0a6c28d185: 21300000
     - 3f54beea224e6ae4ebb6eb85c4a69631: 21300000
+    - a1817f2b2ea3f974b8b99915300b1bd0: 21300000
     - 79c5391c3fbde0643972416f8af7db6f: 21300000
+    - 2a9a1b9ca506ef94d95bae90d0d6e81c: 21300000
     - f1e8c5cc28637724a97b8505f4b31c4b: 21300000
     - 0303cecc493ad884a9093109e0a03d9e: 21300000
     - 3e89aa0d305bdd74d89b8f5a467d1fdd: 21300000
@@ -65,17 +74,26 @@ SpriteAtlas:
     - bc666b9fecf7ea84eb34b1df26f2ba3c: 21300000
   m_MasterAtlas: {fileID: 0}
   m_PackedSprites:
+  - {fileID: 21300000, guid: 75edf0b0d85412c4ea92025396f5908c, type: 3}
+  - {fileID: 21300000, guid: 08c48b12a14ddd347bcb249fd88d0489, type: 3}
+  - {fileID: 21300000, guid: a8cd7872594d6bf41976a29247765c18, type: 3}
   - {fileID: 1267147520, guid: 652bc943fab9ceb4ca60239bae772b79, type: 3}
+  - {fileID: 21300000, guid: 4dbec8d35a37461419035375dbd7017f, type: 3}
+  - {fileID: 21300000, guid: 7c5e4c25e53348d4a99c84888ec90d1a, type: 3}
   - {fileID: 72990847, guid: 26bd7887e53e8fe448e692286cdac493, type: 3}
   - {fileID: 1441070913, guid: 26bd7887e53e8fe448e692286cdac493, type: 3}
   - {fileID: 1083562796, guid: 26bd7887e53e8fe448e692286cdac493, type: 3}
   - {fileID: 1463958095, guid: 26bd7887e53e8fe448e692286cdac493, type: 3}
+  - {fileID: 21300000, guid: 4a5f9d97ac40a4c4abdfcd101f1585bc, type: 3}
   - {fileID: -1197484545, guid: 96259aa7da2d9b84fa11796214e34a9f, type: 3}
   - {fileID: 21300000, guid: 3af3a498d5a15c1419cab6eb446ad826, type: 3}
   - {fileID: 21300000, guid: 90428b98cd0c8a048937eb4baead7343, type: 3}
+  - {fileID: 21300000, guid: cb3d11d82249ec8448cd6e9d9ea2a0e9, type: 3}
   - {fileID: 21300000, guid: 9d42c92a0d34cea42be0cc0a6c28d185, type: 3}
   - {fileID: 21300000, guid: 3f54beea224e6ae4ebb6eb85c4a69631, type: 3}
+  - {fileID: 21300000, guid: a1817f2b2ea3f974b8b99915300b1bd0, type: 3}
   - {fileID: 21300000, guid: 79c5391c3fbde0643972416f8af7db6f, type: 3}
+  - {fileID: 21300000, guid: 2a9a1b9ca506ef94d95bae90d0d6e81c, type: 3}
   - {fileID: 21300000, guid: f1e8c5cc28637724a97b8505f4b31c4b, type: 3}
   - {fileID: 21300000, guid: 0303cecc493ad884a9093109e0a03d9e, type: 3}
   - {fileID: 21300000, guid: 3e89aa0d305bdd74d89b8f5a467d1fdd, type: 3}
@@ -89,17 +107,26 @@ SpriteAtlas:
   - {fileID: 21300000, guid: bbd0605f2512d1f46b371cb2144de5ca, type: 3}
   - {fileID: 21300000, guid: bc666b9fecf7ea84eb34b1df26f2ba3c, type: 3}
   m_PackedSpriteNamesToIndex:
+  - Gargoyle_CrimsonEye
+  - SnowFairy_SnowCrystalCharm
+  - SnowFieldGolemMedium_FrostCrystalGauntlet
   - Herb
+  - RareFairy_Jewel
+  - SnowFieldGolemLarge_Core
   - StatusLevelPotion_Speed
   - StatusLevelPotion_Luck
   - StatusLevelPotion_Defense
   - StatusLevelPotion_Attack
+  - SnowFieldGolemSmall_FrostGenerator
   - Berry
   - CactusEnemy_Arm
-  - donut_choco
+  - Donut_Choco
+  - TowerGolem_TowerStoneArmorFragment
   - DesertTempleGolem_GolemCore
   - CactusEnemy_Flower
+  - SnowFieldGolemMedium_Core
   - Bottle_OasisWater
+  - TowerBat_Wing
   - SeleYam
   - Teal-Jasper-Elixir
   - DesertTempleGolem_Float_Brick

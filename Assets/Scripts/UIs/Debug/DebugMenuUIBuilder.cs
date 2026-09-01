@@ -20,7 +20,10 @@ public sealed class DebugMenuUIBuilder
         public TMP_InputField PositionInput;
         public TMP_InputField ItemAmountInput;
         public TMP_InputField TimeScaleInput;
+        public TMP_InputField MouseDamagePercentInput;
         public Toggle EventAreaToggle;
+        public Toggle MouseDamageToggle;
+        public Toggle PlayerInvincibleToggle;
         public TextMeshProUGUI SceneText;
         public TextMeshProUGUI FpsText;
         public TextMeshProUGUI StatusText;
@@ -40,6 +43,8 @@ public sealed class DebugMenuUIBuilder
         public Button UnlockAllSkillsButton;
         public Button UnlockAllEnemyDropItemsButton;
         public Button ApplyTimeScaleButton;
+        public Button ApplyMouseDamagePercentButton;
+        public Button ResetDebugSettingsButton;
         public readonly List<Button> TimeScalePresetButtons = new List<Button>();
         public readonly List<Button> TabButtons = new List<Button>();
         public readonly List<GameObject> TabPanels = new List<GameObject>();
@@ -229,7 +234,7 @@ public sealed class DebugMenuUIBuilder
         CreateText(
             "WorldHint",
             parent,
-            "設定はPlayerPrefsへ保存され、配置済みのBaseFieldEventへ通知されます。",
+            "設定はDebugSettings.es3へ保存され、配置済みのBaseFieldEventへ通知されます。",
             19f,
             MutedTextColor
         );
@@ -256,6 +261,25 @@ public sealed class DebugMenuUIBuilder
             20f,
             MutedTextColor
         );
+
+        CreateSectionTitle(parent, "戦闘テスト");
+        view.MouseDamageToggle = CreateToggle("MouseDamageToggle", parent, "クリックで敵・破壊可能オブジェクトにダメージ");
+        view.MouseDamagePercentInput = CreateValueRow(
+            parent,
+            "クリックダメージ",
+            "最大HPに対する割合（0 ～ 100）",
+            out view.ApplyMouseDamagePercentButton,
+            "%を設定"
+        );
+        view.PlayerInvincibleToggle = CreateToggle("PlayerInvincibleToggle", parent, "プレイヤー無敵");
+        view.ResetDebugSettingsButton = CreateButton(
+            "ResetDebugSettings",
+            parent,
+            "デバッグ設定を初期値へ戻す",
+            0f,
+            FieldColor
+        );
+        view.ResetDebugSettingsButton.gameObject.GetComponent<LayoutElement>().preferredHeight = 52f;
     }
 
     private void BuildStatusBar(Transform parent, View view)

@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
 using UnityEngine.EventSystems;
@@ -41,6 +42,16 @@ public class DebugMenuManager : MonoBehaviour
     [SerializeField]
     private TMP_InputField timeScaleInput; // ゲームスピード変更用入力欄
 
+    [Header("戦闘テスト設定")]
+    [SerializeField]
+    private bool isMouseDamageEnabled;
+
+    [SerializeField, Range(0f, 100f)]
+    private float mouseDamagePercent = 25f;
+
+    [SerializeField]
+    private bool isPlayerInvincible;
+
     [Header("デバッグ表示設定")]
     [SerializeField]
     private Toggle eventAreaToggle; // イベントエリアの表示・非表示を切り替えるトグル
@@ -64,6 +75,7 @@ public class DebugMenuManager : MonoBehaviour
     private GameObject _previousSelectedObject;
     private float _fpsElapsed;
     private int _fpsFrameCount;
+    private Heroin_move _playerController;
 
     private void Awake()
     {
@@ -72,7 +84,6 @@ public class DebugMenuManager : MonoBehaviour
         // PlayerPrefsからデバッグモードの解放状態を読み込む（1なら解放、0なら未解放）
         // エディタ上でもビルド後でも状態が保存・復元されるようになります
         isDebugModeUnlocked = PlayerPrefs.GetInt("DebugModeUnlocked", 0) == 1;
-        isShowEventArea = PlayerPrefs.GetInt("ShowEventArea", 0) == 1;
 
         // Scene/Prefab上の手動構築UIには依存せず、実行時に新しいUIを生成する。
         Transform uiParent = transform.parent != null ? transform.parent : transform;
@@ -92,6 +103,8 @@ public class DebugMenuManager : MonoBehaviour
 
     private void Start()
     {
+        LoadDebugSettings();
+
         // 旧DebugCanvasは移行期間中もPrefabに残すが、表示には使用しない。
         if (debugCanvas != null)
         {
@@ -126,6 +139,14 @@ public class DebugMenuManager : MonoBehaviour
             eventAreaToggle.onValueChanged.AddListener(OnToggleEventArea);
         }
 
+        _view.MouseDamageToggle.SetIsOnWithoutNotify(isMouseDamageEnabled);
+        _view.PlayerInvincibleToggle.SetIsOnWithoutNotify(isPlayerInvincible);
+        _view.MouseDamagePercentInput.text = mouseDamagePercent.ToString("0.##");
+        _view.MouseDamageToggle.onValueChanged.AddListener(OnToggleMouseDamage);
+        _view.PlayerInvincibleToggle.onValueChanged.AddListener(OnTogglePlayerInvincible);
+        _view.MouseDamagePercentInput.onSubmit.AddListener(ApplyMouseDamagePercent);
+        ApplyPlayerInvincibility();
+
         // 初期値のセットアップ
         UpdateCurrentStatusToUI();
         if (itemAmountInput != null)
@@ -151,6 +172,11 @@ public class DebugMenuManager : MonoBehaviour
 
         if (_isMenuOpen)
             UpdateFpsDisplay();
+        else
+            ApplyMouseDamageOnClick();
+
+        if (isPlayerInvincible)
+            ApplyPlayerInvincibility();
     }
 
     private void OnDisable()
@@ -180,6 +206,8 @@ public class DebugMenuManager : MonoBehaviour
         _view.UnlockAllSkillsButton.onClick.AddListener(UnlockAllSkills);
         _view.UnlockAllEnemyDropItemsButton.onClick.AddListener(UnlockAllEnemyDropItems);
         _view.ApplyTimeScaleButton.onClick.AddListener(() => ApplyTimeScale(timeScaleInput.text));
+        _view.ApplyMouseDamagePercentButton.onClick.AddListener(() => ApplyMouseDamagePercent(_view.MouseDamagePercentInput.text));
+        _view.ResetDebugSettingsButton.onClick.AddListener(ResetDebugSettings);
 
         float[] presets = { 0.25f, 0.5f, 1f, 2f, 4f };
         for (int i = 0; i < _view.TimeScalePresetButtons.Count; i++)
@@ -568,10 +596,62 @@ public class DebugMenuManager : MonoBehaviour
             TimeManager.instance.SetDebugTimeScale(scale);
             Debug.Log($"ゲームスピードを {scale} 倍に変更しました。");
             timeScaleInput.text = TimeManager.instance.DebugBaseTimeScale.ToString("0.##");
+            SaveDebugSettings();
             SetStatus($"ゲーム速度を {TimeManager.instance.DebugBaseTimeScale:0.##} 倍に変更しました。", false);
         }
         else
             SetStatus("エラー: ゲーム速度には数値を入力してください。", true);
+    }
+
+    /// <summary>
+    /// マウスクリック時に、クリック位置の敵または破壊可能オブジェクトへ割合ダメージを与えます。
+    /// </summary>
+    private void ApplyMouseDamageOnClick()
+    {
+        if (!isMouseDamageEnabled || !Input.GetMouseButtonDown(0))
+            return;
+
+        if (EventSystem.current != null && EventSystem.current.IsPointerOverGameObject())
+            return;
+
+        Camera mainCamera = Camera.main;
+        if (mainCamera == null)
+        {
+            Debug.LogWarning("メインカメラが存在しないため、マウスダメージを適用できません。");
+            return;
+        }
+
+        float damageRatio = mouseDamagePercent / 100f;
+        if (damageRatio <= 0f)
+            return;
+
+        Vector2 mouseWorldPosition = mainCamera.ScreenToWorldPoint(Input.mousePosition);
+        Collider2D[] hitColliders = Physics2D.OverlapPointAll(mouseWorldPosition);
+        var damagedTargets = new HashSet<CharacterHealth>();
+
+        foreach (Collider2D hitCollider in hitColliders)
+        {
+            CharacterHealth health = hitCollider.GetComponentInParent<CharacterHealth>();
+            if (health == null || !damagedTargets.Add(health) || health.MaxHP <= 0)
+                continue;
+
+            int damage = Mathf.CeilToInt(health.MaxHP * damageRatio);
+            health.Damage(damage);
+        }
+    }
+
+    private void ApplyMouseDamagePercent(string text)
+    {
+        if (!float.TryParse(text, out float percent))
+        {
+            SetStatus("エラー: ダメージ率には数値を入力してください。", true);
+            return;
+        }
+
+        mouseDamagePercent = Mathf.Clamp(percent, 0f, 100f);
+        _view.MouseDamagePercentInput.text = mouseDamagePercent.ToString("0.##");
+        SaveDebugSettings();
+        SetStatus($"クリックダメージを最大HPの{mouseDamagePercent:0.##}%に設定しました。", false);
     }
 
     /// <summary>
@@ -676,11 +756,92 @@ public class DebugMenuManager : MonoBehaviour
     private void OnToggleEventArea(bool value)
     {
         isShowEventArea = value;
-        // 状態をセーブデータに保存
-        PlayerPrefs.SetInt("ShowEventArea", value ? 1 : 0);
-        PlayerPrefs.Save();
+        SaveDebugSettings();
 
         OnEventAreaDisplayToggled?.Invoke(value);
         Debug.Log($"イベントエリア表示を {(value ? "ON" : "OFF")} に切り替え、保存しました。");
+    }
+
+    private void OnToggleMouseDamage(bool value)
+    {
+        isMouseDamageEnabled = value;
+        SaveDebugSettings();
+        SetStatus($"クリックダメージを{(value ? "有効" : "無効")}にしました。", false);
+    }
+
+    private void OnTogglePlayerInvincible(bool value)
+    {
+        isPlayerInvincible = value;
+        ApplyPlayerInvincibility();
+        SaveDebugSettings();
+        SetStatus($"プレイヤー無敵を{(value ? "有効" : "無効")}にしました。", false);
+    }
+
+    private void ApplyPlayerInvincibility()
+    {
+        if (_playerController == null)
+            _playerController = FindObjectOfType<Heroin_move>();
+
+        if (_playerController != null)
+            _playerController.SetDebugInvincibility(isPlayerInvincible);
+    }
+
+    private void LoadDebugSettings()
+    {
+        DebugSettingsSaveData settings = SaveLoadManager.instance?.DebugSettings;
+        if (settings == null)
+            return;
+
+        settings.Validate();
+        isShowEventArea = settings.isShowEventArea;
+        isMouseDamageEnabled = settings.isMouseDamageEnabled;
+        mouseDamagePercent = settings.mouseDamagePercent;
+        isPlayerInvincible = settings.isPlayerInvincible;
+        OnEventAreaDisplayToggled?.Invoke(isShowEventArea);
+
+        if (TimeManager.instance != null)
+            TimeManager.instance.SetDebugTimeScale(settings.debugTimeScale);
+    }
+
+    private void SaveDebugSettings()
+    {
+        SaveLoadManager saveLoadManager = SaveLoadManager.instance;
+        if (saveLoadManager == null || saveLoadManager.DebugSettings == null)
+            return;
+
+        DebugSettingsSaveData settings = saveLoadManager.DebugSettings;
+        settings.isShowEventArea = isShowEventArea;
+        settings.isMouseDamageEnabled = isMouseDamageEnabled;
+        settings.mouseDamagePercent = mouseDamagePercent;
+        settings.isPlayerInvincible = isPlayerInvincible;
+        if (TimeManager.instance != null)
+            settings.debugTimeScale = TimeManager.instance.DebugBaseTimeScale;
+
+        saveLoadManager.SaveDebugSettings();
+    }
+
+    private void ResetDebugSettings()
+    {
+        var defaults = new DebugSettingsSaveData();
+        isShowEventArea = defaults.isShowEventArea;
+        isMouseDamageEnabled = defaults.isMouseDamageEnabled;
+        mouseDamagePercent = defaults.mouseDamagePercent;
+        isPlayerInvincible = defaults.isPlayerInvincible;
+
+        eventAreaToggle.SetIsOnWithoutNotify(isShowEventArea);
+        _view.MouseDamageToggle.SetIsOnWithoutNotify(isMouseDamageEnabled);
+        _view.PlayerInvincibleToggle.SetIsOnWithoutNotify(isPlayerInvincible);
+        _view.MouseDamagePercentInput.text = mouseDamagePercent.ToString("0.##");
+
+        if (TimeManager.instance != null)
+        {
+            TimeManager.instance.SetDebugTimeScale(defaults.debugTimeScale);
+            timeScaleInput.text = TimeManager.instance.DebugBaseTimeScale.ToString("0.##");
+        }
+
+        OnEventAreaDisplayToggled?.Invoke(isShowEventArea);
+        ApplyPlayerInvincibility();
+        SaveDebugSettings();
+        SetStatus("デバッグ設定を初期値へ戻しました。", false);
     }
 }
