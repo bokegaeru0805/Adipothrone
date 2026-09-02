@@ -10,12 +10,19 @@ public class FaboProjectileController : PoolableObject
 {
     public const string RobotShootPoolTag = "RobotShoot";
 
+    private struct HitCooldown
+    {
+        public GameObject target;
+        public float remainingTime;
+    }
+
     #region キャッシュ・外部参照
     private CriWare.Assets.CriAtomSePlayer sePlayer;
     private SpriteRenderer _spriteRenderer;
     private Rigidbody2D _rigidbody;
     private CircleCollider2D _circleCollider;
     private Animator _animator;
+    private LayerMask _groundLayer;
     #endregion
 
     #region インスペクター設定
@@ -48,7 +55,7 @@ public class FaboProjectileController : PoolableObject
 
     #region 状態管理
     public bool isStarted { get; private set; } = false; // 生成・初期化が完了したかどうか
-    private Dictionary<GameObject, float> enemyCooldowns = new Dictionary<GameObject, float>(); // 敵ごとの連続ヒット防止用タイマー
+    private readonly List<HitCooldown> _enemyCooldowns = new List<HitCooldown>(128); // 敵ごとの連続ヒット防止用タイマー
     private int currentPenetrationCount = 0; // 現在の貫通ヒット数
     private bool isMoveRight = true; // 弾の進行方向（true: 右, false: 左）
     private Vector2 initialPosition; // 発射時の初期座標
@@ -58,6 +65,16 @@ public class FaboProjectileController : PoolableObject
     private bool _isLifetimeActive = false;
     private bool _isSubBulletMoving = false;
     private float _subBulletYDirection = 0f;
+    private bool _isBoomerangMoving = false;
+    private float _boomerangElapsedTime = 0f;
+    private Vector3 _boomerangStartPosition;
+    private Vector3 _boomerangControlPoint1;
+    private Vector3 _boomerangControlPoint2;
+    private Transform _boomerangReturnTarget;
+    private Robot_move _boomerangOwner;
+    private bool _isBoomerangOwnerRegistered = false;
+    private bool _isBouncingProjectile = false;
+    private int _currentBounceCount = 0;
     #endregion
 
     private void Awake()
@@ -67,10 +84,24 @@ public class FaboProjectileController : PoolableObject
         _rigidbody = GetComponent<Rigidbody2D>();
         _circleCollider = GetComponent<CircleCollider2D>();
         _animator = GetComponent<Animator>();
+        _groundLayer = LayerMask.GetMask(
+            GameConstants.PHYSICS_LAYER_NAME_GROUND,
+            GameConstants.PHYSICS_LAYER_NAME_OBJECT_GROUND
+        );
+    }
+
+    private void OnDisable()
+    {
+        _isLifetimeActive = false;
+        _isSubBulletMoving = false;
+        _isBoomerangMoving = false;
+        ReleaseBoomerangOwner();
     }
 
     private void Update()
     {
+        UpdateEnemyCooldowns(Time.deltaTime);
+
         if (_isLifetimeActive)
         {
             _remainingLifetime -= Time.deltaTime;
@@ -89,6 +120,59 @@ public class FaboProjectileController : PoolableObject
             _rigidbody.velocity = new Vector2(_rigidbody.velocity.x, 0f);
             _isSubBulletMoving = false;
         }
+
+        if (_isBoomerangMoving)
+        {
+            UpdateBoomerangMovement();
+        }
+
+        if (_isBouncingProjectile && _rigidbody.velocity.sqrMagnitude > 0.01f)
+        {
+            float angle =
+                Mathf.Atan2(_rigidbody.velocity.y, _rigidbody.velocity.x) * Mathf.Rad2Deg;
+            transform.rotation = Quaternion.Euler(0f, 0f, angle);
+        }
+    }
+
+    private void FixedUpdate()
+    {
+        if (!_isBouncingProjectile || _rigidbody.velocity.y > 0f)
+            return;
+
+        Vector2 boxSize = new Vector2(_circleCollider.bounds.size.x, 0.05f);
+        float checkDistance =
+            Mathf.Abs(_rigidbody.velocity.y) * Time.fixedDeltaTime + 0.1f;
+        RaycastHit2D hit = Physics2D.BoxCast(
+            _circleCollider.bounds.center,
+            boxSize,
+            0f,
+            Vector2.down,
+            checkDistance,
+            _groundLayer
+        );
+
+        if (hit.collider == null)
+            return;
+
+        if (_currentBounceCount >= currentShootData.bouncingMaxCount)
+        {
+            ReturnProjectile();
+            return;
+        }
+
+        _currentBounceCount++;
+        float colliderBottomOffset = transform.position.y - _circleCollider.bounds.min.y;
+        transform.position = new Vector3(
+            transform.position.x,
+            hit.point.y + colliderBottomOffset,
+            transform.position.z
+        );
+
+        float gravity = Mathf.Abs(Physics2D.gravity.y * _rigidbody.gravityScale);
+        float bounceVelocityY = Mathf.Sqrt(
+            2f * gravity * currentShootData.bouncingHeight
+        );
+        _rigidbody.velocity = new Vector2(_rigidbody.velocity.x, bounceVelocityY);
     }
     #region 初期化設定
 
@@ -100,14 +184,32 @@ public class FaboProjectileController : PoolableObject
     /// <param name="moveRight">右方向に発射する場合は true</param>
     public void InitializeBullet(ShootWeaponData data, bool moveRight)
     {
-        InitializeBullet(data, moveRight, false);
+        InitializeBullet(data, moveRight, false, null, null);
     }
 
-    private void InitializeBullet(ShootWeaponData data, bool moveRight, bool isSubProjectile)
+    internal void InitializeBullet(
+        ShootWeaponData data,
+        bool moveRight,
+        Transform boomerangReturnTarget,
+        Robot_move boomerangOwner
+    )
+    {
+        InitializeBullet(data, moveRight, false, boomerangReturnTarget, boomerangOwner);
+    }
+
+    private void InitializeBullet(
+        ShootWeaponData data,
+        bool moveRight,
+        bool isSubProjectile,
+        Transform boomerangReturnTarget,
+        Robot_move boomerangOwner
+    )
     {
         ResetRuntimeState();
         isSubBullet = isSubProjectile;
         isMoveRight = moveRight;
+        _boomerangReturnTarget = boomerangReturnTarget;
+        _boomerangOwner = boomerangOwner;
 
         if (data == null)
         {
@@ -150,7 +252,7 @@ public class FaboProjectileController : PoolableObject
         _spriteRenderer.flipX = !moveRight;
         currentPenetrationCount = 0;
         _remainingLifetime = vanishTime;
-        _isLifetimeActive = true;
+        _isLifetimeActive = moveType != ShootWeaponData.ShootMoveType.Boomerang;
 
         // --- 4. 発射処理の呼び出し ---
         ExecuteFire(_rigidbody);
@@ -209,6 +311,16 @@ public class FaboProjectileController : PoolableObject
             // 3-Wayのサブ弾はBeginSubBulletMovementで速度を設定する
             isStarted = true;
         }
+        else if (moveType == ShootWeaponData.ShootMoveType.Boomerang)
+        {
+            BeginBoomerangMovement();
+            isStarted = true;
+        }
+        else if (moveType == ShootWeaponData.ShootMoveType.Bouncing)
+        {
+            BeginBouncingMovement();
+            isStarted = true;
+        }
         else
         {
             Debug.LogWarning("不明な弾の移動タイプが指定されました: " + moveType);
@@ -233,7 +345,7 @@ public class FaboProjectileController : PoolableObject
         FaboProjectileController subBulletScript =
             subBulletGO.GetComponent<FaboProjectileController>();
 
-        subBulletScript.InitializeBullet(currentShootData, isMoveRight, true);
+        subBulletScript.InitializeBullet(currentShootData, isMoveRight, true, null, null);
         subBulletScript.BeginSubBulletMovement(yDirection);
     }
 
@@ -249,6 +361,93 @@ public class FaboProjectileController : PoolableObject
         // 指定方向へ斜めに撃ち出す
         float horizontalVelocity = (isMoveRight ? 1 : -1) * shootSpeed;
         _rigidbody.velocity = new Vector2(horizontalVelocity, _subBulletYDirection * shootSpeed / 2f);
+    }
+
+    #endregion
+
+    #region ブーメラン軌道
+
+    private void BeginBoomerangMovement()
+    {
+        _rigidbody.velocity = Vector2.zero;
+        _rigidbody.angularVelocity = 0f;
+        _boomerangElapsedTime = 0f;
+        _boomerangStartPosition = transform.position;
+
+        float facingMultiplier = isMoveRight ? 1f : -1f;
+        float topY = _boomerangStartPosition.y + currentShootData.boomerangCurveWidth;
+        float bottomY = Mathf.Max(
+            _boomerangStartPosition.y - currentShootData.boomerangCurveWidth,
+            _boomerangStartPosition.y + currentShootData.boomerangMinYOffset
+        );
+        float firstControlY = currentShootData.isBoomerangOverhand ? topY : bottomY;
+        float secondControlY = currentShootData.isBoomerangOverhand ? bottomY : topY;
+        float controlX =
+            _boomerangStartPosition.x
+            + currentShootData.boomerangDistance * facingMultiplier;
+
+        _boomerangControlPoint1 = new Vector3(controlX, firstControlY, 0f);
+        _boomerangControlPoint2 = new Vector3(controlX, secondControlY, 0f);
+        _isBoomerangMoving = true;
+
+        if (_boomerangOwner != null)
+        {
+            _boomerangOwner.NotifyBoomerangLaunched();
+            _isBoomerangOwnerRegistered = true;
+        }
+    }
+
+    private void UpdateBoomerangMovement()
+    {
+        float flyTime = Mathf.Max(0.01f, currentShootData.boomerangFlyTime);
+        _boomerangElapsedTime += Time.deltaTime;
+        float t = Mathf.Clamp01(_boomerangElapsedTime / flyTime);
+        Vector3 returnPosition =
+            _boomerangReturnTarget != null
+                ? _boomerangReturnTarget.position
+                : _boomerangStartPosition;
+
+        float u = 1f - t;
+        float tt = t * t;
+        float uu = u * u;
+        Vector3 position = uu * u * _boomerangStartPosition;
+        position += 3f * uu * t * _boomerangControlPoint1;
+        position += 3f * u * tt * _boomerangControlPoint2;
+        position += tt * t * returnPosition;
+        transform.position = position;
+
+        transform.Rotate(0f, 0f, currentShootData.boomerangRotationSpeed * Time.deltaTime);
+
+        if (t >= 1f)
+        {
+            ReturnProjectile();
+        }
+    }
+
+    #endregion
+
+    #region バウンド軌道
+
+    private void BeginBouncingMovement()
+    {
+        _isBouncingProjectile = true;
+        _currentBounceCount = 0;
+        _rigidbody.gravityScale = currentShootData.bouncingGravityScale;
+
+        float angle = currentShootData.bouncingLaunchAngle * Mathf.Deg2Rad;
+        float horizontalVelocity = shootSpeed * Mathf.Cos(angle);
+        float verticalVelocity = shootSpeed * Mathf.Sin(angle);
+        _rigidbody.velocity = new Vector2(
+            isMoveRight ? horizontalVelocity : -horizontalVelocity,
+            verticalVelocity
+        );
+    }
+
+    private bool IsGroundBelowProjectile(Collider2D collision)
+    {
+        bool isGroundLayer = (_groundLayer.value & (1 << collision.gameObject.layer)) != 0;
+        return isGroundLayer
+            && collision.bounds.max.y <= _circleCollider.bounds.center.y + 0.1f;
     }
 
     #endregion
@@ -269,10 +468,12 @@ public class FaboProjectileController : PoolableObject
             GameObject enemy = collision.gameObject;
 
             // クールタイム中の敵には連続ヒットさせない
-            if (enemyCooldowns.ContainsKey(enemy))
+            if (IsTargetOnCooldown(enemy))
                 return;
 
-            enemyCooldowns[enemy] = cooldownTime;
+            _enemyCooldowns.Add(
+                new HitCooldown { target = enemy, remainingTime = cooldownTime }
+            );
             currentPenetrationCount++;
 
             // エフェクトの生成処理
@@ -328,8 +529,46 @@ public class FaboProjectileController : PoolableObject
             if (collision.CompareTag(GameConstants.PLAYER_TAG_NAME))
                 return;
 
+            // バウンド弾の足元にある地面はFixedUpdate側で処理する
+            if (_isBouncingProjectile && IsGroundBelowProjectile(collision))
+                return;
+
             // 物理的な壁（isTriggerがfalseのコライダー）に当たった場合は弾を破棄
             ReturnProjectile();
+        }
+    }
+
+    #endregion
+
+    #region 命中クールタイム
+
+    private bool IsTargetOnCooldown(GameObject target)
+    {
+        for (int i = 0; i < _enemyCooldowns.Count; i++)
+        {
+            if (_enemyCooldowns[i].target == target)
+                return true;
+        }
+
+        return false;
+    }
+
+    private void UpdateEnemyCooldowns(float deltaTime)
+    {
+        for (int i = _enemyCooldowns.Count - 1; i >= 0; i--)
+        {
+            HitCooldown cooldown = _enemyCooldowns[i];
+            cooldown.remainingTime -= deltaTime;
+            if (cooldown.target == null || cooldown.remainingTime <= 0f)
+            {
+                int lastIndex = _enemyCooldowns.Count - 1;
+                _enemyCooldowns[i] = _enemyCooldowns[lastIndex];
+                _enemyCooldowns.RemoveAt(lastIndex);
+            }
+            else
+            {
+                _enemyCooldowns[i] = cooldown;
+            }
         }
     }
 
@@ -357,9 +596,16 @@ public class FaboProjectileController : PoolableObject
         _remainingLifetime = 0f;
         _isSubBulletMoving = false;
         _subBulletYDirection = 0f;
+        _isBoomerangMoving = false;
+        _boomerangElapsedTime = 0f;
+        _isBouncingProjectile = false;
+        _currentBounceCount = 0;
         isStarted = false;
         currentPenetrationCount = 0;
-        enemyCooldowns.Clear();
+        _enemyCooldowns.Clear();
+        ReleaseBoomerangOwner();
+        _boomerangReturnTarget = null;
+        _boomerangOwner = null;
 
         if (_rigidbody != null)
         {
@@ -373,7 +619,23 @@ public class FaboProjectileController : PoolableObject
     {
         _isLifetimeActive = false;
         _isSubBulletMoving = false;
+        _isBoomerangMoving = false;
+        _isBouncingProjectile = false;
+        ReleaseBoomerangOwner();
         ReturnToPool();
+    }
+
+    private void ReleaseBoomerangOwner()
+    {
+        if (!_isBoomerangOwnerRegistered)
+            return;
+
+        if (_boomerangOwner != null)
+        {
+            _boomerangOwner.NotifyBoomerangReturned();
+        }
+
+        _isBoomerangOwnerRegistered = false;
     }
 
     #endregion

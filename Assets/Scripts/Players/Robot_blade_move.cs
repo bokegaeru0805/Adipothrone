@@ -28,6 +28,16 @@ public class Robot_blade_move : MonoBehaviour
     [SerializeField, Tooltip("非ボスヒット時の追加エフェクトが散らばる半径")]
     private float subHitEffectSpawnRadius = 1.5f;
 
+    [Header("ハンマー着弾攻撃")]
+    [SerializeField, Tooltip("ハンマー最終段が地面へ触れた時に表示するEffect")]
+    private GameObject hammerImpactEffectPrefab;
+
+    [SerializeField, Min(0f), Tooltip("着弾地点を中心とする全周ダメージの半径")]
+    private float hammerImpactDamageRadius = 2.75f;
+
+    [SerializeField, Tooltip("地面との接触点からImpactEffectを表示する位置のOffset")]
+    private Vector2 hammerImpactEffectOffset = new Vector2(0f, 0.1f);
+
     // 敵ごとのクールタイムタイマー
     // private Dictionary<GameObject, float> enemyCooldowns = new Dictionary<GameObject, float>();
     private List<CooldownEntry> enemyCooldownsList = new List<CooldownEntry>(32);
@@ -47,12 +57,19 @@ public class Robot_blade_move : MonoBehaviour
     private CriWare.Assets.CriAtomSePlayer sePlayer;
     private Robot_move robotMoveScript;
     private BladeWeaponData attack;
+    private LayerMask groundLayer;
+    private bool hasTouchedGroundInCurrentAttackStep;
+    private Vector2 lastGroundContactPoint;
 
     private void Awake()
     {
         capsuleCollider = this.gameObject.GetComponent<CapsuleCollider2D>();
         spriteRenderer = this.gameObject.GetComponent<SpriteRenderer>();
         sePlayer = this.gameObject.GetComponent<CriWare.Assets.CriAtomSePlayer>();
+        groundLayer = LayerMask.GetMask(
+            GameConstants.PHYSICS_LAYER_NAME_GROUND,
+            GameConstants.PHYSICS_LAYER_NAME_OBJECT_GROUND
+        );
 
         if (RobotObject == null)
         {
@@ -152,6 +169,8 @@ public class Robot_blade_move : MonoBehaviour
 
     private void OnTriggerStay2D(Collider2D collision)
     {
+        RecordGroundContact(collision);
+
         IDamageable hpScript = collision.GetComponent<IDamageable>();
         if (hpScript == null)
         {
@@ -245,6 +264,89 @@ public class Robot_blade_move : MonoBehaviour
             // WPを消費
             playerManager?.AddWpConsumptionBuffer(wpCost);
         }
+    }
+
+    private void OnTriggerEnter2D(Collider2D collision)
+    {
+        RecordGroundContact(collision);
+    }
+
+    private void RecordGroundContact(Collider2D collision)
+    {
+        if (((1 << collision.gameObject.layer) & groundLayer.value) == 0)
+            return;
+
+        hasTouchedGroundInCurrentAttackStep = true;
+        lastGroundContactPoint = capsuleCollider.ClosestPoint(collision.bounds.center);
+    }
+
+    /// <summary>
+    /// 攻撃ステップ開始時に、地面への接触記録を初期化します。
+    /// </summary>
+    public void BeginAttackStep()
+    {
+        hasTouchedGroundInCurrentAttackStep = false;
+    }
+
+    /// <summary>
+    /// ハンマー最終段で地面へ触れていた場合に、接触点の周囲へ範囲ダメージを与えます。
+    /// </summary>
+    public void TrySpawnHammerGroundImpact()
+    {
+        if (
+            attack == null
+            || attack.weaponID != BladeName.Hammer_StoneGolem
+            || !hasTouchedGroundInCurrentAttackStep
+        )
+        {
+            return;
+        }
+
+        hasTouchedGroundInCurrentAttackStep = false;
+
+        Vector2 impactPosition = lastGroundContactPoint;
+        int baseImpactPower = Mathf.RoundToInt(bladePower * 0.5f);
+        int impactPower =
+            playerEffectManager?.CalculateFinalAttackPower(baseImpactPower) ?? baseImpactPower;
+
+        HashSet<int> damagedTargetIds = new HashSet<int>();
+        Collider2D[] hitColliders = Physics2D.OverlapCircleAll(
+            impactPosition,
+            hammerImpactDamageRadius
+        );
+        foreach (Collider2D hitCollider in hitColliders)
+        {
+            IDamageable damageable = hitCollider.GetComponent<IDamageable>();
+            if (damageable == null)
+                damageable = hitCollider.GetComponentInParent<IDamageable>();
+            if (damageable == null)
+                continue;
+
+            MonoBehaviour damageableBehaviour = damageable as MonoBehaviour;
+            if (damageableBehaviour == null || !damageableBehaviour.enabled)
+                continue;
+
+            int targetId =
+                hitCollider.attachedRigidbody != null
+                    ? hitCollider.attachedRigidbody.gameObject.GetInstanceID()
+                    : damageableBehaviour.gameObject.GetInstanceID();
+            if (!damagedTargetIds.Add(targetId))
+                continue;
+
+            damageable.Damage(impactPower);
+        }
+
+        if (hammerImpactEffectPrefab == null)
+        {
+            Debug.LogWarning("ハンマー着弾用ImpactEffectが設定されていません。", this);
+            return;
+        }
+
+        Instantiate(
+            hammerImpactEffectPrefab,
+            impactPosition + hammerImpactEffectOffset,
+            Quaternion.identity
+        );
     }
 
     /// <summary>

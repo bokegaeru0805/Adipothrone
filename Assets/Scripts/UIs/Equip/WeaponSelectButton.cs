@@ -14,6 +14,10 @@ public class WeaponSelectButton : MonoBehaviour, IItemAssignable
     [Tooltip("武器のランクを表示するTextコンポーネント")]
     [SerializeField]
     private TextMeshProUGUI weaponRankText;
+
+    [Tooltip("武器アイコンを表示するImageコンポーネント")]
+    [SerializeField]
+    private Image weaponIconImage;
     #endregion
 
     #region 内部変数・プロパティ
@@ -89,11 +93,17 @@ public class WeaponSelectButton : MonoBehaviour, IItemAssignable
     /// </summary>
     public void UpdateWeaponIcon()
     {
-        // 1. Imageコンポーネントの取得（1番目の子オブジェクトを想定）
-        Image myImage = this.transform.GetChild(0).GetComponent<Image>();
+        // 1. 武器アイコン用のImageコンポーネントを取得
+        Image myImage = weaponIconImage;
+        if (myImage == null && transform.childCount > 0)
+        {
+            // 移行前の既存ボタンでも動作を維持するための互換処理。
+            myImage = transform.GetChild(0).GetComponent<Image>();
+        }
+
         if (myImage == null)
         {
-            Debug.LogWarning("武器選択ボタンの子オブジェクトにImageコンポーネントを持っていません");
+            Debug.LogWarning("武器選択ボタンの武器アイコンImageが設定されていません");
             return;
         }
 

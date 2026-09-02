@@ -11,7 +11,9 @@ public enum BladeName
     Blade_IronWood = 1011,
     Blade_DesertTemple = 1012,
     Gratesword_DesertTemple = 1013,
-    Spear_Prototype = 1014,
+    Knife_Hunter = 1020,
+    Hammer_Tower = 1021,
+    Spear_SnowFieldGolem = 1022,
     Blade_Debug = 1999,
 }
 
@@ -24,5 +26,7 @@ public enum ShootName
     Fireball1 = 2005,
     CactusBall = 2006,
     Normal_v2 = 2007,
+    GargoyleShoot = 2010,
+    SnowFieldGolemBoomerang = 2011,
     Shoot_Debug = 2999,
 }

@@ -128,6 +128,7 @@ public class Robot_move : MonoBehaviour
     private bool isShootRecoveryActive = false;
     private float shootMovementUnlockTime = 0f;
     private float shootAttackReadyTime = 0f;
+    private int activeBoomerangCount = 0;
 
     // 現在装備している武器のデータをキャッシュ
     private BladeWeaponData currentBladeData;
@@ -226,8 +227,16 @@ public class Robot_move : MonoBehaviour
                         // WPがコストより大きいかチェック
                         if (playerWP >= shootWPCost)
                         {
-                            // WPが足りる場合のみ攻撃を実行
-                            Shoot();
+                            if (CanLaunchCurrentShoot())
+                            {
+                                // WPが足り、同時発射数の上限内の場合のみ攻撃を実行
+                                Shoot();
+                            }
+                            else
+                            {
+                                isEnableNextAttack = true;
+                                isAttacking = false;
+                            }
                         }
                         else
                         {
@@ -256,10 +265,10 @@ public class Robot_move : MonoBehaviour
     {
         if (isRobotmove)
         {
+            ApplySpriteDirection(); //攻撃中を含め、自分の画像の向きをプレイヤーへ追従させる
+
             if (!isBladeSwinging)
             {
-                spriteRenderer.flipX = !rightFlag; //剣を振っていないときは自分の画像の向きを調整
-
                 robot_pos = this.transform.localPosition; //自分の相対座標を入手
                 robot_pos.x = Mathf.SmoothDamp( //プレイヤーに対しての自分のx座標を滑らかに調整
                     robot_pos.x,
@@ -307,7 +316,7 @@ public class Robot_move : MonoBehaviour
         if (shootMove != null)
         {
             //キャッシュしておいた最新の武器データを渡して初期化
-            shootMove.InitializeBullet(currentShootData, rightFlag);
+            shootMove.InitializeBullet(currentShootData, rightFlag, transform, this);
         }
 
         float enableMoveSec =
@@ -347,8 +356,9 @@ public class Robot_move : MonoBehaviour
     {
         StopFloatingAndReturn(0.05f); // ゆらゆらをほぼ即座に停止して元の位置へ
         OnRobotAttackExecuted?.Invoke(); // 攻撃が実行されたことを外部に通知するイベントを発行
-        isBladeSwinging = true; //剣の当たり判定を得る
         InstantsetRightFlag(); //即座にロボットの左右を変更する
+        ApplySpriteDirection(); //攻撃開始時の向きを即座に画像へ反映する
+        isBladeSwinging = true; //剣の当たり判定を得る
         StartCoroutine(BladeAttack());
     }
 
@@ -389,6 +399,7 @@ public class Robot_move : MonoBehaviour
 
             // ScriptableObjectから現在のステップのデータを取得
             var currentStep = currentAttackPattern.attackSteps[attackCount - 1];
+            bladeMoveScript?.BeginAttackStep();
             //ステップごとの時間を取得し、攻撃速度バフなどを適用する
             float baseStepTime = currentStep.attackTime;
             // PlayerEffectManagerで速度補正（バフ等）をかける
@@ -490,7 +501,10 @@ public class Robot_move : MonoBehaviour
 
             // 最大攻撃数に達したらループを抜ける
             if (attackCount >= maxSteps)
+            {
+                bladeMoveScript?.TrySpawnHammerGroundImpact();
                 break;
+            }
 
             // 次の攻撃入力の受付ウィンドウを開く (SOの設定値を使用)
             isAttackInputWindowOpen = true;
@@ -594,6 +608,45 @@ public class Robot_move : MonoBehaviour
             if (PlayerObject != null)
                 rightFlag = PlayerObject.GetComponent<Heroin_move>().rightFlag;
         }
+    }
+
+    private bool CanLaunchCurrentShoot()
+    {
+        if (
+            currentShootData == null
+            || currentShootData.moveType != ShootWeaponData.ShootMoveType.Boomerang
+        )
+        {
+            return true;
+        }
+
+        int maxActiveCount = Mathf.Max(1, currentShootData.maxActiveBoomerangCount);
+        return activeBoomerangCount < maxActiveCount;
+    }
+
+    internal void NotifyBoomerangLaunched()
+    {
+        activeBoomerangCount++;
+    }
+
+    internal void NotifyBoomerangReturned()
+    {
+        activeBoomerangCount = Mathf.Max(0, activeBoomerangCount - 1);
+    }
+
+    private void ApplySpriteDirection()
+    {
+        bool isFacingRight = rightFlag;
+        if (isBladeSwinging && PlayerObject != null)
+        {
+            Heroin_move playerMove = PlayerObject.GetComponent<Heroin_move>();
+            if (playerMove != null)
+            {
+                isFacingRight = playerMove.rightFlag;
+            }
+        }
+
+        spriteRenderer.flipX = !isFacingRight;
     }
 
     private void OnEnable()

@@ -1,480 +1,770 @@
 #if UNITY_EDITOR
 using System;
 using System.Collections.Generic;
-using System.IO;
+using System.Globalization;
+using System.Linq;
+using System.Text;
 using UnityEditor;
 using UnityEngine;
 
 /// <summary>
-/// 剣（Blade）と弾（Shoot）のCSVファイルの更新を検知し、
-/// 既存のScriptableObjectを自動で更新・上書きするエディタ拡張。
-/// 堅牢なCSVパーサーとJSON比較による差分更新機能を備えています。
+/// 手動配置した武器CSVを検証し、既存の武器ScriptableObjectだけへ反映するEditorWindow。
 /// </summary>
-public class WeaponDataUpdater : AssetPostprocessor
+public sealed class WeaponDataImporterWindow : EditorWindow
 {
-    #region ▼ 定数・パス・列番号の設定
+    private const string BladeCsvPath = "Assets/武器データ(剣) - 剣のデータ.csv";
+    private const string ShootCsvPath = "Assets/武器データ(弾) - 弾のデータ.csv";
+    private const string BladeAssetPath = "Assets/WeaponData/Blade";
+    private const string ShootAssetPath = "Assets/WeaponData/Shoot";
+    private const string MotionAssetPath = "Assets/WeaponData/BladeAttackData";
 
-    // =================================================================
-    // 監視対象のCSVファイル名
-    // =================================================================
-    private const string TargetBladeCsvFileName = "武器データ(剣) - 剣のデータ.csv";
-    private const string TargetShootCsvFileName = "武器データ(弾) - 弾のデータ.csv";
+    private static readonly string[] BladeHeaders =
+    {
+        "ID", "武器名", "攻撃力", "WP消費量", "クールタイム", "sizeX", "sizeY",
+        "offsetX", "offsetY", "購入", "売却", "レア度", "モーションデータ",
+    };
 
-    // =================================================================
-    // アセットの保存先フォルダパス
-    // =================================================================
-    private const string BladeDataPath = "Assets/WeaponData/blade/";
-    private const string BladeAttackDataPath = "Assets/WeaponData/BladeAttackData/";
-    private const string ShootDataPath = "Assets/WeaponData/shoot/";
+    private static readonly string[] ShootHeaders =
+    {
+        "ID", "武器名", "攻撃力", "WP消費量", "クールタイム", "速度", "消滅時間",
+        "発射間隔", "貫通限界数", "移動タイプ", "radius", "offsetX", "offsetY",
+        "購入", "売却", "レア度",
+    };
 
-    // =================================================================
-    // スプレッドシート（CSV）の列番号定義：剣（Blade）
-    // =================================================================
-    private const int BladeCol_ID = 0; // ID
-    private const int BladeCol_Name = 1; // 武器名
-    private const int BladeCol_Power = 2; // 攻撃力
-    private const int BladeCol_WpCost = 3; // WP消費量
-    private const int BladeCol_Cooldown = 4; // クールタイム
-    private const int BladeCol_SizeX = 5; // sizeX
-    private const int BladeCol_SizeY = 6; // sizeY
-    private const int BladeCol_OffsetX = 7; // offsetX
-    private const int BladeCol_OffsetY = 8; // offsetY
-    private const int BladeCol_BuyPrice = 9; // 購入
-    private const int BladeCol_SellPrice = 10; // 売却
-    private const int BladeCol_Rank = 11; // レア度
-    private const int BladeCol_MotionData = 12; // モーションデータ
+    private static readonly HashSet<string> ShootReferenceHeaders =
+        new HashSet<string>(StringComparer.Ordinal) { "距離", "入手方法" };
 
-    // =================================================================
-    // スプレッドシート（CSV）の列番号定義：弾（Shoot）
-    // =================================================================
-    private const int ShootCol_ID = 0; // ID
-    private const int ShootCol_Name = 1; // 武器名
-    private const int ShootCol_Power = 2; // 攻撃力
-    private const int ShootCol_WpCost = 3; // WP消費量
-    private const int ShootCol_Cooldown = 4; // クールタイム
-    private const int ShootCol_Speed = 5; // 速度
-    private const int ShootCol_VanishTime = 6; // 消滅時間
-    private const int ShootCol_Distance = 7; // 距離 (※要件通り、この列のデータは使用しません)
-    private const int ShootCol_Interval = 8; // 発射間隔
-    private const int ShootCol_Penetration = 9; // 貫通限界数
-    private const int ShootCol_MoveType = 10; // 移動タイプ
-    private const int ShootCol_Radius = 11; // radius
-    private const int ShootCol_OffsetX = 12; // offsetX
-    private const int ShootCol_OffsetY = 13; // offsetY
-    private const int ShootCol_BuyPrice = 14; // 購入
-    private const int ShootCol_SellPrice = 15; // 売却
-    private const int ShootCol_Rank = 16; // レア度
-    #endregion
+    [SerializeField] private TextAsset bladeCsv;
+    [SerializeField] private TextAsset shootCsv;
 
-    #region ▼ 自動検知処理 (AssetPostprocessor)
+    private readonly List<ResultMessage> messages = new List<ResultMessage>();
+    private readonly List<Change> changes = new List<Change>();
+    private Vector2 scroll;
+    private bool isValidated;
+    private bool hasErrors;
 
-    /// <summary>
-    /// プロジェクト内のアセットが更新・追加された際に自動的に呼ばれるコールバック
-    /// </summary>
-    static void OnPostprocessAllAssets(
-        string[] importedAssets,
-        string[] deletedAssets,
-        string[] movedAssets,
-        string[] movedFromAssetPaths
+    [MenuItem("Tools/Adipothrone/Weapon Data Importer")]
+    private static void Open() => GetWindow<WeaponDataImporterWindow>("Weapon CSV Importer");
+
+    private void OnEnable()
+    {
+        if (bladeCsv == null)
+            bladeCsv = AssetDatabase.LoadAssetAtPath<TextAsset>(BladeCsvPath);
+        if (shootCsv == null)
+            shootCsv = AssetDatabase.LoadAssetAtPath<TextAsset>(ShootCsvPath);
+    }
+
+    private void OnGUI()
+    {
+        EditorGUILayout.LabelField("Weapon Data CSV Importer", EditorStyles.boldLabel);
+        EditorGUILayout.HelpBox(
+            "手動ダウンロードしたCSVを検証し、既存アセットだけを更新します。"
+                + " CSVを配置しただけでは反映されず、新規アセットも作成しません。",
+            MessageType.Info
+        );
+
+        EditorGUI.BeginChangeCheck();
+        bladeCsv = (TextAsset)EditorGUILayout.ObjectField("剣CSV", bladeCsv, typeof(TextAsset), false);
+        shootCsv = (TextAsset)EditorGUILayout.ObjectField("弾CSV", shootCsv, typeof(TextAsset), false);
+        if (EditorGUI.EndChangeCheck())
+            ResetResult();
+
+        using (new EditorGUILayout.HorizontalScope())
+        {
+            if (GUILayout.Button("検証"))
+                Validate();
+            using (new EditorGUI.DisabledScope(!isValidated || hasErrors))
+            {
+                if (GUILayout.Button("反映"))
+                    Apply();
+            }
+        }
+
+        if (!isValidated)
+            return;
+
+        EditorGUILayout.Space(8);
+        EditorGUILayout.LabelField(
+            hasErrors ? "検証結果: エラーあり（反映不可）" : "検証結果: 反映可能",
+            EditorStyles.boldLabel
+        );
+        scroll = EditorGUILayout.BeginScrollView(scroll);
+        foreach (ResultMessage message in messages)
+        {
+            EditorGUILayout.BeginHorizontal();
+            EditorGUILayout.HelpBox(message.Text, message.Type);
+            if (message.Context != null && GUILayout.Button("選択", GUILayout.Width(48)))
+                Selection.activeObject = message.Context;
+            EditorGUILayout.EndHorizontal();
+        }
+
+        EditorGUILayout.Space(6);
+        EditorGUILayout.LabelField($"変更予定: {changes.Count}項目", EditorStyles.boldLabel);
+        if (changes.Count == 0)
+            EditorGUILayout.HelpBox("変更される項目はありません。", MessageType.Info);
+        foreach (Change change in changes)
+        {
+            EditorGUILayout.BeginVertical(EditorStyles.helpBox);
+            EditorGUILayout.LabelField($"{change.Kind} / ID {change.ID} / {change.Asset.name}");
+            EditorGUILayout.LabelField(change.Field, $"{change.Before}  →  {change.After}");
+            if (GUILayout.Button("アセットを選択", GUILayout.Width(110)))
+                Selection.activeObject = change.Asset;
+            EditorGUILayout.EndVertical();
+        }
+        EditorGUILayout.EndScrollView();
+    }
+
+    private void ResetResult()
+    {
+        isValidated = false;
+        hasErrors = false;
+        messages.Clear();
+        changes.Clear();
+    }
+
+    private void Validate()
+    {
+        ImportPlan plan = BuildPlan();
+        ShowPlan(plan);
+        if (!hasErrors)
+            messages.Insert(
+                0,
+                new ResultMessage(
+                    $"検証成功: 剣 {plan.Blades.Count}件、弾 {plan.Shoots.Count}件を反映できます。",
+                    MessageType.Info
+                )
+            );
+    }
+
+    private void Apply()
+    {
+        ImportPlan plan = BuildPlan();
+        ShowPlan(plan);
+        if (hasErrors)
+        {
+            Debug.LogError("武器CSVの再検証でエラーが見つかったため、反映を中止しました。");
+            return;
+        }
+
+        UnityEngine.Object[] targets = plan.Blades
+            .Select(x => (UnityEngine.Object)x.Asset)
+            .Concat(plan.Shoots.Select(x => (UnityEngine.Object)x.Asset))
+            .Distinct()
+            .ToArray();
+        Undo.IncrementCurrentGroup();
+        int undoGroup = Undo.GetCurrentGroup();
+        Undo.SetCurrentGroupName("Import Weapon Data CSV");
+        Undo.RecordObjects(targets, "Import Weapon Data CSV");
+
+        foreach (BladeEntry entry in plan.Blades)
+        {
+            BladeWeaponData asset = entry.Asset;
+            BladeRow row = entry.Row;
+            asset.itemName = row.Name;
+            asset.power = row.Power;
+            asset.wpCost = row.WpCost;
+            asset.cooldownTime = row.Cooldown;
+            asset.ColliderSize = row.Size;
+            asset.ColliderOffset = row.Offset;
+            asset.buyPrice = row.BuyPrice;
+            asset.sellPrice = row.SellPrice;
+            asset.itemRank = row.Rank;
+            asset.attackActionData = entry.Motion;
+            EditorUtility.SetDirty(asset);
+        }
+        foreach (ShootEntry entry in plan.Shoots)
+        {
+            ShootWeaponData asset = entry.Asset;
+            ShootRow row = entry.Row;
+            asset.itemName = row.Name;
+            asset.power = row.Power;
+            asset.wpCost = row.WpCost;
+            asset.cooldownTime = row.Cooldown;
+            asset.shootSpeed = row.Speed;
+            asset.vanishTime = row.VanishTime;
+            asset.shotInterval = row.Interval;
+            asset.penetrationLimitCount = row.Penetration;
+            asset.moveType = row.MoveType;
+            asset.colliderRadius = row.Radius;
+            asset.colliderOffset = row.Offset;
+            asset.buyPrice = row.BuyPrice;
+            asset.sellPrice = row.SellPrice;
+            asset.itemRank = row.Rank;
+            EditorUtility.SetDirty(asset);
+        }
+        AssetDatabase.SaveAssets();
+        Undo.CollapseUndoOperations(undoGroup);
+
+        string result =
+            $"武器CSV反映完了: 剣 {plan.Blades.Count}件、弾 {plan.Shoots.Count}件、変更 {plan.Changes.Count}項目。";
+        messages.Insert(0, new ResultMessage(result, MessageType.Info));
+        changes.Clear();
+        Debug.Log(result);
+    }
+
+    private void ShowPlan(ImportPlan plan)
+    {
+        isValidated = true;
+        hasErrors = plan.HasErrors;
+        messages.Clear();
+        messages.AddRange(plan.Messages);
+        changes.Clear();
+        changes.AddRange(plan.Changes);
+        foreach (ResultMessage message in plan.Messages)
+        {
+            if (message.Type == MessageType.Error)
+                Debug.LogError(message.Text, message.Context);
+            else if (message.Type == MessageType.Warning)
+                Debug.LogWarning(message.Text, message.Context);
+        }
+    }
+
+    private ImportPlan BuildPlan()
+    {
+        ImportPlan plan = new ImportPlan();
+        if (bladeCsv == null)
+            plan.Error("剣CSVが設定されていません。");
+        if (shootCsv == null)
+            plan.Error("弾CSVが設定されていません。");
+        if (plan.HasErrors)
+            return plan;
+        BuildBladePlan(bladeCsv.text, plan);
+        BuildShootPlan(shootCsv.text, plan);
+        return plan;
+    }
+
+    private static void BuildBladePlan(string text, ImportPlan plan)
+    {
+        ParsedCsv csv = ParseAndValidate(text, BladeHeaders, null, "剣", plan);
+        if (csv == null)
+            return;
+
+        Dictionary<int, List<BladeWeaponData>> assets = Load<BladeWeaponData>(BladeAssetPath)
+            .Where(asset => !IsDebugAsset(asset))
+            .GroupBy(x => Convert.ToInt32(x.weaponID))
+            .ToDictionary(x => x.Key, x => x.ToList());
+        ValidateAssetIds(assets, typeof(BladeName), "剣", plan);
+        Dictionary<string, List<BladeAttackActionData>> motions = Load<BladeAttackActionData>(
+                MotionAssetPath
+            )
+            .GroupBy(x => x.name, StringComparer.Ordinal)
+            .ToDictionary(x => x.Key, x => x.ToList(), StringComparer.Ordinal);
+        HashSet<int> csvIds = new HashSet<int>();
+
+        ForEachDataRow(csv, (row, line) =>
+        {
+            if (!TryID(row, csv, line, "剣", csvIds, plan, out int id))
+                return;
+            if (!ValidateEnumId<BladeName>(id, line, "剣", plan))
+                return;
+            if (!TryAsset(assets, id, line, "剣", plan, out BladeWeaponData asset))
+                return;
+            int errors = plan.ErrorCount;
+            BladeRow data = new BladeRow
+            {
+                Name = Text(row, csv, "武器名", line, "剣", plan),
+                Power = NonNegativeInt(row, csv, "攻撃力", line, "剣", plan),
+                WpCost = NonNegativeFloat(row, csv, "WP消費量", line, "剣", plan),
+                Cooldown = NonNegativeFloat(row, csv, "クールタイム", line, "剣", plan),
+                Size = new Vector2(
+                    PositiveFloat(row, csv, "sizeX", line, "剣", plan),
+                    PositiveFloat(row, csv, "sizeY", line, "剣", plan)
+                ),
+                Offset = new Vector2(
+                    AnyFloat(row, csv, "offsetX", line, "剣", plan),
+                    AnyFloat(row, csv, "offsetY", line, "剣", plan)
+                ),
+                BuyPrice = NonNegativeInt(row, csv, "購入", line, "剣", plan),
+                SellPrice = NonNegativeInt(row, csv, "売却", line, "剣", plan),
+                Rank = EnumCell<ItemRank>(row, csv, "レア度", line, "剣", plan),
+                MotionName = Text(row, csv, "モーションデータ", line, "剣", plan),
+            };
+            if (plan.ErrorCount != errors)
+                return;
+            if (!motions.TryGetValue(data.MotionName, out List<BladeAttackActionData> found))
+            {
+                plan.Error($"剣CSV {line}行目: モーション '{data.MotionName}' が見つかりません。");
+                return;
+            }
+            if (found.Count != 1)
+            {
+                plan.Error($"剣CSV {line}行目: モーション '{data.MotionName}' が複数存在します。");
+                return;
+            }
+            BladeEntry entry = new BladeEntry { Asset = asset, Row = data, Motion = found[0] };
+            plan.Blades.Add(entry);
+            BladeChanges(entry, plan);
+        });
+        MissingWarnings(assets, csvIds, "剣", plan);
+    }
+
+    private static void BuildShootPlan(string text, ImportPlan plan)
+    {
+        ParsedCsv csv = ParseAndValidate(text, ShootHeaders, ShootReferenceHeaders, "弾", plan);
+        if (csv == null)
+            return;
+        Dictionary<int, List<ShootWeaponData>> assets = Load<ShootWeaponData>(ShootAssetPath)
+            .Where(asset => !IsDebugAsset(asset))
+            .GroupBy(x => Convert.ToInt32(x.weaponID))
+            .ToDictionary(x => x.Key, x => x.ToList());
+        ValidateAssetIds(assets, typeof(ShootName), "弾", plan);
+        HashSet<int> csvIds = new HashSet<int>();
+
+        ForEachDataRow(csv, (row, line) =>
+        {
+            if (!TryID(row, csv, line, "弾", csvIds, plan, out int id))
+                return;
+            if (!ValidateEnumId<ShootName>(id, line, "弾", plan))
+                return;
+            if (!TryAsset(assets, id, line, "弾", plan, out ShootWeaponData asset))
+                return;
+            int errors = plan.ErrorCount;
+            ShootRow data = new ShootRow
+            {
+                Name = Text(row, csv, "武器名", line, "弾", plan),
+                Power = NonNegativeInt(row, csv, "攻撃力", line, "弾", plan),
+                WpCost = NonNegativeFloat(row, csv, "WP消費量", line, "弾", plan),
+                Cooldown = NonNegativeFloat(row, csv, "クールタイム", line, "弾", plan),
+                Speed = PositiveFloat(row, csv, "速度", line, "弾", plan),
+                VanishTime = PositiveFloat(row, csv, "消滅時間", line, "弾", plan),
+                Interval = NonNegativeFloat(row, csv, "発射間隔", line, "弾", plan),
+                Penetration = NonNegativeInt(row, csv, "貫通限界数", line, "弾", plan),
+                MoveType = EnumCell<ShootWeaponData.ShootMoveType>(
+                    row, csv, "移動タイプ", line, "弾", plan
+                ),
+                Radius = PositiveFloat(row, csv, "radius", line, "弾", plan),
+                Offset = new Vector2(
+                    AnyFloat(row, csv, "offsetX", line, "弾", plan),
+                    AnyFloat(row, csv, "offsetY", line, "弾", plan)
+                ),
+                BuyPrice = NonNegativeInt(row, csv, "購入", line, "弾", plan),
+                SellPrice = NonNegativeInt(row, csv, "売却", line, "弾", plan),
+                Rank = EnumCell<ItemRank>(row, csv, "レア度", line, "弾", plan),
+            };
+            if (plan.ErrorCount != errors)
+                return;
+            ShootEntry entry = new ShootEntry { Asset = asset, Row = data };
+            plan.Shoots.Add(entry);
+            ShootChanges(entry, plan);
+        });
+        MissingWarnings(assets, csvIds, "弾", plan);
+    }
+
+    private static ParsedCsv ParseAndValidate(
+        string text,
+        IEnumerable<string> required,
+        HashSet<string> knownReference,
+        string kind,
+        ImportPlan plan
     )
     {
-        foreach (string assetPath in importedAssets)
+        int initialErrorCount = plan.ErrorCount;
+        List<string[]> rows = ParseCsv(text, out bool isValid);
+        if (!isValid)
         {
-            string fileName = Path.GetFileName(assetPath);
+            plan.Error($"{kind}CSV: ダブルクォーテーションが閉じられていません。");
+            return null;
+        }
+        if (rows.Count == 0)
+        {
+            plan.Error($"{kind}CSVが空です。");
+            return null;
+        }
+        string[] headers = rows[0].Select(x => x.Trim().TrimStart('﻿')).ToArray();
+        Dictionary<string, int> columns = new Dictionary<string, int>(StringComparer.Ordinal);
+        for (int index = 0; index < headers.Length; index++)
+        {
+            if (string.IsNullOrEmpty(headers[index]))
+                continue;
+            if (columns.ContainsKey(headers[index]))
+                plan.Error($"{kind}CSV: ヘッダー '{headers[index]}' が重複しています。");
+            else
+                columns.Add(headers[index], index);
+        }
+        foreach (string header in required)
+            if (!columns.ContainsKey(header))
+                plan.Error($"{kind}CSV: 必須ヘッダー '{header}' がありません。");
 
-            // 剣のCSV更新検知
-            if (fileName == TargetBladeCsvFileName)
-            {
-                Debug.Log(
-                    $"<color=#00FFFF>[{TargetBladeCsvFileName}] の更新を検知しました。剣データの自動更新を開始します...</color>"
-                );
-                UpdateBladeDataFromCsv(assetPath);
-            }
-            // 弾のCSV更新検知
-            else if (fileName == TargetShootCsvFileName)
-            {
-                Debug.Log(
-                    $"<color=#00FFFF>[{TargetShootCsvFileName}] の更新を検知しました。弾データの自動更新を開始します...</color>"
-                );
-                UpdateShootDataFromCsv(assetPath);
-            }
+        HashSet<string> allowed = new HashSet<string>(required, StringComparer.Ordinal);
+        if (knownReference != null)
+            allowed.UnionWith(knownReference);
+        foreach (string header in columns.Keys.Where(x => !allowed.Contains(x)))
+            plan.Warning($"{kind}CSV: 未使用列 '{header}' はUnityへ反映されません。");
+        return plan.ErrorCount != initialErrorCount
+            ? null
+            : new ParsedCsv { Rows = rows, Columns = columns };
+    }
+
+    private static void ForEachDataRow(ParsedCsv csv, Action<string[], int> action)
+    {
+        for (int index = 1; index < csv.Rows.Count; index++)
+        {
+            string[] row = csv.Rows[index];
+            if (!row.All(string.IsNullOrWhiteSpace))
+                action(row, index + 1);
         }
     }
 
-    #endregion
-
-    #region ▼ 剣(Blade)データ更新ロジック
-
-    private static void UpdateBladeDataFromCsv(string csvPath)
+    private static bool TryID(
+        string[] row, ParsedCsv csv, int line, string kind, HashSet<int> ids,
+        ImportPlan plan, out int id
+    )
     {
-        string csvText = File.ReadAllText(csvPath);
-        List<string[]> rows = ParseCSV(csvText);
-
-        if (rows.Count <= 1)
+        string raw = Get(row, csv, "ID").Trim();
+        if (!int.TryParse(raw, NumberStyles.Integer, CultureInfo.InvariantCulture, out id))
         {
-            Debug.LogWarning(
-                $"<color=yellow>剣のCSVデータが空か、ヘッダーしかありません。</color>"
-            );
-            return;
+            plan.Error($"{kind}CSV {line}行目: ID '{raw}' は整数ではありません。");
+            return false;
         }
-
-        var existingDataDict = LoadAllExistingBladeData();
-        int updateCount = 0;
-
-        for (int i = 1; i < rows.Count; i++)
+        if (!ids.Add(id))
         {
-            string[] row = rows[i];
+            plan.Error($"{kind}CSV {line}行目: ID {id} がCSV内で重複しています。");
+            return false;
+        }
+        return true;
+    }
 
-            // 列数不足の行はスキップ
-            if (row.Length <= BladeCol_MotionData)
-                continue;
+    private static bool ValidateEnumId<T>(int id, int line, string kind, ImportPlan plan)
+        where T : struct, Enum
+    {
+        if (id != 0 && Enum.IsDefined(typeof(T), id))
+            return true;
+        plan.Error($"{kind}CSV {line}行目: ID {id} は{typeof(T).Name}に存在しません。");
+        return false;
+    }
 
-            if (!int.TryParse(row[BladeCol_ID], out int id))
-            {
-                Debug.LogWarning(
-                    $"<color=yellow>[剣 CSV行 {i + 1}] IDが数値に変換できませんでした: {row[BladeCol_ID]}</color>"
+    private static bool TryAsset<T>(
+        Dictionary<int, List<T>> assets, int id, int line, string kind,
+        ImportPlan plan, out T asset
+    ) where T : UnityEngine.Object
+    {
+        asset = null;
+        if (!assets.TryGetValue(id, out List<T> found))
+        {
+            plan.Error($"{kind}CSV {line}行目: ID {id} の既存アセットがありません。新規作成は行いません。");
+            return false;
+        }
+        if (found.Count != 1)
+            return false;
+        asset = found[0];
+        return true;
+    }
+
+    private static void ValidateAssetIds<T>(
+        Dictionary<int, List<T>> assets, Type enumType, string kind, ImportPlan plan
+    ) where T : UnityEngine.Object
+    {
+        foreach (KeyValuePair<int, List<T>> pair in assets)
+        {
+            if (pair.Value.Count > 1)
+                plan.Error(
+                    $"{kind}アセットのID {pair.Key} が重複しています: "
+                        + string.Join(", ", pair.Value.Select(AssetDatabase.GetAssetPath))
                 );
-                continue;
-            }
-
-            if (!existingDataDict.TryGetValue(id, out BladeWeaponData data))
-            {
-                Debug.LogWarning(
-                    $"<color=orange>[剣 スキップ] ID: {id} ({row[BladeCol_Name]}) のアセットが見つかりません。新規作成は行いません。</color>"
-                );
-                continue;
-            }
-
-            // --- 差分比較用のJSON化(更新前) ---
-            string beforeJson = EditorJsonUtility.ToJson(data);
-
-            // データの適用
-            data.itemName = row[BladeCol_Name];
-
-            if (int.TryParse(row[BladeCol_Power], out int power))
-                data.power = power;
-            if (float.TryParse(row[BladeCol_WpCost], out float wp))
-                data.wpCost = wp;
-            if (float.TryParse(row[BladeCol_Cooldown], out float cd))
-                data.cooldownTime = cd;
-
-            if (
-                float.TryParse(row[BladeCol_SizeX], out float sx)
-                && float.TryParse(row[BladeCol_SizeY], out float sy)
-            )
-                data.ColliderSize = new Vector2(sx, sy);
-
-            if (
-                float.TryParse(row[BladeCol_OffsetX], out float ox)
-                && float.TryParse(row[BladeCol_OffsetY], out float oy)
-            )
-                data.ColliderOffset = new Vector2(ox, oy);
-
-            if (int.TryParse(row[BladeCol_BuyPrice], out int bp))
-                data.buyPrice = bp;
-            if (int.TryParse(row[BladeCol_SellPrice], out int sp))
-                data.sellPrice = sp;
-
-            if (Enum.TryParse(row[BladeCol_Rank], out ItemRank rank))
-                data.itemRank = rank;
-
-            // モーションデータの適用
-            string motionKeyword = row[BladeCol_MotionData].Trim();
-            if (!string.IsNullOrEmpty(motionKeyword))
-            {
-                BladeAttackActionData motionData = FindBladeAttackActionData(motionKeyword);
-                if (motionData != null)
-                {
-                    data.attackActionData = motionData;
-                }
-                else
-                {
-                    Debug.LogWarning(
-                        $"<color=yellow>[剣 警告] 武器 '{data.itemName}' に指定されたモーションデータ '{motionKeyword}' が見つかりません。</color>"
+            if (!Enum.IsDefined(enumType, pair.Key) || pair.Key == 0)
+                foreach (T asset in pair.Value)
+                    plan.Error(
+                        $"{kind}アセット '{asset.name}' のID {pair.Key} は{enumType.Name}に存在しません。",
+                        asset
                     );
-                }
-            }
-
-            // --- 差分比較用のJSON化(更新後) ---
-            string afterJson = EditorJsonUtility.ToJson(data);
-
-            // 変更があった場合のみアセットを更新対象にする
-            if (beforeJson != afterJson)
-            {
-                EditorUtility.SetDirty(data);
-                updateCount++;
-            }
-        }
-
-        // 保存と結果ログ出力
-        if (updateCount > 0)
-        {
-            AssetDatabase.SaveAssets();
-            Debug.Log(
-                $"<color=#00FF00>✓ 剣（Blade）データの自動更新が完了しました！ ({updateCount} 件のアセットを上書きしました)</color>"
-            );
-        }
-        else
-        {
-            Debug.Log("変更された剣（Blade）アセットはありませんでした。");
         }
     }
 
-    #endregion
-
-    #region ▼ 弾(Shoot)データ更新ロジック
-
-    private static void UpdateShootDataFromCsv(string csvPath)
+    private static void MissingWarnings<T>(
+        Dictionary<int, List<T>> assets, HashSet<int> csvIds, string kind, ImportPlan plan
+    ) where T : UnityEngine.Object
     {
-        string csvText = File.ReadAllText(csvPath);
-        List<string[]> rows = ParseCSV(csvText);
-
-        if (rows.Count <= 1)
-        {
-            Debug.LogWarning(
-                $"<color=yellow>弾のCSVデータが空か、ヘッダーしかありません。</color>"
-            );
-            return;
-        }
-
-        var existingDataDict = LoadAllExistingShootData();
-        int updateCount = 0;
-
-        for (int i = 1; i < rows.Count; i++)
-        {
-            string[] row = rows[i];
-
-            // 列数不足の行はスキップ
-            if (row.Length <= ShootCol_Rank)
-                continue;
-
-            if (!int.TryParse(row[ShootCol_ID], out int id))
-            {
-                Debug.LogWarning(
-                    $"<color=yellow>[弾 CSV行 {i + 1}] IDが数値に変換できませんでした: {row[ShootCol_ID]}</color>"
-                );
-                continue;
-            }
-
-            if (!existingDataDict.TryGetValue(id, out ShootWeaponData data))
-            {
-                Debug.LogWarning(
-                    $"<color=orange>[弾 スキップ] ID: {id} ({row[ShootCol_Name]}) のアセットが見つかりません。新規作成は行いません。</color>"
-                );
-                continue;
-            }
-
-            // --- 差分比較用のJSON化(更新前) ---
-            string beforeJson = EditorJsonUtility.ToJson(data);
-
-            // データの適用
-            data.itemName = row[ShootCol_Name];
-
-            if (int.TryParse(row[ShootCol_Power], out int power))
-                data.power = power;
-            if (float.TryParse(row[ShootCol_WpCost], out float wp))
-                data.wpCost = wp;
-            if (float.TryParse(row[ShootCol_Cooldown], out float cd))
-                data.cooldownTime = cd;
-            if (float.TryParse(row[ShootCol_Speed], out float spd))
-                data.shootSpeed = spd;
-            if (float.TryParse(row[ShootCol_VanishTime], out float vt))
-                data.vanishTime = vt;
-
-            // ※7列目(Distance)は無視する仕様
-
-            if (float.TryParse(row[ShootCol_Interval], out float interval))
-                data.shotInterval = interval;
-            if (int.TryParse(row[ShootCol_Penetration], out int pen))
-                data.penetrationLimitCount = pen;
-
-            if (Enum.TryParse(row[ShootCol_MoveType], out ShootWeaponData.ShootMoveType moveType))
-                data.moveType = moveType;
-
-            if (float.TryParse(row[ShootCol_Radius], out float radius))
-                data.colliderRadius = radius;
-
-            if (
-                float.TryParse(row[ShootCol_OffsetX], out float ox)
-                && float.TryParse(row[ShootCol_OffsetY], out float oy)
-            )
-                data.colliderOffset = new Vector2(ox, oy);
-
-            if (int.TryParse(row[ShootCol_BuyPrice], out int bp))
-                data.buyPrice = bp;
-            if (int.TryParse(row[ShootCol_SellPrice], out int sp))
-                data.sellPrice = sp;
-
-            if (Enum.TryParse(row[ShootCol_Rank], out ItemRank rank))
-                data.itemRank = rank;
-
-            // --- 差分比較用のJSON化(更新後) ---
-            string afterJson = EditorJsonUtility.ToJson(data);
-
-            // 変更があった場合のみアセットを更新対象にする
-            if (beforeJson != afterJson)
-            {
-                EditorUtility.SetDirty(data);
-                updateCount++;
-            }
-        }
-
-        // 保存と結果ログ出力
-        if (updateCount > 0)
-        {
-            AssetDatabase.SaveAssets();
-            Debug.Log(
-                $"<color=#00FF00>✓ 弾（Shoot）データの自動更新が完了しました！ ({updateCount} 件のアセットを上書きしました)</color>"
-            );
-        }
-        else
-        {
-            Debug.Log("変更された弾（Shoot）アセットはありませんでした。");
-        }
+        foreach (KeyValuePair<int, List<T>> pair in assets)
+            if (!csvIds.Contains(pair.Key))
+                foreach (T asset in pair.Value)
+                    plan.Warning(
+                        $"{kind}アセット '{asset.name}' (ID {pair.Key}) はCSVにないため変更しません。",
+                        asset
+                    );
     }
 
-    #endregion
+    private static List<T> Load<T>(string folder) where T : UnityEngine.Object =>
+        AssetDatabase.FindAssets($"t:{typeof(T).Name}", new[] { folder })
+            .Select(AssetDatabase.GUIDToAssetPath)
+            .Select(AssetDatabase.LoadAssetAtPath<T>)
+            .Where(x => x != null)
+            .ToList();
 
-    #region ▼ ユーティリティ (CSVパース・データ検索)
+    private static bool IsDebugAsset(BladeWeaponData asset) =>
+        asset.weaponID == BladeName.Blade_Debug || asset.name == nameof(BladeName.Blade_Debug);
 
-    /// <summary>
-    /// ダブルクォーテーションやセル内の改行に対応した堅牢なCSVパース処理。
-    /// </summary>
-    private static List<string[]> ParseCSV(string csvText)
+    private static bool IsDebugAsset(ShootWeaponData asset) =>
+        asset.weaponID == ShootName.Shoot_Debug || asset.name == nameof(ShootName.Shoot_Debug);
+
+    private static string Text(
+        string[] row, ParsedCsv csv, string header, int line, string kind, ImportPlan plan
+    )
+    {
+        string value = Get(row, csv, header).Trim();
+        if (string.IsNullOrEmpty(value))
+            plan.Error($"{kind}CSV {line}行目: '{header}' は必須です。");
+        return value;
+    }
+
+    private static int NonNegativeInt(
+        string[] row, ParsedCsv csv, string header, int line, string kind, ImportPlan plan
+    )
+    {
+        string raw = Get(row, csv, header).Trim();
+        if (!int.TryParse(raw, NumberStyles.Integer, CultureInfo.InvariantCulture, out int value)
+            || value < 0)
+            plan.Error($"{kind}CSV {line}行目: '{header}' は0以上の整数で入力してください: {raw}");
+        return value;
+    }
+
+    private static float AnyFloat(
+        string[] row, ParsedCsv csv, string header, int line, string kind, ImportPlan plan
+    ) => Float(row, csv, header, line, kind, plan, float.NegativeInfinity);
+
+    private static float NonNegativeFloat(
+        string[] row, ParsedCsv csv, string header, int line, string kind, ImportPlan plan
+    ) => Float(row, csv, header, line, kind, plan, 0f);
+
+    private static float PositiveFloat(
+        string[] row, ParsedCsv csv, string header, int line, string kind, ImportPlan plan
+    ) => Float(row, csv, header, line, kind, plan, float.Epsilon);
+
+    private static float Float(
+        string[] row, ParsedCsv csv, string header, int line, string kind,
+        ImportPlan plan, float minimum
+    )
+    {
+        string raw = Get(row, csv, header).Trim();
+        bool parsed = float.TryParse(
+            raw, NumberStyles.Float, CultureInfo.InvariantCulture, out float value
+        );
+        if (!parsed || float.IsNaN(value) || float.IsInfinity(value) || value < minimum)
+        {
+            string rule = minimum > 0f ? "0より大きい数値" : minimum == 0f ? "0以上の数値" : "数値";
+            plan.Error($"{kind}CSV {line}行目: '{header}' は{rule}で入力してください: {raw}");
+        }
+        return value;
+    }
+
+    private static T EnumCell<T>(
+        string[] row, ParsedCsv csv, string header, int line, string kind, ImportPlan plan
+    ) where T : struct, Enum
+    {
+        string raw = Get(row, csv, header).Trim();
+        if (!Enum.TryParse(raw, false, out T value)
+            || !Enum.IsDefined(typeof(T), value)
+            || !string.Equals(Enum.GetName(typeof(T), value), raw, StringComparison.Ordinal)
+            || Convert.ToInt32(value) == 0)
+            plan.Error($"{kind}CSV {line}行目: '{header}' の値が不正です: {raw}");
+        return value;
+    }
+
+    private static string Get(string[] row, ParsedCsv csv, string header)
+    {
+        int index = csv.Columns[header];
+        return index < row.Length ? row[index] : string.Empty;
+    }
+
+    private static void BladeChanges(BladeEntry e, ImportPlan p)
+    {
+        AddChange(p, "剣", e.Asset, "武器名", e.Asset.itemName, e.Row.Name);
+        AddChange(p, "剣", e.Asset, "攻撃力", e.Asset.power, e.Row.Power);
+        AddChange(p, "剣", e.Asset, "WP消費量", e.Asset.wpCost, e.Row.WpCost);
+        AddChange(p, "剣", e.Asset, "クールタイム", e.Asset.cooldownTime, e.Row.Cooldown);
+        AddChange(p, "剣", e.Asset, "ColliderSize", e.Asset.ColliderSize, e.Row.Size);
+        AddChange(p, "剣", e.Asset, "ColliderOffset", e.Asset.ColliderOffset, e.Row.Offset);
+        AddChange(p, "剣", e.Asset, "購入", e.Asset.buyPrice, e.Row.BuyPrice);
+        AddChange(p, "剣", e.Asset, "売却", e.Asset.sellPrice, e.Row.SellPrice);
+        AddChange(p, "剣", e.Asset, "レア度", e.Asset.itemRank, e.Row.Rank);
+        AddChange(p, "剣", e.Asset, "モーションデータ", e.Asset.attackActionData, e.Motion);
+    }
+
+    private static void ShootChanges(ShootEntry e, ImportPlan p)
+    {
+        AddChange(p, "弾", e.Asset, "武器名", e.Asset.itemName, e.Row.Name);
+        AddChange(p, "弾", e.Asset, "攻撃力", e.Asset.power, e.Row.Power);
+        AddChange(p, "弾", e.Asset, "WP消費量", e.Asset.wpCost, e.Row.WpCost);
+        AddChange(p, "弾", e.Asset, "クールタイム", e.Asset.cooldownTime, e.Row.Cooldown);
+        AddChange(p, "弾", e.Asset, "速度", e.Asset.shootSpeed, e.Row.Speed);
+        AddChange(p, "弾", e.Asset, "消滅時間", e.Asset.vanishTime, e.Row.VanishTime);
+        AddChange(p, "弾", e.Asset, "発射間隔", e.Asset.shotInterval, e.Row.Interval);
+        AddChange(p, "弾", e.Asset, "貫通限界数", e.Asset.penetrationLimitCount, e.Row.Penetration);
+        AddChange(p, "弾", e.Asset, "移動タイプ", e.Asset.moveType, e.Row.MoveType);
+        AddChange(p, "弾", e.Asset, "radius", e.Asset.colliderRadius, e.Row.Radius);
+        AddChange(p, "弾", e.Asset, "ColliderOffset", e.Asset.colliderOffset, e.Row.Offset);
+        AddChange(p, "弾", e.Asset, "購入", e.Asset.buyPrice, e.Row.BuyPrice);
+        AddChange(p, "弾", e.Asset, "売却", e.Asset.sellPrice, e.Row.SellPrice);
+        AddChange(p, "弾", e.Asset, "レア度", e.Asset.itemRank, e.Row.Rank);
+    }
+
+    private static void AddChange<T>(
+        ImportPlan plan, string kind, UnityEngine.Object asset, string field, T before, T after
+    )
+    {
+        if (EqualityComparer<T>.Default.Equals(before, after))
+            return;
+        int id = asset is BladeWeaponData blade
+            ? Convert.ToInt32(blade.weaponID)
+            : Convert.ToInt32(((ShootWeaponData)asset).weaponID);
+        plan.Changes.Add(
+            new Change
+            {
+                Kind = kind,
+                ID = id,
+                Asset = asset,
+                Field = field,
+                Before = Display(before),
+                After = Display(after),
+            }
+        );
+    }
+
+    private static string Display<T>(T value)
+    {
+        if (value == null)
+            return "(なし)";
+        if (value is UnityEngine.Object obj)
+            return obj == null ? "(なし)" : obj.name;
+        if (value is float number)
+            return number.ToString("0.###", CultureInfo.InvariantCulture);
+        return value.ToString();
+    }
+
+    private static List<string[]> ParseCsv(string text, out bool isValid)
     {
         List<string[]> rows = new List<string[]>();
-        List<string> currentRow = new List<string>();
-        string currentValue = "";
-        bool inQuotes = false;
-
-        for (int i = 0; i < csvText.Length; i++)
+        List<string> row = new List<string>();
+        StringBuilder value = new StringBuilder();
+        bool quoted = false;
+        for (int i = 0; i < text.Length; i++)
         {
-            char c = csvText[i];
-
-            if (inQuotes)
+            char c = text[i];
+            if (quoted)
             {
-                if (c == '\"')
+                if (c == '"' && i + 1 < text.Length && text[i + 1] == '"')
                 {
-                    if (i + 1 < csvText.Length && csvText[i + 1] == '\"')
-                    {
-                        currentValue += '\"';
-                        i++;
-                    }
-                    else
-                    {
-                        inQuotes = false;
-                    }
+                    value.Append('"');
+                    i++;
                 }
+                else if (c == '"')
+                    quoted = false;
                 else
-                {
-                    currentValue += c;
-                }
+                    value.Append(c);
+            }
+            else if (c == '"')
+                quoted = true;
+            else if (c == ',')
+            {
+                row.Add(value.ToString());
+                value.Length = 0;
+            }
+            else if (c == '\r' || c == '\n')
+            {
+                if (c == '\r' && i + 1 < text.Length && text[i + 1] == '\n')
+                    i++;
+                row.Add(value.ToString());
+                rows.Add(row.ToArray());
+                row = new List<string>();
+                value.Length = 0;
             }
             else
-            {
-                if (c == '\"')
-                {
-                    inQuotes = true;
-                }
-                else if (c == ',')
-                {
-                    currentRow.Add(currentValue);
-                    currentValue = "";
-                }
-                else if (c == '\n' || c == '\r')
-                {
-                    if (c == '\r' && i + 1 < csvText.Length && csvText[i + 1] == '\n')
-                    {
-                        i++;
-                    }
-
-                    currentRow.Add(currentValue);
-                    rows.Add(currentRow.ToArray());
-
-                    currentRow = new List<string>();
-                    currentValue = "";
-                }
-                else
-                {
-                    currentValue += c;
-                }
-            }
+                value.Append(c);
         }
-
-        if (!string.IsNullOrEmpty(currentValue) || csvText.EndsWith(","))
+        if (value.Length > 0 || row.Count > 0)
         {
-            currentRow.Add(currentValue);
+            row.Add(value.ToString());
+            rows.Add(row.ToArray());
         }
-
-        if (currentRow.Count > 0)
-        {
-            rows.Add(currentRow.ToArray());
-        }
-
+        isValid = !quoted;
         return rows;
     }
 
-    // --- 以下、既存のデータロード・検索用メソッド ---
-
-    private static Dictionary<int, BladeWeaponData> LoadAllExistingBladeData()
+    private sealed class ParsedCsv
     {
-        var dict = new Dictionary<int, BladeWeaponData>();
-        string[] guids = AssetDatabase.FindAssets("t:BladeWeaponData", new[] { BladeDataPath });
-
-        foreach (var guid in guids)
-        {
-            string path = AssetDatabase.GUIDToAssetPath(guid);
-            var asset = AssetDatabase.LoadAssetAtPath<BladeWeaponData>(path);
-            if (asset != null)
-            {
-                int id = Convert.ToInt32(asset.weaponID);
-                if (!dict.ContainsKey(id))
-                {
-                    dict.Add(id, asset);
-                }
-            }
-        }
-        return dict;
+        public List<string[]> Rows;
+        public Dictionary<string, int> Columns;
     }
 
-    private static Dictionary<int, ShootWeaponData> LoadAllExistingShootData()
+    private sealed class ImportPlan
     {
-        var dict = new Dictionary<int, ShootWeaponData>();
-        string[] guids = AssetDatabase.FindAssets("t:ShootWeaponData", new[] { ShootDataPath });
-
-        foreach (var guid in guids)
-        {
-            string path = AssetDatabase.GUIDToAssetPath(guid);
-            var asset = AssetDatabase.LoadAssetAtPath<ShootWeaponData>(path);
-            if (asset != null)
-            {
-                int id = Convert.ToInt32(asset.weaponID);
-                if (!dict.ContainsKey(id))
-                {
-                    dict.Add(id, asset);
-                }
-            }
-        }
-        return dict;
+        public readonly List<BladeEntry> Blades = new List<BladeEntry>();
+        public readonly List<ShootEntry> Shoots = new List<ShootEntry>();
+        public readonly List<ResultMessage> Messages = new List<ResultMessage>();
+        public readonly List<Change> Changes = new List<Change>();
+        public int ErrorCount => Messages.Count(x => x.Type == MessageType.Error);
+        public bool HasErrors => ErrorCount > 0;
+        public void Error(string text, UnityEngine.Object context = null) =>
+            Messages.Add(new ResultMessage(text, MessageType.Error, context));
+        public void Warning(string text, UnityEngine.Object context = null) =>
+            Messages.Add(new ResultMessage(text, MessageType.Warning, context));
     }
 
-    private static BladeAttackActionData FindBladeAttackActionData(string keyword)
+    private sealed class ResultMessage
     {
-        string[] guids = AssetDatabase.FindAssets(
-            "t:BladeAttackActionData",
-            new[] { BladeAttackDataPath }
-        );
-        foreach (var guid in guids)
+        public readonly string Text;
+        public readonly MessageType Type;
+        public readonly UnityEngine.Object Context;
+        public ResultMessage(string text, MessageType type, UnityEngine.Object context = null)
         {
-            string path = AssetDatabase.GUIDToAssetPath(guid);
-            if (path.Contains(keyword))
-            {
-                return AssetDatabase.LoadAssetAtPath<BladeAttackActionData>(path);
-            }
+            Text = text;
+            Type = type;
+            Context = context;
         }
-        return null;
     }
 
-    #endregion
+    private sealed class Change
+    {
+        public string Kind;
+        public int ID;
+        public UnityEngine.Object Asset;
+        public string Field;
+        public string Before;
+        public string After;
+    }
+
+    private sealed class BladeEntry
+    {
+        public BladeWeaponData Asset;
+        public BladeRow Row;
+        public BladeAttackActionData Motion;
+    }
+
+    private sealed class ShootEntry
+    {
+        public ShootWeaponData Asset;
+        public ShootRow Row;
+    }
+
+    private sealed class BladeRow
+    {
+        public string Name;
+        public int Power;
+        public float WpCost;
+        public float Cooldown;
+        public Vector2 Size;
+        public Vector2 Offset;
+        public int BuyPrice;
+        public int SellPrice;
+        public ItemRank Rank;
+        public string MotionName;
+    }
+
+    private sealed class ShootRow
+    {
+        public string Name;
+        public int Power;
+        public float WpCost;
+        public float Cooldown;
+        public float Speed;
+        public float VanishTime;
+        public float Interval;
+        public int Penetration;
+        public ShootWeaponData.ShootMoveType MoveType;
+        public float Radius;
+        public Vector2 Offset;
+        public int BuyPrice;
+        public int SellPrice;
+        public ItemRank Rank;
+    }
 }
 #endif

@@ -189,6 +189,7 @@ public class NPCDialogueTrigger : MonoBehaviour
         if (
             Time.timeScale > 0
             && !isTalking
+            && GameManager.instance?.IsTalking != true
             && InputManager.instance.GetInteract()
             && collision.gameObject.CompareTag(GameConstants.PLAYER_TAG_NAME)
         )
@@ -334,7 +335,7 @@ public class NPCDialogueTrigger : MonoBehaviour
             return;
 
         // 会話中、もしくは会話機能が無効な場合は強制的に吹き出しを非表示にする
-        if (isTalking || !isDialogueEnabled)
+        if (isTalking || GameManager.instance?.IsTalking == true || !isDialogueEnabled)
         {
             if (speechBubbleObject.activeSelf)
             {
