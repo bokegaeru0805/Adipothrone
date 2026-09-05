@@ -237,6 +237,9 @@ public class StateConditionPro
 [Serializable]
 public class DialogueCondition
 {
+    [Tooltip("条件が満たされたとき、同じオブジェクトのShopInteractionTriggerから店を開きます。")]
+    public bool isOpenShop = false;
+
     public List<FlagConditionPro> requiredFlags = new List<FlagConditionPro>();
 
     [Tooltip("条件が満たされたときに実行するFungusブロックの名前")]

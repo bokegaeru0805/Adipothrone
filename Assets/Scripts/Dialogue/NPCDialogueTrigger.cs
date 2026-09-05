@@ -28,6 +28,10 @@ public class NPCDialogueTrigger : MonoBehaviour
     private Flowchart targetFlowchart;
 
     [Header("会話の分岐設定")]
+    [Tooltip("どの条件にも一致しない場合、同じオブジェクトのShopInteractionTriggerから店を開きます。")]
+    [SerializeField]
+    private bool isDefaultOpenShop = false;
+
     [Tooltip("どの条件にも一致しない場合に実行されるデフォルトの会話ブロック名。")]
     [SerializeField]
     private string defaultBlockName;
@@ -52,7 +56,12 @@ public class NPCDialogueTrigger : MonoBehaviour
     private ShopInteractionTrigger shopInteractionTrigger = null;
 
     // 状態フラグ
-    private bool isShopTrigger = false;
+    // 通常会話を実行する設定がある場合だけ、個別のFlowchartを使用する。
+    private bool isNeedsDialogueFlowchart =>
+        (!isDefaultOpenShop && !string.IsNullOrEmpty(defaultBlockName))
+        || dialogueConditions.Exists(condition =>
+            !condition.isOpenShop && !string.IsNullOrEmpty(condition.blockNameToExecute));
+
     private bool isTalking = false; // 現在会話中かどうか
     private bool isDialogueEnabled = true; // 会話機能自体が有効かどうか
     #endregion
@@ -64,7 +73,7 @@ public class NPCDialogueTrigger : MonoBehaviour
     /// </summary>
     private void Reset()
     {
-        if (useGlobalFlowchart || targetFlowchart != null)
+        if (!isNeedsDialogueFlowchart || useGlobalFlowchart || targetFlowchart != null)
             return;
 
         Flowchart localFlowchart = FindLocalFlowchartInScene();
@@ -119,7 +128,8 @@ public class NPCDialogueTrigger : MonoBehaviour
     {
         // Prefabアセット編集中や再生中は、シーン上の参照を自動保存しない
         if (
-            Application.isPlaying
+            !isNeedsDialogueFlowchart
+            || Application.isPlaying
             || useGlobalFlowchart
             || targetFlowchart != null
             || !gameObject.scene.IsValid()
@@ -134,19 +144,18 @@ public class NPCDialogueTrigger : MonoBehaviour
     private void Awake()
     {
         // Prefabから生成されたインスタンスなど、シーン参照を保持できない場合に実行時解決する
-        if (targetFlowchart == null && !useGlobalFlowchart)
+        if (isNeedsDialogueFlowchart && targetFlowchart == null && !useGlobalFlowchart)
         {
             targetFlowchart = FindLocalFlowchartInScene();
         }
 
         // 必須コンポーネントのチェック
-        if (targetFlowchart == null && !useGlobalFlowchart)
+        if (isNeedsDialogueFlowchart && targetFlowchart == null && !useGlobalFlowchart)
         {
             Debug.LogError("ターゲットのFlowchartが設定されていません。", this);
         }
 
         shopInteractionTrigger = this.GetComponent<ShopInteractionTrigger>();
-        isShopTrigger = shopInteractionTrigger != null;
 
         // 初期状態では吹き出しを一旦非表示にしておく（DelayedInitializationで正しい状態になる）
         if (speechBubbleObject != null)
@@ -157,9 +166,9 @@ public class NPCDialogueTrigger : MonoBehaviour
 
     private void Start()
     {
-        if (useGlobalFlowchart)
+        if (isNeedsDialogueFlowchart && useGlobalFlowchart)
         {
-            targetFlowchart = GlobalFlowchartController.instance.globalFlowchart;
+            targetFlowchart = GlobalFlowchartController.instance?.globalFlowchart;
             if (targetFlowchart == null)
             {
                 Debug.LogError("GlobalFlowchartControllerのFlowchartが設定されていません。", this);
@@ -181,8 +190,8 @@ public class NPCDialogueTrigger : MonoBehaviour
 
     private void OnTriggerStay2D(Collider2D collision)
     {
-        // このコンポーネントが無効化されている、会話機能が無効化されている、またはターゲットのFlowchartが設定されていない場合は、何もしない
-        if (!this.enabled || !isDialogueEnabled || targetFlowchart == null)
+        // このコンポーネントが無効化されている、会話機能が無効化されているの場合は、何もしない
+        if (!this.enabled || !isDialogueEnabled)
             return;
 
         // ゲームが動作中、他の会話が実行中でなく、プレイヤーがインタラクトした場合に会話を試みる
@@ -260,66 +269,50 @@ public class NPCDialogueTrigger : MonoBehaviour
     /// </summary>
     private void TryExecuteDialogue()
     {
-        if (targetFlowchart == null)
-            return;
-
         // 条件リストを下から順（新しい/進行度が高い条件）に評価
         for (int i = dialogueConditions.Count - 1; i >= 0; i--)
         {
             var condition = dialogueConditions[i];
+            if (!condition.AreAllFlagsMet())
+                continue;
 
-            if (condition.AreAllFlagsMet())
-            {
-                // ショップトリガーとしての処理かどうかを判定
-                bool isShopBlock =
-                    isShopTrigger
-                    && string.Equals(
-                        condition.blockNameToExecute,
-                        "Shop",
-                        StringComparison.OrdinalIgnoreCase
-                    );
-
-                if (isShopBlock)
-                {
-                    // ShopInteractionTriggerが設定されている場合、ShopTriggerを実行
-                    if (shopInteractionTrigger != null)
-                    {
-                        shopInteractionTrigger.ShopTrigger();
-                    }
-                }
-                else
-                {
-                    // 条件に一致した場合、ブロックを実行
-                    FungusHelper.ExecuteBlock(targetFlowchart, condition.blockNameToExecute);
-                }
-
-                // 追加イベントの呼び出し
-                condition.onDialogueTriggered?.Invoke();
-                return; // 一致したものが見つかったので処理終了
-            }
+            ExecuteDialogueAction(condition.isOpenShop, condition.blockNameToExecute);
+            // 追加イベントの呼び出し
+            condition.onDialogueTriggered?.Invoke();
+            return; // 一致したものが見つかったので処理終了
         }
 
-        // どの条件にも一致しなかった場合、デフォルトのブロックを実行
-        if (!string.IsNullOrEmpty(defaultBlockName))
+        // 条件に一致しない場合だけ、デフォルト動作を実行する
+        ExecuteDialogueAction(isDefaultOpenShop, defaultBlockName);
+    }
+
+    private void ExecuteDialogueAction(bool isOpenShop, string blockName)
+    {
+        if (isOpenShop)
         {
-            // ショップトリガーとしての処理かどうかを判定
-            bool isShopBlock =
-                isShopTrigger
-                && string.Equals(defaultBlockName, "Shop", StringComparison.OrdinalIgnoreCase);
+            if (shopInteractionTrigger == null)
+                shopInteractionTrigger = GetComponent<ShopInteractionTrigger>();
 
-            if (isShopBlock)
+            if (shopInteractionTrigger == null)
             {
-                // ShopInteractionTriggerが設定されている場合、ShopTriggerを実行
-                if (shopInteractionTrigger != null)
-                {
-                    shopInteractionTrigger.ShopTrigger();
-                }
+                Debug.LogError("ショップ起動には同じオブジェクトのShopInteractionTriggerが必要です。", this);
+                return;
             }
-            else
-            {
-                FungusHelper.ExecuteBlock(targetFlowchart, defaultBlockName);
-            }
+
+            shopInteractionTrigger.ShopTrigger();
+            return;
         }
+
+        if (string.IsNullOrEmpty(blockName))
+            return;
+
+        if (targetFlowchart == null)
+        {
+            Debug.LogError("通常会話を実行するFlowchartが設定されていません。", this);
+            return;
+        }
+
+        FungusHelper.ExecuteBlock(targetFlowchart, blockName);
     }
 
     #endregion

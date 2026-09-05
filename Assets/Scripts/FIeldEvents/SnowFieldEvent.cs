@@ -158,6 +158,21 @@ public class SnowFieldEvent : BaseFieldEvent
                 )
                 {
                     flagManager.SetBoolFlag(Chapter3TriggeredEvent.ReunitedWithRobot, true);
+                    GameManager.instance.savedata.EnemyRecordData.RegisterEncounter(
+                        EnemyName.Slime_Snow
+                    ); // スライム(雪原)と遭遇済みとして登録
+                    GameManager.instance.savedata.EnemyRecordData.RegisterEncounter(
+                        EnemyName.Fairy_Snow
+                    ); // フェアリー(雪原)と遭遇済みとして登録
+                    GameManager.instance.savedata.EnemyRecordData.RegisterEncounter(
+                        EnemyName.Golem_Snowfield_Small
+                    ); // 雪原ゴーレム(小型)と遭遇済みとして登録
+                    GameManager.instance.savedata.EnemyRecordData.RegisterEncounter(
+                        EnemyName.Golem_Snowfield_Medium
+                    ); // 雪原ゴーレム(中型)と遭遇済みとして登録
+                    GameManager.instance.savedata.EnemyRecordData.RegisterEncounter(
+                        EnemyName.Golem_Snowfield_Large
+                    ); // 雪原ゴーレム(大型)と遭遇済みとして登録
                     FungusHelper.ExecuteBlock(targetFlowchart, "ReunitedWithRobot");
                 }
                 break;
@@ -189,6 +204,18 @@ public class SnowFieldEvent : BaseFieldEvent
                 if (!flagManager.GetBoolFlag(Chapter3TriggeredEvent.ReachedTowerEntrance))
                 {
                     flagManager.SetBoolFlag(Chapter3TriggeredEvent.ReachedTowerEntrance, true);
+                    GameManager.instance.savedata.EnemyRecordData.RegisterEncounter(
+                        EnemyName.Gargoyle
+                    ); // ガーゴイルと遭遇済みとして登録
+                    GameManager.instance.savedata.EnemyRecordData.RegisterEncounter(
+                        EnemyName.Bat_Tower
+                    ); // バットと遭遇済みとして登録
+                    GameManager.instance.savedata.EnemyRecordData.RegisterEncounter(
+                        EnemyName.Golem_Tower
+                    ); // ゴーレムと遭遇済みとして登録
+                    GameManager.instance.savedata.EnemyRecordData.RegisterEncounter(
+                        EnemyName.Fairy_Rare
+                    ); // レアフェアリーと遭遇済みとして登録
                     FungusHelper.ExecuteBlock(targetFlowchart, "ReachedTowerEntrance");
                 }
                 break;

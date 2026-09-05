@@ -200,11 +200,13 @@ public class ShopUIManager : MonoBehaviour
     [SerializeField, Tooltip("ショップUIの各パーツへの参照をまとめたオブジェクト")]
     private ShopUIRefs uiRefs;
 
-    [Header("店の会話ハンドラー")]
-    [SerializeField, Tooltip("IShopConversationを実装した会話制御用オブジェクト")]
-    private MonoBehaviour conversationHandlerObject;
-    private IShopConversation conversationHandler;
+    private IShopConversation conversationHandler; // 開いたNPCの店内会話
 
+    /// <summary>現在の店に、フラグ条件を満たす実行可能な店内会話があるか。</summary>
+    public bool HasShopConversation =>
+        conversationHandler != null && conversationHandler.IsAvailable;
+
+    private ShopData currentShopData; // オブジェクトから直接指定された店舗データ
     [HideInInspector]
     private ShopName currentShopID = ShopName.None; // 現在開いている店のID
     public ShopStatus shopStatus { get; private set; } = ShopStatus.None; // 現在の店のステータス（購入/売却）
@@ -259,6 +261,16 @@ public class ShopUIManager : MonoBehaviour
         }
     }
 
+    private void OnDisable()
+    {
+        ResetShopConversation();
+    }
+
+    private void ResetShopConversation()
+    {
+        conversationHandler = null;
+    }
+
     private void Start()
     {
         playerManager = PlayerManager.instance;
@@ -266,13 +278,6 @@ public class ShopUIManager : MonoBehaviour
         {
             Debug.LogError("PlayerManagerが見つかりません。ShopUIManagerの初期化に失敗しました。");
             return;
-        }
-
-        // 店の会話ハンドラーをインターフェースとして取得
-        conversationHandler = conversationHandlerObject as IShopConversation;
-        if (conversationHandler == null)
-        {
-            Debug.LogError("IShopConversationの実装が不正です。");
         }
     }
 
@@ -294,7 +299,6 @@ public class ShopUIManager : MonoBehaviour
         }
 
         Check(shopDataBase, nameof(shopDataBase));
-        Check(conversationHandlerObject, nameof(conversationHandlerObject));
         Check(uiRefs, nameof(uiRefs));
 
         if (uiRefs != null)
@@ -375,7 +379,33 @@ public class ShopUIManager : MonoBehaviour
     /// <param name="shopID">開く店のID</param>
     public void SetShopID(ShopName shopID)
     {
+        ResetShopConversation();
+        currentShopData = null; // ID指定へ戻る際に前の店舗データを解除する
         currentShopID = shopID;
+        StartShopDialogue();
+    }
+
+    /// <summary>
+    /// 店舗データを直接指定し、共通の開始会話を実行します。Databaseへの登録は不要です。
+    /// </summary>
+    public void OpenShop(ShopData shopData)
+    {
+        OpenShop(shopData, null);
+    }
+
+    /// <summary>店舗データと、その店員の店内会話を指定して店を開く。</summary>
+    public void OpenShop(ShopData shopData, ShopConversation conversation)
+    {
+        if (shopData == null)
+        {
+            Debug.LogError("開く店舗データが設定されていません。", this);
+            return;
+        }
+
+        ResetShopConversation();
+        conversationHandler = conversation;
+        currentShopData = shopData;
+        currentShopID = shopData.shopID;
         StartShopDialogue();
     }
 
@@ -398,7 +428,9 @@ public class ShopUIManager : MonoBehaviour
         }
 
         // 店のデータを取得
-        ShopData shopData = shopDataBase.GetShopByID(currentShopID);
+        ShopData shopData = currentShopData != null
+            ? currentShopData
+            : shopDataBase?.GetShopByID(currentShopID);
         if (shopData == null)
         {
             Debug.LogError($"ShopID {currentShopID} に対応するデータが見つかりません。");
@@ -533,9 +565,27 @@ public class ShopUIManager : MonoBehaviour
     /// </summary>
     private IEnumerator CloseShopCoroutine()
     {
+        ResetShopConversation();
         // 1フレーム待機して、時間の再開を全システムに安全に反映させる
         yield return null;
 
+        CloseShopUI();
+
+        // 終了の会話ブロックを取得して実行
+        Block block = GlobalFlowchartController.instance?.globalFlowchart?.FindBlock(
+            shopEndBlockName
+        );
+        if (block == null)
+        {
+            Debug.LogWarning($"Block '{shopEndBlockName}' が見つかりません");
+            yield break;
+        }
+        GlobalFlowchartController.instance?.globalFlowchart?.ExecuteBlock(block);
+    }
+
+    /// <summary>終了挨拶を実行せず、ショップUIと購読中のイベントを片付ける。</summary>
+    private void CloseShopUI()
+    {
         uiRefs.ShopUIPanel.SetActive(false);
         uiRefs.PurchasePromptPanel.SetActive(false);
         uiRefs.ItemDetailPanel.SetActive(false);
@@ -550,17 +600,6 @@ public class ShopUIManager : MonoBehaviour
         GameManager.instance.OnAnyItemAddedToInventory -= UpdateSelectedItemDetails;
         GameManager.instance.OnAnyItemRemovedFromInventory -= HandleInventoryChanged;
         playerManager.OnChangePlayerMoney -= SetCoinText;
-
-        // 終了の会話ブロックを取得して実行
-        Block block = GlobalFlowchartController.instance?.globalFlowchart?.FindBlock(
-            shopEndBlockName
-        );
-        if (block == null)
-        {
-            Debug.LogWarning($"Block '{shopEndBlockName}' が見つかりません");
-            yield break;
-        }
-        GlobalFlowchartController.instance?.globalFlowchart?.ExecuteBlock(block);
     }
 
     /// <summary>
@@ -953,7 +992,9 @@ public class ShopUIManager : MonoBehaviour
     /// </summary>
     public void StartShopDialogue()
     {
-        ShopData shopData = shopDataBase.GetShopByID(currentShopID);
+        ShopData shopData = currentShopData != null
+            ? currentShopData
+            : shopDataBase?.GetShopByID(currentShopID);
         if (shopData == null)
         {
             Debug.LogError($"ShopID {currentShopID} に対応するデータが見つかりません。");
@@ -976,17 +1017,26 @@ public class ShopUIManager : MonoBehaviour
         GlobalFlowchartController.instance?.globalFlowchart?.ExecuteBlock(block);
     }
 
-    /// <summary>
-    /// IShopConversationを利用して、店舗固有の複雑な会話フローを開始します。
-    /// </summary>
+    /// <summary>店内会話を開始し、成功した場合は終了挨拶なしでショップを終了する。</summary>
     public void StartShopConversation()
     {
-        if (conversationHandler == null)
-        {
-            Debug.LogError("IShopConversationの実装が見つかりません。");
-            return;
-        }
-        conversationHandler?.StartShopConversation(currentShopID);
+        TryStartShopConversationAndClose();
+    }
+
+    /// <summary>店内会話の開始とショップ終了に成功したかを返す。</summary>
+    public bool TryStartShopConversationAndClose()
+    {
+        if (!HasShopConversation)
+            return false;
+
+        IShopConversation conversation = conversationHandler;
+        if (!conversation.TryStartConversation())
+            return false;
+
+        CloseShopUI();
+        ResetShopConversation();
+        shopStatus = ShopStatus.None;
+        return true;
     }
 
     #endregion

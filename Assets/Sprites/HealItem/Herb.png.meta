@@ -113,8 +113,8 @@ TextureImporter:
       name: Herb
       rect:
         serializedVersion: 2
-        x: 5
-        y: 2
+        x: 1
+        y: 0
         width: 13
         height: 19
       alignment: 0

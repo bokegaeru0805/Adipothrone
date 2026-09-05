@@ -2,40 +2,34 @@ using UnityEngine;
 
 public class ShopInteractionTrigger : MonoBehaviour
 {
-    [Header("店の名前")]
+    [Header("店舗データ")]
+    [Tooltip("開く店のShopDataを指定します。ShopDataBaseへの登録は不要です。")]
     [SerializeField]
-    private ShopName shopName = ShopName.None; // 店の名前を指定
+    private ShopData shopData;
 
     private void Awake()
     {
-        if (shopName == ShopName.None)
+        if (shopData == null)
         {
-            Debug.LogError(
-                "ShopNameがNoneに設定されています。適切なShopNameを設定してください。",
-                this
-            );
-            return;
+            Debug.LogError("店舗データを設定してください。", this);
         }
     }
 
+    /// <summary>指定された店舗データで店を開きます。</summary>
     public void ShopTrigger()
     {
-        if (ShopUIManager.instance != null)
+        if (shopData == null)
         {
-            switch (shopName)
-            {
-                case ShopName.VillageGirl_Shop:
-                    ShopUIManager.instance.SetShopID(shopName);
-                    break;
-                case ShopName.Desert_Shop:
-                    ShopUIManager.instance.SetShopID(shopName);
-                    break;
-            }
-        }
-        else
-        {
-            Debug.LogError("ShopUIManagerが見つかりません。");
+            Debug.LogError("店舗データを設定してください。", this);
             return;
         }
+
+        if (ShopUIManager.instance == null)
+        {
+            Debug.LogError("ShopUIManagerが見つかりません。", this);
+            return;
+        }
+
+        ShopUIManager.instance.OpenShop(shopData, GetComponent<ShopConversation>());
     }
 }

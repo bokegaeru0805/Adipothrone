@@ -12,4 +12,6 @@ public enum HealItemName
     Coconut = 8009, //ココナッツ
     HoneyGlazedDates = 8010, //蜜漬けナツメヤシ
     TealJasperElixir = 8011, //碧玉の霊薬
+    SnowApple = 8012, //雪リンゴ
+    ApplePie = 8013, //アップルパイ
 }

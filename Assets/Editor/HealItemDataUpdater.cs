@@ -1,184 +1,536 @@
+#if UNITY_EDITOR
 using System;
 using System.Collections.Generic;
-using System.IO;
+using System.Globalization;
+using System.Linq;
+using System.Text;
 using UnityEditor;
 using UnityEngine;
 
 /// <summary>
-/// CSVファイルの更新を検知し、ScriptableObject(HealItemData)を自動更新するエディタ拡張
+/// 手動配置した回復アイテムCSVを検証し、既存のHealItemDataだけへ反映するEditorWindow。
 /// </summary>
-public class HealItemDataUpdater : AssetPostprocessor
+public sealed class HealItemDataImporterWindow : EditorWindow
 {
-    // =========================================================
-    // ▼ 基本設定
-    // =========================================================
+    private const string DefaultCsvPath = "Assets/アイテムデータ - 回復アイテム.csv";
+    private const string AssetFolderPath = "Assets/ItemData/HealItemData";
 
-    // 監視するCSVのファイル名（拡張子含む）
-    private const string TargetCsvFileName = "アイテムデータ - 回復アイテム.csv";
-
-    // 更新対象のHealItemDataアセットが保存されているフォルダのパス
-    // ※プロジェクトの構成に合わせて適宜変更してください
-    private const string TargetAssetFolderPath = "Assets/ItemData/HealItemData";
-
-    // =========================================================
-    // ▼ CSVの列インデックス定義（0からスタート）
-    // =========================================================
-
-    // CSVの列構成が変わった場合は、ここの数値を変更するだけで対応できます
-    private const int Col_ID = 0; // ID
-    private const int Col_ItemName = 1; // 表示名
-    private const int Col_ItemRank = 2; // レア度
-    private const int Col_HpHealAmount = 3; // HP回復量
-    private const int Col_WpHealAmount = 4; // WP回復量
-    private const int Col_BuyPrice = 10; // 購入価格
-    private const int Col_SellPrice = 11; // 売却価格
-
-    // =========================================================
-    // ▼ 自動検知処理 (AssetPostprocessorの標準機能)
-    // =========================================================
-
-    /// <summary>
-    /// アセットがインポート、削除、移動などされた後に自動で呼ばれるコールバック
-    /// </summary>
-    static void OnPostprocessAllAssets(
-        string[] importedAssets,
-        string[] deletedAssets,
-        string[] movedAssets,
-        string[] movedFromAssetPaths
-    )
+    private static readonly string[] ExpectedHeaders =
     {
-        // インポート（更新や上書き保存）されたファイルの中に、対象のCSVがあるかチェック
-        foreach (string str in importedAssets)
-        {
-            if (Path.GetFileName(str) == TargetCsvFileName)
-            {
-                Debug.Log(
-                    $"[{TargetCsvFileName}] の更新を検知しました。HealItemDataの自動更新を開始します..."
-                );
-                UpdateHealItemDataFromCsv(str);
-                break; // 1回実行すれば十分なのでループを抜ける
-            }
-        }
+        "ID", "表示名", "レア度", "HP回復量", "WP回復量", "効果1", "強さ", "ランク",
+        "効果2", "効果3", "購入価格", "売却価格", "説明文",
+    };
+
+    [SerializeField] private TextAsset csvAsset;
+    private readonly List<Message> messages = new List<Message>();
+    private readonly List<Change> changes = new List<Change>();
+    private Vector2 scroll;
+    private bool isValidated;
+    private bool hasErrors;
+
+    [MenuItem("Tools/Adipothrone/Heal Item Data Importer")]
+    private static void Open() => GetWindow<HealItemDataImporterWindow>("Heal Item CSV Importer");
+
+    private void OnEnable()
+    {
+        if (csvAsset == null)
+            csvAsset = AssetDatabase.LoadAssetAtPath<TextAsset>(DefaultCsvPath);
     }
 
-    // =========================================================
-    // ▼ メイン更新処理
-    // =========================================================
-
-    private static void UpdateHealItemDataFromCsv(string csvPath)
+    private void OnGUI()
     {
-        // 1. CSVデータの読み込み
-        string[] csvLines = File.ReadAllLines(csvPath);
-        if (csvLines.Length <= 1)
-        {
-            Debug.LogWarning("CSVファイルが空、またはヘッダー行しかありません。");
-            return;
-        }
-
-        // CSVのデータを「ID」をキーにして検索しやすいようにDictionaryへ格納
-        Dictionary<int, string[]> csvDataDict = new Dictionary<int, string[]>();
-
-        // 1行目（ヘッダー）を飛ばして2行目から読み込む
-        for (int i = 1; i < csvLines.Length; i++)
-        {
-            string line = csvLines[i];
-            if (string.IsNullOrWhiteSpace(line))
-                continue; // 空行はスキップ
-
-            string[] columns = line.Split(',');
-
-            // 最低限必要な列数があるかチェック（設定した最大インデックスの数だけ列が必要）
-            if (columns.Length <= Col_SellPrice)
-            {
-                Debug.LogWarning($"CSVの {i + 1} 行目のフォーマットが不正です。列数が足りません。");
-                continue;
-            }
-
-            // IDを取得して辞書に登録（数値変換に失敗した行はスキップ）
-            if (int.TryParse(columns[Col_ID], out int id))
-            {
-                csvDataDict[id] = columns;
-            }
-            else
-            {
-                Debug.LogWarning($"CSVの {i + 1} 行目のIDが数値ではありません: {columns[Col_ID]}");
-            }
-        }
-
-        // 2. 指定フォルダ内のHealItemDataアセットをすべて取得
-        // "t:HealItemData" というフィルターで型を指定して検索します
-        string[] guids = AssetDatabase.FindAssets(
-            "t:HealItemData",
-            new[] { TargetAssetFolderPath }
+        EditorGUILayout.LabelField("Heal Item Data CSV Importer", EditorStyles.boldLabel);
+        EditorGUILayout.HelpBox(
+            "手動ダウンロードしたCSVを検証し、既存のHealItemDataだけを更新します。"
+                + " CSVを配置しただけでは反映されず、新規アセットも作成しません。"
+                + " 効果1〜3・強さ・ランクは参考列のため反映しません。",
+            MessageType.Info
         );
 
-        if (guids.Length == 0)
+        EditorGUI.BeginChangeCheck();
+        csvAsset = (TextAsset)EditorGUILayout.ObjectField("CSV", csvAsset, typeof(TextAsset), false);
+        if (EditorGUI.EndChangeCheck())
+            ClearResult();
+
+        using (new EditorGUILayout.HorizontalScope())
         {
-            Debug.LogWarning(
-                $"指定されたフォルダ '{TargetAssetFolderPath}' 内に HealItemData アセットが見つかりませんでした。"
-            );
-            return;
-        }
-
-        int updatedCount = 0;
-
-        // 3. 取得した各アセットに対するデータ上書き処理
-        foreach (string guid in guids)
-        {
-            string assetPath = AssetDatabase.GUIDToAssetPath(guid);
-            HealItemData asset = AssetDatabase.LoadAssetAtPath<HealItemData>(assetPath);
-
-            if (asset == null)
-                continue;
-
-            // アセットに設定されている列挙型(Enum)のIDをintに変換
-            int assetId = (int)asset.itemID;
-
-            // アセットのIDと一致するデータがCSV側にあれば、上書き処理を行う
-            if (csvDataDict.TryGetValue(assetId, out string[] csvRow))
+            if (GUILayout.Button("検証"))
+                Validate();
+            using (new EditorGUI.DisabledScope(!isValidated || hasErrors))
             {
-                // 文字列の代入
-                asset.itemName = csvRow[Col_ItemName];
-
-                // ItemRank(レア度)の文字列(E, Dなど)をEnumに変換して代入
-                if (Enum.TryParse(csvRow[Col_ItemRank], out ItemRank rank))
-                {
-                    asset.itemRank = rank;
-                }
-                else
-                {
-                    Debug.LogWarning(
-                        $"アセット '{asset.name}' (ID:{assetId}): レア度 '{csvRow[Col_ItemRank]}' は不正な値のため変換をスキップしました。"
-                    );
-                }
-
-                // 数値データの変換と代入
-                if (int.TryParse(csvRow[Col_HpHealAmount], out int hpHeal))
-                    asset.hpHealAmount = hpHeal;
-                if (int.TryParse(csvRow[Col_WpHealAmount], out int wpHeal))
-                    asset.wpHealAmount = wpHeal;
-                if (int.TryParse(csvRow[Col_BuyPrice], out int buyPrice))
-                    asset.buyPrice = buyPrice;
-                if (int.TryParse(csvRow[Col_SellPrice], out int sellPrice))
-                    asset.sellPrice = sellPrice;
-
-                // 変更があったことをUnityエディタに通知（保存対象マークを付ける）
-                EditorUtility.SetDirty(asset);
-                updatedCount++;
+                if (GUILayout.Button("反映"))
+                    Apply();
             }
         }
 
-        // 4. 変更されたすべてのアセットをディスクに一括保存
-        if (updatedCount > 0)
+        if (!isValidated)
+            return;
+
+        EditorGUILayout.Space(8);
+        EditorGUILayout.LabelField(
+            hasErrors ? "検証結果: エラーあり（反映不可）" : "検証結果: 反映可能",
+            EditorStyles.boldLabel
+        );
+        scroll = EditorGUILayout.BeginScrollView(scroll);
+        foreach (Message message in messages)
         {
-            AssetDatabase.SaveAssets();
-            Debug.Log(
-                $"<color=green>✓ HealItemDataの自動更新が完了しました！ ({updatedCount} 個のアイテム情報を書き換えました)</color>"
-            );
+            EditorGUILayout.BeginHorizontal();
+            EditorGUILayout.HelpBox(message.Text, message.Type);
+            if (message.Context != null && GUILayout.Button("選択", GUILayout.Width(48)))
+                Selection.activeObject = message.Context;
+            EditorGUILayout.EndHorizontal();
         }
-        else
+
+        EditorGUILayout.Space(6);
+        EditorGUILayout.LabelField($"変更予定: {changes.Count}項目", EditorStyles.boldLabel);
+        foreach (Change change in changes)
         {
-            Debug.Log("更新対象のHealItemDataアセットはありませんでした（IDの一致なし）。");
+            EditorGUILayout.BeginVertical(EditorStyles.helpBox);
+            EditorGUILayout.LabelField($"ID {change.ID} / {change.Asset.name}");
+            EditorGUILayout.LabelField(change.Field, $"{change.Before}  →  {change.After}");
+            if (GUILayout.Button("アセットを選択", GUILayout.Width(110)))
+                Selection.activeObject = change.Asset;
+            EditorGUILayout.EndVertical();
+        }
+        EditorGUILayout.EndScrollView();
+    }
+
+    private void ClearResult()
+    {
+        isValidated = false;
+        hasErrors = false;
+        messages.Clear();
+        changes.Clear();
+    }
+
+    private void Validate()
+    {
+        Plan plan = BuildPlan();
+        ShowPlan(plan);
+        if (!hasErrors)
+            messages.Insert(0, new Message($"検証成功: {plan.Entries.Count}件を反映できます。", MessageType.Info));
+    }
+
+    private void Apply()
+    {
+        Plan plan = BuildPlan();
+        ShowPlan(plan);
+        if (hasErrors)
+        {
+            Debug.LogError("回復アイテムCSVの再検証でエラーが見つかったため、反映を中止しました。");
+            return;
+        }
+
+        HealItemData[] targets = plan.Entries.Select(entry => entry.Asset).ToArray();
+        Undo.IncrementCurrentGroup();
+        int undoGroup = Undo.GetCurrentGroup();
+        Undo.SetCurrentGroupName("Import Heal Item Data CSV");
+        Undo.RecordObjects(targets, "Import Heal Item Data CSV");
+        foreach (Entry entry in plan.Entries)
+        {
+            HealItemData asset = entry.Asset;
+            Row row = entry.Row;
+            asset.itemName = row.Name;
+            asset.itemRank = row.Rank;
+            asset.hpHealAmount = row.Hp;
+            asset.wpHealAmount = row.Wp;
+            asset.buyPrice = row.Buy;
+            asset.sellPrice = row.Sell;
+            asset.description = row.Description;
+            EditorUtility.SetDirty(asset);
+        }
+        AssetDatabase.SaveAssets();
+        Undo.CollapseUndoOperations(undoGroup);
+        messages.Insert(
+            0,
+            new Message(
+                $"回復アイテムCSV反映完了: {plan.Entries.Count}件、変更 {plan.Changes.Count}項目。",
+                MessageType.Info
+            )
+        );
+        changes.Clear();
+    }
+
+    private void ShowPlan(Plan plan)
+    {
+        isValidated = true;
+        hasErrors = plan.HasErrors;
+        messages.Clear();
+        messages.AddRange(plan.Messages);
+        changes.Clear();
+        changes.AddRange(plan.Changes);
+        foreach (Message message in plan.Messages)
+        {
+            if (message.Type == MessageType.Error)
+                Debug.LogError(message.Text, message.Context);
+            else if (message.Type == MessageType.Warning)
+                Debug.LogWarning(message.Text, message.Context);
         }
     }
+
+    private Plan BuildPlan()
+    {
+        Plan plan = new Plan();
+        if (csvAsset == null)
+        {
+            plan.Error("CSVが設定されていません。");
+            return plan;
+        }
+
+        List<string[]> csvRows = ParseCsv(csvAsset.text, out bool isCsvValid);
+        if (!isCsvValid)
+        {
+            plan.Error("CSV: ダブルクォーテーションが閉じられていません。");
+            return plan;
+        }
+        if (csvRows.Count == 0)
+        {
+            plan.Error("CSVが空です。");
+            return plan;
+        }
+
+        Dictionary<string, int> columns = CreateColumns(csvRows[0], plan);
+        foreach (string header in ExpectedHeaders)
+        {
+            if (!columns.ContainsKey(header))
+                plan.Error($"CSV: 必須ヘッダー '{header}' がありません。");
+        }
+        foreach (string header in columns.Keys.Where(header => !ExpectedHeaders.Contains(header)))
+            plan.Warning($"CSV: 未使用列 '{header}' はUnityへ反映されません。");
+        if (plan.HasErrors)
+            return plan;
+
+        plan.Info("効果1〜3・強さ・ランクは参考列のため、Unityへ反映しません。");
+
+        Dictionary<int, List<HealItemData>> assetsById = AssetDatabase
+            .FindAssets("t:HealItemData", new[] { AssetFolderPath })
+            .Select(AssetDatabase.GUIDToAssetPath)
+            .Select(AssetDatabase.LoadAssetAtPath<HealItemData>)
+            .Where(asset => asset != null)
+            .GroupBy(asset => Convert.ToInt32(asset.itemID))
+            .ToDictionary(group => group.Key, group => group.ToList());
+        ValidateAssets(assetsById, plan);
+
+        HashSet<int> csvIds = new HashSet<int>();
+        for (int index = 1; index < csvRows.Count; index++)
+        {
+            string[] cells = csvRows[index];
+            if (cells.All(string.IsNullOrWhiteSpace))
+                continue;
+
+            int line = index + 1;
+            if (!TryReadID(cells, columns, line, csvIds, plan, out int id))
+                continue;
+            if (!Enum.IsDefined(typeof(HealItemName), id) || id == (int)HealItemName.None)
+            {
+                plan.Error($"CSV {line}行目: ID {id} はHealItemNameに存在しません。");
+                continue;
+            }
+            if (!assetsById.TryGetValue(id, out List<HealItemData> matchingAssets))
+            {
+                plan.Error($"CSV {line}行目: ID {id} の既存HealItemDataがありません。新規作成は行いません。");
+                continue;
+            }
+            if (matchingAssets.Count != 1)
+                continue;
+
+            int errorCount = plan.ErrorCount;
+            Row row = new Row
+            {
+                Name = RequiredText(cells, columns, "表示名", line, plan),
+                Rank = ReadEnum<ItemRank>(cells, columns, "レア度", line, plan),
+                Hp = ReadNonNegativeInt(cells, columns, "HP回復量", line, plan),
+                Wp = ReadNonNegativeInt(cells, columns, "WP回復量", line, plan),
+                Buy = ReadNonNegativeInt(cells, columns, "購入価格", line, plan),
+                Sell = ReadNonNegativeInt(cells, columns, "売却価格", line, plan),
+                Description = Cell(cells, columns, "説明文").Trim(),
+            };
+            if (plan.ErrorCount != errorCount)
+                continue;
+
+            Entry entry = new Entry { Asset = matchingAssets[0], Row = row };
+            plan.Entries.Add(entry);
+            AddChanges(entry, plan);
+        }
+
+        foreach (KeyValuePair<int, List<HealItemData>> pair in assetsById)
+        {
+            if (csvIds.Contains(pair.Key))
+                continue;
+            foreach (HealItemData asset in pair.Value)
+            {
+                plan.Warning(
+                    $"HealItemData '{asset.name}' (ID {pair.Key}) はCSVにないため変更しません。",
+                    asset
+                );
+            }
+        }
+        return plan;
+    }
+
+    private static Dictionary<string, int> CreateColumns(string[] headers, Plan plan)
+    {
+        Dictionary<string, int> columns = new Dictionary<string, int>(StringComparer.Ordinal);
+        for (int index = 0; index < headers.Length; index++)
+        {
+            string header = headers[index].Trim().TrimStart('﻿');
+            if (string.IsNullOrEmpty(header))
+                continue;
+            if (columns.ContainsKey(header))
+                plan.Error($"CSV: ヘッダー '{header}' が重複しています。");
+            else
+                columns.Add(header, index);
+        }
+        return columns;
+    }
+
+    private static bool TryReadID(
+        string[] cells,
+        Dictionary<string, int> columns,
+        int line,
+        HashSet<int> csvIds,
+        Plan plan,
+        out int id
+    )
+    {
+        string raw = Cell(cells, columns, "ID").Trim();
+        if (!int.TryParse(raw, NumberStyles.Integer, CultureInfo.InvariantCulture, out id))
+        {
+            plan.Error($"CSV {line}行目: ID '{raw}' は整数ではありません。");
+            return false;
+        }
+        if (!csvIds.Add(id))
+        {
+            plan.Error($"CSV {line}行目: ID {id} がCSV内で重複しています。");
+            return false;
+        }
+        return true;
+    }
+
+    private static void ValidateAssets(
+        Dictionary<int, List<HealItemData>> assetsById,
+        Plan plan
+    )
+    {
+        foreach (KeyValuePair<int, List<HealItemData>> pair in assetsById)
+        {
+            if (pair.Value.Count > 1)
+            {
+                plan.Error(
+                    $"HealItemDataのID {pair.Key} が重複しています: "
+                        + string.Join(", ", pair.Value.Select(AssetDatabase.GetAssetPath))
+                );
+            }
+            if (!Enum.IsDefined(typeof(HealItemName), pair.Key) || pair.Key == 0)
+            {
+                foreach (HealItemData asset in pair.Value)
+                {
+                    plan.Error(
+                        $"HealItemData '{asset.name}' のID {pair.Key} はHealItemNameに存在しません。",
+                        asset
+                    );
+                }
+            }
+        }
+    }
+
+    private static string RequiredText(
+        string[] cells,
+        Dictionary<string, int> columns,
+        string header,
+        int line,
+        Plan plan
+    )
+    {
+        string value = Cell(cells, columns, header).Trim();
+        if (string.IsNullOrEmpty(value))
+            plan.Error($"CSV {line}行目: '{header}' は必須です。");
+        return value;
+    }
+
+    private static int ReadNonNegativeInt(
+        string[] cells,
+        Dictionary<string, int> columns,
+        string header,
+        int line,
+        Plan plan
+    )
+    {
+        string raw = Cell(cells, columns, header).Trim();
+        if (
+            !int.TryParse(raw, NumberStyles.Integer, CultureInfo.InvariantCulture, out int value)
+            || value < 0
+        )
+            plan.Error($"CSV {line}行目: '{header}' は0以上の整数で入力してください: {raw}");
+        return value;
+    }
+
+    private static T ReadEnum<T>(
+        string[] cells,
+        Dictionary<string, int> columns,
+        string header,
+        int line,
+        Plan plan
+    ) where T : struct, Enum
+    {
+        string raw = Cell(cells, columns, header).Trim();
+        if (
+            !Enum.TryParse(raw, false, out T value)
+            || !Enum.IsDefined(typeof(T), value)
+            || !string.Equals(Enum.GetName(typeof(T), value), raw, StringComparison.Ordinal)
+            || Convert.ToInt32(value) == 0
+        )
+            plan.Error($"CSV {line}行目: '{header}' の値が不正です: {raw}");
+        return value;
+    }
+
+    private static string Cell(
+        string[] cells,
+        Dictionary<string, int> columns,
+        string header
+    )
+    {
+        int index = columns[header];
+        return index < cells.Length ? cells[index] : string.Empty;
+    }
+
+    private static void AddChanges(Entry entry, Plan plan)
+    {
+        HealItemData asset = entry.Asset;
+        Row row = entry.Row;
+        AddChange(plan, asset, "表示名", asset.itemName, row.Name);
+        AddChange(plan, asset, "レア度", asset.itemRank, row.Rank);
+        AddChange(plan, asset, "HP回復量", asset.hpHealAmount, row.Hp);
+        AddChange(plan, asset, "WP回復量", asset.wpHealAmount, row.Wp);
+        AddChange(plan, asset, "購入価格", asset.buyPrice, row.Buy);
+        AddChange(plan, asset, "売却価格", asset.sellPrice, row.Sell);
+        AddChange(plan, asset, "説明文", asset.description, row.Description);
+    }
+
+    private static void AddChange<T>(
+        Plan plan,
+        HealItemData asset,
+        string field,
+        T before,
+        T after
+    )
+    {
+        if (EqualityComparer<T>.Default.Equals(before, after))
+            return;
+        plan.Changes.Add(
+            new Change
+            {
+                ID = Convert.ToInt32(asset.itemID),
+                Asset = asset,
+                Field = field,
+                Before = object.Equals(before, null) ? "(なし)" : before.ToString(),
+                After = object.Equals(after, null) ? "(なし)" : after.ToString(),
+            }
+        );
+    }
+
+    private static List<string[]> ParseCsv(string text, out bool isValid)
+    {
+        List<string[]> rows = new List<string[]>();
+        List<string> row = new List<string>();
+        StringBuilder value = new StringBuilder();
+        bool inQuotes = false;
+
+        for (int index = 0; index < text.Length; index++)
+        {
+            char character = text[index];
+            if (inQuotes)
+            {
+                if (character == '"' && index + 1 < text.Length && text[index + 1] == '"')
+                {
+                    value.Append('"');
+                    index++;
+                }
+                else if (character == '"')
+                    inQuotes = false;
+                else
+                    value.Append(character);
+            }
+            else if (character == '"')
+                inQuotes = true;
+            else if (character == ',')
+            {
+                row.Add(value.ToString());
+                value.Length = 0;
+            }
+            else if (character == '\r' || character == '\n')
+            {
+                if (character == '\r' && index + 1 < text.Length && text[index + 1] == '\n')
+                    index++;
+                row.Add(value.ToString());
+                rows.Add(row.ToArray());
+                row = new List<string>();
+                value.Length = 0;
+            }
+            else
+                value.Append(character);
+        }
+
+        if (value.Length > 0 || row.Count > 0)
+        {
+            row.Add(value.ToString());
+            rows.Add(row.ToArray());
+        }
+        isValid = !inQuotes;
+        return rows;
+    }
+
+    private sealed class Plan
+    {
+        public readonly List<Entry> Entries = new List<Entry>();
+        public readonly List<Message> Messages = new List<Message>();
+        public readonly List<Change> Changes = new List<Change>();
+        public int ErrorCount => Messages.Count(message => message.Type == MessageType.Error);
+        public bool HasErrors => ErrorCount > 0;
+        public void Error(string text, UnityEngine.Object context = null) =>
+            Messages.Add(new Message(text, MessageType.Error, context));
+        public void Warning(string text, UnityEngine.Object context = null) =>
+            Messages.Add(new Message(text, MessageType.Warning, context));
+        public void Info(string text) => Messages.Add(new Message(text, MessageType.Info));
+    }
+
+    private sealed class Message
+    {
+        public readonly string Text;
+        public readonly MessageType Type;
+        public readonly UnityEngine.Object Context;
+        public Message(string text, MessageType type, UnityEngine.Object context = null)
+        {
+            Text = text;
+            Type = type;
+            Context = context;
+        }
+    }
+
+    private sealed class Change
+    {
+        public int ID;
+        public HealItemData Asset;
+        public string Field;
+        public string Before;
+        public string After;
+    }
+
+    private sealed class Entry
+    {
+        public HealItemData Asset;
+        public Row Row;
+    }
+
+    private sealed class Row
+    {
+        public string Name;
+        public ItemRank Rank;
+        public int Hp;
+        public int Wp;
+        public int Buy;
+        public int Sell;
+        public string Description;
+    }
 }
+#endif

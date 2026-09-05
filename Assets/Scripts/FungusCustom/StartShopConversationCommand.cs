@@ -1,21 +1,23 @@
 using Fungus;
 using UnityEngine;
 
-/// <summary>
-/// FungusのFlowchartから、店での会話を開始するためのカスタムコマンド
-/// </summary>
-[CommandInfo("Shop", "Start Shop Conversation", "店での会話を開始するコマンド")]
+/// <summary>ショップを終了し、現在の店員に設定された会話を開始する。</summary>
+[CommandInfo("Shop", "Start Shop Conversation", "ショップを終了し、現在の店員に設定された会話を開始します。")]
 public class StartShopConversationCommand : Command
 {
     public override void OnEnter()
     {
-        if (ShopUIManager.instance != null)
+        var shop = ShopUIManager.instance;
+        if (shop == null)
         {
-            ShopUIManager.instance.StartShopConversation();
+            Debug.LogError("ShopUIManagerのインスタンスが見つかりません。", this);
+            Continue();
+            return;
         }
-        else
+
+        if (!shop.TryStartShopConversationAndClose())
         {
-            Debug.LogError("ShopUIManagerのインスタンスが見つかりません！");
+            Debug.LogWarning("現在の店で会話を開始できませんでした。", this);
         }
 
         Continue();
@@ -23,6 +25,6 @@ public class StartShopConversationCommand : Command
 
     public override string GetSummary()
     {
-        return "店での会話を開始する";
+        return "ショップを終了 → 現在の店員と会話";
     }
 }

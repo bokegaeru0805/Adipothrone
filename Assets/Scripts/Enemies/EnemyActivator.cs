@@ -100,6 +100,11 @@ public class EnemyActivator : MonoBehaviour
 {
     #region インスペクター設定
 
+    [Header("Editor識別")]
+    [SerializeField]
+    [Tooltip("Enemy Activator Manager上で使用する任意の表示名。未入力の場合はGameObject名を表示します。")]
+    private string editorDisplayName;
+
     [Header("連携設定")]
     [SerializeField]
     [Tooltip("このEnemyActivatorを起動させるCameraMoveArea")]

@@ -764,14 +764,15 @@
 思ってたより丈夫だね。",Executor,Chapter3BossAppear,Executor_normal_normal
 そりゃどうも。お褒めにあずかり光栄だな。,Hero,Chapter3BossAppear,Hero_normal_normal
 "……って、おい。あそこにいるの……
-まさか、メルサか？",Hero,Chapter3BossAppear,Hero_normal_surprised
+まさか、メルサか？",Hero,Chapter3BossAppear,Hero_normal_normal
 んんっ……！　んぐっ……！,Apothecary,Chapter3BossAppear,Apothecary_immobile_normal
 ……お前、何しやがった。,Hero,Chapter3BossAppear,Hero_normal_normal
 "クラフが、メルサさんを実験に使ってるんです。
 村の周りを荒らしてたのも、橋を壊したのも……
 目の前のあれがやったことで。",Heroin,Chapter3BossAppear,Heroin_flexible_serious
 ……なるほどな。だったら、やることは決まった。,Hero,Chapter3BossAppear,Hero_normal_thinking
-こいつをぶっ倒して、メルサを助ける。それで終わりだ。,Hero,Chapter3BossAppear,Hero_normal_normal
+"こいつをぶっ倒して、メルサを助けて、村を戻す。
+それで終わりだ。",Hero,Chapter3BossAppear,Hero_normal_normal
 "いいね。予定外の個体まで増えたし、
 さっきより面白いデータが取れそうだ。",Executor,Chapter3BossAppear,Executor_normal_normal
 こっちはお前のお遊びに付き合う気はねぇぞ。,Hero,Chapter3BossAppear,Hero_normal_normal
@@ -781,10 +782,11 @@
 空間を変えようか。",Executor,Chapter3BossAppear,Executor_normal_normal
 ここは……？,Heroin,Chapter3BossAppear,Heroin_flexible_troubled
 "こっちの方が見やすいでしょ。
-それで……本当にこいつに勝てると思ってる？",Executor,Chapter3BossAppear,Executor_normal_normal
-勝てるかどうかじゃねぇ。,Hero,Chapter3BossAppear,Hero_normal_normal
-勝つんだよ。,Hero,Chapter3BossAppear,Hero_normal_normal
-……そっか。じゃあ、楽しみにしてるね。,Executor,Chapter3BossAppear,Executor_normal_normal
+それで……この状況をどうにか出来ると思ってるの？",Executor,Chapter3BossAppear,Executor_normal_normal
+"そんなの知らねぇよ。
+引き受けた仕事は、最後までやり遂げる――
+それが俺の仕事だ。",Hero,Chapter3BossAppear,Hero_normal_normal
+……そっか。まあ、面白いデータを期待しているよ。,Executor,Chapter3BossAppear,Executor_normal_normal
 待って！,Heroin,Chapter3BossAppear,Heroin_flexible_anxious
 "あいつは後だ、ノエリ。
 まずは目の前のこいつを止めるぞ。",Hero,Chapter3BossAppear,Hero_normal_normal

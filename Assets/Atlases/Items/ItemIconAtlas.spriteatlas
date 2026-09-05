@@ -41,11 +41,14 @@ SpriteAtlas:
     cachedData: {fileID: 0}
     packedSpriteRenderDataKeys:
     - 75edf0b0d85412c4ea92025396f5908c: 21300000
+    - 90ee0751080d36b4094d2c5bb3b32739: 21300000
+    - 2f50af0259a5aed48b3a9454401c5ff3: 21300000
     - 08c48b12a14ddd347bcb249fd88d0489: 21300000
     - a8cd7872594d6bf41976a29247765c18: 21300000
     - 652bc943fab9ceb4ca60239bae772b79: 1267147520
     - 4dbec8d35a37461419035375dbd7017f: 21300000
     - 7c5e4c25e53348d4a99c84888ec90d1a: 21300000
+    - a61279e618c598f4bbdf11023fd09c70: 21300000
     - 26bd7887e53e8fe448e692286cdac493: 72990847
     - 26bd7887e53e8fe448e692286cdac493: 1441070913
     - 26bd7887e53e8fe448e692286cdac493: 1083562796
@@ -55,12 +58,15 @@ SpriteAtlas:
     - 3af3a498d5a15c1419cab6eb446ad826: 21300000
     - 90428b98cd0c8a048937eb4baead7343: 21300000
     - cb3d11d82249ec8448cd6e9d9ea2a0e9: 21300000
+    - d2d904892b452bd489d84e6f15862070: 21300000
     - 9d42c92a0d34cea42be0cc0a6c28d185: 21300000
+    - 507f15ba364163b48945a9cb2efa0eda: 21300000
     - 3f54beea224e6ae4ebb6eb85c4a69631: 21300000
     - a1817f2b2ea3f974b8b99915300b1bd0: 21300000
     - 79c5391c3fbde0643972416f8af7db6f: 21300000
     - 2a9a1b9ca506ef94d95bae90d0d6e81c: 21300000
     - f1e8c5cc28637724a97b8505f4b31c4b: 21300000
+    - dc657acc175f7e944a7199fbff241a76: 21300000
     - 0303cecc493ad884a9093109e0a03d9e: 21300000
     - 3e89aa0d305bdd74d89b8f5a467d1fdd: 21300000
     - 77f6c01e57f54af4d9d4eec85ca61fa7: 21300000
@@ -75,11 +81,14 @@ SpriteAtlas:
   m_MasterAtlas: {fileID: 0}
   m_PackedSprites:
   - {fileID: 21300000, guid: 75edf0b0d85412c4ea92025396f5908c, type: 3}
+  - {fileID: 21300000, guid: 90ee0751080d36b4094d2c5bb3b32739, type: 3}
+  - {fileID: 21300000, guid: 2f50af0259a5aed48b3a9454401c5ff3, type: 3}
   - {fileID: 21300000, guid: 08c48b12a14ddd347bcb249fd88d0489, type: 3}
   - {fileID: 21300000, guid: a8cd7872594d6bf41976a29247765c18, type: 3}
   - {fileID: 1267147520, guid: 652bc943fab9ceb4ca60239bae772b79, type: 3}
   - {fileID: 21300000, guid: 4dbec8d35a37461419035375dbd7017f, type: 3}
   - {fileID: 21300000, guid: 7c5e4c25e53348d4a99c84888ec90d1a, type: 3}
+  - {fileID: 21300000, guid: a61279e618c598f4bbdf11023fd09c70, type: 3}
   - {fileID: 72990847, guid: 26bd7887e53e8fe448e692286cdac493, type: 3}
   - {fileID: 1441070913, guid: 26bd7887e53e8fe448e692286cdac493, type: 3}
   - {fileID: 1083562796, guid: 26bd7887e53e8fe448e692286cdac493, type: 3}
@@ -89,12 +98,15 @@ SpriteAtlas:
   - {fileID: 21300000, guid: 3af3a498d5a15c1419cab6eb446ad826, type: 3}
   - {fileID: 21300000, guid: 90428b98cd0c8a048937eb4baead7343, type: 3}
   - {fileID: 21300000, guid: cb3d11d82249ec8448cd6e9d9ea2a0e9, type: 3}
+  - {fileID: 21300000, guid: d2d904892b452bd489d84e6f15862070, type: 3}
   - {fileID: 21300000, guid: 9d42c92a0d34cea42be0cc0a6c28d185, type: 3}
+  - {fileID: 21300000, guid: 507f15ba364163b48945a9cb2efa0eda, type: 3}
   - {fileID: 21300000, guid: 3f54beea224e6ae4ebb6eb85c4a69631, type: 3}
   - {fileID: 21300000, guid: a1817f2b2ea3f974b8b99915300b1bd0, type: 3}
   - {fileID: 21300000, guid: 79c5391c3fbde0643972416f8af7db6f, type: 3}
   - {fileID: 21300000, guid: 2a9a1b9ca506ef94d95bae90d0d6e81c, type: 3}
   - {fileID: 21300000, guid: f1e8c5cc28637724a97b8505f4b31c4b, type: 3}
+  - {fileID: 21300000, guid: dc657acc175f7e944a7199fbff241a76, type: 3}
   - {fileID: 21300000, guid: 0303cecc493ad884a9093109e0a03d9e, type: 3}
   - {fileID: 21300000, guid: 3e89aa0d305bdd74d89b8f5a467d1fdd, type: 3}
   - {fileID: 21300000, guid: 77f6c01e57f54af4d9d4eec85ca61fa7, type: 3}
@@ -108,11 +120,14 @@ SpriteAtlas:
   - {fileID: 21300000, guid: bc666b9fecf7ea84eb34b1df26f2ba3c, type: 3}
   m_PackedSpriteNamesToIndex:
   - Gargoyle_CrimsonEye
+  - Sugar
+  - Butter
   - SnowFairy_SnowCrystalCharm
   - SnowFieldGolemMedium_FrostCrystalGauntlet
   - Herb
   - RareFairy_Jewel
   - SnowFieldGolemLarge_Core
+  - TealJasperElixir
   - StatusLevelPotion_Speed
   - StatusLevelPotion_Luck
   - StatusLevelPotion_Defense
@@ -122,12 +137,15 @@ SpriteAtlas:
   - CactusEnemy_Arm
   - Donut_Choco
   - TowerGolem_TowerStoneArmorFragment
+  - SnowApple
   - DesertTempleGolem_GolemCore
+  - SnowFieldGolemLarge_WhiteCrystalShoulderArmor
   - CactusEnemy_Flower
   - SnowFieldGolemMedium_Core
   - Bottle_OasisWater
   - TowerBat_Wing
   - SeleYam
+  - ApplePie
   - Teal-Jasper-Elixir
   - DesertTempleGolem_Float_Brick
   - DesertTempleGolem_Walk_Armor Shard
@@ -137,7 +155,7 @@ SpriteAtlas:
   - FlameHerb
   - StoneHerb
   - WindHerb
-  - Honey-Glazed Dates
+  - HoneyGlazedDates
   - Coconut
   m_RenderDataMap: {}
   m_Tag: ItemIconAtlas

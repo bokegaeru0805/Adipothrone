@@ -24,6 +24,7 @@ public enum EnemyName
     DustDevil_Boss = 15025,
     Levias_smoke = 15026,
     Levias = 15027,
+    Golem_DesertTemple_Float_Special = 15028,
 
     Gargoyle = 15031,
     Bat_Tower = 15032,

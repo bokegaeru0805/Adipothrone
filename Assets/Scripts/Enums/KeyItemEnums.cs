@@ -8,4 +8,5 @@ public enum KeyItemName
     Water_OasisSource =
         12005 //オアシスの源泉の水
     ,
+    RareFairyJewel = 12008 //レアフェアリーの宝石
 }

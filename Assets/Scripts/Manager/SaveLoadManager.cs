@@ -25,12 +25,12 @@ public class SaveSlotInfo
 public class SaveLoadManager : MonoBehaviour
 {
     public static SaveLoadManager instance { get; private set; } //シングルトンインスタンス
-    private const string SETTINGS_FILE_PATH = "GameSettings.es3"; // ファイルパスとキーの定義
-    private const string DEBUG_SETTINGS_FILE_PATH = "DebugSettings.es3";
     private const int DEBUG_LOAD_SLOT_NUMBER = -1; //デバッグ用のロードスロット番号
     private Vector2 PlayerStartPos = new Vector2(-110, 0); //プレイヤーの初期座標
-    public GameSettingsSaveData Settings { get; private set; } // 現在ロードしているデータ
-    public DebugSettingsSaveData DebugSettings { get; private set; }
+    private readonly SaveDataStorage _saveDataStorage = new SaveDataStorage();
+    private readonly SaveLoadSettingsStorage _settingsStorage = new SaveLoadSettingsStorage();
+    public GameSettingsSaveData Settings => _settingsStorage.Settings;
+    public DebugSettingsSaveData DebugSettings => _settingsStorage.DebugSettings;
     public static float timeSinceLoad; //ロードしてからのプレイ時間を保存する変数
     public static float StartTime; //始まるまでのプレイ時間を保存する変数
     public SaveLoadMode CurrentSaveLoadMode { get; private set; } = SaveLoadMode.Load; //セーブロードの状態を管理する変数
@@ -176,7 +176,6 @@ public class SaveLoadManager : MonoBehaviour
         LoadSettings(); // ゲーム起動時に必ず設定ファイルを読み込む
         LoadDebugSettings();
 
-        Version currentGameVersion = new Version(Application.version); // 現在のゲームバージョンをVersionオブジェクトとして取得
         FileSlotInfos = new Dictionary<int, SaveSlotInfo>(); //ゲームのプレイ時間などの情報を保存する変数を初期化
         isOnSave = false; //セーブ待機中のフラグを初期化
 
@@ -195,130 +194,31 @@ public class SaveLoadManager : MonoBehaviour
                 i++
             )
             {
-                // 各セーブファイル用のES3設定を作成
-                ES3Settings settings = new ES3Settings(GetSaveFilePath(i));
+                bool isValid = _saveDataStorage.TryLoadSlotInfo(
+                    i,
+                    out SaveSlotInfo slotInfo,
+                    out int saveSchemaVersion,
+                    out string errorMessage
+                );
 
-                float loadedPlayTime = 0f; // ロードしたプレイ時間（デフォルト0）
-                int loadedExperience = 0; // ロードした経験値（デフォルト0）
-                string dataGameVersionStr = null; // セーブデータのバージョン文字列（デフォルトnull）
-
-                // まず、セーブファイル自体が存在するか確認
-                if (ES3.FileExists(GetSaveFilePath(i)))
+                if (!isValid)
                 {
-                    // プレイ時間をロード (これはトップレベルにある)
-                    // defaultValue: 0f を指定することで、キーが存在しない場合でもエラーにならず0fが返る
-                    loadedPlayTime = ES3.Load<float>("PlayTime", defaultValue: 0f, settings);
-
-                    // プレイ時間が0（＝有効なセーブデータではない）場合は、経験値などをロードせずに次のスロットへ
-                    if (loadedPlayTime == 0f)
-                    {
-                        // プレイ時間も経験値も0のSaveSlotInfoを追加して次へ
-                        FileSlotInfos.Add(i, new SaveSlotInfo(loadedPlayTime, loadedExperience));
-                        continue;
-                    }
-
-                    // SaveDataオブジェクトが存在するか確認してからロード
-                    if (ES3.KeyExists("SaveData", settings))
-                    {
-                        try
-                        {
-                            // SaveDataオブジェクト全体を読み込む（バージョン情報やプレイヤー情報が含まれる）
-                            var loadedSaveData = ES3.Load<SaveData>("SaveData", settings);
-
-                            // 読み込んだデータからバージョン情報を取得（null安全アクセス ?. を使用）
-                            dataGameVersionStr = loadedSaveData?.GameVersion;
-
-                            // 読み込んだデータから経験値を取得（PlayerStatusがnullでないことも確認）
-                            if (loadedSaveData != null && loadedSaveData.PlayerStatus != null)
-                            {
-                                loadedExperience = loadedSaveData.PlayerStatus.playerExp;
-                            }
-                            else
-                            {
-                                // SaveDataまたはPlayerStatusが不正な場合は警告を出し、データを無効化
-                                Debug.LogWarning(
-                                    $"スロット {i} の SaveData または PlayerStatus が不正です。データを無効として扱います。"
-                                );
-                                loadedPlayTime = 0f; // プレイ時間もリセット
-                                loadedExperience = 0; // 経験値もリセット
-                            }
-                        }
-                        catch (Exception ex)
-                        {
-                            // 読み込み時に何らかの例外が発生した場合（データ破損など）
-                            Debug.LogError(
-                                $"SaveDataの読み込みに失敗（スロット {i}）: {ex.Message}"
-                            );
-                            // データを無効として扱う
-                            loadedPlayTime = 0f;
-                            loadedExperience = 0;
-                        }
-                    }
-                    else
-                    {
-                        // PlayTimeはあるがSaveDataがない、という異常な状態
-                        Debug.LogWarning(
-                            $"スロット {i} に SaveData キーが存在しません。データを無効として扱います。"
-                        );
-                        // データを無効として扱う
-                        loadedPlayTime = 0f;
-                        loadedExperience = 0;
-                    }
-
-                    // --- バージョンチェック ---
-                    // この時点で loadedPlayTime > 0f であり、かつ dataGameVersionStr が取得できている場合のみ実行
-                    if (loadedPlayTime > 0f && !string.IsNullOrEmpty(dataGameVersionStr))
-                    {
-                        try
-                        {
-                            Version dataGameVersion = new Version(dataGameVersionStr);
-
-                            // セーブデータのバージョンが現在のゲームバージョンより新しい場合、
-                            // 未来のバージョンなので互換性がないとみなし、ロード対象から外す
-                            if (dataGameVersion > currentGameVersion) // currentGameVersionはAwakeの冒頭で取得済みと仮定
-                            {
-                                Debug.LogWarning(
-                                    $"スロット {i} のセーブデータは新しいバージョンのためロードできません。(データ: {dataGameVersion}, ゲーム: {currentGameVersion})"
-                                );
-                                // データを無効として扱う
-                                loadedPlayTime = 0f;
-                                loadedExperience = 0;
-                            }
-                        }
-                        catch (FormatException ex) // Version文字列のフォーマットが不正な場合
-                        {
-                            Debug.LogError(
-                                $"スロット {i} のバージョン文字列 '{dataGameVersionStr}' の形式が不正です: {ex.Message}"
-                            );
-                            // データを無効として扱う
-                            loadedPlayTime = 0f;
-                            loadedExperience = 0;
-                        }
-                        catch (Exception ex) // その他の予期せぬエラー
-                        {
-                            Debug.LogError(
-                                $"バージョンチェック中に予期せぬエラーが発生しました（スロット {i}）: {ex.Message}"
-                            );
-                            // データを無効として扱う
-                            loadedPlayTime = 0f;
-                            loadedExperience = 0;
-                        }
-                    }
-                    else if (loadedPlayTime > 0f && string.IsNullOrEmpty(dataGameVersionStr))
-                    {
-                        // SaveDataのロードに成功したがバージョン文字列が空だった場合（通常はtry内で処理されるはずだが念のため）
-                        Debug.LogWarning(
-                            $"セーブデータにバージョン情報が存在しません（スロット {i}）。データを無効として扱います。"
-                        );
-                        // データを無効として扱う
-                        loadedPlayTime = 0f;
-                        loadedExperience = 0;
-                    }
+                    Debug.LogWarning($"{errorMessage} データを無効として扱います。");
                 }
 
-                // --- 最終的な値を辞書に追加 ---
-                // ループの最後に、取得した（またはエラーでリセットされた）値でSaveSlotInfoを作成し、辞書に追加
-                FileSlotInfos.Add(i, new SaveSlotInfo(loadedPlayTime, loadedExperience));
+                if (
+                    slotInfo.playTime > 0f
+                    && saveSchemaVersion > SaveDataMigrationRunner.CurrentVersion
+                )
+                {
+                    Debug.LogWarning(
+                        $"スロット {i} のセーブデータ形式は新しいためロードできません。"
+                            + $"(データ: {saveSchemaVersion}, ゲーム: {SaveDataMigrationRunner.CurrentVersion})"
+                    );
+                    slotInfo = new SaveSlotInfo();
+                }
+
+                FileSlotInfos.Add(i, slotInfo);
             }
         }
     }
@@ -392,254 +292,225 @@ public class SaveLoadManager : MonoBehaviour
             PerformSave(file_number);
             yield break; //セーブ処理は同期的なのでここでコルーチンを終了
         }
-        else if (CurrentSaveLoadMode == SaveLoadMode.Load)
+
+        if (CurrentSaveLoadMode != SaveLoadMode.Load)
+            yield break;
+
+        PlayerManager playerManagerOnLoadStart = BeginLoad();
+        SaveGameFileData fileData = null;
+
+        if (file_number != GameConstants.NEW_GAME_FILE_NUMBER)
         {
-            // ロード中のフラグを立て、イベントを発行
-            isLoading = true;
-            OnLoadingStateChanged?.Invoke(true);
-            //一応時間停止
-            TimeManager.instance.RequestPause();
-            // ロード開始時点でのPlayerManager（もし存在すれば）の操作をロック
-            var playerManagerOnLoadStart = PlayerManager.instance;
-            playerManagerOnLoadStart?.LockControl();
-
-            //画面を即座に暗転させる
-            FadeCanvas.instance.FadeOut(Mathf.Epsilon);
-            //BGMを全て停止
-            BGMManager.instance?.Stop();
-            //SEを全て停止
-            SEManager.instance?.StopAllSE();
-            //ファイルパスを生成
-            string filePath = GetSaveFilePath(file_number);
-
-            if (file_number != GameConstants.NEW_GAME_FILE_NUMBER)
-            {
-                if (ES3.KeyExists("SaveData", filePath))
-                {
-                    //セーブデータをロード
-                    SaveData saveData = ES3.Load<SaveData>("SaveData", filePath, new SaveData());
-
-                    // ここでデータの自己修復を行う
-                    saveData.Validate();
-
-                    // マイグレーション処理の呼び出し
-                    CheckAndMigrateSaveData(saveData);
-
-                    //セーブデータをGameManagerに保存
-                    GameManager.instance.savedata = saveData;
-
-                    // SaveDataの参照置換後に、スキルの実行時キャッシュを同期する
-                    SkillManager.instance?.RebuildSkillCache();
-
-                    //装備中の全武器のIDを取得し、同じIDの所持武器(inventory)の参照に置き換える
-                    WeaponManager.instance?.ReplaceAllEquippedWeaponsWithInventoryReferences();
-
-                    //スロット中の全アイテムのIDを取得し、同じIDの所持アイテム(inventory)の参照に置き換える
-                    ReplaceAllSlotItemWithInventoryReferences();
-                }
-                else
-                {
-                    Debug.LogError("SaveDataのセーブデータが存在しません。");
-                    yield break;
-                }
-
-                // フラグデータをロード
-                if (ES3.KeyExists("FlagSaveKey", filePath))
-                {
-                    FlagManager.FlagSaveData flagData = ES3.Load<FlagManager.FlagSaveData>(
-                        "FlagSaveKey",
-                        filePath
-                    );
-                    FlagManager.instance.LoadFlagData(flagData);
-                }
-                else
-                {
-                    Debug.Log("FlagDataのセーブデータが存在しません。");
-                }
-            }
-            else
-            {
-                if (GameManager.instance?.savedata?.WeaponInventoryData != null)
-                {
-                    GameManager.instance.savedata.WeaponInventoryData.AddWeapon(ShootName.Normal); //初期shoot
-                }
-                else
-                {
-                    Debug.LogWarning("WeaponInventoryDataが存在しません");
-                }
-
-                if (WeaponManager.instance != null)
-                {
-                    WeaponManager.instance.ReplaceEquippedWeapon(ShootName.Normal); //初期shootを装備に追加
-                }
-                else
-                {
-                    Debug.LogWarning("WeaponInventoryDataが存在しません");
-                }
-
-                if (GameManager.instance?.savedata?.FastTravelData != null)
-                {
-                    GameManager.instance.savedata.FastTravelData.RegisterFastTravelData(
-                        FastTravelName.TutorialStage
-                    ); //チュートリアルステージのファストトラベルを登録
-                    GameManager.instance.savedata.FastTravelData.SetLastUsedFastTravel(
-                        FastTravelName.TutorialStage
-                    ); //チュートリアルステージのファストトラベルを最後に使用した地点として設定
-                }
-                else
-                {
-                    Debug.LogWarning("FastTravelDataが存在しません");
-                }
-            }
-
-            //他のオブジェクトのStartメソッドでisFirstGameSceneOpenが必要なので、この位置で下記のことを行う
-            if (!GameManager.isFirstGameSceneOpen)
-            {
-                GameManager.isFirstGameSceneOpen = true; //初回ゲームシーンオープンフラグを立てる
-            }
-
-            if (loadScene)
-            {
-                string sceneName = GameConstants.SCENE_NAME_TUTORIAL_START; //デフォルトのシーン名を設定
-
-                // セーブデータからシーン名を読み込む（存在チェックも含める）
-                if (ES3.KeyExists("CurrentSceneName", filePath))
-                {
-                    sceneName = ES3.Load<string>("CurrentSceneName", filePath);
-                }
-
-                AsyncOperation asyncLoad = SceneManager.LoadSceneAsync(sceneName); //Sceneをロード
-
-                //セーブデータのプレイ時間を更新
-                if (
-                    file_number != GameConstants.NEW_GAME_FILE_NUMBER
-                    && ES3.KeyExists("PlayTime", filePath)
-                )
-                {
-                    SaveLoadManager.StartTime = ES3.Load<float>("PlayTime", filePath);
-                }
-                else
-                {
-                    SaveLoadManager.StartTime = 0f; //開始時間を初期化
-                }
-                //ロードしてからの時間を更新
-                SaveLoadManager.timeSinceLoad = Time.time;
-
-                //シーンが読み込み完了するまで待つ
-                yield return new WaitUntil(() => asyncLoad.isDone);
-            }
-            else
-            {
-                // シーン遷移しない場合（デバッグ用など）
-                // プレイ時間を同期（シーンロード時の処理と同様に）
-                if (
-                    file_number != GameConstants.NEW_GAME_FILE_NUMBER
-                    && ES3.KeyExists("PlayTime", filePath)
-                )
-                {
-                    SaveLoadManager.StartTime = ES3.Load<float>("PlayTime", filePath);
-                }
-                else
-                {
-                    SaveLoadManager.StartTime = 0f;
-                }
-                SaveLoadManager.timeSinceLoad = Time.time;
-
-                // シーン遷移待ちをスキップ
-            }
-
-            //プレイヤーの初期座標を初期化
-            Vector3 PlayerPosition = new Vector2();
             if (
-                //プレイヤーの初期座標のセーブデータが存在する場合
-                file_number != GameConstants.NEW_GAME_FILE_NUMBER
-                && ES3.KeyExists("PlayerPosition", filePath)
+                !_saveDataStorage.TryLoad(
+                    file_number,
+                    PlayerStartPos,
+                    GameConstants.SCENE_NAME_TUTORIAL_START,
+                    out fileData,
+                    out string errorMessage
+                )
             )
             {
-                //プレイヤーの初期座標を適用
-                PlayerPosition = ES3.Load<Vector2>("PlayerPosition", filePath);
+                Debug.LogError(errorMessage);
+                AbortLoad(playerManagerOnLoadStart);
+                yield break;
             }
-            else
+
+            if (!TryApplySavedGame(fileData))
             {
-                //プレイヤーの初期座標がセーブされていない場合は、GameManagerのPlayerStartPosを使用
-                PlayerPosition = PlayerStartPos;
+                AbortLoad(playerManagerOnLoadStart);
+                yield break;
             }
-
-            // シーン内に配置された補正エリアを確認し、該当する場合は座標を上書きする
-            foreach (var corrector in PlayerSpawnCorrectorArea.ActiveInstances)
-            {
-                if (corrector != null && corrector.IsPositionInArea(PlayerPosition))
-                {
-                    Vector2 correctedPos = corrector.GetSafeSpawnPosition();
-                    // Debug.Log(
-                    //     $"ロード位置補正: {PlayerPosition} -> {correctedPos} (by {corrector.name})"
-                    // );
-                    PlayerPosition = correctedPos;
-                    break; // 1か所で補正されたら終了（エリア重複はない前提）
-                }
-            }
-
-            //シーンロードが完了したので、"新しいシーンの" PlayerManagerを改めて取得する
-            var playerManagerInNewScene = PlayerManager.instance;
-
-            // 取得したインスタンスを使い回し、nullチェックを1回にまとめる
-            if (playerManagerInNewScene != null)
-            {
-                // プレイヤーの初期座標を移動させ、同時にカメラの追従完了を待つ
-                // PlayerMoveがコルーチンを返すので、yield return で待機する
-                yield return playerManagerInNewScene.StartCoroutine(
-                    playerManagerInNewScene.PlayerMove(PlayerPosition)
-                );
-
-                // プレイヤーを一定時間無敵化
-                if (file_number != GameConstants.NEW_GAME_FILE_NUMBER)
-                {
-                    playerManagerInNewScene.EnableInvincibility(
-                        GameConstants.INVINCIBLE_DURATION_ON_LOAD
-                    );
-                }
-            }
-            else
-            {
-                Debug.LogError("シーンロード後にPlayerManagerが見つかりませんでした。");
-            }
-
-            if (file_number != GameConstants.NEW_GAME_FILE_NUMBER)
-            {
-                FadeCanvas.instance.FadeIn(0.5f); //画面を明転させる
-            }
-
-            if (WeaponManager.instance != null)
-            {
-                //セーブデータからの参照用辞書・リストの再構築
-                WeaponManager.instance.RebuildOwnedWeaponData();
-            }
-            else
-            {
-                Debug.LogWarning("WeaponManagerが存在しません");
-            }
-
-            //BGMとSEの音量を適用
-            //シーンが変わるCRIWAREの仕様により、カテゴリの音量がリセットされてしまう
-            //そのため、再度音量を適用する必要がある
-            ApplyAudioSettings();
-
-            // プレイヤーと敵が同時に出現した場合、即座に物理演算が再開すると
-            // ロード直後にダメージを受ける/敵と接触する などの不具合が起こりうるため1フレームだけ待機
-            yield return null;
-            TimeManager.instance.ReleasePause(); // 時間の進行を再開
-            //会話が発生するようにする
-            GameManager.instance.EndTalk(); // 会話中フラグをOFFにする
-            //セーブをできるようにする
-            EnableSave();
-            //ロード完了後、フラグを下げてイベントを発行
-            isLoading = false;
-            OnLoadingStateChanged?.Invoke(false);
-            // 再び移動を許可
-            playerManagerInNewScene.UnlockControl(); // ロード開始時点でのPlayerManagerの操作を解除
-            //オートセーブのタイマーをリセット
-            _timeSinceLastSave = 0f;
         }
+        else
+        {
+            InitializeNewGameData();
+            fileData = new SaveGameFileData
+            {
+                PlayerPosition = PlayerStartPos,
+                SceneName = GameConstants.SCENE_NAME_TUTORIAL_START,
+                PlayTime = 0f,
+            };
+        }
+
+        //他のオブジェクトのStartメソッドでisFirstGameSceneOpenが必要なので、この位置で下記のことを行う
+        if (!GameManager.isFirstGameSceneOpen)
+        {
+            GameManager.isFirstGameSceneOpen = true; //初回ゲームシーンオープンフラグを立てる
+        }
+
+        yield return LoadSceneAndPlayTime(fileData, loadScene);
+
+        Vector3 playerPosition = CorrectPlayerLoadPosition(fileData.PlayerPosition);
+
+        //シーンロードが完了したので、"新しいシーンの" PlayerManagerを改めて取得する
+        PlayerManager playerManagerInNewScene = PlayerManager.instance;
+        yield return RestorePlayerAfterLoad(playerManagerInNewScene, playerPosition, file_number);
+
+        RestoreRuntimeState(file_number);
+
+        // プレイヤーと敵が同時に出現した場合、即座に物理演算が再開すると
+        // ロード直後にダメージを受ける/敵と接触する などの不具合が起こりうるため1フレームだけ待機
+        yield return null;
+        CompleteLoad(playerManagerInNewScene);
+    }
+
+    private PlayerManager BeginLoad()
+    {
+        isLoading = true;
+        OnLoadingStateChanged?.Invoke(true);
+        TimeManager.instance.RequestPause();
+
+        PlayerManager playerManager = PlayerManager.instance;
+        playerManager?.LockControl();
+        FadeCanvas.instance.FadeOut(Mathf.Epsilon);
+        BGMManager.instance?.Stop();
+        SEManager.instance?.StopAllSE();
+        return playerManager;
+    }
+
+    private bool TryApplySavedGame(SaveGameFileData fileData)
+    {
+        try
+        {
+            fileData.SaveData.Validate();
+            SaveDataMigrationRunner.MigrateToCurrent(fileData.SaveData);
+            fileData.SaveData.Validate();
+        }
+        catch (Exception ex)
+        {
+            Debug.LogError($"セーブデータのマイグレーションに失敗しました: {ex.Message}");
+            return false;
+        }
+
+        GameManager.instance.savedata = fileData.SaveData;
+        SkillManager.instance?.RebuildSkillCache();
+        WeaponManager.instance?.ReplaceAllEquippedWeaponsWithInventoryReferences();
+        ReplaceAllSlotItemWithInventoryReferences();
+
+        if (fileData.HasFlagData)
+        {
+            FlagManager.instance.LoadFlagData(fileData.FlagData);
+        }
+        else
+        {
+            Debug.Log("FlagDataのセーブデータが存在しません。");
+        }
+
+        return true;
+    }
+
+    private void InitializeNewGameData()
+    {
+        if (GameManager.instance?.savedata?.WeaponInventoryData != null)
+            GameManager.instance.savedata.WeaponInventoryData.AddWeapon(ShootName.Normal);
+        else
+            Debug.LogWarning("WeaponInventoryDataが存在しません");
+
+        if (WeaponManager.instance != null)
+            WeaponManager.instance.ReplaceEquippedWeapon(ShootName.Normal);
+        else
+            Debug.LogWarning("WeaponManagerが存在しません");
+
+        if (GameManager.instance?.savedata?.FastTravelData != null)
+        {
+            GameManager.instance.savedata.FastTravelData.RegisterFastTravelData(
+                FastTravelName.TutorialStage
+            );
+            GameManager.instance.savedata.FastTravelData.SetLastUsedFastTravel(
+                FastTravelName.TutorialStage
+            );
+        }
+        else
+        {
+            Debug.LogWarning("FastTravelDataが存在しません");
+        }
+    }
+
+    private IEnumerator LoadSceneAndPlayTime(SaveGameFileData fileData, bool loadScene)
+    {
+        if (loadScene)
+        {
+            AsyncOperation asyncLoad = SceneManager.LoadSceneAsync(fileData.SceneName);
+            SynchronizePlayTime(fileData.PlayTime);
+            yield return new WaitUntil(() => asyncLoad.isDone);
+        }
+        else
+        {
+            SynchronizePlayTime(fileData.PlayTime);
+        }
+    }
+
+    private void SynchronizePlayTime(float playTime)
+    {
+        StartTime = playTime;
+        timeSinceLoad = Time.time;
+    }
+
+    private Vector3 CorrectPlayerLoadPosition(Vector3 playerPosition)
+    {
+        foreach (var corrector in PlayerSpawnCorrectorArea.ActiveInstances)
+        {
+            if (corrector == null || !corrector.IsPositionInArea(playerPosition))
+                continue;
+
+            return corrector.GetSafeSpawnPosition();
+        }
+
+        return playerPosition;
+    }
+
+    private IEnumerator RestorePlayerAfterLoad(
+        PlayerManager playerManager,
+        Vector3 playerPosition,
+        int fileNumber
+    )
+    {
+        if (playerManager == null)
+        {
+            Debug.LogError("シーンロード後にPlayerManagerが見つかりませんでした。");
+            yield break;
+        }
+
+        yield return playerManager.StartCoroutine(playerManager.PlayerMove(playerPosition));
+
+        if (fileNumber != GameConstants.NEW_GAME_FILE_NUMBER)
+        {
+            playerManager.EnableInvincibility(GameConstants.INVINCIBLE_DURATION_ON_LOAD);
+        }
+    }
+
+    private void RestoreRuntimeState(int fileNumber)
+    {
+        if (fileNumber != GameConstants.NEW_GAME_FILE_NUMBER)
+            FadeCanvas.instance.FadeIn(0.5f);
+
+        if (WeaponManager.instance != null)
+            WeaponManager.instance.RebuildOwnedWeaponData();
+        else
+            Debug.LogWarning("WeaponManagerが存在しません");
+
+        ApplyAudioSettings();
+    }
+
+    private void CompleteLoad(PlayerManager playerManager)
+    {
+        TimeManager.instance.ReleasePause();
+        GameManager.instance.EndTalk();
+        EnableSave();
+        isLoading = false;
+        OnLoadingStateChanged?.Invoke(false);
+        playerManager?.UnlockControl();
+        _timeSinceLastSave = 0f;
+    }
+
+    private void AbortLoad(PlayerManager playerManager)
+    {
+        TimeManager.instance?.ReleasePause();
+        playerManager?.UnlockControl();
+        FadeCanvas.instance?.FadeIn(0.5f);
+        isLoading = false;
+        OnLoadingStateChanged?.Invoke(false);
     }
 
 #if UNITY_EDITOR
@@ -671,8 +542,6 @@ public class SaveLoadManager : MonoBehaviour
     private void PerformSave(int file_number)
     {
         isOnSave = true; //一応セーブ待機中のフラグをON
-
-        string filePath = GetSaveFilePath(file_number); //セーブファイルのパスを生成
 
         if (PlayerManager.instance == null)
         {
@@ -713,39 +582,29 @@ public class SaveLoadManager : MonoBehaviour
 
         // ゲームのバージョンをsaveDataに取得
         GameManager.instance.savedata.GameVersion = Application.version;
+        GameManager.instance.savedata.SaveSchemaVersion = SaveDataMigrationRunner.CurrentVersion;
         // 現在の日付・時刻をフォーマットして代入（例: "2026/02/26 17:30:00"）
         GameManager.instance.savedata.SaveDateTime = DateTime.Now.ToString("yyyy/MM/dd HH:mm:ss");
-        //セーブデータを取得
-        SaveData saveData = GameManager.instance.savedata;
-        //セーブデータを保存
-        ES3.Save("SaveData", saveData, filePath);
-
-        //フラグデータを取得
-        FlagManager.FlagSaveData flagData = FlagManager.instance.SaveFlagData();
-        //フラグデータを別途保存
-        ES3.Save("FlagSaveKey", flagData, filePath);
-
-        //プレイヤーの座標を取得
-        Vector2 playerPos = PlayerManager.instance.GetPlayerPosition();
-        //Playerの座標を保存
-        ES3.Save<Vector2>("PlayerPosition", playerPos, filePath);
-
-        // 現在のシーン名を取得
-        string currentSceneName = SceneManager.GetActiveScene().name;
-
-        // シーン名をセーブデータに保存
-        ES3.Save<string>("CurrentSceneName", currentSceneName, filePath);
-
-        // プレイ時間として、元々のデータのプレイ時間にロードしてからのプレイ時間を加えて保存
         float newPlayTime = StartTime + Time.time - timeSinceLoad;
-        ES3.Save<float>("PlayTime", newPlayTime, filePath);
-
-        // --- PlayerEXPの保存 ---
-        // 現在のプレイヤー経験値を取得
         int currentExperience = PlayerManager.instance.GetPlayerIntStatus(
             PlayerStatusIntName.playerExp
         );
-        ES3.Save<int>("PlayerEXP", currentExperience, filePath);
+        SaveGameFileData fileData = new SaveGameFileData
+        {
+            SaveData = GameManager.instance.savedata,
+            FlagData = FlagManager.instance.SaveFlagData(),
+            HasFlagData = true,
+            PlayerPosition = PlayerManager.instance.GetPlayerPosition(),
+            SceneName = SceneManager.GetActiveScene().name,
+            PlayTime = newPlayTime,
+            PlayerExperience = currentExperience,
+        };
+        if (!_saveDataStorage.TrySave(file_number, fileData, out string errorMessage))
+        {
+            Debug.LogError(errorMessage);
+            isOnSave = false;
+            return;
+        }
 
         // --- メモリ上のスロット情報 (FileSlotInfos) の更新 ---
         // 辞書にキーが存在するか確認
@@ -869,16 +728,6 @@ public class SaveLoadManager : MonoBehaviour
     }
 
     /// <summary>
-    /// 指定されたファイル番号に対応するセーブファイルのパスを取得する
-    /// 決して変更しないでください。セーブ・ロードの整合性に関わります。
-    /// </summary>
-    /// <param name="fileNumber">セーブファイルの番号</param>
-    private string GetSaveFilePath(int fileNumber)
-    {
-        return $"Adipothrone_File{fileNumber}.es3";
-    }
-
-    /// <summary>
     /// スロット中の全てのアイテムを、所持アイテムの参照に置き換える
     /// このメソッドは、QuickItemDataのアイテムを
     /// 所持アイテムの参照に置き換えるために使用されます。
@@ -932,33 +781,12 @@ public class SaveLoadManager : MonoBehaviour
 
     public void LoadSettings()
     {
-        // ロードする前に、設定ファイルがすでに存在するかどうかを確認
-        bool settingsExist = ES3.KeyExists("settings", SETTINGS_FILE_PATH);
-
-        // 従来通りロード処理を実行
-        // (ファイルが存在しない場合は、ここで new GameSettingsSaveData() が生成される)
-        Settings = ES3.Load<GameSettingsSaveData>(
-            "settings",
-            SETTINGS_FILE_PATH,
-            new GameSettingsSaveData()
-        );
-
-        // もしファイルが存在しなかった場合（＝新しく生成された場合）
-        if (!settingsExist)
-        {
-            // デバッグログを出力
-            Debug.Log(
-                "設定ファイルが見つからなかったため、新しい設定ファイルを生成し、保存しました。"
-            );
-
-            // 生成したばかりの設定をすぐに保存する
-            SaveSettings();
-        }
+        _settingsStorage.LoadSettings();
     }
 
     public void SaveSettings()
     {
-        ES3.Save<GameSettingsSaveData>("settings", Settings, SETTINGS_FILE_PATH);
+        _settingsStorage.SaveSettings();
     }
 
     /// <summary>
@@ -966,24 +794,7 @@ public class SaveLoadManager : MonoBehaviour
     /// </summary>
     public void LoadDebugSettings()
     {
-        bool settingsExist = ES3.KeyExists("settings", DEBUG_SETTINGS_FILE_PATH);
-        DebugSettings = ES3.Load<DebugSettingsSaveData>(
-            "settings",
-            DEBUG_SETTINGS_FILE_PATH,
-            new DebugSettingsSaveData()
-        );
-
-        if (!settingsExist)
-        {
-            // 既存のPlayerPrefs設定を初回のみ引き継ぐ。
-            DebugSettings.isShowEventArea = PlayerPrefs.GetInt("ShowEventArea", 0) == 1;
-            DebugSettings.debugTimeScale = PlayerPrefs.GetFloat("DebugTimeScale", 1f);
-        }
-
-        DebugSettings.Validate();
-
-        if (!settingsExist)
-            SaveDebugSettings();
+        _settingsStorage.LoadDebugSettings();
     }
 
     /// <summary>
@@ -991,119 +802,7 @@ public class SaveLoadManager : MonoBehaviour
     /// </summary>
     public void SaveDebugSettings()
     {
-        if (DebugSettings == null)
-            return;
-
-        DebugSettings.Validate();
-        ES3.Save<DebugSettingsSaveData>("settings", DebugSettings, DEBUG_SETTINGS_FILE_PATH);
-    }
-
-    /// <summary>
-    /// セーブデータのバージョンをチェックし、必要に応じて移行処理を実行する
-    /// </summary>
-    /// <param name="saveData">ロードしたセーブデータ</param>
-    private void CheckAndMigrateSaveData(SaveData saveData)
-    {
-        // セーブデータにバージョン情報がない（＝最古バージョン）もしくは1.00の場合の初期値を設定
-        if (string.IsNullOrEmpty(saveData.GameVersion) || saveData.GameVersion == "1.0")
-        {
-            saveData.GameVersion = "1.0.0"; // プロジェクトに応じた最古バージョンを指定
-            Debug.Log("セーブデータにバージョン情報がなかったため、1.0.0を設定しました。");
-        }
-
-        try
-        {
-            Version currentGameVersion = new Version(Application.version);
-            Version loadedDataVersion = new Version(saveData.GameVersion);
-
-            if (loadedDataVersion < currentGameVersion)
-            {
-                // Debug.Log(
-                //     $"古いセーブデータ（Ver: {loadedDataVersion}）を検出。マイグレーションを開始します。"
-                // );
-
-                // --- 段階的マイグレーション ---
-                // 新しいバージョンへの移行処理をここに追加していく
-                if (loadedDataVersion < new Version("1.2.0"))
-                {
-                    MigrateToV1_2_0(saveData);
-                }
-
-                if (loadedDataVersion < new Version("1.2.1"))
-                {
-                    MigrateToV1_2_1(saveData);
-                }
-
-                // 全ての移行処理後、セーブデータ内のバージョンを最新に更新
-                saveData.GameVersion = Application.version;
-                // Debug.Log("マイグレーションが完了しました。");
-            }
-        }
-        catch (Exception e)
-        {
-            Debug.LogError(
-                $"セーブデータのバージョンチェック、またはマイグレーションに失敗しました: {e.Message}"
-            );
-            // 必要に応じて、ロードを中止する、ユーザーに通知するなどの処理をここに記述
-        }
-    }
-
-    /// <summary>
-    /// ver 1.2.0 への具体的な移行処理
-    /// </summary>
-    private void MigrateToV1_2_0(SaveData saveData)
-    {
-        if (saveData.EnemyRecordData != null && saveData.EnemyRecordData.enemyRecords != null)
-        {
-            // 既存の全エントリに対して遭遇済みフラグを立てる
-            foreach (var entry in saveData.EnemyRecordData.enemyRecords)
-            {
-                entry.hasEncountered = true;
-            }
-        }
-    }
-
-    /// <summary>
-    /// ver 1.2.1 への具体的な移行処理
-    /// </summary>
-    private void MigrateToV1_2_1(SaveData saveData)
-    {
-        if (saveData == null || saveData.PlayerStatus == null)
-        {
-            Debug.LogWarning("MigrateToV1_2_1: SaveData または PlayerStatus が null です。");
-            return;
-        }
-
-        // 注意：この処理はシーンがロードされる前（タイトル画面など）で呼ばれるため、
-        // PlayerManager 等のインスタンスはまだ存在しません。
-        // そのため、引数の saveData オブジェクトを直接書き換えます。
-
-        // PlayerLevelManagerの static メソッドを使って、保存されている経験値からレベルを計算
-        int playerLevel = PlayerLevelManager.GetLevelFromExp(saveData.PlayerStatus.playerExp);
-
-        // HPの最大レベルがプレイヤーレベル未満なら引き上げ、現在レベルも同期する
-        if (saveData.PlayerStatus.hpMaxLevel < playerLevel)
-        {
-            saveData.PlayerStatus.hpMaxLevel = playerLevel;
-            saveData.PlayerStatus.hpCurrentLevel = playerLevel;
-        }
-
-        // 攻撃力の最大レベルがプレイヤーレベル未満なら引き上げ、現在レベルも同期する
-        if (saveData.PlayerStatus.attackMaxLevel < playerLevel)
-        {
-            saveData.PlayerStatus.attackMaxLevel = playerLevel;
-            saveData.PlayerStatus.attackCurrentLevel = playerLevel;
-        }
-
-        // 防御力の最大レベルがプレイヤーレベル未満なら引き上げ、現在レベルも同期する
-        if (saveData.PlayerStatus.defenseMaxLevel < playerLevel)
-        {
-            saveData.PlayerStatus.defenseMaxLevel = playerLevel;
-            saveData.PlayerStatus.defenseCurrentLevel = playerLevel;
-        }
-
-        // 新規Tipsの登録
-        saveData.TipsData.RegisterTipsData(TipsName.StatusLevel);
+        _settingsStorage.SaveDebugSettings();
     }
 
     /// <summary>

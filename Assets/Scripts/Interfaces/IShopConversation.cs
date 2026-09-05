@@ -1,4 +1,6 @@
+/// <summary>現在の店で利用できる店内会話。</summary>
 public interface IShopConversation
 {
-    void StartShopConversation(ShopName shopID);
+    bool IsAvailable { get; }
+    bool TryStartConversation();
 }

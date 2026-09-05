@@ -2,39 +2,44 @@ using UnityEditor;
 using UnityEngine;
 
 [CustomEditor(typeof(MaterialItemData))]
-public class MaterialItemDataEditor : Editor
+[CanEditMultipleObjects]
+public class MaterialItemDataEditor : BaseItemDataEditor
 {
     // MaterialItemData 専用
-    SerializedProperty itemID;
+    private SerializedProperty itemID;
+    private bool basicOpen = true;
 
-    // BaseItemData 共通
-    SerializedProperty itemName;
-    SerializedProperty itemSprite;
-    SerializedProperty description;
-
-    void OnEnable()
+    protected override void OnEnable()
     {
+        base.OnEnable();
+
         // MaterialItemData 専用
         itemID = serializedObject.FindProperty("itemID");
-
-        // BaseItemData 共通項目
-        itemName = serializedObject.FindProperty("itemName");
-        itemSprite = serializedObject.FindProperty("itemSprite");
-        description = serializedObject.FindProperty("description");
     }
 
     public override void OnInspectorGUI()
     {
         serializedObject.Update();
 
-        // IDを最上部に
-        EditorGUILayout.PropertyField(itemID);
+        EditorGUILayout.PropertyField(itemID, new GUIContent("素材ID"));
         EditorGUILayout.Space();
 
-        EditorGUILayout.LabelField("【基本情報】", EditorStyles.boldLabel);
-        EditorGUILayout.PropertyField(itemName, new GUIContent("表示名"));
-        EditorGUILayout.PropertyField(itemSprite, new GUIContent("アイコン"));
-        EditorGUILayout.PropertyField(description, new GUIContent("説明文"));
+        EditorGUILayout.BeginVertical(EditorStyles.helpBox);
+        basicOpen = EditorGUILayout.Foldout(basicOpen, "基本情報", true, EditorStyles.foldoutHeader);
+        if (basicOpen)
+        {
+            EditorGUI.indentLevel++;
+            EditorGUILayout.PropertyField(itemName, new GUIContent("表示名"));
+            EditorGUILayout.PropertyField(itemSprite, new GUIContent("アイコン"));
+            EditorGUILayout.PropertyField(itemRank, new GUIContent("レア度"));
+            EditorGUILayout.PropertyField(buyPrice, new GUIContent("購入価格"));
+            EditorGUILayout.PropertyField(isSellable, new GUIContent("売却可能"));
+            using (new EditorGUI.DisabledScope(!isSellable.hasMultipleDifferentValues && !isSellable.boolValue))
+                EditorGUILayout.PropertyField(sellPrice, new GUIContent("売却価格"));
+            EditorGUILayout.PropertyField(description, new GUIContent("説明文"));
+            EditorGUI.indentLevel--;
+        }
+        EditorGUILayout.EndVertical();
 
         serializedObject.ApplyModifiedProperties();
     }

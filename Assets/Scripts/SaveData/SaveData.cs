@@ -10,6 +10,10 @@ public class SaveData
     // ===== ゲームのバージョン =====
     public string GameVersion = "";
 
+    // ===== セーブデータ形式のバージョン =====
+    // Application.versionとは独立して管理し、データ構造を変更したときだけ更新する。
+    public int SaveSchemaVersion = 0;
+
     // ===== セーブした日付・時刻 =====
     public string SaveDateTime = "";
 
