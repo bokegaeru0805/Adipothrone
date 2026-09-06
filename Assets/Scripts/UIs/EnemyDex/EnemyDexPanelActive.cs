@@ -166,11 +166,37 @@ public class EnemyDexPanelActive : MonoBehaviour, IPanelActive
     private void LoadAllUnlockedEnemies()
     {
         allUnlockedEnemies = new List<UnlockedEnemy>();
+
+        if (GameManager.instance == null || GameManager.instance.savedata == null)
+        {
+            Debug.LogWarning("セーブデータの準備が完了していないため、敵図鑑を読み込めませんでした。");
+            totalPages = 1;
+            return;
+        }
+
+        GameManager.instance.savedata.Validate();
         var enemyRecordData = GameManager.instance.savedata.EnemyRecordData;
+        if (enemyRecordData.enemyRecords == null)
+        {
+            enemyRecordData.enemyRecords = new List<EnemyRecordEntry>();
+        }
+
+        if (enemyDatabase == null || enemyDatabase.enemies == null)
+        {
+            Debug.LogWarning("EnemyDatabaseが設定されていないため、敵図鑑を読み込めませんでした。");
+            totalPages = 1;
+            return;
+        }
 
         // 1. EnemyDatabaseに登録されている全ての敵リストを取得する（これが表示順の基準になる）
         foreach (var masterData in enemyDatabase.enemies)
         {
+            if (masterData == null)
+            {
+                Debug.LogWarning("EnemyDatabaseに未設定の敵データがあります。");
+                continue;
+            }
+
             // 2. その敵が遭遇済みかどうかをセーブデータで確認する
             if (enemyRecordData.IsEncountered(masterData.enemyID))
             {
